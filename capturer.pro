@@ -1,7 +1,8 @@
 QT += \
     core \
     gui \
-    widgets
+    widgets \
+    multimedia
 
 TARGET = capturer
 TEMPLATE = app

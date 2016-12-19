@@ -268,7 +268,8 @@ void DeckLinkCapture::captureStart()
         goto bail;
     }
 
-    result=decklink_input->EnableAudioInput(bmdAudioSampleRate48kHz, 16, 8); //!!!!!!!!
+//    result=decklink_input->EnableAudioInput(bmdAudioSampleRate48kHz, 16, 8); //!!!!!!!!
+    result=decklink_input->EnableAudioInput(bmdAudioSampleRate48kHz, 16, 2);
 
     if(result!=S_OK) {
         qCritical() << "EnableAudioInput err";
@@ -325,6 +326,10 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
     // Handle Audio Frame
     if(audio_packet) {
         audio_packet->GetBytes(&audio_packet_bytes);
+
+        ba_audio.resize(audio_packet->GetSampleFrameCount()*2*(16/8));
+
+        memcpy(ba_audio.data(), audio_packet_bytes, ba_audio.size());
     }
 
     // video_frame_converted->Release();

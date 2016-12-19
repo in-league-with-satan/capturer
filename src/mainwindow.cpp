@@ -6,18 +6,28 @@
 #include <QPixmap>
 #include <QFile>
 
+
 #include "DeckLinkAPI.h"
 
 #include "device_list.h"
 #include "capture.h"
+#include "audio_output_thread.h"
 
 #include "mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    capture_thread=new DeckLinkCapture();
+    capture_thread=new DeckLinkCapture(this);
     connect(capture_thread, SIGNAL(inputFrameArrived(QByteArray,QByteArray)), SLOT(onInputFrameArrived(QByteArray,QByteArray)), Qt::QueuedConnection);
+
+
+    audio_output=new AudioOutputThread(this);
+
+    connect(capture_thread, SIGNAL(inputFrameArrived(QByteArray,QByteArray)), audio_output, SLOT(onInputFrameArrived(QByteArray,QByteArray)), Qt::QueuedConnection);
+
+
+    //
 
     cb_device=new QComboBox();
     cb_format=new QComboBox();

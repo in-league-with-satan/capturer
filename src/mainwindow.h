@@ -7,6 +7,7 @@ class QComboBox;
 class QLabel;
 
 class DeckLinkCapture;
+class AudioOutputThread;
 
 class MainWindow : public QMainWindow
 {
@@ -15,7 +16,6 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent=0);
     ~MainWindow();
-
 
 private:
     DeckLinkCapture *capture_thread;
@@ -27,6 +27,7 @@ private:
     QComboBox *cb_audio_channels;
     QComboBox *cb_audio_depth;
 
+    AudioOutputThread *audio_output;
 
     QLabel *l_out_pic;
 
