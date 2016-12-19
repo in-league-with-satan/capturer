@@ -55,8 +55,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     l_out_pic=new QLabel();
-    l_out_pic->setScaledContents(true);
-//    l_out_pic->setFixedSize(800, 500);
+    // l_out_pic->setScaledContents(true);
 
     QGridLayout *la_dev=new QGridLayout();
 
@@ -91,7 +90,6 @@ MainWindow::MainWindow(QWidget *parent)
     la_h->addLayout(la_dev);
     la_h->addWidget(b_start);
     la_h->addWidget(b_stop);
-    la_h->addWidget(l_out_pic);
 
 
     QWidget *w_central=new QWidget();
@@ -159,8 +157,16 @@ void MainWindow::onInputFrameArrived(QByteArray ba_video, QByteArray ba_audio)
     }
     */
 
+    if(!l_out_pic->isVisible())
+        l_out_pic->showFullScreen();
 
-    QImage img=QImage((uchar*)ba_video.data(), 1920, 1080, QImage::Format_ARGB32);
+    QImage img;
+
+    if(l_out_pic->size()!=QSize(1920, 1080))
+        img=QImage((uchar*)ba_video.data(), 1920, 1080, QImage::Format_ARGB32).scaled(l_out_pic->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+    else
+        img=QImage((uchar*)ba_video.data(), 1920, 1080, QImage::Format_ARGB32);
 
     l_out_pic->setPixmap(QPixmap::fromImage(img));
 }
