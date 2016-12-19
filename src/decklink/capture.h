@@ -18,6 +18,7 @@ class IDeckLinkVideoInputFrame;
 class IDeckLinkAudioInputPacket;
 class IDeckLinkAttributes;
 class IDeckLinkVideoConversion;
+class IDeckLinkMutableVideoFrame;
 
 class DeckLinkCapture : public QThread
 {
@@ -53,6 +54,7 @@ private:
     IDeckLinkIterator *decklink_iterator;
     IDeckLinkAttributes *decklink_attributes;
     IDeckLinkVideoConversion *video_converter;
+    IDeckLinkMutableVideoFrame *video_frame_converted;
 
     DeckLinkDevice device;
     DeckLinkFormat format;

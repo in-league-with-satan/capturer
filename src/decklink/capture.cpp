@@ -193,6 +193,8 @@ void DeckLinkCapture::captureStart()
     if(result!=S_OK)
         goto bail;
 
+    decklink_output->CreateVideoFrame(1920, 1080, 1920*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &video_frame_converted);
+
 
     // Get the display mode
     if(format.pixel_formats.isEmpty()) {
@@ -297,17 +299,9 @@ void DeckLinkCapture::captureStop()
 
 void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet)
 {
-    IDeckLinkMutableVideoFrame *video_frame_c;
+    video_converter->ConvertFrame(video_frame, video_frame_converted);
 
-//    decklink_output->CreateVideoFrame(1920, 1080, 1920*4, bmdFormat8BitARGB, bmdFrameFlagDefault, &video_frame_c);
-    decklink_output->CreateVideoFrame(1920, 1080, 1920*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &video_frame_c);
-
-    video_converter->ConvertFrame(video_frame, video_frame_c);
-
-    video_frame=(IDeckLinkVideoInputFrame*)video_frame_c;
-
-    IDeckLinkVideoFrame *right_eye_frame=nullptr;
-    IDeckLinkVideoFrame3DExtensions *three_d_extensions=nullptr;
+    video_frame=(IDeckLinkVideoInputFrame*)video_frame_converted;
 
     void *video_frame_bytes;
     void *audio_packet_bytes;
@@ -315,60 +309,17 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
     QByteArray ba_video;
     QByteArray ba_audio;
 
-    // Handle Video Frame
     if(video_frame) {
-        // If 3D mode is enabled we retreive the 3D extensions interface which gives.
-        // us access to the right eye frame by calling GetFrameForRightEye() .
-        if((video_frame->QueryInterface(IID_IDeckLinkVideoFrame3DExtensions, (void**)&three_d_extensions)!=S_OK) ||
-             (three_d_extensions->GetFrameForRightEye(&right_eye_frame)!=S_OK)) {
-            right_eye_frame=nullptr;
-        }
-
-        if(three_d_extensions)
-            three_d_extensions->Release();
-
         if(video_frame->GetFlags() & bmdFrameHasNoInputSource) {
-//            printf("Frame received (#%lu) - No input signal detected\n", g_frameCount);
             qCritical() << "No input signal detected";
 
         } else {
-            const char *timecode_string=nullptr;
+            video_frame->GetBytes(&video_frame_bytes);
 
-//            if(g_config.m_timecodeFormat!=0) {
-//                IDeckLinkTimecode *timecode;
+            ba_video.resize(video_frame->GetRowBytes() * video_frame->GetHeight());
 
-//                if(video_frame->GetTimecode(g_config.m_timecodeFormat, &timecode)==S_OK) {
-//                    timecode->GetString(&timecode_string);
-//                }
-//            }
-
-//            printf("Frame received (#%lu) [%s] - %s - Size: %li bytes\n",
-//                   g_frameCount,
-//                   timecodeString != NULL ? timecodeString : "No timecode",
-//                   rightEyeFrame != NULL ? "Valid Frame (3D left/right)" : "Valid Frame",
-//                   videoFrame->GetRowBytes() * videoFrame->GetHeight());
-
-            if(timecode_string)
-                free((void*)timecode_string);
-
-//            if(g_videoOutputFile!=-1) {
-                video_frame->GetBytes(&video_frame_bytes);
-
-                ba_video.resize(video_frame->GetRowBytes() * video_frame->GetHeight());
-
-                memcpy(ba_video.data(), video_frame_bytes, ba_video.size());
-
-                //write(g_videoOutputFile, frameBytes, videoFrame->GetRowBytes() * videoFrame->GetHeight());
-
-                if(right_eye_frame) {
-//                    right_eye_frame->GetBytes(&frame_bytes);
-//                    write(g_videoOutputFile, frame_bytes, video_frame->GetRowBytes() * video_frame->GetHeight());
-                }
-//            }
+            memcpy(ba_video.data(), video_frame_bytes, ba_video.size());
         }
-
-        if(right_eye_frame)
-            right_eye_frame->Release();
     }
 
     // Handle Audio Frame
@@ -376,7 +327,7 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
         audio_packet->GetBytes(&audio_packet_bytes);
     }
 
-    video_frame_c->Release();
+    // video_frame_converted->Release();
 
     emit inputFrameArrived(ba_video, ba_audio);
 }
