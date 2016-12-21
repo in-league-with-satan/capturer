@@ -8,6 +8,7 @@ class QLabel;
 
 class DeckLinkCapture;
 class AudioOutputThread;
+class OutWidget;
 
 class MainWindow : public QMainWindow
 {
@@ -29,10 +30,10 @@ private:
 
     AudioOutputThread *audio_output;
 
-    QLabel *l_out_pic;
+    OutWidget *out_widget;
 
 private slots:
-    void onInputFrameArrived(QByteArray ba_video, QByteArray ba_audio);
+    void onFrameVideo(QByteArray ba_data, QSize size);
 
     void onDeviceChanged(int index);
     void onFormatChanged(int index);

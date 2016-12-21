@@ -108,6 +108,8 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
     decklink_iterator=nullptr;
     decklink_attributes=nullptr;
 
+    setTerminationEnabled(true);
+
     start(QThread::NormalPriority);
 }
 
@@ -148,6 +150,8 @@ void DeckLinkCapture::run()
 
     if(decklink_iterator)
         decklink_iterator->Release();
+
+    deleteLater();
 }
 
 void DeckLinkCapture::captureStart()
@@ -194,6 +198,8 @@ void DeckLinkCapture::captureStart()
         goto bail;
 
     decklink_output->CreateVideoFrame(1920, 1080, 1920*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &video_frame_converted);
+
+//    decklink_output->CreateVideoFrame(3840, 2160, 3840*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &video_frame_converted);
 
 
     // Get the display mode
@@ -300,9 +306,8 @@ void DeckLinkCapture::captureStop()
 
 void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet)
 {
-    video_converter->ConvertFrame(video_frame, video_frame_converted);
-
-    video_frame=(IDeckLinkVideoInputFrame*)video_frame_converted;
+    if(!video_frame || !audio_packet)
+        return;
 
     void *video_frame_bytes;
     void *audio_packet_bytes;
@@ -310,31 +315,37 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
     QByteArray ba_video;
     QByteArray ba_audio;
 
-    if(video_frame) {
-        if(video_frame->GetFlags() & bmdFrameHasNoInputSource) {
-            qCritical() << "No input signal detected";
 
-        } else {
-            video_frame->GetBytes(&video_frame_bytes);
+    if(video_frame->GetFlags() & bmdFrameHasNoInputSource) {
+        qCritical() << "No input signal detected";
 
-            ba_video.resize(video_frame->GetRowBytes() * video_frame->GetHeight());
+    } else {
+        video_converter->ConvertFrame(video_frame, video_frame_converted);
 
-            memcpy(ba_video.data(), video_frame_bytes, ba_video.size());
-        }
+        video_frame=(IDeckLinkVideoInputFrame*)video_frame_converted;
+
+        video_frame->GetBytes(&video_frame_bytes);
+
+        ba_video.resize(video_frame->GetRowBytes() * video_frame->GetHeight());
+
+        memcpy(ba_video.data(), video_frame_bytes, ba_video.size());
     }
+
 
     // Handle Audio Frame
-    if(audio_packet) {
-        audio_packet->GetBytes(&audio_packet_bytes);
 
-        ba_audio.resize(audio_packet->GetSampleFrameCount()*2*(16/8));
+    audio_packet->GetBytes(&audio_packet_bytes);
 
-        memcpy(ba_audio.data(), audio_packet_bytes, ba_audio.size());
-    }
+    ba_audio.resize(audio_packet->GetSampleFrameCount()*2*(16/8));
+
+    memcpy(ba_audio.data(), audio_packet_bytes, ba_audio.size());
+
 
     // video_frame_converted->Release();
 
-    emit inputFrameArrived(ba_video, ba_audio);
+    emit frameVideo(ba_video, QSize(video_frame->GetWidth(), video_frame->GetHeight()));
+
+    emit frameAudio(ba_audio);
 }
 
 void DeckLinkCapture::release()

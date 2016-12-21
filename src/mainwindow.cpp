@@ -6,26 +6,32 @@
 #include <QPixmap>
 #include <QFile>
 
-
 #include "DeckLinkAPI.h"
 
 #include "device_list.h"
 #include "capture.h"
 #include "audio_output_thread.h"
+#include "out_widget.h"
 
 #include "mainwindow.h"
+
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     capture_thread=new DeckLinkCapture(this);
-    connect(capture_thread, SIGNAL(inputFrameArrived(QByteArray,QByteArray)), SLOT(onInputFrameArrived(QByteArray,QByteArray)), Qt::QueuedConnection);
+    connect(capture_thread, SIGNAL(frameVideo(QByteArray,QSize)), SLOT(onFrameVideo(QByteArray,QSize)), Qt::QueuedConnection);
 
 
     audio_output=new AudioOutputThread(this);
 
-    connect(capture_thread, SIGNAL(inputFrameArrived(QByteArray,QByteArray)), audio_output, SLOT(onInputFrameArrived(QByteArray,QByteArray)), Qt::QueuedConnection);
+    connect(capture_thread, SIGNAL(frameAudio(QByteArray)), audio_output, SLOT(onInputFrameArrived(QByteArray)), Qt::QueuedConnection);
 
+
+    //
+
+    out_widget=new OutWidget();
+    out_widget->showFullScreen();
 
     //
 
@@ -54,8 +60,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(b_stop, SIGNAL(clicked(bool)), capture_thread, SLOT(captureStop()), Qt::QueuedConnection);
 
 
-    l_out_pic=new QLabel();
-    // l_out_pic->setScaledContents(true);
 
     QGridLayout *la_dev=new QGridLayout();
 
@@ -124,51 +128,16 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    capture_thread->exit();
 }
 
-void MainWindow::onInputFrameArrived(QByteArray ba_video, QByteArray ba_audio)
+void MainWindow::onFrameVideo(QByteArray ba_data, QSize size)
 {
-/*
-    size_t rows=1080;
-    size_t cols=1920;
-
-    QByteArray ba_out;
-
-    ba_out.resize(ba_video.size());
-
-    uint32_t *int_in=(uint32_t*)ba_video.data();
-    uint32_t *int_out=(uint32_t*)ba_out.data();
-
-    size_t pos;
-
-    for(size_t i_row=0; i_row<rows; ++i_row) {
-        for(size_t i_col=0; i_col<cols; ++i_col) {
-            pos=rows*i_row + i_col;
-
-            int_out[pos]=
-                    (int_in[pos]&0x3f << 4) | (int_in[pos]&0xf000 >> 12)          // R
-                    |
-                    (int_in[pos]&0xfc0000 >> 8) | (int_in[pos]&0xf00 << 8)        // G
-                    |
-                    (int_in[pos]&0xff000000 >> 4) | (int_in[pos]&0x30000 << 12)   // B
-                    ;
-
-        }
-    }
-    */
-
-    if(!l_out_pic->isVisible())
-        l_out_pic->showFullScreen();
-
     QImage img;
 
-    if(l_out_pic->size()!=QSize(1920, 1080))
-        img=QImage((uchar*)ba_video.data(), 1920, 1080, QImage::Format_ARGB32).scaled(l_out_pic->size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    img=QImage((uchar*)ba_data.data(), size.width(), size.height(), QImage::Format_ARGB32);
 
-    else
-        img=QImage((uchar*)ba_video.data(), 1920, 1080, QImage::Format_ARGB32);
-
-    l_out_pic->setPixmap(QPixmap::fromImage(img));
+    out_widget->frame(img);
 }
 
 void MainWindow::onDeviceChanged(int index)

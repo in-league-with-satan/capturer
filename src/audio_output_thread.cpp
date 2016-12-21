@@ -51,14 +51,12 @@ void AudioOutputThread::run()
     exec();
 }
 
-void AudioOutputThread::onInputFrameArrived(QByteArray ba_video, QByteArray ba_audio)
+void AudioOutputThread::onInputFrameArrived(QByteArray ba_data)
 {
-    Q_UNUSED(ba_video);
-
-//    qDebug() << ba_audio.size();
+//    qDebug() << ba_data.size();
 
     if(!dev_audio_output)
         return;
 
-    dev_audio_output->write(ba_audio);
+    dev_audio_output->write(ba_data);
 }

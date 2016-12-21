@@ -2,7 +2,8 @@ QT += \
     core \
     gui \
     widgets \
-    multimedia
+    multimedia \
+    opengl
 
 TARGET = capturer
 TEMPLATE = app

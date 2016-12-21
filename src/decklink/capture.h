@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QThread>
+#include <QSize>
 
 #include "device_list.h"
 
@@ -61,7 +62,8 @@ private:
     DeckLinkPixelFormat pixel_format;
 
 signals:
-    void inputFrameArrived(QByteArray ba_video, QByteArray ba_audio);
+    void frameVideo(QByteArray ba_data, QSize size);
+    void frameAudio(QByteArray ba_data);
 };
 
 #endif // CAPTURE_H

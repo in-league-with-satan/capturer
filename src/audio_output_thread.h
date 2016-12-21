@@ -21,7 +21,7 @@ private:
     QIODevice *dev_audio_output;
 
 public slots:
-    void onInputFrameArrived(QByteArray ba_video, QByteArray ba_audio);
+    void onInputFrameArrived(QByteArray ba_data);
 
 };
 
