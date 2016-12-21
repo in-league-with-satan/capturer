@@ -41,21 +41,23 @@ public slots:
     void captureStop();
 
 private:
+    void videoInputFormatChanged(uint32_t events, IDeckLinkDisplayMode *mode, uint32_t format_flags);
     void videoInputFrameArrived(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet);
 
+    void init();
     void release();
 
     DeckLinkCaptureDelegate *deck_link_capture_delegate;
 
     IDeckLink *decklink;
-    IDeckLinkDisplayModeIterator *display_mode_iterator;
+
     IDeckLinkDisplayMode *display_mode;
     IDeckLinkInput *decklink_input;
     IDeckLinkOutput *decklink_output;
-    IDeckLinkIterator *decklink_iterator;
-    IDeckLinkAttributes *decklink_attributes;
     IDeckLinkVideoConversion *video_converter;
-    IDeckLinkMutableVideoFrame *video_frame_converted;
+    IDeckLinkMutableVideoFrame *video_frame_converted_720p;
+    IDeckLinkMutableVideoFrame *video_frame_converted_1080p;
+    IDeckLinkMutableVideoFrame *video_frame_converted_2160p;
 
     DeckLinkDevice device;
     DeckLinkFormat format;
@@ -64,6 +66,7 @@ private:
 signals:
     void frameVideo(QByteArray ba_data, QSize size);
     void frameAudio(QByteArray ba_data);
+    void noInputSignalDetected();
 };
 
 #endif // CAPTURE_H
