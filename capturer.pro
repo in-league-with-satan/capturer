@@ -32,6 +32,7 @@ static {
 
 CONFIG(debug, debug|release):{
     BUILD_OPT=debug
+
 } else {
     DEFINES += QT_NO_DEBUG_OUTPUT
 }
@@ -51,6 +52,8 @@ SOURCES += \
 
 
 LIBS += -lm -ldl -lpthread
+
+LIBS += -lavutil -lavcodec -lswscale
 
 
 INCLUDEPATH += \

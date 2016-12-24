@@ -9,6 +9,7 @@ class QLabel;
 class DeckLinkCapture;
 class AudioOutputThread;
 class OutWidget;
+class FFMpeg;
 
 class MainWindow : public QMainWindow
 {
@@ -20,6 +21,8 @@ public:
 
 private:
     DeckLinkCapture *capture_thread;
+
+    FFMpeg *ffmpeg;
 
     QComboBox *cb_device;
     QComboBox *cb_format;
@@ -41,6 +44,8 @@ private slots:
 
     void setup();
 
+    void onCaptureStart();
+    void onCaptureStop();
 };
 
 #endif // MAINWINDOW_H

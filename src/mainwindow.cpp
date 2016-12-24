@@ -12,6 +12,8 @@
 #include "capture.h"
 #include "audio_output_thread.h"
 #include "out_widget.h"
+#include "ffmpeg.h"
+
 
 #include "mainwindow.h"
 
@@ -27,6 +29,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(capture_thread, SIGNAL(frameAudio(QByteArray)), audio_output, SLOT(onInputFrameArrived(QByteArray)), Qt::QueuedConnection);
 
+
+    //
+
+    ffmpeg=new FFMpeg(this);
 
     //
 
@@ -56,8 +62,14 @@ MainWindow::MainWindow(QWidget *parent)
     QPushButton *b_start=new QPushButton("start");
     QPushButton *b_stop=new QPushButton("stop");
 
+    QPushButton *b_capture_start=new QPushButton("capture start");
+    QPushButton *b_capture_stop=new QPushButton("capture stop");
+
     connect(b_start, SIGNAL(clicked(bool)), capture_thread, SLOT(captureStart()), Qt::QueuedConnection);
     connect(b_stop, SIGNAL(clicked(bool)), capture_thread, SLOT(captureStop()), Qt::QueuedConnection);
+
+    connect(b_capture_start, SIGNAL(clicked(bool)), SLOT(onCaptureStart()));
+    connect(b_capture_stop, SIGNAL(clicked(bool)), SLOT(onCaptureStop()));
 
 
 
@@ -94,7 +106,8 @@ MainWindow::MainWindow(QWidget *parent)
     la_h->addLayout(la_dev);
     la_h->addWidget(b_start);
     la_h->addWidget(b_stop);
-
+    la_h->addWidget(b_capture_start);
+    la_h->addWidget(b_capture_stop);
 
     QWidget *w_central=new QWidget();
     w_central->setLayout(la_h);
@@ -137,7 +150,9 @@ void MainWindow::onFrameVideo(QByteArray ba_data, QSize size)
 
     img=QImage((uchar*)ba_data.data(), size.width(), size.height(), QImage::Format_ARGB32);
 
-    out_widget->frame(img);
+    ffmpeg->appendFrame(img.copy(), QByteArray());
+
+    out_widget->frame(img.copy());
 }
 
 void MainWindow::onDeviceChanged(int index)
@@ -193,4 +208,15 @@ void MainWindow::setup()
     capture_thread->setup(cb_device->currentData().value<DeckLinkDevice>(),
                           cb_format->currentData().value<DeckLinkFormat>(),
                           cb_pixel_format->currentData().value<DeckLinkPixelFormat>());
+}
+
+void MainWindow::onCaptureStart()
+{
+
+    ffmpeg->initVideoCoder(QSize(1920, 1080));
+}
+
+void MainWindow::onCaptureStop()
+{
+    ffmpeg->stopCoder();
 }
