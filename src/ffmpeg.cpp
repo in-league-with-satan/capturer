@@ -41,13 +41,11 @@ public:
         av_codec_context=nullptr;
 
         next_pts=1;
-        samples_count=0;
 
         frame=nullptr;
-    }
+        frame_converted=nullptr;
 
-    void free() {
-
+        convert_context=nullptr;
     }
 
     AVStream *av_stream;
@@ -55,11 +53,13 @@ public:
 
     // pts of the next frame
     int64_t next_pts;
-    int samples_count;
+
     QByteArray ba_audio_prev_part;
 
     AVFrame *frame;
     AVFrame *frame_converted;
+
+    SwsContext *convert_context;
 };
 
 class FFMpegContext
@@ -80,10 +80,6 @@ public:
         i=0;
     }
 
-    void free() {
-
-    }
-
     bool canAcceptFrame() {
         if(av_format_context)
             return true;
@@ -101,8 +97,6 @@ public:
 
     AVCodec *av_codec_audio;
     AVCodec *av_codec_video;
-
-    SwsContext *convert_context;
 
     AVDictionary *opt;
 
@@ -137,12 +131,12 @@ static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AV
     av_packet_rescale_ts(pkt, *time_base, st->time_base);
     pkt->stream_index=st->index;
 
-    // Write the compressed frame to the media file.
+    // write the compressed frame to the media file
     log_packet(fmt_ctx, pkt);
     return av_interleaved_write_frame(fmt_ctx, pkt);
 }
 
-// Add an output stream
+// add an output stream
 static void add_stream(OutputStream *ost, AVFormatContext *oc,
                        AVCodec **codec,
                        enum AVCodecID codec_id, FFMpeg::Config cfg)
@@ -153,14 +147,14 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
     *codec=avcodec_find_encoder(codec_id);
 
     if(!(*codec)) {
-        qCritical() << "Could not find encoder for" << codec_id;
+        qCritical() << "could not find encoder for" << codec_id;
         exit(1);
     }
 
     ost->av_stream=avformat_new_stream(oc, NULL);
 
     if(!ost->av_stream) {
-        qCritical() << "Could not allocate stream";
+        qCritical() << "could not allocate stream";
         exit(1);
     }
 
@@ -169,7 +163,7 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
     c=avcodec_alloc_context3(*codec);
 
     if(!c) {
-        qCritical() << "Could not alloc an encoding context";
+        qCritical() << "could not alloc an encoding context";
         exit(1);
     }
 
@@ -258,7 +252,7 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         c->pix_fmt=AV_PIX_FMT_YUV444P;
 
         av_opt_set(c->priv_data, "preset",  "ultrafast",    0);
-        av_opt_set(c->priv_data, "crf",     "10",           0);
+        av_opt_set(c->priv_data, "crf",     "20",           0);
 
         if(c->codec_id==AV_CODEC_ID_MPEG2VIDEO) {
             // just for testing, we also add B-frames
@@ -266,9 +260,9 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         }
 
         if(c->codec_id==AV_CODEC_ID_MPEG1VIDEO) {
-            // Needed to avoid using macroblocks in which some coeffs overflow.
-            // This does not happen with normal video, it just happens here as
-            // the motion of the chroma plane does not match the luma plane.
+            // needed to avoid using macroblocks in which some coeffs overflow.
+            // this does not happen with normal video, it just happens here as
+            // the motion of the chroma plane does not match the luma plane
             c->mb_decision=2;
         }
 
@@ -278,11 +272,10 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         break;
     }
 
-    // Some formats want stream headers to be separate.
+    // some formats want stream headers to be separate
     if(oc->oformat->flags & AVFMT_GLOBALHEADER)
         c->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
 }
-
 
 // audio output
 static AVFrame *alloc_audio_frame(enum AVSampleFormat sample_fmt, uint64_t channel_layout, int sample_rate, int nb_samples)
@@ -292,7 +285,7 @@ static AVFrame *alloc_audio_frame(enum AVSampleFormat sample_fmt, uint64_t chann
     int ret;
 
     if(!frame) {
-        qCritical() << "Error allocating an audio frame";
+        qCritical() << "error allocating an audio frame";
         exit(1);
     }
 
@@ -305,7 +298,7 @@ static AVFrame *alloc_audio_frame(enum AVSampleFormat sample_fmt, uint64_t chann
         ret=av_frame_get_buffer(frame, 0);
 
         if(ret<0) {
-            qCritical() << "Error allocating an audio buffer";
+            qCritical() << "error allocating an audio buffer";
             exit(1);
         }
     }
@@ -332,7 +325,7 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
     av_dict_free(&opt);
 
     if(ret<0) {
-        qCritical() << "Could not open audio codec:" << errString(ret);
+        qCritical() << "could not open audio codec:" << errString(ret);
         return;
     }
 
@@ -345,7 +338,7 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
     ret=avcodec_parameters_from_context(ost->av_stream->codecpar, c);
 
     if(ret<0) {
-        qCritical() << "Could not copy the stream parameters";
+        qCritical() << "could not copy the stream parameters";
         exit(1);
     }
 }
@@ -368,7 +361,7 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
     ret=avcodec_encode_audio2(c, &pkt, frame, &got_packet);
 
     if(ret<0) {
-        qCritical() << "Error encoding audio frame" << errString(ret);
+        qCritical() << "error encoding audio frame" << errString(ret);
         exit(1);
     }
 
@@ -376,7 +369,7 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
         ret=write_frame(oc, &c->time_base, ost->av_stream, &pkt);
 
         if(ret<0) {
-            qCritical() << "Error while writing audio frame:" << errString(ret);
+            qCritical() << "error while writing audio frame:" << errString(ret);
             exit(1);
         }
     }
@@ -399,7 +392,7 @@ void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictio
     av_dict_free(&opt);
 
     if(ret<0) {
-        qCritical() << "Could not open video codec:" << errString(ret);
+        qCritical() << "could not open video codec:" << errString(ret);
         exit(1);
     }
 
@@ -407,7 +400,7 @@ void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictio
     ost->frame=alloc_frame(AV_PIX_FMT_BGRA, c->width, c->height);
 
     if(!ost->frame) {
-        qCritical() << "Could not allocate video frame";
+        qCritical() << "could not allocate video frame";
         exit(1);
     }
 
@@ -423,7 +416,7 @@ void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictio
     ret=avcodec_parameters_from_context(ost->av_stream->codecpar, c);
 
     if(ret<0) {
-        qCritical() << "Could not copy the stream parameters";
+        qCritical() << "could not copy the stream parameters";
         exit(1);
     }
 }
@@ -447,7 +440,7 @@ static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
     ret=avcodec_encode_video2(c, &pkt, ost->frame_converted, &got_packet);
 
     if(ret<0) {
-        qCritical() << "Error encoding video frame:" << errString(ret);
+        qCritical() << "error encoding video frame:" << errString(ret);
         exit(1);
     }
 
@@ -455,7 +448,7 @@ static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
         ret=write_frame(oc, &c->time_base, ost->av_stream, &pkt);
 
         if(ret<0) {
-            qCritical() << "Error while writing video frame:" << errString(ret);
+            qCritical() << "error while writing video frame:" << errString(ret);
             exit(1);
         }
     }
@@ -467,11 +460,12 @@ static void close_stream(AVFormatContext *oc, OutputStream *ost)
 {
     avcodec_free_context(&ost->av_codec_context);
     av_frame_free(&ost->frame);
-    //    sws_freeContext(ost->sws_ctx);
-    //    swr_free(&ost->swr_ctx);
+    av_frame_free(&ost->frame_converted);
+
+    sws_freeContext(ost->convert_context);
 }
 
-/////////////////
+// ------------------------------
 
 FFMpeg::FFMpeg(QObject *parent) :
     QObject(parent)
@@ -514,29 +508,29 @@ bool FFMpeg::initCoder(Config cfg)
     avformat_alloc_output_context2(&context->av_format_context, nullptr, "matroska", nullptr);
 
     if(!context->av_format_context) {
-        qCritical() << "Could not deduce output format";
+        qCritical() << "could not deduce output format";
         return false;
     }
 
     context->av_output_format=context->av_format_context->oformat;
 
-    // Add the audio and video streams using the default format codecs
+    // add the audio and video streams using the default format codecs
     // and initialize the codecs.
     add_stream(&context->out_stream_video, context->av_format_context, &context->av_codec_video, AV_CODEC_ID_H264, cfg);
     add_stream(&context->out_stream_audio, context->av_format_context, &context->av_codec_audio, AV_CODEC_ID_PCM_S16LE, cfg);
 
-    // Now that all the parameters are set, we can open the audio and
-    // video codecs and allocate the necessary encode buffers.
+    // now that all the parameters are set, we can open the audio and
+    // video codecs and allocate the necessary encode buffers
     open_video(context->av_format_context, context->av_codec_video, &context->out_stream_video, context->opt);
 
     open_audio(context->av_format_context, context->av_codec_audio, &context->out_stream_audio, context->opt);
 
 
-    context->convert_context=sws_getContext(cfg.frame_resolution.width(), cfg.frame_resolution.height(),
-                                            AV_PIX_FMT_BGRA,
-                                            cfg.frame_resolution.width(), cfg.frame_resolution.height(),
-                                            AV_PIX_FMT_YUV444P,
-                                            SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
+    context->out_stream_video.convert_context=sws_getContext(cfg.frame_resolution.width(), cfg.frame_resolution.height(),
+                                                             AV_PIX_FMT_BGRA,
+                                                             cfg.frame_resolution.width(), cfg.frame_resolution.height(),
+                                                             AV_PIX_FMT_YUV444P,
+                                                             SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
 
     av_dump_format(context->av_format_context, 0, "", 1);
 
@@ -545,16 +539,16 @@ bool FFMpeg::initCoder(Config cfg)
     ret=avio_open(&context->av_format_context->pb, context->filename.toLatin1().data(), AVIO_FLAG_WRITE);
 
     if(ret<0) {
-        qCritical() << "Could not open" << context->filename << errString(ret);
+        qCritical() << "could not open" << context->filename << errString(ret);
         return false;
     }
 
 
-    // Write the stream header, if any
+    // write the stream header, if any
     ret=avformat_write_header(context->av_format_context, &context->opt);
 
     if(ret<0) {
-        qCritical() << "Error occurred when opening output file:" << errString(ret);
+        qCritical() << "error occurred when opening output file:" << errString(ret);
         return false;
     }
 
@@ -571,7 +565,7 @@ bool FFMpeg::appendFrame(QByteArray ba_video, QSize size, QByteArray ba_audio)
     {
         byteArrayToAvFrame(&ba_video, context->out_stream_video.frame);
 
-        sws_scale(context->convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
+        sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
 
         context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
 
@@ -599,27 +593,21 @@ bool FFMpeg::appendFrame(QByteArray ba_video, QSize size, QByteArray ba_audio)
             context->out_stream_audio.frame->nb_samples--;
         }
 
-        // qDebug() << "audio size a" << buffer_size << ba_audio.size() << context->out_stream_audio.frame->channels << context->out_stream_audio.frame->nb_samples;
-
-
         QByteArray ba_audio_tmp=ba_audio.left(buffer_size);
 
         context->out_stream_audio.ba_audio_prev_part=ba_audio.remove(0, buffer_size);
 
-
-        // qDebug() << "audio size b" << ba_audio_tmp.size() << context->out_stream_audio.ba_audio_prev_part.size();
-        \
         int ret=avcodec_fill_audio_frame(context->out_stream_audio.frame, context->out_stream_audio.frame->channels, AV_SAMPLE_FMT_S16,
                                          (const uint8_t*)ba_audio_tmp.data(), buffer_size, 0);
 
         if(ret<0) {
-            qCritical() << "Could not setup audio frame";
+            qCritical() << "could not setup audio frame";
             exit(1);
         }
 
         context->out_stream_audio.frame->pts=context->out_stream_audio.next_pts;
 
-        context->out_stream_audio.next_pts  += context->out_stream_audio.frame->nb_samples;
+        context->out_stream_audio.next_pts+=context->out_stream_audio.frame->nb_samples;
 
         write_audio_frame(context->av_format_context, &context->out_stream_audio);
 
@@ -636,14 +624,13 @@ bool FFMpeg::stopCoder()
 
     av_write_trailer(context->av_format_context);
 
-    // Close each codec.
+    // close each codec.
 
     close_stream(context->av_format_context, &context->out_stream_video);
 
     close_stream(context->av_format_context, &context->out_stream_audio);
 
-
-    // Close the output file.
+    // close the output file.
     avio_closep(&context->av_format_context->pb);
 
     // free the stream

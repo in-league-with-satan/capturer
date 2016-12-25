@@ -1,3 +1,4 @@
+#include <QApplication>
 #include <QDebug>
 
 #include "out_widget.h"
@@ -5,6 +6,7 @@
 OutWidget::OutWidget(QWidget *parent) :
     QGLWidget(parent)
 {
+
 }
 
 OutWidget::~OutWidget()
@@ -57,4 +59,14 @@ void OutWidget::paintEvent(QPaintEvent *event)
         p.drawImage(QPoint(0, 0), img_frame);
 
     p.end();
+}
+
+void OutWidget::leaveEvent(QEvent *event)
+{
+    QApplication::setOverrideCursor(Qt::ArrowCursor);
+}
+
+void OutWidget::enterEvent(QEvent *event)
+{
+    QApplication::setOverrideCursor(Qt::BlankCursor);
 }

@@ -37,7 +37,9 @@ void AudioOutputThread::run()
     }
 
     audio_output=new QAudioOutput(QAudioDeviceInfo::defaultOutputDevice(), audio_format);
-    audio_output->setBufferSize(1024*10);
+//    audio_output->setBufferSize(1024*10);
+    audio_output->setBufferSize(1024*20);
+
 
     dev_audio_output=audio_output->start();
 

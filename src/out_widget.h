@@ -22,6 +22,9 @@ protected:
 
     virtual void paintEvent(QPaintEvent *event);
 
+    virtual void leaveEvent(QEvent *event);
+    virtual void enterEvent(QEvent *event);
+
 private:
     QImage img_frame;
 
