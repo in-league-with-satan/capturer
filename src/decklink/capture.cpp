@@ -9,6 +9,8 @@
 #include <csignal>
 
 #include "DeckLinkAPI.h"
+#include "ffmpeg_format_converter.h"
+
 
 #include "capture.h"
 
@@ -117,7 +119,13 @@ void DeckLinkCapture::run()
 
     video_converter=CreateVideoConversionInstance();
 
+    ff_converter=new FF::FormatConverter();
+
+    ff_converter->setup(AV_PIX_FMT_GBRP10LE, QSize(1920, 1080), AV_PIX_FMT_BGRA, QSize(1920, 1080));
+
     deck_link_capture_delegate=new DeckLinkCaptureDelegate(this);
+
+
 
     qInfo() << "DeckLinkCapture thread started";
 
@@ -129,6 +137,8 @@ void DeckLinkCapture::run()
 
     if(decklink_iterator)
         decklink_iterator->Release();
+
+    delete ff_converter;
 
     deleteLater();
 }
@@ -182,6 +192,8 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
 
         decklink_input->StartStreams();
     }
+
+    ff_converter->setup(AV_PIX_FMT_GBRP10LE, QSize(1920, 1080), AV_PIX_FMT_BGRA, QSize(1920, 1080));
 }
 
 void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet)
@@ -226,6 +238,12 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
         ba_video.resize(video_frame->GetRowBytes() * video_frame->GetHeight());
 
         memcpy(ba_video.data(), video_frame_bytes, ba_video.size());
+
+//        QByteArray ba2;
+
+//        ff_converter->convert(&ba_video, &ba2);
+
+//        ba_video=ba2;
     }
 
 
@@ -239,6 +257,8 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
 
     // video_frame_converted->Release();
+
+    emit frame(ba_video, QSize(video_frame->GetWidth(), video_frame->GetHeight()), ba_audio);
 
     emit frameVideo(ba_video, QSize(video_frame->GetWidth(), video_frame->GetHeight()));
 

@@ -14,7 +14,6 @@
 #include "out_widget.h"
 #include "ffmpeg.h"
 
-
 #include "mainwindow.h"
 
 
@@ -33,6 +32,8 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     ffmpeg=new FFMpeg(this);
+
+    connect(capture_thread, SIGNAL(frame(QByteArray,QSize,QByteArray)), ffmpeg, SLOT(appendFrame(QByteArray,QSize,QByteArray)));
 
     //
 
@@ -150,8 +151,6 @@ void MainWindow::onFrameVideo(QByteArray ba_data, QSize size)
 
     img=QImage((uchar*)ba_data.data(), size.width(), size.height(), QImage::Format_ARGB32);
 
-    ffmpeg->appendFrame(img.copy(), QByteArray());
-
     out_widget->frame(img.copy());
 }
 
@@ -212,8 +211,13 @@ void MainWindow::setup()
 
 void MainWindow::onCaptureStart()
 {
+    FFMpeg::Config cfg;
 
-    ffmpeg->initVideoCoder(QSize(1920, 1080));
+    cfg.audio_channels_size=2;
+    cfg.framerate=FFMpeg::Framerate::full_59;
+    cfg.frame_resolution=QSize(1920, 1080);
+
+    ffmpeg->initCoder(cfg);
 }
 
 void MainWindow::onCaptureStop()

@@ -2,14 +2,13 @@
 #define FFMPEG_H
 
 #include <QObject>
-#include <QFile>
 #include <QImage>
 
-struct AVCodec;
-struct AVCodecContext;
-struct AVFrame;
-struct SwsContext;
-struct AVPacket;
+class FFMpegContext;
+
+namespace FF {
+    class FormatConverter;
+}
 
 class FFMpeg : public QObject
 {
@@ -19,30 +18,35 @@ public:
     FFMpeg(QObject *parent=0);
     ~FFMpeg();
 
-    bool initVideoCoder(QSize size);
+    static void init();
 
-    bool appendFrame(QImage video_frame, QByteArray ba_audio);
+    struct Framerate {
+        enum T {
+            half_50,
+            half_59,
+            half_60,
+            full_50,
+            full_59,
+            full_60
+        };
+    };
+
+    struct Config {
+        QSize frame_resolution;
+        Framerate::T framerate;
+        uint8_t audio_channels_size;
+    };
+
+public slots:
+    bool initCoder(Config cfg);
+
+    bool appendFrame(QByteArray ba_video, QSize size, QByteArray ba_audio);
 
     bool stopCoder();
 
-
 private:
-    QFile f_out;
-
-    AVCodec *av_codec;
-    AVCodecContext *av_codec_context;
-    SwsContext *convert_context;
-
-    AVFrame *av_frame;
-    AVFrame *av_frame_converted;
-
-    AVPacket *av_packet;
-
-    size_t frame_num;
-
-    bool processing;
-
-
+    FFMpegContext *context;
+    FF::FormatConverter *converter;
 };
 
 #endif // FFMPEG_H

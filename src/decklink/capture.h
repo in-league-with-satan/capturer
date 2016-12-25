@@ -21,6 +21,10 @@ class IDeckLinkAttributes;
 class IDeckLinkVideoConversion;
 class IDeckLinkMutableVideoFrame;
 
+namespace FF {
+    class FormatConverter;
+}
+
 class DeckLinkCapture : public QThread
 {
     Q_OBJECT
@@ -63,9 +67,12 @@ private:
     DeckLinkFormat format;
     DeckLinkPixelFormat pixel_format;
 
+    FF::FormatConverter *ff_converter;
+
 signals:
     void frameVideo(QByteArray ba_data, QSize size);
     void frameAudio(QByteArray ba_data);
+    void frame(QByteArray ba_video, QSize size, QByteArray ba_audio);
     void noInputSignalDetected();
 };
 

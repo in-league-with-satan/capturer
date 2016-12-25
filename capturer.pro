@@ -8,6 +8,9 @@ QT += \
 TARGET = capturer
 TEMPLATE = app
 
+CONFIG += c++14
+
+
 DESTDIR = bin
 
 # The following define makes your compiler emit warnings if you use
@@ -50,11 +53,8 @@ INCLUDEPATH += \
 SOURCES += \
     externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
 
-
-LIBS += -lm -ldl -lpthread
-
-LIBS += -lavutil -lavcodec -lswscale
-
+LIBS += -lswresample  -lavformat -lavcodec -lavutil -lswscale -lswresample
+LIBS += -ldl -lz -llzma -lbz2 -lvorbis -lvorbisenc -lmp3lame -lopus -lx264 -lva -lvdpau -lX11 -lva-drm -lva-x11
 
 INCLUDEPATH += \
     src \
