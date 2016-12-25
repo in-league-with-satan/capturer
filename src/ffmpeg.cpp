@@ -179,18 +179,12 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         c->sample_rate=48000;
 
         switch(cfg.audio_channels_size) {
-        case 2:
-            c->channel_layout=AV_CH_LAYOUT_STEREO;
-            break;
-
         case 6:
-            c->channel_layout=AV_CH_LAYOUT_5POINT1;
-            break;
-
         case 8:
             c->channel_layout=AV_CH_LAYOUT_7POINT1;
             break;
 
+        case 2:
         default:
             c->channel_layout=AV_CH_LAYOUT_STEREO;
             break;
@@ -251,8 +245,8 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 
         c->pix_fmt=AV_PIX_FMT_YUV444P;
 
-        av_opt_set(c->priv_data, "preset",  "ultrafast",    0);
-        av_opt_set(c->priv_data, "crf",     "20",           0);
+        av_opt_set(c->priv_data, "preset", "ultrafast", 0);
+        av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().data(), 0);
 
         if(c->codec_id==AV_CODEC_ID_MPEG2VIDEO) {
             // just for testing, we also add B-frames

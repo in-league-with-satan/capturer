@@ -35,7 +35,7 @@ public:
     explicit DeckLinkCapture(QObject *parent=0);
     ~DeckLinkCapture();
 
-    void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format);
+    void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels);
 
 protected:
     void run();
@@ -66,6 +66,7 @@ private:
     DeckLinkDevice device;
     DeckLinkFormat format;
     DeckLinkPixelFormat pixel_format;
+    int audio_channels;
 
     FF::FormatConverter *ff_converter;
 

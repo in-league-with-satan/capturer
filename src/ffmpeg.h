@@ -35,6 +35,7 @@ public:
         QSize frame_resolution;
         Framerate::T framerate;
         uint8_t audio_channels_size;
+        uint8_t crf;
     };
 
 public slots:

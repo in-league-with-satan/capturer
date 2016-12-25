@@ -5,6 +5,8 @@
 #include <QPushButton>
 #include <QPixmap>
 #include <QFile>
+#include <QGenericArgument>
+#include <QLineEdit>
 
 #include "DeckLinkAPI.h"
 
@@ -20,20 +22,20 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
-    capture_thread=new DeckLinkCapture(this);
-    connect(capture_thread, SIGNAL(frameVideo(QByteArray,QSize)), SLOT(onFrameVideo(QByteArray,QSize)), Qt::QueuedConnection);
+    decklink_thread=new DeckLinkCapture(this);
+    connect(decklink_thread, SIGNAL(frameVideo(QByteArray,QSize)), SLOT(onFrameVideo(QByteArray,QSize)), Qt::QueuedConnection);
 
 
     audio_output=new AudioOutputThread(this);
 
-    connect(capture_thread, SIGNAL(frameAudio(QByteArray)), audio_output, SLOT(onInputFrameArrived(QByteArray)), Qt::QueuedConnection);
+    connect(decklink_thread, SIGNAL(frameAudio(QByteArray)), audio_output, SLOT(onInputFrameArrived(QByteArray)), Qt::QueuedConnection);
 
 
     //
 
     ffmpeg=new FFMpeg(this);
 
-    connect(capture_thread, SIGNAL(frame(QByteArray,QSize,QByteArray)), ffmpeg, SLOT(appendFrame(QByteArray,QSize,QByteArray)));
+    connect(decklink_thread, SIGNAL(frame(QByteArray,QSize,QByteArray)), ffmpeg, SLOT(appendFrame(QByteArray,QSize,QByteArray)));
 
     //
 
@@ -47,30 +49,34 @@ MainWindow::MainWindow(QWidget *parent)
     cb_pixel_format=new QComboBox();
 
     cb_audio_channels=new QComboBox();
-    cb_audio_depth=new QComboBox();
 
     connect(cb_device, SIGNAL(currentIndexChanged(int)), SLOT(onDeviceChanged(int)));
     connect(cb_format, SIGNAL(currentIndexChanged(int)), SLOT(onFormatChanged(int)));
     connect(cb_pixel_format, SIGNAL(currentIndexChanged(int)), SLOT(onPixelFormatChanged(int)));
+
+
+    le_crf=new QLineEdit("10");
+    le_crf->setInputMask("99");
 
     QLabel *l_device=new QLabel("device:");
     QLabel *l_format=new QLabel("format:");
     QLabel *l_pixel_format=new QLabel("pixel format:");
 
     QLabel *l_audio_channels=new QLabel("audio channels:");
-    QLabel *l_audio_depth=new QLabel("audio sample depth:");
 
-    QPushButton *b_start=new QPushButton("start");
-    QPushButton *b_stop=new QPushButton("stop");
+    QLabel *l_crf=new QLabel("crf:");
 
-    QPushButton *b_capture_start=new QPushButton("capture start");
-    QPushButton *b_capture_stop=new QPushButton("capture stop");
+    QPushButton *b_start_cap=new QPushButton("start capture");
+    QPushButton *b_stop_cap=new QPushButton("stop capture");
 
-    connect(b_start, SIGNAL(clicked(bool)), capture_thread, SLOT(captureStart()), Qt::QueuedConnection);
-    connect(b_stop, SIGNAL(clicked(bool)), capture_thread, SLOT(captureStop()), Qt::QueuedConnection);
+    QPushButton *b_start_rec=new QPushButton("start recording");
+    QPushButton *b_stop_rec=new QPushButton("stop recording");
 
-    connect(b_capture_start, SIGNAL(clicked(bool)), SLOT(onCaptureStart()));
-    connect(b_capture_stop, SIGNAL(clicked(bool)), SLOT(onCaptureStop()));
+    connect(b_start_cap, SIGNAL(clicked(bool)), SLOT(onStartCapture()));
+    connect(b_stop_cap, SIGNAL(clicked(bool)), decklink_thread, SLOT(captureStop()), Qt::QueuedConnection);
+
+    connect(b_start_rec, SIGNAL(clicked(bool)), SLOT(onStartRecording()));
+    connect(b_stop_rec, SIGNAL(clicked(bool)), SLOT(onStopRecording()));
 
 
 
@@ -98,17 +104,17 @@ MainWindow::MainWindow(QWidget *parent)
 
     row++;
 
-    la_dev->addWidget(l_audio_depth, row, 0);
-    la_dev->addWidget(cb_audio_depth, row, 1);
+    la_dev->addWidget(l_crf, row, 0);
+    la_dev->addWidget(le_crf, row, 1);
 
 
     QVBoxLayout *la_h=new QVBoxLayout();
 
     la_h->addLayout(la_dev);
-    la_h->addWidget(b_start);
-    la_h->addWidget(b_stop);
-    la_h->addWidget(b_capture_start);
-    la_h->addWidget(b_capture_stop);
+    la_h->addWidget(b_start_cap);
+    la_h->addWidget(b_stop_cap);
+    la_h->addWidget(b_start_rec);
+    la_h->addWidget(b_stop_rec);
 
     QWidget *w_central=new QWidget();
     w_central->setLayout(la_h);
@@ -118,13 +124,8 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     cb_audio_channels->addItem(QString("2"));
+    cb_audio_channels->addItem(QString("6"));
     cb_audio_channels->addItem(QString("8"));
-    cb_audio_channels->addItem(QString("16"));
-
-    //
-
-    cb_audio_depth->addItem(QString("16"));
-    cb_audio_depth->addItem(QString("32"));
 
     //
 
@@ -142,7 +143,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    capture_thread->exit();
+    decklink_thread->exit();
 }
 
 void MainWindow::onFrameVideo(QByteArray ba_data, QSize size)
@@ -171,8 +172,6 @@ void MainWindow::onDeviceChanged(int index)
 
         cb_format->addItem(fmt.display_mode_name, var);
     }
-
-    setup();
 }
 
 void MainWindow::onFormatChanged(int index)
@@ -191,36 +190,39 @@ void MainWindow::onFormatChanged(int index)
 
         cb_pixel_format->addItem(pf.name(), var);
     }
-
-    setup();
 }
 
 void MainWindow::onPixelFormatChanged(int index)
 {
     Q_UNUSED(index);
-
-    setup();
 }
 
-void MainWindow::setup()
+void MainWindow::onStartCapture()
 {
-    capture_thread->setup(cb_device->currentData().value<DeckLinkDevice>(),
-                          cb_format->currentData().value<DeckLinkFormat>(),
-                          cb_pixel_format->currentData().value<DeckLinkPixelFormat>());
+    decklink_thread->setup(cb_device->currentData().value<DeckLinkDevice>(),
+                           cb_format->currentData().value<DeckLinkFormat>(),
+                           cb_pixel_format->currentData().value<DeckLinkPixelFormat>(),
+                           cb_audio_channels->currentText().toInt());
+
+    QMetaObject::invokeMethod(audio_output, "changeChannels", Qt::QueuedConnection, Q_ARG(int, cb_audio_channels->currentText().toInt()));
+
+
+    QMetaObject::invokeMethod(decklink_thread, "captureStart", Qt::QueuedConnection);
 }
 
-void MainWindow::onCaptureStart()
+void MainWindow::onStartRecording()
 {
     FFMpeg::Config cfg;
 
-    cfg.audio_channels_size=2;
+    cfg.audio_channels_size=cb_audio_channels->currentText().toInt();
     cfg.framerate=FFMpeg::Framerate::full_59;
     cfg.frame_resolution=QSize(1920, 1080);
+    cfg.crf=le_crf->text().toUInt();
 
     ffmpeg->initCoder(cfg);
 }
 
-void MainWindow::onCaptureStop()
+void MainWindow::onStopRecording()
 {
     ffmpeg->stopCoder();
 }

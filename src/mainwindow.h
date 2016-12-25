@@ -5,6 +5,7 @@
 
 class QComboBox;
 class QLabel;
+class QLineEdit;
 
 class DeckLinkCapture;
 class AudioOutputThread;
@@ -20,7 +21,7 @@ public:
     ~MainWindow();
 
 private:
-    DeckLinkCapture *capture_thread;
+    DeckLinkCapture *decklink_thread;
 
     FFMpeg *ffmpeg;
 
@@ -29,7 +30,8 @@ private:
     QComboBox *cb_pixel_format;
 
     QComboBox *cb_audio_channels;
-    QComboBox *cb_audio_depth;
+
+    QLineEdit *le_crf;
 
     AudioOutputThread *audio_output;
 
@@ -42,10 +44,10 @@ private slots:
     void onFormatChanged(int index);
     void onPixelFormatChanged(int index);
 
-    void setup();
+    void onStartCapture();
 
-    void onCaptureStart();
-    void onCaptureStop();
+    void onStartRecording();
+    void onStopRecording();
 };
 
 #endif // MAINWINDOW_H

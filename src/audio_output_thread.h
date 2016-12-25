@@ -2,6 +2,7 @@
 #define AUDIO_OUTPUT_THREAD_H
 
 #include <QThread>
+#include <QAudioFormat>
 
 class QAudioOutput;
 class QIODevice;
@@ -14,15 +15,21 @@ public:
     AudioOutputThread(QWidget *parent=0);
     ~AudioOutputThread();
 
-private:
+public slots:
+    void changeChannels(int size);
+
+    void onInputFrameArrived(QByteArray ba_data);
+
+protected:
     void run();
 
+private:
     QAudioOutput *audio_output;
     QIODevice *dev_audio_output;
 
-public slots:
-    void onInputFrameArrived(QByteArray ba_data);
+    QAudioFormat audio_format;
 
+    int input_channels_size;
 };
 
 #endif // AUDIO_OUTPUT_THREAD_H

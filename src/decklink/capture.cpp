@@ -96,11 +96,12 @@ DeckLinkCapture::~DeckLinkCapture()
 {
 }
 
-void DeckLinkCapture::setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format)
+void DeckLinkCapture::setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels)
 {
     this->device=device;
     this->format=format;
     this->pixel_format=pixel_format;
+    this->audio_channels=audio_channels;
 }
 
 void DeckLinkCapture::run()
@@ -239,11 +240,11 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
         memcpy(ba_video.data(), video_frame_bytes, ba_video.size());
 
-//        QByteArray ba2;
+        // QByteArray ba2;
 
-//        ff_converter->convert(&ba_video, &ba2);
+        // ff_converter->convert(&ba_video, &ba2);
 
-//        ba_video=ba2;
+        // ba_video=ba2;
     }
 
 
@@ -251,7 +252,7 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
     audio_packet->GetBytes(&audio_packet_bytes);
 
-    ba_audio.resize(audio_packet->GetSampleFrameCount()*2*(16/8));
+    ba_audio.resize(audio_packet->GetSampleFrameCount()*audio_channels*(16/8));
 
     memcpy(ba_audio.data(), audio_packet_bytes, ba_audio.size());
 
@@ -369,8 +370,19 @@ void DeckLinkCapture::init()
             goto bail;
         }
 
-        // result=decklink_input->EnableAudioInput(bmdAudioSampleRate48kHz, 16, 8); //!!!!!!!!
-        result=decklink_input->EnableAudioInput(bmdAudioSampleRate48kHz, 16, 2);
+        switch(audio_channels) {
+        case 6:
+        case 8:
+            qInfo() << "decklink_input->EnableAudioInput 8";
+            result=decklink_input->EnableAudioInput(bmdAudioSampleRate48kHz, 16, 8);
+            break;
+
+        case 2:
+        default:
+            qInfo() << "decklink_input->EnableAudioInput 2";
+            result=decklink_input->EnableAudioInput(bmdAudioSampleRate48kHz, 16, 2);
+            break;
+        }
 
         if(result!=S_OK) {
             qCritical() << "EnableAudioInput err";
