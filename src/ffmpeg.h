@@ -22,6 +22,9 @@ public:
 
     struct Framerate {
         enum T {
+            full_25,
+            full_29,
+            full_30,
             half_50,
             half_59,
             half_60,

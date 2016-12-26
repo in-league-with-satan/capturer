@@ -37,10 +37,14 @@ void OutWidget::frame(QImage image)
         return;
     }
 
-    if(image.size()!=size())
-        img_frame=image.scaled(size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+    if(image.size()!=size()) {
+        if(image.size().width()>1920)
+            img_frame=image.scaled(size(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
 
-    else
+        else
+            img_frame=image.scaled(size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+    } else
         img_frame=image.copy();
 
     update();

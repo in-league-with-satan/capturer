@@ -48,6 +48,18 @@ MainWindow::MainWindow(QWidget *parent)
 
     cb_audio_channels=new QComboBox();
 
+    cb_rec_fps=new QComboBox();
+
+    cb_rec_fps->addItem("25");
+    cb_rec_fps->addItem("29.97");
+    cb_rec_fps->addItem("30");
+    cb_rec_fps->addItem("25=50/2");
+    cb_rec_fps->addItem("29.97=59/2");
+    cb_rec_fps->addItem("30=60/2");
+    cb_rec_fps->addItem("50");
+    cb_rec_fps->addItem("59.97");
+    cb_rec_fps->addItem("60");
+
     connect(cb_device, SIGNAL(currentIndexChanged(int)), SLOT(onDeviceChanged(int)));
     connect(cb_format, SIGNAL(currentIndexChanged(int)), SLOT(onFormatChanged(int)));
     connect(cb_pixel_format, SIGNAL(currentIndexChanged(int)), SLOT(onPixelFormatChanged(int)));
@@ -61,6 +73,8 @@ MainWindow::MainWindow(QWidget *parent)
     QLabel *l_pixel_format=new QLabel("pixel format:");
 
     QLabel *l_audio_channels=new QLabel("audio channels:");
+
+    QLabel *l_rec_fps=new QLabel("rec fps:");
 
     QLabel *l_crf=new QLabel("crf:");
 
@@ -99,6 +113,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     la_dev->addWidget(l_audio_channels, row, 0);
     la_dev->addWidget(cb_audio_channels, row, 1);
+
+    row++;
+
+    la_dev->addWidget(l_rec_fps, row, 0);
+    la_dev->addWidget(cb_rec_fps, row, 1);
 
     row++;
 
@@ -151,6 +170,9 @@ void MainWindow::onFrameVideo(QByteArray ba_data, QSize size)
     img=QImage((uchar*)ba_data.data(), size.width(), size.height(), QImage::Format_ARGB32);
 
     out_widget->frame(img.copy());
+
+    if(last_frame_size!=size)
+        last_frame_size=size;
 }
 
 void MainWindow::onDeviceChanged(int index)
@@ -213,8 +235,8 @@ void MainWindow::onStartRecording()
     FFMpeg::Config cfg;
 
     cfg.audio_channels_size=cb_audio_channels->currentText().toInt();
-    cfg.framerate=FFMpeg::Framerate::full_59;
-    cfg.frame_resolution=QSize(1920, 1080);
+    cfg.framerate=(FFMpeg::Framerate::T)cb_rec_fps->currentIndex();
+    cfg.frame_resolution=last_frame_size;
     cfg.crf=le_crf->text().toUInt();
 
     ffmpeg->setConfig(cfg);

@@ -31,11 +31,15 @@ private:
 
     QComboBox *cb_audio_channels;
 
+    QComboBox *cb_rec_fps;
+
     QLineEdit *le_crf;
 
     AudioOutputThread *audio_output;
 
     OutWidget *out_widget;
+
+    QSize last_frame_size;
 
 private slots:
     void onFrameVideo(QByteArray ba_data, QSize size);

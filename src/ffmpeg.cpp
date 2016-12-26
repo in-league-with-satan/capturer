@@ -40,7 +40,7 @@ public:
         av_stream=nullptr;
         av_codec_context=nullptr;
 
-        next_pts=1;
+        next_pts=0;
 
         frame=nullptr;
         frame_converted=nullptr;
@@ -66,9 +66,6 @@ class FFMpegContext
 {
 public:
     FFMpegContext() {
-        out_stream_video;
-        out_stream_audio;
-
         av_output_format=nullptr;
         av_format_context=nullptr;
 
@@ -77,7 +74,7 @@ public:
 
         opt=nullptr;
 
-        i=0;
+        skip_frame=false;
     }
 
     bool canAcceptFrame() {
@@ -100,9 +97,9 @@ public:
 
     AVDictionary *opt;
 
-    int i;
-
     FFMpeg::Config cfg;
+
+    bool skip_frame;
 };
 
 QString errString(int error)
@@ -210,14 +207,17 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         // identical to 1
 
         switch(cfg.framerate) {
+        case FFMpeg::Framerate::full_25:
         case FFMpeg::Framerate::half_50:
             ost->av_stream->time_base=(AVRational){ 1, 25 };
             break;
 
+        case FFMpeg::Framerate::full_29:
         case FFMpeg::Framerate::half_59:
             ost->av_stream->time_base=(AVRational){ 1001, 30000 };
             break;
 
+        case FFMpeg::Framerate::full_30:
         case FFMpeg::Framerate::half_60:
             ost->av_stream->time_base=(AVRational){ 1, 30 };
             break;
@@ -549,7 +549,14 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
         return false;
     }
 
+
     context->cfg=cfg;
+
+    context->skip_frame=false;
+
+    context->out_stream_audio.next_pts=0;
+
+    context->out_stream_video.next_pts=0;
 
     return true;
 }
@@ -562,14 +569,26 @@ bool FFMpeg::appendFrame(QByteArray ba_video, QSize size, QByteArray ba_audio)
 
     // video
     {
-        byteArrayToAvFrame(&ba_video, context->out_stream_video.frame);
+        switch(context->cfg.framerate) {
+        case Framerate::half_50:
+        case Framerate::half_59:
+        case Framerate::half_60:
+            context->skip_frame=!context->skip_frame;
+            break;
 
-        sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
+        default:
+            break;
+        }
 
-        context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
+        if(!context->skip_frame) {
+            byteArrayToAvFrame(&ba_video, context->out_stream_video.frame);
 
-        write_video_frame(context->av_format_context, &context->out_stream_video);
+            sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
 
+            context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
+
+            write_video_frame(context->av_format_context, &context->out_stream_video);
+        }
     }
 
     // audio
