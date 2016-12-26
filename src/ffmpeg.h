@@ -39,7 +39,7 @@ public:
     };
 
 public slots:
-    bool initCoder(Config cfg);
+    bool setConfig(FFMpeg::Config cfg);
 
     bool appendFrame(QByteArray ba_video, QSize size, QByteArray ba_audio);
 
@@ -49,5 +49,7 @@ private:
     FFMpegContext *context;
     FF::FormatConverter *converter;
 };
+
+Q_DECLARE_METATYPE(FFMpeg::Config)
 
 #endif // FFMPEG_H

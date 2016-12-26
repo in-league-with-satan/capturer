@@ -471,19 +471,21 @@ FFMpeg::FFMpeg(QObject *parent) :
 
 FFMpeg::~FFMpeg()
 {
+    stopCoder();
+
     delete context;
 
     delete converter;
-
-    stopCoder();
 }
 
 void FFMpeg::init()
 {
+    qRegisterMetaType<FFMpeg::Config>("FFMpeg::Config");
+
     av_register_all();
 }
 
-bool FFMpeg::initCoder(Config cfg)
+bool FFMpeg::setConfig(FFMpeg::Config cfg)
 {
     int ret;
 
@@ -493,9 +495,10 @@ bool FFMpeg::initCoder(Config cfg)
     }
 
 
-    context->filename=QString("%1/%2.mkv")
+    context->filename=QString("%1/%2_crf=%3.mkv")
             .arg(QApplication::applicationDirPath())
-            .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss"));
+            .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss"))
+            .arg(cfg.crf);
 
 
     // allocate the output media context
@@ -545,6 +548,8 @@ bool FFMpeg::initCoder(Config cfg)
         qCritical() << "error occurred when opening output file:" << errString(ret);
         return false;
     }
+
+    context->cfg=cfg;
 
     return true;
 }

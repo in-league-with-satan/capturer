@@ -14,7 +14,7 @@
 #include "capture.h"
 #include "audio_output_thread.h"
 #include "out_widget.h"
-#include "ffmpeg.h"
+#include "ffmpeg_thread.h"
 
 #include "mainwindow.h"
 
@@ -33,9 +33,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    ffmpeg=new FFMpeg(this);
-
-    connect(decklink_thread, SIGNAL(frame(QByteArray,QSize,QByteArray)), ffmpeg, SLOT(appendFrame(QByteArray,QSize,QByteArray)));
+    ffmpeg=new FFMpegThread(decklink_thread, this);
 
     //
 
@@ -219,7 +217,7 @@ void MainWindow::onStartRecording()
     cfg.frame_resolution=QSize(1920, 1080);
     cfg.crf=le_crf->text().toUInt();
 
-    ffmpeg->initCoder(cfg);
+    ffmpeg->setConfig(cfg);
 }
 
 void MainWindow::onStopRecording()

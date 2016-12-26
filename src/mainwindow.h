@@ -10,7 +10,7 @@ class QLineEdit;
 class DeckLinkCapture;
 class AudioOutputThread;
 class OutWidget;
-class FFMpeg;
+class FFMpegThread;
 
 class MainWindow : public QMainWindow
 {
@@ -23,7 +23,7 @@ public:
 private:
     DeckLinkCapture *decklink_thread;
 
-    FFMpeg *ffmpeg;
+    FFMpegThread *ffmpeg;
 
     QComboBox *cb_device;
     QComboBox *cb_format;
