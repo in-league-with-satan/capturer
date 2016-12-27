@@ -33,7 +33,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    ffmpeg=new FFMpegThread(decklink_thread, this);
+    ffmpeg=new FFMpegThread(this);
+
+    decklink_thread->subscribeForAll(ffmpeg->frameBuffer());
 
     //
 
@@ -237,6 +239,7 @@ void MainWindow::onStartRecording()
     cfg.audio_channels_size=cb_audio_channels->currentText().toInt();
     cfg.framerate=(FFMpeg::Framerate::T)cb_rec_fps->currentIndex();
     cfg.frame_resolution=last_frame_size;
+    cfg.frame_resolution=QSize(3840, 2160);
     cfg.crf=le_crf->text().toUInt();
 
     ffmpeg->setConfig(cfg);

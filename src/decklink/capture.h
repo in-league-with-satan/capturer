@@ -4,6 +4,9 @@
 #include <QObject>
 #include <QThread>
 #include <QSize>
+#include <QMutex>
+
+#include "frame_buffer.h"
 
 #include "device_list.h"
 
@@ -36,6 +39,11 @@ public:
     ~DeckLinkCapture();
 
     void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels);
+
+    void subscribeForAll(FrameBuffer *obj);
+    void subscribeForVideo(FrameBuffer *obj);
+    void subscribeForAudio(FrameBuffer *obj);
+    void unsubscribe(FrameBuffer *obj);
 
 protected:
     void run();
@@ -70,10 +78,16 @@ private:
 
     FF::FormatConverter *ff_converter;
 
+    QList <FrameBuffer*> l_full;
+    QList <FrameBuffer*> l_video;
+    QList <FrameBuffer*> l_audio;
+
+    QMutex mutex_subscription;
+
 signals:
     void frameVideo(QByteArray ba_data, QSize size);
     void frameAudio(QByteArray ba_data);
-    void frame(QByteArray ba_video, QSize size, QByteArray ba_audio);
+    void frameFull(QByteArray ba_video, QSize size, QByteArray ba_audio);
     void noInputSignalDetected();
 };
 

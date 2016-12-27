@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <QMutexLocker>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -104,6 +105,39 @@ void DeckLinkCapture::setup(DeckLinkDevice device, DeckLinkFormat format, DeckLi
     this->audio_channels=audio_channels;
 }
 
+void DeckLinkCapture::subscribeForAll(FrameBuffer *obj)
+{
+    QMutexLocker ml(&mutex_subscription);
+
+    if(!l_full.contains(obj))
+        l_full.append(obj);
+}
+
+void DeckLinkCapture::subscribeForVideo(FrameBuffer *obj)
+{
+    QMutexLocker ml(&mutex_subscription);
+
+    if(!l_video.contains(obj))
+        l_video.append(obj);
+}
+
+void DeckLinkCapture::subscribeForAudio(FrameBuffer *obj)
+{
+    QMutexLocker ml(&mutex_subscription);
+
+    if(!l_audio.contains(obj))
+        l_audio.append(obj);
+}
+
+void DeckLinkCapture::unsubscribe(FrameBuffer *obj)
+{
+    QMutexLocker ml(&mutex_subscription);
+
+    l_full.removeAll(obj);
+    l_video.removeAll(obj);
+    l_audio.removeAll(obj);
+}
+
 void DeckLinkCapture::run()
 {
     // Get the DeckLink device
@@ -205,8 +239,7 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
     void *video_frame_bytes;
     void *audio_packet_bytes;
 
-    QByteArray ba_video;
-    QByteArray ba_audio;
+    FrameBuffer::Frame frame;
 
 
     if(video_frame->GetFlags() & bmdFrameHasNoInputSource) {
@@ -236,9 +269,11 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
         video_frame->GetBytes(&video_frame_bytes);
 
-        ba_video.resize(video_frame->GetRowBytes() * video_frame->GetHeight());
+        frame.ba_video.resize(video_frame->GetRowBytes() * video_frame->GetHeight());
 
-        memcpy(ba_video.data(), video_frame_bytes, ba_video.size());
+        memcpy(frame.ba_video.data(), video_frame_bytes, frame.ba_video.size());
+
+        frame.size_video=QSize(video_frame->GetWidth(), video_frame->GetHeight());
 
         // QByteArray ba2;
 
@@ -252,18 +287,41 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
     audio_packet->GetBytes(&audio_packet_bytes);
 
-    ba_audio.resize(audio_packet->GetSampleFrameCount()*audio_channels*(16/8));
+    frame.ba_audio.resize(audio_packet->GetSampleFrameCount()*audio_channels*(16/8));
 
-    memcpy(ba_audio.data(), audio_packet_bytes, ba_audio.size());
+    memcpy(frame.ba_audio.data(), audio_packet_bytes, frame.ba_audio.size());
 
 
     // video_frame_converted->Release();
 
-    emit frame(ba_video, QSize(video_frame->GetWidth(), video_frame->GetHeight()), ba_audio);
+    emit frameFull(frame.ba_video, frame.size_video, frame.ba_audio);
 
-    emit frameVideo(ba_video, QSize(video_frame->GetWidth(), video_frame->GetHeight()));
+    emit frameVideo(frame.ba_video, frame.size_video);
 
-    emit frameAudio(ba_audio);
+    emit frameAudio(frame.ba_audio);
+
+    //
+
+    QMutexLocker ml(&mutex_subscription);
+
+    foreach(FrameBuffer *buf, l_full)
+        buf->appendFrame(frame);
+
+    if(!l_audio.isEmpty()) {
+        FrameBuffer::Frame frame_audio;
+
+        frame_audio.ba_audio=frame.ba_audio;
+
+        foreach(FrameBuffer *buf, l_audio)
+            buf->appendFrame(frame_audio);
+    }
+
+    if(!l_video.isEmpty()) {
+        frame.ba_audio.clear();
+
+        foreach(FrameBuffer *buf, l_video)
+            buf->appendFrame(frame);
+    }
 }
 
 void DeckLinkCapture::init()

@@ -246,7 +246,10 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         c->pix_fmt=AV_PIX_FMT_YUV444P;
 
         av_opt_set(c->priv_data, "preset", "ultrafast", 0);
+//        av_opt_set(c->priv_data, "tune", "zerolatency", 0);
         av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().data(), 0);
+
+//        c->thread_count=8;
 
         if(c->codec_id==AV_CODEC_ID_MPEG2VIDEO) {
             // just for testing, we also add B-frames
@@ -495,10 +498,9 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
     }
 
 
-    context->filename=QString("%1/%2_crf=%3.mkv")
+    context->filename=QString("%1/%2.mkv")
             .arg(QApplication::applicationDirPath())
-            .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss"))
-            .arg(cfg.crf);
+            .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss"));
 
 
     // allocate the output media context

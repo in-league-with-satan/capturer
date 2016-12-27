@@ -5,30 +5,32 @@
 
 #include "ffmpeg.h"
 
-class DeckLinkCapture;
+
+class FrameBuffer;
 
 class FFMpegThread : public QThread
 {
     Q_OBJECT
 
 public:
-    FFMpegThread(DeckLinkCapture *decklink, QObject *parent=0);
+    FFMpegThread(QObject *parent=0);
     ~FFMpegThread();
+
+    FrameBuffer *frameBuffer();
 
 public slots:
     void setConfig(FFMpeg::Config cfg);
     void stopCoder();
 
+private:
+    FrameBuffer *frame_buffer;
+
 protected:
     void run();
-
-private:
-    DeckLinkCapture *decklink;
 
 signals:
     void sigSetConfig(FFMpeg::Config cfg);
     void sigStopCoder();
-
 };
 
 #endif // FFMPEG_THREAD_H
