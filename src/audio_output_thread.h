@@ -7,6 +7,8 @@
 class QAudioOutput;
 class QIODevice;
 
+class FrameBuffer;
+
 class AudioOutputThread : public QThread
 {
     Q_OBJECT
@@ -15,19 +17,24 @@ public:
     AudioOutputThread(QWidget *parent=0);
     ~AudioOutputThread();
 
+    FrameBuffer *frameBuffer();
+
 public slots:
     void changeChannels(int size);
 
-    void onInputFrameArrived(QByteArray ba_data);
 
 protected:
     void run();
 
 private:
+    void onInputFrameArrived(QByteArray ba_data);
+
     QAudioOutput *audio_output;
     QIODevice *dev_audio_output;
 
     QAudioFormat audio_format;
+
+    FrameBuffer *frame_buffer;
 
     int input_channels_size;
 };

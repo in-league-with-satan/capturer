@@ -1,5 +1,9 @@
 #include <QDebug>
 #include <QAudioOutput>
+#include <QMutexLocker>
+#include <qcoreapplication.h>
+
+#include "frame_buffer.h"
 
 #include "audio_output_thread.h"
 
@@ -8,12 +12,19 @@ AudioOutputThread::AudioOutputThread(QWidget *parent)
     audio_output=nullptr;
     dev_audio_output=nullptr;
 
+    frame_buffer=new FrameBuffer(QMutex::Recursive, this);
+
     start(QThread::NormalPriority);
 }
 
 AudioOutputThread::~AudioOutputThread()
 {
+    delete frame_buffer;
+}
 
+FrameBuffer *AudioOutputThread::frameBuffer()
+{
+    return frame_buffer;
 }
 
 void AudioOutputThread::changeChannels(int size)
@@ -99,7 +110,25 @@ void AudioOutputThread::run()
 
     //
 
-    exec();
+    FrameBuffer::Frame frame;
+
+    while(true) {
+        {
+            QMutexLocker ml(frame_buffer->mutex_frame_buffer);
+
+            if(frame_buffer->queue.isEmpty())
+                goto end;
+
+            frame=frame_buffer->queue.dequeue();
+        }
+
+        onInputFrameArrived(frame.ba_audio);
+
+end:
+        QCoreApplication::processEvents();
+
+        usleep(1000);
+    }
 }
 
 void AudioOutputThread::onInputFrameArrived(QByteArray ba_data)

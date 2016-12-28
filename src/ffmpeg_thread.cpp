@@ -52,25 +52,28 @@ void FFMpegThread::run()
     connect(this, SIGNAL(sigStopCoder()), ffmpeg, SLOT(stopCoder()), Qt::QueuedConnection);
 
 
-    FrameBuffer::Frame frame;
+    QVector <FrameBuffer::Frame> frame;
 
     while(true) {
         {
             QMutexLocker ml(frame_buffer->mutex_frame_buffer);
 
-//            frame_buffer->mutex_frame_buffer->lock();
-
-            if(frame_buffer->queue.isEmpty()) {
-//                frame_buffer->mutex_frame_buffer->unlock();
+            if(frame_buffer->queue.isEmpty())
                 goto end;
+
+            while(!frame_buffer->queue.isEmpty()) {
+                frame.append(frame_buffer->queue.dequeue());
+
+                if(frame.size()>=6)
+                    break;
             }
-
-            frame=frame_buffer->queue.dequeue();
-
-//            frame_buffer->mutex_frame_buffer->unlock();
         }
 
-        ffmpeg->appendFrame(frame.ba_video, frame.size_video, frame.ba_audio);
+
+        for(int i=0, size=frame.size(); i<size; ++i)
+            ffmpeg->appendFrame(&frame[i].ba_video, &frame[i].size_video, &frame[i].ba_audio);
+
+        frame.clear();
 
 end:
         QCoreApplication::processEvents();

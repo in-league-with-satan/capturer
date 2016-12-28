@@ -8,6 +8,8 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
+    qRegisterMetaType<int64_t>("int64_t");
+
     FFMpeg::init();
 
     MainWindow w;

@@ -4,6 +4,10 @@
 #include <QObject>
 #include <QImage>
 
+extern "C" {
+#include <libavformat/avformat.h>
+}
+
 class FFMpegContext;
 
 namespace FF {
@@ -38,19 +42,22 @@ public:
         QSize frame_resolution;
         Framerate::T framerate;
         uint8_t audio_channels_size;
-        uint8_t crf;
+        uint8_t crf;       
+        AVPixelFormat pixel_format;
     };
 
 public slots:
     bool setConfig(FFMpeg::Config cfg);
 
-    bool appendFrame(QByteArray ba_video, QSize size, QByteArray ba_audio);
+    bool appendFrame(QByteArray *ba_video, QSize *size, QByteArray *ba_audio);
 
     bool stopCoder();
 
 private:
     FFMpegContext *context;
     FF::FormatConverter *converter;
+
+    QSize last_frame_size;
 };
 
 Q_DECLARE_METATYPE(FFMpeg::Config)

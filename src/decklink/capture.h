@@ -41,7 +41,6 @@ public:
     void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels);
 
     void subscribeForAll(FrameBuffer *obj);
-    void subscribeForVideo(FrameBuffer *obj);
     void subscribeForAudio(FrameBuffer *obj);
     void unsubscribe(FrameBuffer *obj);
 
@@ -76,10 +75,9 @@ private:
     DeckLinkPixelFormat pixel_format;
     int audio_channels;
 
-    FF::FormatConverter *ff_converter;
+//    FF::FormatConverter *ff_converter;
 
     QList <FrameBuffer*> l_full;
-    QList <FrameBuffer*> l_video;
     QList <FrameBuffer*> l_audio;
 
     QMutex mutex_subscription;
@@ -89,6 +87,7 @@ signals:
     void frameAudio(QByteArray ba_data);
     void frameFull(QByteArray ba_video, QSize size, QByteArray ba_audio);
     void noInputSignalDetected();
+    void formatChanged(QSize size, int64_t frame_duration, int64_t frame_scale);
 };
 
 #endif // CAPTURE_H

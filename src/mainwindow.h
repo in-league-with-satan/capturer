@@ -32,6 +32,7 @@ private:
     QComboBox *cb_audio_channels;
 
     QComboBox *cb_rec_fps;
+    QComboBox *cb_rec_pixel_format;
 
     QLineEdit *le_crf;
 
@@ -43,6 +44,8 @@ private:
 
 private slots:
     void onFrameVideo(QByteArray ba_data, QSize size);
+
+    void onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale);
 
     void onDeviceChanged(int index);
     void onFormatChanged(int index);

@@ -14,7 +14,6 @@ extern "C" {
 #include <libavutil/avassert.h>
 #include <libavutil/timestamp.h>
 #include "libswscale/swscale.h"
-#include <libavformat/avformat.h>
 #include <libswresample/swresample.h>
 }
 
@@ -243,7 +242,7 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 
         c->gop_size=12; // emit one intra frame every twelve frames at most
 
-        c->pix_fmt=AV_PIX_FMT_YUV444P;
+        c->pix_fmt=cfg.pixel_format;
 
         av_opt_set(c->priv_data, "preset", "ultrafast", 0);
 //        av_opt_set(c->priv_data, "tune", "zerolatency", 0);
@@ -374,7 +373,7 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
     return (frame || got_packet) ? 0 : 1;
 }
 
-void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg)
+void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg, FFMpeg::Config cfg)
 {
     int ret;
 
@@ -402,7 +401,7 @@ void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictio
     }
 
     // allocate and init a re-usable frame
-    ost->frame_converted=alloc_frame(AV_PIX_FMT_YUV444P, c->width, c->height);
+    ost->frame_converted=alloc_frame(cfg.pixel_format, c->width, c->height);
 
     if(!ost->frame_converted) {
         qCritical() << "Could not allocate video frame";
@@ -492,8 +491,8 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
 {
     int ret;
 
-    if(!converter->setup(AV_PIX_FMT_BGRA, cfg.frame_resolution, AV_PIX_FMT_YUV444P, cfg.frame_resolution)) {
-        qCritical() << "err init format converter";
+    if(!converter->setup(AV_PIX_FMT_BGRA, cfg.frame_resolution, cfg.pixel_format, cfg.frame_resolution)) {
+        qCritical() << "err init format converter" << cfg.frame_resolution;
         return false;
     }
 
@@ -520,7 +519,7 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
 
     // now that all the parameters are set, we can open the audio and
     // video codecs and allocate the necessary encode buffers
-    open_video(context->av_format_context, context->av_codec_video, &context->out_stream_video, context->opt);
+    open_video(context->av_format_context, context->av_codec_video, &context->out_stream_video, context->opt, cfg);
 
     open_audio(context->av_format_context, context->av_codec_audio, &context->out_stream_audio, context->opt);
 
@@ -528,7 +527,7 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
     context->out_stream_video.convert_context=sws_getContext(cfg.frame_resolution.width(), cfg.frame_resolution.height(),
                                                              AV_PIX_FMT_BGRA,
                                                              cfg.frame_resolution.width(), cfg.frame_resolution.height(),
-                                                             AV_PIX_FMT_YUV444P,
+                                                             cfg.pixel_format,
                                                              SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
 
     av_dump_format(context->av_format_context, 0, "", 1);
@@ -563,7 +562,7 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
     return true;
 }
 
-bool FFMpeg::appendFrame(QByteArray ba_video, QSize size, QByteArray ba_audio)
+bool FFMpeg::appendFrame(QByteArray *ba_video, QSize *size, QByteArray *ba_audio)
 {
     if(!context->canAcceptFrame())
         return false;
@@ -571,31 +570,36 @@ bool FFMpeg::appendFrame(QByteArray ba_video, QSize size, QByteArray ba_audio)
 
     // video
     {
-        switch(context->cfg.framerate) {
-        case Framerate::half_50:
-        case Framerate::half_59:
-        case Framerate::half_60:
-            context->skip_frame=!context->skip_frame;
-            break;
+        if(ba_video->isEmpty()) {
+            context->out_stream_video.next_pts++;
 
-        default:
-            break;
-        }
+        } else {
+            switch(context->cfg.framerate) {
+            case Framerate::half_50:
+            case Framerate::half_59:
+            case Framerate::half_60:
+                context->skip_frame=!context->skip_frame;
+                break;
 
-        if(!context->skip_frame) {
-            byteArrayToAvFrame(&ba_video, context->out_stream_video.frame);
+            default:
+                break;
+            }
 
-            sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
+            if(!context->skip_frame) {
+                byteArrayToAvFrame(ba_video, context->out_stream_video.frame);
 
-            context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
+                sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
 
-            write_video_frame(context->av_format_context, &context->out_stream_video);
+                context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
+
+                write_video_frame(context->av_format_context, &context->out_stream_video);
+            }
         }
     }
 
     // audio
     {
-        ba_audio.insert(0, context->out_stream_audio.ba_audio_prev_part);
+        ba_audio->insert(0, context->out_stream_audio.ba_audio_prev_part);
 
         int buffer_size=0;
 
@@ -605,7 +609,7 @@ bool FFMpeg::appendFrame(QByteArray ba_video, QSize size, QByteArray ba_audio)
             buffer_size=av_samples_get_buffer_size(nullptr, context->out_stream_audio.frame->channels, context->out_stream_audio.frame->nb_samples,
                                                    AV_SAMPLE_FMT_S16, 0);
 
-            if(ba_audio.size()>=buffer_size) {
+            if(ba_audio->size()>=buffer_size) {
 
                 break;
             }
@@ -613,9 +617,9 @@ bool FFMpeg::appendFrame(QByteArray ba_video, QSize size, QByteArray ba_audio)
             context->out_stream_audio.frame->nb_samples--;
         }
 
-        QByteArray ba_audio_tmp=ba_audio.left(buffer_size);
+        QByteArray ba_audio_tmp=ba_audio->left(buffer_size);
 
-        context->out_stream_audio.ba_audio_prev_part=ba_audio.remove(0, buffer_size);
+        context->out_stream_audio.ba_audio_prev_part=ba_audio->remove(0, buffer_size);
 
         int ret=avcodec_fill_audio_frame(context->out_stream_audio.frame, context->out_stream_audio.frame->channels, AV_SAMPLE_FMT_S16,
                                          (const uint8_t*)ba_audio_tmp.data(), buffer_size, 0);

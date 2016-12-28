@@ -20,7 +20,7 @@ public:
         QByteArray ba_audio;
     };
 
-    void appendFrame(const Frame &frame);
+    void appendFrame(Frame frame);
 
     void setMaxBufferSize(uint8_t size);
 

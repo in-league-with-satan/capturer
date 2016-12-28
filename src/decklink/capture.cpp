@@ -1,5 +1,6 @@
 #include <QDebug>
 #include <QMutexLocker>
+#include <qcoreapplication.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -113,14 +114,6 @@ void DeckLinkCapture::subscribeForAll(FrameBuffer *obj)
         l_full.append(obj);
 }
 
-void DeckLinkCapture::subscribeForVideo(FrameBuffer *obj)
-{
-    QMutexLocker ml(&mutex_subscription);
-
-    if(!l_video.contains(obj))
-        l_video.append(obj);
-}
-
 void DeckLinkCapture::subscribeForAudio(FrameBuffer *obj)
 {
     QMutexLocker ml(&mutex_subscription);
@@ -134,7 +127,6 @@ void DeckLinkCapture::unsubscribe(FrameBuffer *obj)
     QMutexLocker ml(&mutex_subscription);
 
     l_full.removeAll(obj);
-    l_video.removeAll(obj);
     l_audio.removeAll(obj);
 }
 
@@ -154,9 +146,9 @@ void DeckLinkCapture::run()
 
     video_converter=CreateVideoConversionInstance();
 
-    ff_converter=new FF::FormatConverter();
+    // ff_converter=new FF::FormatConverter();
 
-    ff_converter->setup(AV_PIX_FMT_GBRP10LE, QSize(1920, 1080), AV_PIX_FMT_BGRA, QSize(1920, 1080));
+    // ff_converter->setup(AV_PIX_FMT_GBRP10LE, QSize(1920, 1080), AV_PIX_FMT_BGRA, QSize(1920, 1080));
 
     deck_link_capture_delegate=new DeckLinkCaptureDelegate(this);
 
@@ -170,10 +162,8 @@ void DeckLinkCapture::run()
 
     // delete deck_link_capture_delegate;
 
-    if(decklink_iterator)
-        decklink_iterator->Release();
 
-    delete ff_converter;
+    // delete ff_converter;
 
     deleteLater();
 }
@@ -228,7 +218,14 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
         decklink_input->StartStreams();
     }
 
-    ff_converter->setup(AV_PIX_FMT_GBRP10LE, QSize(1920, 1080), AV_PIX_FMT_BGRA, QSize(1920, 1080));
+    int64_t frame_duration;
+    int64_t frame_scale;
+
+    mode->GetFrameRate(&frame_duration, &frame_scale);
+
+    emit formatChanged(QSize(mode->GetWidth(), mode->GetHeight()), frame_duration, frame_scale);
+
+//    ff_converter->setup(AV_PIX_FMT_GBRP10LE, QSize(1920, 1080), AV_PIX_FMT_BGRA, QSize(1920, 1080));
 }
 
 void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet)
@@ -294,11 +291,11 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
     // video_frame_converted->Release();
 
-    emit frameFull(frame.ba_video, frame.size_video, frame.ba_audio);
+//    emit frameFull(frame.ba_video, frame.size_video, frame.ba_audio);
 
     emit frameVideo(frame.ba_video, frame.size_video);
 
-    emit frameAudio(frame.ba_audio);
+//    emit frameAudio(frame.ba_audio);
 
     //
 
@@ -308,18 +305,9 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
         buf->appendFrame(frame);
 
     if(!l_audio.isEmpty()) {
-        FrameBuffer::Frame frame_audio;
-
-        frame_audio.ba_audio=frame.ba_audio;
+        frame.ba_video.clear();
 
         foreach(FrameBuffer *buf, l_audio)
-            buf->appendFrame(frame_audio);
-    }
-
-    if(!l_video.isEmpty()) {
-        frame.ba_audio.clear();
-
-        foreach(FrameBuffer *buf, l_video)
             buf->appendFrame(frame);
     }
 }

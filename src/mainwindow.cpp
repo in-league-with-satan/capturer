@@ -24,11 +24,13 @@ MainWindow::MainWindow(QWidget *parent)
 {
     decklink_thread=new DeckLinkCapture(this);
     connect(decklink_thread, SIGNAL(frameVideo(QByteArray,QSize)), SLOT(onFrameVideo(QByteArray,QSize)), Qt::QueuedConnection);
+    connect(decklink_thread, SIGNAL(formatChanged(QSize,int64_t,int64_t)), SLOT(onFormatChanged(QSize,int64_t,int64_t)), Qt::QueuedConnection);
 
 
     audio_output=new AudioOutputThread(this);
 
-    connect(decklink_thread, SIGNAL(frameAudio(QByteArray)), audio_output, SLOT(onInputFrameArrived(QByteArray)), Qt::QueuedConnection);
+    decklink_thread->subscribeForAudio(audio_output->frameBuffer());
+//    connect(decklink_thread, SIGNAL(frameAudio(QByteArray)), audio_output, SLOT(onInputFrameArrived(QByteArray)), Qt::QueuedConnection);
 
 
     //
@@ -62,6 +64,11 @@ MainWindow::MainWindow(QWidget *parent)
     cb_rec_fps->addItem("59.97");
     cb_rec_fps->addItem("60");
 
+    cb_rec_pixel_format=new QComboBox();
+    cb_rec_pixel_format->addItem("YUV420P", AV_PIX_FMT_YUV420P);
+    cb_rec_pixel_format->addItem("YUV444P", AV_PIX_FMT_YUV444P);
+
+
     connect(cb_device, SIGNAL(currentIndexChanged(int)), SLOT(onDeviceChanged(int)));
     connect(cb_format, SIGNAL(currentIndexChanged(int)), SLOT(onFormatChanged(int)));
     connect(cb_pixel_format, SIGNAL(currentIndexChanged(int)), SLOT(onPixelFormatChanged(int)));
@@ -77,6 +84,8 @@ MainWindow::MainWindow(QWidget *parent)
     QLabel *l_audio_channels=new QLabel("audio channels:");
 
     QLabel *l_rec_fps=new QLabel("rec fps:");
+
+    QLabel *l_rec_pixel_format=new QLabel("rec pixel format::");
 
     QLabel *l_crf=new QLabel("crf:");
 
@@ -120,6 +129,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     la_dev->addWidget(l_rec_fps, row, 0);
     la_dev->addWidget(cb_rec_fps, row, 1);
+
+    row++;
+
+    la_dev->addWidget(l_rec_pixel_format, row, 0);
+    la_dev->addWidget(cb_rec_pixel_format, row, 1);
 
     row++;
 
@@ -172,9 +186,11 @@ void MainWindow::onFrameVideo(QByteArray ba_data, QSize size)
     img=QImage((uchar*)ba_data.data(), size.width(), size.height(), QImage::Format_ARGB32);
 
     out_widget->frame(img.copy());
+}
 
-    if(last_frame_size!=size)
-        last_frame_size=size;
+void MainWindow::onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale)
+{
+    last_frame_size=size;
 }
 
 void MainWindow::onDeviceChanged(int index)
@@ -239,7 +255,7 @@ void MainWindow::onStartRecording()
     cfg.audio_channels_size=cb_audio_channels->currentText().toInt();
     cfg.framerate=(FFMpeg::Framerate::T)cb_rec_fps->currentIndex();
     cfg.frame_resolution=last_frame_size;
-    cfg.frame_resolution=QSize(3840, 2160);
+    cfg.pixel_format=(AVPixelFormat)cb_rec_pixel_format->currentData().toInt();
     cfg.crf=le_crf->text().toUInt();
 
     ffmpeg->setConfig(cfg);
