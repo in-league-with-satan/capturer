@@ -55,6 +55,8 @@ SOURCES += \
 
 LIBS += -lswresample  -lavformat -lavcodec -lavutil -lswscale -lswresample
 LIBS += -ldl -lz -llzma -lbz2 -lvorbis -lvorbisenc -lmp3lame -lopus -lx264 -lva -lvdpau -lX11 -lva-drm -lva-x11
+#LIBS += -lGLU
+
 
 INCLUDEPATH += \
     src \

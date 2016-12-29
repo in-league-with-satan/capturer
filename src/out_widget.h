@@ -3,6 +3,9 @@
 
 #include <QGLWidget>
 #include <QImage>
+#include <QTimer>
+
+class FrameBuffer;
 
 class OutWidget : public QGLWidget
 {
@@ -12,8 +15,7 @@ public:
     explicit OutWidget(QWidget *parent=0);
     virtual ~OutWidget();
 
-public slots:
-    void frame(QImage image);
+    FrameBuffer *frameBuffer();
 
 protected:
     virtual void initializeGL();
@@ -22,12 +24,18 @@ protected:
 
     virtual void paintEvent(QPaintEvent *event);
 
-    virtual void leaveEvent(QEvent *event);
-    virtual void enterEvent(QEvent *event);
+    virtual void leaveEvent(QEvent*);
+    virtual void enterEvent(QEvent*);
+
+private slots:
+    void checkFrame();
 
 private:
     QImage img_frame;
 
+    FrameBuffer *frame_buffer;
+
+    QTimer *timer;
 };
 
 #endif // OUT_WIDGET_H

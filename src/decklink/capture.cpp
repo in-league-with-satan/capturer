@@ -233,11 +233,10 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
     if(!video_frame || !audio_packet)
         return;
 
-    void *video_frame_bytes;
-    void *audio_packet_bytes;
-
     FrameBuffer::Frame frame;
 
+    void *video_frame_bytes;
+    void *audio_packet_bytes;
 
     if(video_frame->GetFlags() & bmdFrameHasNoInputSource) {
         qCritical() << "No input signal detected";
@@ -247,6 +246,10 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
         return;
 
     } else {
+//        DeckLinkPixelFormat pf;
+//        pf.fmt=video_frame->GetPixelFormat();
+//        qInfo() << pf.name();
+
         if(video_frame->GetWidth()==1280) {
             video_converter->ConvertFrame(video_frame, video_frame_converted_720p);
 
@@ -288,14 +291,6 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
     memcpy(frame.ba_audio.data(), audio_packet_bytes, frame.ba_audio.size());
 
-
-    // video_frame_converted->Release();
-
-//    emit frameFull(frame.ba_video, frame.size_video, frame.ba_audio);
-
-    emit frameVideo(frame.ba_video, frame.size_video);
-
-//    emit frameAudio(frame.ba_audio);
 
     //
 
@@ -361,6 +356,16 @@ void DeckLinkCapture::init()
     decklink_output->CreateVideoFrame(1280, 720, 720*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &video_frame_converted_720p);
     decklink_output->CreateVideoFrame(1920, 1080, 1920*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &video_frame_converted_1080p);
     decklink_output->CreateVideoFrame(3840, 2160, 3840*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &video_frame_converted_2160p);
+
+//    decklink_output->CreateVideoFrame(1280, 720, 720*4, bmdFormat8BitARGB, bmdFrameFlagDefault, &video_frame_converted_720p);
+//    decklink_output->CreateVideoFrame(1920, 1080, 1920*4, bmdFormat8BitARGB, bmdFrameFlagDefault, &video_frame_converted_1080p);
+//    decklink_output->CreateVideoFrame(3840, 2160, 3840*4, bmdFormat8BitARGB, bmdFrameFlagDefault, &video_frame_converted_2160p);
+
+//    decklink_output->CreateVideoFrame(1280, 720, 720*4, bmdFormat8BitYUV, bmdFrameFlagDefault, &video_frame_converted_720p);
+//    decklink_output->CreateVideoFrame(1920, 1080, 1920*4, bmdFormat8BitYUV, bmdFrameFlagDefault, &video_frame_converted_1080p);
+//    decklink_output->CreateVideoFrame(3840, 2160, 3840*4, bmdFormat8BitYUV, bmdFrameFlagDefault, &video_frame_converted_2160p);
+
+
 
     //
 

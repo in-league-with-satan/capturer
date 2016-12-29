@@ -503,6 +503,7 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
 
 
     // allocate the output media context
+    // avformat_alloc_output_context2(&context->av_format_context, nullptr, nullptr, context->filename.toLatin1().data());
     avformat_alloc_output_context2(&context->av_format_context, nullptr, "matroska", nullptr);
 
     if(!context->av_format_context) {

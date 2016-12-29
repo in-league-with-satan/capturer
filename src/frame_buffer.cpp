@@ -8,8 +8,11 @@ FrameBuffer::FrameBuffer(QMutex::RecursionMode recursion_mode, QObject *parent) 
     QObject(parent)
   , mutex_frame_buffer(new QMutex(recursion_mode))
 {
-    buffer_max_size=1000;
+    frame_skipped=0;
 
+    drop_skipped=false;
+
+    buffer_max_size=1000;
 }
 
 FrameBuffer::~FrameBuffer()
@@ -21,22 +24,18 @@ void FrameBuffer::appendFrame(FrameBuffer::Frame frame)
 {
     QMutexLocker ml(mutex_frame_buffer);
 
-//    mutex_frame_buffer->lock();
-
     if(queue.size()<buffer_max_size)
         queue.append(frame);
 
     else {
-        frame.ba_video.clear();
+        if(!drop_skipped) {
+            frame.ba_video.clear();
 
-        queue.append(frame);
+            queue.append(frame);
+        }
 
         emit frameSkipped(++frame_skipped);
-
-        qCritical() << "frames skipped:" << frame_skipped << queue.size();
     }
-
-//    mutex_frame_buffer->unlock();
 }
 
 void FrameBuffer::setMaxBufferSize(uint8_t size)
@@ -44,6 +43,13 @@ void FrameBuffer::setMaxBufferSize(uint8_t size)
     QMutexLocker ml(mutex_frame_buffer);
 
     buffer_max_size=size;
+}
+
+void FrameBuffer::setDropSkipped(bool state)
+{
+    QMutexLocker ml(mutex_frame_buffer);
+
+    drop_skipped=state;
 }
 
 void FrameBuffer::clear()

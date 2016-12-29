@@ -43,8 +43,6 @@ private:
     QSize last_frame_size;
 
 private slots:
-    void onFrameVideo(QByteArray ba_data, QSize size);
-
     void onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale);
 
     void onDeviceChanged(int index);
@@ -55,6 +53,8 @@ private slots:
 
     void onStartRecording();
     void onStopRecording();
+
+    void onFrameSkipped(size_t size);
 };
 
 #endif // MAINWINDOW_H

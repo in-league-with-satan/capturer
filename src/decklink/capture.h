@@ -83,9 +83,6 @@ private:
     QMutex mutex_subscription;
 
 signals:
-    void frameVideo(QByteArray ba_data, QSize size);
-    void frameAudio(QByteArray ba_data);
-    void frameFull(QByteArray ba_video, QSize size, QByteArray ba_audio);
     void noInputSignalDetected();
     void formatChanged(QSize size, int64_t frame_duration, int64_t frame_scale);
 };

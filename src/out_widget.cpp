@@ -1,16 +1,33 @@
 #include <QApplication>
 #include <QDebug>
+#include <QMutex>
+
+#include "frame_buffer.h"
 
 #include "out_widget.h"
 
 OutWidget::OutWidget(QWidget *parent) :
     QGLWidget(parent)
 {
+    frame_buffer=new FrameBuffer(QMutex::Recursive, this);
+    frame_buffer->setMaxBufferSize(2);
+    frame_buffer->setDropSkipped(true);
 
+    timer=new QTimer(this);
+    timer->setInterval(1);
+
+    connect(timer, SIGNAL(timeout()), SLOT(checkFrame()));
+
+    timer->start();
 }
 
 OutWidget::~OutWidget()
 {
+}
+
+FrameBuffer *OutWidget::frameBuffer()
+{
+    return frame_buffer;
 }
 
 void OutWidget::initializeGL()
@@ -30,26 +47,6 @@ void OutWidget::paintGL()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void OutWidget::frame(QImage image)
-{
-    if(image.isNull()) {
-        qCritical() << "OutWidget::frame: null image";
-        return;
-    }
-
-    if(image.size()!=size()) {
-        if(image.size().width()>1920)
-            img_frame=image.scaled(size(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
-
-        else
-            img_frame=image.scaled(size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-
-    } else
-        img_frame=image.copy();
-
-    update();
-}
-
 void OutWidget::paintEvent(QPaintEvent *event)
 {
     Q_UNUSED(event)
@@ -65,12 +62,49 @@ void OutWidget::paintEvent(QPaintEvent *event)
     p.end();
 }
 
-void OutWidget::leaveEvent(QEvent *event)
+void OutWidget::leaveEvent(QEvent*)
 {
     QApplication::setOverrideCursor(Qt::ArrowCursor);
 }
 
-void OutWidget::enterEvent(QEvent *event)
+void OutWidget::enterEvent(QEvent*)
 {
     QApplication::setOverrideCursor(Qt::BlankCursor);
+}
+
+void OutWidget::checkFrame()
+{
+    FrameBuffer::Frame frame;
+
+    timer->stop();
+
+    {
+        QMutexLocker ml(frame_buffer->mutex_frame_buffer);
+
+        if(frame_buffer->queue.isEmpty()) {
+            timer->start();
+            return;
+        }
+
+        frame=frame_buffer->queue.dequeue();
+    }
+
+//    timer->start();
+//    return;
+
+    QImage img_tmp=QImage((uchar*)frame.ba_video.data(), frame.size_video.width(), frame.size_video.height(), QImage::Format_ARGB32);
+
+    if(img_tmp.size()!=size()) {
+        if(img_tmp.size().width()>1920)
+            img_frame=img_tmp.scaled(size(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
+
+        else
+            img_frame=img_tmp.scaled(size(), Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+    } else
+        img_frame=img_tmp.copy();
+
+    update();
+
+    timer->start();
 }

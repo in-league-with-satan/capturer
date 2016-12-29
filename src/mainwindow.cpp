@@ -23,15 +23,13 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
     decklink_thread=new DeckLinkCapture(this);
-    connect(decklink_thread, SIGNAL(frameVideo(QByteArray,QSize)), SLOT(onFrameVideo(QByteArray,QSize)), Qt::QueuedConnection);
     connect(decklink_thread, SIGNAL(formatChanged(QSize,int64_t,int64_t)), SLOT(onFormatChanged(QSize,int64_t,int64_t)), Qt::QueuedConnection);
 
+    //
 
     audio_output=new AudioOutputThread(this);
 
     decklink_thread->subscribeForAudio(audio_output->frameBuffer());
-//    connect(decklink_thread, SIGNAL(frameAudio(QByteArray)), audio_output, SLOT(onInputFrameArrived(QByteArray)), Qt::QueuedConnection);
-
 
     //
 
@@ -39,10 +37,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     decklink_thread->subscribeForAll(ffmpeg->frameBuffer());
 
+    connect(ffmpeg->frameBuffer(), SIGNAL(frameSkipped(size_t)), SLOT(onFrameSkipped(size_t)), Qt::QueuedConnection);
+
     //
 
     out_widget=new OutWidget();
+
     out_widget->showFullScreen();
+    decklink_thread->subscribeForAll(out_widget->frameBuffer());
 
     //
 
@@ -63,6 +65,8 @@ MainWindow::MainWindow(QWidget *parent)
     cb_rec_fps->addItem("50");
     cb_rec_fps->addItem("59.97");
     cb_rec_fps->addItem("60");
+
+    cb_rec_fps->setCurrentText("59.97");
 
     cb_rec_pixel_format=new QComboBox();
     cb_rec_pixel_format->addItem("YUV420P", AV_PIX_FMT_YUV420P);
@@ -157,8 +161,9 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     cb_audio_channels->addItem(QString("2"));
-    cb_audio_channels->addItem(QString("6"));
     cb_audio_channels->addItem(QString("8"));
+
+    cb_audio_channels->setCurrentText("8");
 
     //
 
@@ -172,20 +177,13 @@ MainWindow::MainWindow(QWidget *parent)
 
         cb_device->addItem(dev.name, var);
     }
+
+    onStartCapture();
 }
 
 MainWindow::~MainWindow()
 {
     decklink_thread->exit();
-}
-
-void MainWindow::onFrameVideo(QByteArray ba_data, QSize size)
-{
-    QImage img;
-
-    img=QImage((uchar*)ba_data.data(), size.width(), size.height(), QImage::Format_ARGB32);
-
-    out_widget->frame(img.copy());
 }
 
 void MainWindow::onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale)
@@ -264,4 +262,9 @@ void MainWindow::onStartRecording()
 void MainWindow::onStopRecording()
 {
     ffmpeg->stopCoder();
+}
+
+void MainWindow::onFrameSkipped(size_t size)
+{
+    qCritical() << "frames skipped:" << size;
 }

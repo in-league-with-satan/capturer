@@ -24,15 +24,20 @@ public:
 
     void setMaxBufferSize(uint8_t size);
 
+    void setDropSkipped(bool state);
+
     void clear();
+
+    QQueue <Frame> queue;
 
     QMutex *mutex_frame_buffer;
 
+private:
     size_t frame_skipped;
 
     uint8_t buffer_max_size;
 
-    QQueue <Frame> queue;
+    bool drop_skipped;
 
 signals:
     void frameSkipped(size_t size);

@@ -19,7 +19,7 @@ static bool byteArrayToAvFrame(QByteArray *ba_src, AVFrame *frame_dst)
     const size_t data_size=av_image_get_buffer_size((AVPixelFormat)frame_dst->format, frame_dst->width, frame_dst->height, alignment);
 
     if(ba_src->size()!=data_size) {
-        qCritical() << "wrong bytearray size";
+        qCritical() << "wrong bytearray size" << ba_src->size() << data_size;
         return false;
     }
 
