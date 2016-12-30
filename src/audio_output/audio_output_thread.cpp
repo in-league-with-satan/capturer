@@ -4,32 +4,26 @@
 #include <qcoreapplication.h>
 
 #include "frame_buffer.h"
+#include "audio_tools.h"
 
 #include "audio_output_thread.h"
 
-AudioOutputThread::AudioOutputThread(QWidget *parent)
+AudioOutputThread::AudioOutputThread(QObject *parent) :
+    AudioOutputInterface(parent)
 {
     audio_output=nullptr;
     dev_audio_output=nullptr;
-
-    frame_buffer=new FrameBuffer(QMutex::Recursive, this);
 
     start(QThread::NormalPriority);
 }
 
 AudioOutputThread::~AudioOutputThread()
 {
-    delete frame_buffer;
-}
-
-FrameBuffer *AudioOutputThread::frameBuffer()
-{
-    return frame_buffer;
 }
 
 void AudioOutputThread::changeChannels(int size)
 {
-    input_channels_size=size;
+    AudioOutputInterface::changeChannels(size);
 
     return;
 
@@ -137,19 +131,11 @@ void AudioOutputThread::onInputFrameArrived(QByteArray ba_data)
         return;
 
     if(input_channels_size!=2) {
-        QByteArray ba_data_stereo;
+        QByteArray ba_tmp;
 
-        ba_data_stereo.resize(ba_data.size()/8*2);
+        mix8channelsTo2(&ba_data, &ba_tmp);
 
-        uint32_t *ptr_data=(uint32_t*)ba_data.data();
-        uint32_t *ptr_data_stereo=(uint32_t*)ba_data_stereo.data();
-
-        int pos_stereo=0;
-
-        for(int pos_data=0, size=ba_data.size()/4; pos_data<size; pos_data+=4)
-            ptr_data_stereo[pos_stereo++]=ptr_data[pos_data];
-
-        ba_data=ba_data_stereo;
+        ba_data=ba_tmp;
     }
 
     dev_audio_output->write(ba_data);

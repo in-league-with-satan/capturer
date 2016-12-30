@@ -8,7 +8,7 @@ class QLabel;
 class QLineEdit;
 
 class DeckLinkCapture;
-class AudioOutputThread;
+class AudioOutputInterface;
 class OutWidget;
 class FFMpegThread;
 
@@ -36,7 +36,7 @@ private:
 
     QLineEdit *le_crf;
 
-    AudioOutputThread *audio_output;
+    AudioOutputInterface *audio_output;
 
     OutWidget *out_widget;
 

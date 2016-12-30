@@ -25,6 +25,9 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 
+#DEFINES += USE_PULSE_AUDIO
+#DEFINES += USE_SDL2
+
 
 LINK_OPT=shared
 BUILD_OPT=release
@@ -57,15 +60,25 @@ LIBS += -lswresample  -lavformat -lavcodec -lavutil -lswscale -lswresample
 LIBS += -ldl -lz -llzma -lbz2 -lvorbis -lvorbisenc -lmp3lame -lopus -lx264 -lva -lvdpau -lX11 -lva-drm -lva-x11
 #LIBS += -lGLU
 
+contains(DEFINES, USE_PULSE_AUDIO) {
+    LIBS += -lpulse-simple -lpulse
+}
+
+contains(DEFINES, USE_SDL2) {
+    LIBS += -lSDL2main -lSDL2
+}
 
 INCLUDEPATH += \
     src \
-    src/decklink
+    src/decklink \
+    src/audio_output
 
 SOURCES += \
     src/*.cpp \
-    src/decklink/*.cpp
+    src/decklink/*.cpp \
+    src/audio_output/*.cpp
 
 HEADERS += \
     src/*.h \
-    src/decklink/*.h
+    src/decklink/*.h \
+    src/audio_output/*.h

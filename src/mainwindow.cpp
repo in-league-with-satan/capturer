@@ -12,7 +12,7 @@
 
 #include "device_list.h"
 #include "capture.h"
-#include "audio_output_thread.h"
+#include "audio_output.h"
 #include "out_widget.h"
 #include "ffmpeg_thread.h"
 
@@ -27,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    audio_output=new AudioOutputThread(this);
+    audio_output=newAudioOutput(this);
 
     decklink_thread->subscribeForAudio(audio_output->frameBuffer());
 
