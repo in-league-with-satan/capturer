@@ -140,14 +140,46 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
     AVCodecContext *c;
 
     // find the encoder
-    *codec=avcodec_find_encoder(codec_id);
+    if(codec_id!=AV_CODEC_ID_H264) {
+        *codec=avcodec_find_encoder(codec_id);
+
+    } else {
+        switch(cfg.video_encoder) {
+        case FFMpeg::VideoEncoder::libx264: {
+            *codec=avcodec_find_encoder(codec_id);
+
+        } break;
+
+        case FFMpeg::VideoEncoder::nvenc_h264: {
+            *codec=avcodec_find_encoder_by_name("h264_nvenc");
+
+            if(!(*codec))
+                *codec=avcodec_find_encoder_by_name("nvenc_h264");
+
+        } break;
+
+        // case FFMpeg::VideoEncoder::nvenc_h265: {
+
+        //     *codec=avcodec_find_encoder_by_name("h265_nvenc");
+
+        //     if(!(*codec))
+        //         *codec=avcodec_find_encoder_by_name("nvenc_h265");
+
+        //     codec_id=AV_CODEC_ID_H265;
+
+        // } break;
+
+        default:
+            break;
+        }
+    }
 
     if(!(*codec)) {
         qCritical() << "could not find encoder for" << codec_id;
         exit(1);
     }
 
-    ost->av_stream=avformat_new_stream(oc, NULL);
+    ost->av_stream=avformat_new_stream(oc, nullptr);
 
     if(!ost->av_stream) {
         qCritical() << "could not allocate stream";
@@ -194,8 +226,6 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 
     case AVMEDIA_TYPE_VIDEO:
         c->codec_id=codec_id;
-
-        c->bit_rate=400000;
 
         c->width=cfg.frame_resolution.width();
         c->height=cfg.frame_resolution.height();
@@ -244,9 +274,20 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 
         c->pix_fmt=cfg.pixel_format;
 
-        av_opt_set(c->priv_data, "preset", "ultrafast", 0);
-//        av_opt_set(c->priv_data, "tune", "zerolatency", 0);
-        av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().data(), 0);
+        if(cfg.video_encoder==FFMpeg::VideoEncoder::libx264) {
+            av_opt_set(c->priv_data, "preset", "ultrafast", 0);
+            // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
+            av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().data(), 0);
+
+        } else if(cfg.video_encoder==FFMpeg::VideoEncoder::nvenc_h264) {
+            c->bit_rate=0;
+            c->global_quality=cfg.crf;
+
+//            av_opt_set(c->priv_data, "preset", "fast", 0); // HP
+            av_opt_set(c->priv_data, "preset", "slow", 0); // HQ
+
+//            av_opt_set(c->priv_data, "tune", "zerolatency", 0);
+        }
 
 //        c->thread_count=8;
 

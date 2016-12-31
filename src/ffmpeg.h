@@ -38,12 +38,21 @@ public:
         };
     };
 
+    struct VideoEncoder {
+        enum T {
+            libx264,
+            nvenc_h264,
+            // nvenc_h265
+        };
+    };
+
     struct Config {
         QSize frame_resolution;
         Framerate::T framerate;
         uint8_t audio_channels_size;
         uint8_t crf;       
         AVPixelFormat pixel_format;
+        VideoEncoder::T video_encoder;
     };
 
 public slots:

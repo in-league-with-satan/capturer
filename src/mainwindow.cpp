@@ -83,6 +83,11 @@ MainWindow::MainWindow(QWidget *parent)
     le_crf->setInputMask("99");
 
 
+    cb_video_encoder=new QComboBox();
+    cb_video_encoder->addItem("libx264");
+    cb_video_encoder->addItem("nvenc_h264");
+
+
     cb_preview=new QCheckBox("preview");
     cb_preview->setChecked(true);
     connect(cb_preview, SIGNAL(stateChanged(int)), SLOT(onPreviewChanged(int)));
@@ -99,6 +104,8 @@ MainWindow::MainWindow(QWidget *parent)
     QLabel *l_rec_pixel_format=new QLabel("rec pixel format::");
 
     QLabel *l_crf=new QLabel("crf:");
+
+    QLabel *l_video_encoder=new QLabel("video encoder:");
 
     QPushButton *b_start_cap=new QPushButton("start capture");
     QPushButton *b_stop_cap=new QPushButton("stop capture");
@@ -150,6 +157,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     la_dev->addWidget(l_crf, row, 0);
     la_dev->addWidget(le_crf, row, 1);
+
+    row++;
+
+    la_dev->addWidget(l_video_encoder, row, 0);
+    la_dev->addWidget(cb_video_encoder, row, 1);
 
 
     QVBoxLayout *la_h=new QVBoxLayout();
@@ -262,6 +274,7 @@ void MainWindow::onStartRecording()
     cfg.framerate=(FFMpeg::Framerate::T)cb_rec_fps->currentIndex();
     cfg.frame_resolution=last_frame_size;
     cfg.pixel_format=(AVPixelFormat)cb_rec_pixel_format->currentData().toInt();
+    cfg.video_encoder=(FFMpeg::VideoEncoder::T)cb_video_encoder->currentIndex();
     cfg.crf=le_crf->text().toUInt();
 
     ffmpeg->setConfig(cfg);

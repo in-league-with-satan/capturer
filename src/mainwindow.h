@@ -34,6 +34,7 @@ private:
 
     QComboBox *cb_rec_fps;
     QComboBox *cb_rec_pixel_format;
+    QComboBox *cb_video_encoder;
 
     QLineEdit *le_crf;
 

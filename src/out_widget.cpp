@@ -14,7 +14,7 @@ OutWidget::OutWidget(QWidget *parent) :
     frame_buffer->setDropSkipped(true);
 
     timer=new QTimer(this);
-    timer->setInterval(1);
+    timer->setInterval(5);
 
     connect(timer, SIGNAL(timeout()), SLOT(checkFrame()));
 
