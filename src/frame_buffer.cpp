@@ -14,7 +14,7 @@ FrameBuffer::FrameBuffer(QMutex::RecursionMode recursion_mode, QObject *parent) 
 
     enabled=true;
 
-    buffer_max_size=1000;
+    buffer_max_size=10;
 }
 
 FrameBuffer::~FrameBuffer()
@@ -43,7 +43,7 @@ void FrameBuffer::appendFrame(FrameBuffer::Frame frame)
     }
 }
 
-void FrameBuffer::setMaxBufferSize(uint8_t size)
+void FrameBuffer::setMaxBufferSize(uint16_t size)
 {
     QMutexLocker ml(mutex_frame_buffer);
 

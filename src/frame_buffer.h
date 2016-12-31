@@ -22,7 +22,7 @@ public:
 
     void appendFrame(Frame frame);
 
-    void setMaxBufferSize(uint8_t size);
+    void setMaxBufferSize(uint16_t size);
 
     void setDropSkipped(bool state);
 
@@ -37,7 +37,7 @@ public:
 private:
     size_t frame_skipped;
 
-    uint8_t buffer_max_size;
+    uint16_t buffer_max_size;
 
     bool drop_skipped;
     bool enabled;

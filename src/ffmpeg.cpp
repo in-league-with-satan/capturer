@@ -283,13 +283,13 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
             c->bit_rate=0;
             c->global_quality=cfg.crf;
 
-//            av_opt_set(c->priv_data, "preset", "fast", 0); // HP
+            // av_opt_set(c->priv_data, "preset", "fast", 0); // HP
             av_opt_set(c->priv_data, "preset", "slow", 0); // HQ
 
-//            av_opt_set(c->priv_data, "tune", "zerolatency", 0);
+            // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
         }
 
-//        c->thread_count=8;
+        // c->thread_count=8;
 
         if(c->codec_id==AV_CODEC_ID_MPEG2VIDEO) {
             // just for testing, we also add B-frames
@@ -387,10 +387,12 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
     AVCodecContext *c;
     AVPacket pkt={ 0 }; // data and size must be 0;
     AVFrame *frame;
+
     int ret;
     int got_packet;
 
     av_init_packet(&pkt);
+
     c=ost->av_codec_context;
 
     frame=ost->frame;

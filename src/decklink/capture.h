@@ -11,6 +11,7 @@
 #include "device_list.h"
 
 class DeckLinkCaptureDelegate;
+class DlConvertThreadContainer;
 
 class IDeckLink;
 class IDeckLinkDisplayModeIterator;
@@ -65,20 +66,15 @@ private:
     IDeckLinkDisplayMode *display_mode;
     IDeckLinkInput *decklink_input;
     IDeckLinkOutput *decklink_output;
-    IDeckLinkVideoConversion *video_converter;
-    IDeckLinkMutableVideoFrame *video_frame_converted_720p;
-    IDeckLinkMutableVideoFrame *video_frame_converted_1080p;
-    IDeckLinkMutableVideoFrame *video_frame_converted_2160p;
 
     DeckLinkDevice device;
     DeckLinkFormat format;
     DeckLinkPixelFormat pixel_format;
     int audio_channels;
 
-//    FF::FormatConverter *ff_converter;
+    DlConvertThreadContainer *conv_thread;
 
-    QList <FrameBuffer*> l_full;
-    QList <FrameBuffer*> l_audio;
+    // FF::FormatConverter *ff_converter;
 
     QMutex mutex_subscription;
 
