@@ -7,6 +7,8 @@
 #include <pulse/simple.h>
 #endif
 
+#include <QFile>
+
 class PulseAudioOutputThread : public AudioOutputInterface
 {
     Q_OBJECT
@@ -26,6 +28,9 @@ protected:
     pa_simple *s;
     pa_sample_spec ss;
 #endif
+
+    QFile f_src;
+    QFile f_conv;
 };
 
 #endif // PULSE_AUDIO_OUTPUT_THREAD_H

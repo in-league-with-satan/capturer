@@ -12,6 +12,8 @@ FrameBuffer::FrameBuffer(QMutex::RecursionMode recursion_mode, QObject *parent) 
 
     drop_skipped=false;
 
+    enabled=true;
+
     buffer_max_size=1000;
 }
 
@@ -23,6 +25,9 @@ FrameBuffer::~FrameBuffer()
 void FrameBuffer::appendFrame(FrameBuffer::Frame frame)
 {
     QMutexLocker ml(mutex_frame_buffer);
+
+    if(!enabled)
+        return;
 
     if(queue.size()<buffer_max_size)
         queue.append(frame);
@@ -50,6 +55,13 @@ void FrameBuffer::setDropSkipped(bool state)
     QMutexLocker ml(mutex_frame_buffer);
 
     drop_skipped=state;
+}
+
+void FrameBuffer::setEnabled(bool value)
+{
+    QMutexLocker ml(mutex_frame_buffer);
+
+    enabled=value;
 }
 
 void FrameBuffer::clear()

@@ -6,6 +6,7 @@
 class QComboBox;
 class QLabel;
 class QLineEdit;
+class QCheckBox;
 
 class DeckLinkCapture;
 class AudioOutputInterface;
@@ -36,6 +37,8 @@ private:
 
     QLineEdit *le_crf;
 
+    QCheckBox *cb_preview;
+
     AudioOutputInterface *audio_output;
 
     OutWidget *out_widget;
@@ -55,6 +58,8 @@ private slots:
     void onStopRecording();
 
     void onFrameSkipped(size_t size);
+
+    void onPreviewChanged(int state);
 };
 
 #endif // MAINWINDOW_H

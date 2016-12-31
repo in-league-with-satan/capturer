@@ -7,6 +7,7 @@
 #include <QFile>
 #include <QGenericArgument>
 #include <QLineEdit>
+#include <QCheckBox>
 
 #include "DeckLinkAPI.h"
 
@@ -81,6 +82,12 @@ MainWindow::MainWindow(QWidget *parent)
     le_crf=new QLineEdit("10");
     le_crf->setInputMask("99");
 
+
+    cb_preview=new QCheckBox("preview");
+    cb_preview->setChecked(true);
+    connect(cb_preview, SIGNAL(stateChanged(int)), SLOT(onPreviewChanged(int)));
+
+
     QLabel *l_device=new QLabel("device:");
     QLabel *l_format=new QLabel("format:");
     QLabel *l_pixel_format=new QLabel("pixel format:");
@@ -148,6 +155,7 @@ MainWindow::MainWindow(QWidget *parent)
     QVBoxLayout *la_h=new QVBoxLayout();
 
     la_h->addLayout(la_dev);
+    la_h->addWidget(cb_preview);
     la_h->addWidget(b_start_cap);
     la_h->addWidget(b_stop_cap);
     la_h->addWidget(b_start_rec);
@@ -267,4 +275,9 @@ void MainWindow::onStopRecording()
 void MainWindow::onFrameSkipped(size_t size)
 {
     qCritical() << "frames skipped:" << size;
+}
+
+void MainWindow::onPreviewChanged(int)
+{
+    out_widget->frameBuffer()->setEnabled(cb_preview->isChecked());
 }

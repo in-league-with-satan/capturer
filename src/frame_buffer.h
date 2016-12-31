@@ -26,6 +26,8 @@ public:
 
     void setDropSkipped(bool state);
 
+    void setEnabled(bool value);
+
     void clear();
 
     QQueue <Frame> queue;
@@ -38,6 +40,7 @@ private:
     uint8_t buffer_max_size;
 
     bool drop_skipped;
+    bool enabled;
 
 signals:
     void frameSkipped(size_t size);
