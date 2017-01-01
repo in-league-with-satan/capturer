@@ -74,7 +74,7 @@ void FFMpegThread::run()
 end:
 
         QCoreApplication::processEvents();
-        usleep(1000);
+        usleep(100);
 
 end2:
         ;

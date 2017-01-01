@@ -64,7 +64,7 @@ SOURCES += \
 
 
 LIBS += -Lexternals/3rdparty/ffmpeg/lib -lswresample  -lavformat -lavcodec -lavutil -lswscale -lswresample
-LIBS += -ldl -lvorbis -lvorbisenc -logg -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
+LIBS += -lz -ldl -lvorbis -lvorbisenc -logg -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
 
 
 contains(DEFINES, USE_PULSE_AUDIO) {

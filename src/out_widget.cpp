@@ -10,11 +10,11 @@ OutWidget::OutWidget(QWidget *parent) :
     QGLWidget(parent)
 {
     frame_buffer=new FrameBuffer(QMutex::Recursive, this);
-    frame_buffer->setMaxBufferSize(2);
+    frame_buffer->setMaxBufferSize(1);
     frame_buffer->setDropSkipped(true);
 
     timer=new QTimer(this);
-    timer->setInterval(5);
+    timer->setInterval(10);
 
     connect(timer, SIGNAL(timeout()), SLOT(checkFrame()));
 

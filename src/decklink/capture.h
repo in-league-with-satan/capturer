@@ -76,6 +76,15 @@ private:
 
     // FF::FormatConverter *ff_converter;
 
+    IDeckLinkVideoConversion *video_converter;
+    IDeckLinkMutableVideoFrame *video_frame_converted_720p;
+    IDeckLinkMutableVideoFrame *video_frame_converted_1080p;
+    IDeckLinkMutableVideoFrame *video_frame_converted_2160p;
+
+    QList <FrameBuffer*> l_full;
+    QList <FrameBuffer*> l_audio;
+
+
     QMutex mutex_subscription;
 
 signals:
