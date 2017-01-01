@@ -42,7 +42,7 @@ public:
         enum T {
             libx264,
             nvenc_h264,
-            // nvenc_h265
+            nvenc_hevc
         };
     };
 

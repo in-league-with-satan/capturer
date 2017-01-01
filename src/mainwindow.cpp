@@ -86,6 +86,7 @@ MainWindow::MainWindow(QWidget *parent)
     cb_video_encoder=new QComboBox();
     cb_video_encoder->addItem("libx264");
     cb_video_encoder->addItem("nvenc_h264");
+    cb_video_encoder->addItem("nvenc_hhevc");
 
 
     cb_preview=new QCheckBox("preview");

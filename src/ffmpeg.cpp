@@ -153,21 +153,14 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         case FFMpeg::VideoEncoder::nvenc_h264: {
             *codec=avcodec_find_encoder_by_name("h264_nvenc");
 
-            if(!(*codec))
-                *codec=avcodec_find_encoder_by_name("nvenc_h264");
-
         } break;
 
-        // case FFMpeg::VideoEncoder::nvenc_h265: {
+        case FFMpeg::VideoEncoder::nvenc_hevc: {
+            *codec=avcodec_find_encoder_by_name("hevc_nvenc");
 
-        //     *codec=avcodec_find_encoder_by_name("h265_nvenc");
+            codec_id=AV_CODEC_ID_H265;
 
-        //     if(!(*codec))
-        //         *codec=avcodec_find_encoder_by_name("nvenc_h265");
-
-        //     codec_id=AV_CODEC_ID_H265;
-
-        // } break;
+        } break;
 
         default:
             break;
@@ -279,7 +272,7 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
             // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
             av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().data(), 0);
 
-        } else if(cfg.video_encoder==FFMpeg::VideoEncoder::nvenc_h264) {
+        } else if(cfg.video_encoder==FFMpeg::VideoEncoder::nvenc_h264 || cfg.video_encoder==FFMpeg::VideoEncoder::nvenc_hevc) {
             c->bit_rate=0;
             c->global_quality=cfg.crf;
 
