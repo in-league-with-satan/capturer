@@ -13,11 +13,14 @@ FFMpegThread::FFMpegThread(QObject *parent) :
 
     frame_buffer=new FrameBuffer(QMutex::Recursive, this);
 
-    frame_buffer->setMaxBufferSize(300);
+    frame_buffer->setMaxBufferSize(400);
 
     frame_buffer->setEnabled(false);
 
-    start(QThread::NormalPriority);
+    // start(QThread::NormalPriority);
+    // start(QThread::HighPriority);
+    // start(QThread::HighestPriority);
+    start(QThread::TimeCriticalPriority);
 }
 
 FFMpegThread::~FFMpegThread()

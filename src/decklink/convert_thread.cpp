@@ -19,7 +19,7 @@ DlConvertThread::DlConvertThread(QObject *parent) :
 
     audio_channels=8;
 
-//    start(QThread::TimeCriticalPriority);
+    // start(QThread::TimeCriticalPriority);
     start(QThread::HighPriority);
 }
 

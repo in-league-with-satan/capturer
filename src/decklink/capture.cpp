@@ -16,7 +16,8 @@
 
 #include "capture.h"
 
-const bool ext_converter=false;
+//const bool ext_converter=false;
+const bool ext_converter=true;
 
 class DeckLinkCaptureDelegate : public IDeckLinkInputCallback
 {
@@ -104,7 +105,8 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
 
     setTerminationEnabled(true);
 
-    start(QThread::NormalPriority);
+    // start(QThread::NormalPriority);
+    start(QThread::TimeCriticalPriority);
 }
 
 DeckLinkCapture::~DeckLinkCapture()

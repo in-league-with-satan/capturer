@@ -2,6 +2,7 @@
 #include <QDebug>
 #include <QDateTime>
 #include <QFile>
+#include <QDir>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -533,7 +534,15 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
     }
 
 
-    context->filename=QString("%1/%2.mkv")
+
+    {
+        QDir dir(QApplication::applicationDirPath() + "/videos");
+
+        if(!dir.exists())
+            dir.mkdir(dir.dirName());
+    }
+
+    context->filename=QString("%1/videos/%2.mkv")
             .arg(QApplication::applicationDirPath())
             .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss"));
 

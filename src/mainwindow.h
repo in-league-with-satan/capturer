@@ -12,6 +12,7 @@ class DeckLinkCapture;
 class AudioOutputInterface;
 class OutWidget;
 class FFMpegThread;
+class QMessageBox;
 
 class MainWindow : public QMainWindow
 {
@@ -39,10 +40,13 @@ private:
     QLineEdit *le_crf;
 
     QCheckBox *cb_preview;
+    QCheckBox *cb_stop_rec_on_frames_drop;
 
     AudioOutputInterface *audio_output;
 
     OutWidget *out_widget;
+
+    QMessageBox *mb_rec_stopped;
 
     QSize last_frame_size;
 

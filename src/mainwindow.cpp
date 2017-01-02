@@ -8,6 +8,7 @@
 #include <QGenericArgument>
 #include <QLineEdit>
 #include <QCheckBox>
+#include <QMessageBox>
 
 #include "DeckLinkAPI.h"
 
@@ -20,8 +21,9 @@
 #include "mainwindow.h"
 
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+MainWindow::MainWindow(QWidget *parent) :
+    QMainWindow(parent)
+  , mb_rec_stopped(nullptr)
 {
     decklink_thread=new DeckLinkCapture(this);
     connect(decklink_thread, SIGNAL(formatChanged(QSize,int64_t,int64_t)), SLOT(onFormatChanged(QSize,int64_t,int64_t)), Qt::QueuedConnection);
@@ -92,6 +94,9 @@ MainWindow::MainWindow(QWidget *parent)
     cb_preview=new QCheckBox("preview");
     cb_preview->setChecked(true);
     connect(cb_preview, SIGNAL(stateChanged(int)), SLOT(onPreviewChanged(int)));
+
+    cb_stop_rec_on_frames_drop=new QCheckBox("stop rec on frames drop");
+    cb_stop_rec_on_frames_drop->setChecked(true);
 
 
     QLabel *l_device=new QLabel("device:");
@@ -169,6 +174,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     la_h->addLayout(la_dev);
     la_h->addWidget(cb_preview);
+    la_h->addWidget(cb_stop_rec_on_frames_drop);
     la_h->addWidget(b_start_cap);
     la_h->addWidget(b_stop_cap);
     la_h->addWidget(b_start_rec);
@@ -289,6 +295,18 @@ void MainWindow::onStopRecording()
 void MainWindow::onFrameSkipped(size_t size)
 {
     qCritical() << "frames skipped:" << size;
+
+    if(!cb_stop_rec_on_frames_drop->isChecked())
+        return;
+
+    ffmpeg->stopCoder();
+
+    if(!mb_rec_stopped)
+        mb_rec_stopped=new QMessageBox(QMessageBox::Critical, "", "some frames was dropped, recording stopped", QMessageBox::Ok);
+
+    mb_rec_stopped->show();
+    mb_rec_stopped->raise();
+    mb_rec_stopped->exec();
 }
 
 void MainWindow::onPreviewChanged(int)
