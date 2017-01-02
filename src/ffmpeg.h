@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QImage>
+#include <QDateTime>
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -55,6 +56,13 @@ public:
         VideoEncoder::T video_encoder;
     };
 
+    struct Stats {
+        QTime time;
+        double avg_bitrate_audio;
+        double avg_bitrate_video;
+        size_t streams_size;
+    };
+
 public slots:
     bool setConfig(FFMpeg::Config cfg);
 
@@ -63,12 +71,19 @@ public slots:
     bool stopCoder();
 
 private:
+    void calcStats();
+
     FFMpegContext *context;
     FF::FormatConverter *converter;
 
     QSize last_frame_size;
+
+signals:
+    void stats(FFMpeg::Stats s);
+
 };
 
 Q_DECLARE_METATYPE(FFMpeg::Config)
+Q_DECLARE_METATYPE(FFMpeg::Stats)
 
 #endif // FFMPEG_H

@@ -16,7 +16,7 @@
 #include "capture.h"
 #include "audio_output.h"
 #include "out_widget.h"
-#include "ffmpeg_thread.h"
+
 
 #include "mainwindow.h"
 
@@ -41,6 +41,7 @@ MainWindow::MainWindow(QWidget *parent) :
     decklink_thread->subscribeForAll(ffmpeg->frameBuffer());
 
     connect(ffmpeg->frameBuffer(), SIGNAL(frameSkipped(size_t)), SLOT(onFrameSkipped(size_t)), Qt::QueuedConnection);
+    connect(ffmpeg, SIGNAL(stats(FFMpeg::Stats)), SLOT(updateStats(FFMpeg::Stats)));
 
     //
 
@@ -125,7 +126,32 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(b_start_rec, SIGNAL(clicked(bool)), SLOT(onStartRecording()));
     connect(b_stop_rec, SIGNAL(clicked(bool)), SLOT(onStopRecording()));
 
+    //
 
+    QLabel *l_stat_size=new QLabel("size:");
+    QLabel *l_stat_br=new QLabel("avg bitrate:");
+    QLabel *l_stat_time=new QLabel("time:");
+
+    le_stat_size=new QLineEdit();
+    le_stat_br=new QLineEdit();
+    le_stat_time=new QLineEdit();
+
+    le_stat_size->setReadOnly(true);
+    le_stat_br->setReadOnly(true);
+    le_stat_time->setReadOnly(true);
+
+    QGridLayout *la_stats=new QGridLayout();
+
+    la_stats->addWidget(l_stat_size, 0, 0);
+    la_stats->addWidget(le_stat_size, 0, 1);
+
+    la_stats->addWidget(l_stat_br, 1, 0);
+    la_stats->addWidget(le_stat_br, 1, 1);
+
+    la_stats->addWidget(l_stat_time, 2, 0);
+    la_stats->addWidget(le_stat_time, 2, 1);
+
+    //
 
     QGridLayout *la_dev=new QGridLayout();
 
@@ -179,6 +205,8 @@ MainWindow::MainWindow(QWidget *parent) :
     la_h->addWidget(b_stop_cap);
     la_h->addWidget(b_start_rec);
     la_h->addWidget(b_stop_rec);
+    la_h->addLayout(la_stats);
+
 
     QWidget *w_central=new QWidget();
     w_central->setLayout(la_h);
@@ -312,4 +340,13 @@ void MainWindow::onFrameSkipped(size_t size)
 void MainWindow::onPreviewChanged(int)
 {
     out_widget->frameBuffer()->setEnabled(cb_preview->isChecked());
+}
+
+void MainWindow::updateStats(FFMpeg::Stats s)
+{
+    le_stat_size->setText(QString("%1 bytes").arg(QLocale().toString((qulonglong)s.streams_size)));
+
+    le_stat_br->setText(QString("%1 kbits/s").arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/1000.)));
+
+    le_stat_time->setText(s.time.toString("HH:mm:ss"));
 }

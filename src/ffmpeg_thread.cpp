@@ -57,6 +57,7 @@ void FFMpegThread::run()
 
     connect(this, SIGNAL(sigSetConfig(FFMpeg::Config)), ffmpeg, SLOT(setConfig(FFMpeg::Config)), Qt::QueuedConnection);
     connect(this, SIGNAL(sigStopCoder()), ffmpeg, SLOT(stopCoder()), Qt::QueuedConnection);
+    connect(ffmpeg, SIGNAL(stats(FFMpeg::Stats)), SIGNAL(stats(FFMpeg::Stats)), Qt::QueuedConnection);
 
     FrameBuffer::Frame frame;
 

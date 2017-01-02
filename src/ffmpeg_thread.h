@@ -31,6 +31,8 @@ protected:
 signals:
     void sigSetConfig(FFMpeg::Config cfg);
     void sigStopCoder();
+
+    void stats(FFMpeg::Stats s);
 };
 
 #endif // FFMPEG_THREAD_H

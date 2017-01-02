@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 
+#include "ffmpeg_thread.h"
+
 class QComboBox;
 class QLabel;
 class QLineEdit;
@@ -11,7 +13,6 @@ class QCheckBox;
 class DeckLinkCapture;
 class AudioOutputInterface;
 class OutWidget;
-class FFMpegThread;
 class QMessageBox;
 
 class MainWindow : public QMainWindow
@@ -39,6 +40,10 @@ private:
 
     QLineEdit *le_crf;
 
+    QLineEdit *le_stat_size;
+    QLineEdit *le_stat_br;
+    QLineEdit *le_stat_time;
+
     QCheckBox *cb_preview;
     QCheckBox *cb_stop_rec_on_frames_drop;
 
@@ -65,6 +70,8 @@ private slots:
     void onFrameSkipped(size_t size);
 
     void onPreviewChanged(int state);
+
+    void updateStats(FFMpeg::Stats s);
 };
 
 #endif // MAINWINDOW_H

@@ -1,6 +1,5 @@
 #include <QApplication>
 #include <QDebug>
-#include <QDateTime>
 #include <QFile>
 #include <QDir>
 
@@ -60,6 +59,8 @@ public:
     AVFrame *frame_converted;
 
     SwsContext *convert_context;
+
+    uint64_t size_total;
 };
 
 class FFMpegContext
@@ -75,6 +76,8 @@ public:
         opt=nullptr;
 
         skip_frame=false;
+
+        last_stats_update_time=0;
     }
 
     bool canAcceptFrame() {
@@ -100,6 +103,8 @@ public:
     FFMpeg::Config cfg;
 
     bool skip_frame;
+
+    qint64 last_stats_update_time;
 };
 
 QString errString(int error)
@@ -399,6 +404,8 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
     }
 
     if(got_packet) {
+        ost->size_total+=pkt.size;
+
         ret=write_frame(oc, &c->time_base, ost->av_stream, &pkt);
 
         if(ret<0) {
@@ -478,6 +485,8 @@ static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
     }
 
     if(got_packet) {
+        ost->size_total+=pkt.size;
+
         ret=write_frame(oc, &c->time_base, ost->av_stream, &pkt);
 
         if(ret<0) {
@@ -520,6 +529,7 @@ FFMpeg::~FFMpeg()
 void FFMpeg::init()
 {
     qRegisterMetaType<FFMpeg::Config>("FFMpeg::Config");
+    qRegisterMetaType<FFMpeg::Stats>("FFMpeg::Stats");
 
     av_register_all();
 }
@@ -605,6 +615,10 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
 
     context->out_stream_video.next_pts=0;
 
+    context->out_stream_audio.size_total=0;
+
+    context->out_stream_video.size_total=0;
+
     return true;
 }
 
@@ -684,6 +698,12 @@ bool FFMpeg::appendFrame(QByteArray *ba_video, QSize *size, QByteArray *ba_audio
         context->out_stream_audio.frame->nb_samples=default_nb_samples;
     }
 
+    if(QDateTime::currentMSecsSinceEpoch() - context->last_stats_update_time>1000) {
+        context->last_stats_update_time=QDateTime::currentMSecsSinceEpoch();
+
+        calcStats();
+    }
+
     return true;
 }
 
@@ -709,4 +729,30 @@ bool FFMpeg::stopCoder()
     context->av_format_context=nullptr;
 
     return true;
+}
+
+void FFMpeg::calcStats()
+{
+    double cf_a=av_stream_get_end_pts(context->out_stream_audio.av_stream) * av_q2d(context->out_stream_audio.av_stream->time_base);
+
+    if(cf_a<.01)
+        cf_a=.01;
+
+
+    double cf_v=av_stream_get_end_pts(context->out_stream_video.av_stream) * av_q2d(context->out_stream_video.av_stream->time_base);
+
+    if(cf_v<.01)
+        cf_v=.01;
+
+
+    Stats s;
+
+    s.avg_bitrate_audio=(double)(context->out_stream_audio.size_total*8)/cf_a;
+    s.avg_bitrate_video=(double)(context->out_stream_video.size_total*8)/cf_v;
+
+    s.time=QTime(0, 0).addMSecs((double)context->out_stream_audio.frame->pts/(double)context->out_stream_audio.av_codec_context->sample_rate*1000);
+
+    s.streams_size=context->out_stream_audio.size_total + context->out_stream_video.size_total;
+
+    emit stats(s);
 }
