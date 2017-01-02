@@ -16,8 +16,8 @@
 
 #include "capture.h"
 
-//const bool ext_converter=false;
-const bool ext_converter=true;
+const bool ext_converter=false;
+//const bool ext_converter=true;
 
 class DeckLinkCaptureDelegate : public IDeckLinkInputCallback
 {

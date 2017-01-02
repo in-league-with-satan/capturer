@@ -3,6 +3,8 @@
 #include <QFile>
 #include <QDir>
 
+#include <x264_config.h>
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/opt.h>
@@ -156,6 +158,11 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 
         } break;
 
+        case FFMpeg::VideoEncoder::libx264rgb: {
+            *codec=avcodec_find_encoder_by_name("libx264rgb");
+
+        } break;
+
         case FFMpeg::VideoEncoder::nvenc_h264: {
             *codec=avcodec_find_encoder_by_name("h264_nvenc");
 
@@ -273,7 +280,7 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 
         c->pix_fmt=cfg.pixel_format;
 
-        if(cfg.video_encoder==FFMpeg::VideoEncoder::libx264) {
+        if(cfg.video_encoder==FFMpeg::VideoEncoder::libx264 || cfg.video_encoder==FFMpeg::VideoEncoder::libx264rgb) {
             av_opt_set(c->priv_data, "preset", "ultrafast", 0);
             // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
             av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().data(), 0);
@@ -532,6 +539,11 @@ void FFMpeg::init()
     qRegisterMetaType<FFMpeg::Stats>("FFMpeg::Stats");
 
     av_register_all();
+}
+
+bool FFMpeg::isLib_x264_10bit()
+{
+    return X264_BIT_DEPTH==10;
 }
 
 bool FFMpeg::setConfig(FFMpeg::Config cfg)

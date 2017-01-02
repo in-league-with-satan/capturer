@@ -28,9 +28,9 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 #apt-get install mesa-common-dev libgl-dev libpulse-dev
 
+#DEFINES += USE_X264_10B
 #DEFINES += USE_PULSE_AUDIO
 #DEFINES += USE_SDL2
-
 
 
 
@@ -56,14 +56,23 @@ RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/rcc
 
 
 INCLUDEPATH += \
-    externals/3rdparty/blackmagic_decklink_sdk/Linux/include \
-    externals/3rdparty/ffmpeg/include
+    externals/3rdparty/blackmagic_decklink_sdk/Linux/include
+
+contains(DEFINES, USE_X264_10B) {
+    TARGET = capturer_10bit
+
+    INCLUDEPATH += externals/3rdparty/ffmpeg/10bit/include
+    LIBS += -Lexternals/3rdparty/ffmpeg/10bit/lib
+
+} else {
+    INCLUDEPATH += externals/3rdparty/ffmpeg/8bit/include
+    LIBS += -Lexternals/3rdparty/ffmpeg/8bit/lib
+}
 
 SOURCES += \
     externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
 
-
-LIBS += -Lexternals/3rdparty/ffmpeg/lib -lswresample  -lavformat -lavcodec -lavutil -lswscale -lswresample
+LIBS += -lswresample  -lavformat -lavcodec -lavutil -lswscale -lswresample
 LIBS += -lz -ldl -lvorbis -lvorbisenc -logg -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
 
 

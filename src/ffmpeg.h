@@ -25,6 +25,8 @@ public:
 
     static void init();
 
+    static bool isLib_x264_10bit();
+
     struct Framerate {
         enum T {
             full_25,
@@ -42,6 +44,7 @@ public:
     struct VideoEncoder {
         enum T {
             libx264,
+            libx264rgb,
             nvenc_h264,
             nvenc_hevc
         };

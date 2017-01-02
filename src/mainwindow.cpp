@@ -73,8 +73,20 @@ MainWindow::MainWindow(QWidget *parent) :
     cb_rec_fps->setCurrentText("59.97");
 
     cb_rec_pixel_format=new QComboBox();
-    cb_rec_pixel_format->addItem("YUV420P", AV_PIX_FMT_YUV420P);
-    cb_rec_pixel_format->addItem("YUV444P", AV_PIX_FMT_YUV444P);
+
+    if(FFMpeg::isLib_x264_10bit()) {
+        cb_rec_pixel_format->addItem("YUV420P10", AV_PIX_FMT_YUV420P10);
+        cb_rec_pixel_format->addItem("YUV444P10", AV_PIX_FMT_YUV444P10);
+
+        cb_rec_pixel_format->addItem("YUV420P", AV_PIX_FMT_YUV420P);
+        cb_rec_pixel_format->addItem("YUV444P", AV_PIX_FMT_YUV444P);
+
+    } else {
+        cb_rec_pixel_format->addItem("YUV420P", AV_PIX_FMT_YUV420P);
+        cb_rec_pixel_format->addItem("YUV444P", AV_PIX_FMT_YUV444P);
+
+        cb_rec_pixel_format->addItem("RGB24", AV_PIX_FMT_RGB24);
+    }
 
 
     connect(cb_device, SIGNAL(currentIndexChanged(int)), SLOT(onDeviceChanged(int)));
@@ -88,8 +100,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     cb_video_encoder=new QComboBox();
     cb_video_encoder->addItem("libx264");
+    if(!FFMpeg::isLib_x264_10bit())
+        cb_video_encoder->addItem("libx264rgb");
     cb_video_encoder->addItem("nvenc_h264");
-    cb_video_encoder->addItem("nvenc_hhevc");
+    cb_video_encoder->addItem("nvenc_hevc");
 
 
     cb_preview=new QCheckBox("preview");
@@ -346,7 +360,7 @@ void MainWindow::updateStats(FFMpeg::Stats s)
 {
     le_stat_size->setText(QString("%1 bytes").arg(QLocale().toString((qulonglong)s.streams_size)));
 
-    le_stat_br->setText(QString("%1 kbits/s").arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/1000.)));
+    le_stat_br->setText(QString("%1 kbits/s").arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/1000., 'f', 0)));
 
     le_stat_time->setText(s.time.toString("HH:mm:ss"));
 }
