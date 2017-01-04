@@ -215,7 +215,8 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         switch(cfg.audio_channels_size) {
         case 6:
         case 8:
-            c->channel_layout=AV_CH_LAYOUT_7POINT1;
+            //  c->channel_layout=AV_CH_LAYOUT_7POINT1;
+            c->channel_layout=AV_CH_LAYOUT_7POINT1_WIDE_BACK;
             break;
 
         case 2:
@@ -630,6 +631,10 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
     context->out_stream_audio.size_total=0;
 
     context->out_stream_video.size_total=0;
+
+
+    if(cfg.audio_dalay!=0)
+        context->out_stream_audio.next_pts=cfg.audio_dalay/1000.*context->out_stream_audio.av_codec_context->sample_rate;
 
     return true;
 }

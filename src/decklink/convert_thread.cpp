@@ -3,6 +3,7 @@
 #include "DeckLinkAPI.h"
 
 #include "frame_buffer.h"
+#include "audio_tools.h"
 
 #include "convert_thread.h"
 
@@ -109,6 +110,9 @@ void DlConvertThread::run()
                 frame.ba_audio.resize(frame_audio_src->GetSampleFrameCount()*audio_channels*(16/8));
 
                 memcpy(frame.ba_audio.data(), d_audio, frame.ba_audio.size());
+
+                if(audio_channels==8)
+                    channelsRemap(&frame.ba_audio);
 
                 //
 

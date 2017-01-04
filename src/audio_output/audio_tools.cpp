@@ -2,6 +2,30 @@
 
 #include "audio_tools.h"
 
+void channelsRemap(QByteArray *ba_data)
+{
+    int16_t *ptr_data=(int16_t*)ba_data->data();
+
+    int16_t tmp;
+
+    for(int pos=0, size=ba_data->size()/2; pos<size; pos+=8) {
+        // swap center and lfe
+        tmp=ptr_data[pos + 2];
+        ptr_data[pos + 2]=ptr_data[pos + 3];
+        ptr_data[pos + 3]=tmp;
+
+        // swap side left and rear left
+        tmp=ptr_data[pos + 4];
+        ptr_data[pos + 4]=ptr_data[pos + 6];
+        ptr_data[pos + 6]=tmp;
+
+        // swap side right and rear right
+        tmp=ptr_data[pos + 5];
+        ptr_data[pos + 5]=ptr_data[pos + 7];
+        ptr_data[pos + 7]=tmp;
+    }
+}
+
 void mix8channelsTo2(QByteArray *ba_src, QByteArray *ba_dst)
 {
     ba_dst->resize(ba_src->size()/8*2);

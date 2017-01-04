@@ -3,6 +3,7 @@
 
 #include <QByteArray>
 
+void channelsRemap(QByteArray *ba_data);
 
 void mix8channelsTo2(QByteArray *ba_src, QByteArray *ba_dst);
 

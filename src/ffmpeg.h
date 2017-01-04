@@ -54,7 +54,8 @@ public:
         QSize frame_resolution;
         Framerate::T framerate;
         uint8_t audio_channels_size;
-        uint8_t crf;       
+        int audio_dalay;
+        uint8_t crf;
         AVPixelFormat pixel_format;
         VideoEncoder::T video_encoder;
     };

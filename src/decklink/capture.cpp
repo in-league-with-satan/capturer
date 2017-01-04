@@ -13,6 +13,7 @@
 #include "DeckLinkAPI.h"
 #include "ffmpeg_format_converter.h"
 #include "convert_thread.h"
+#include "audio_tools.h"
 
 #include "capture.h"
 
@@ -303,6 +304,9 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
             frame.ba_audio.resize(audio_packet->GetSampleFrameCount()*audio_channels*(16/8));
 
             memcpy(frame.ba_audio.data(), d_audio, frame.ba_audio.size());
+
+            if(audio_channels==8)
+                channelsRemap(&frame.ba_audio);
 
             //
 

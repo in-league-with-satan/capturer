@@ -58,6 +58,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     cb_audio_channels=new QComboBox();
 
+    le_audio_delay=new QLineEdit();
+    le_audio_delay->setText("0");
+
     cb_rec_fps=new QComboBox();
 
     cb_rec_fps->addItem("25");
@@ -119,6 +122,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QLabel *l_pixel_format=new QLabel("pixel format:");
 
     QLabel *l_audio_channels=new QLabel("audio channels:");
+
+    QLabel *l_audio_delay=new QLabel("rec audio delay (ms):");
 
     QLabel *l_rec_fps=new QLabel("rec fps:");
 
@@ -188,6 +193,13 @@ MainWindow::MainWindow(QWidget *parent) :
 
     la_dev->addWidget(l_audio_channels, row, 0);
     la_dev->addWidget(cb_audio_channels, row, 1);
+
+
+    row++;
+
+    la_dev->addWidget(l_audio_delay, row, 0);
+    la_dev->addWidget(le_audio_delay, row, 1);
+
 
     row++;
 
@@ -325,6 +337,7 @@ void MainWindow::onStartRecording()
     cfg.pixel_format=(AVPixelFormat)cb_rec_pixel_format->currentData().toInt();
     cfg.video_encoder=(FFMpeg::VideoEncoder::T)cb_video_encoder->currentIndex();
     cfg.crf=le_crf->text().toUInt();
+    cfg.audio_dalay=le_audio_delay->text().toInt();
 
     ffmpeg->setConfig(cfg);
 }
