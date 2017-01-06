@@ -5,14 +5,15 @@
 
 #include "ffmpeg_thread.h"
 
+class DeckLinkCapture;
+class AudioOutputInterface;
+class OutWidget;
+class AudioLevelWidget;
+
 class QComboBox;
 class QLabel;
 class QLineEdit;
 class QCheckBox;
-
-class DeckLinkCapture;
-class AudioOutputInterface;
-class OutWidget;
 class QMessageBox;
 
 class MainWindow : public QMainWindow
@@ -50,6 +51,8 @@ private:
     QCheckBox *cb_preview;
     QCheckBox *cb_stop_rec_on_frames_drop;
 
+    AudioLevelWidget *audio_level;
+
     AudioOutputInterface *audio_output;
 
     OutWidget *out_widget;
@@ -70,7 +73,7 @@ private slots:
     void onStartRecording();
     void onStopRecording();
 
-    void onFrameSkipped(size_t size);
+    void onFrameSkipped();
 
     void onPreviewChanged(int state);
 

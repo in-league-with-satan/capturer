@@ -35,15 +35,13 @@ public:
     QMutex *mutex_frame_buffer;
 
 private:
-    size_t frame_skipped;
-
     uint16_t buffer_max_size;
 
     bool drop_skipped;
     bool enabled;
 
 signals:
-    void frameSkipped(size_t size);
+    void frameSkipped();
 };
 
 #endif // FRAME_BUFFER_H

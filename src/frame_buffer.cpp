@@ -8,8 +8,6 @@ FrameBuffer::FrameBuffer(QMutex::RecursionMode recursion_mode, QObject *parent) 
     QObject(parent)
   , mutex_frame_buffer(new QMutex(recursion_mode))
 {
-    frame_skipped=0;
-
     drop_skipped=false;
 
     enabled=true;
@@ -39,7 +37,7 @@ void FrameBuffer::appendFrame(FrameBuffer::Frame frame)
             queue.append(frame);
         }
 
-        emit frameSkipped(++frame_skipped);
+        emit frameSkipped();
     }
 }
 
@@ -69,6 +67,4 @@ void FrameBuffer::clear()
     QMutexLocker ml(mutex_frame_buffer);
 
     queue.clear();
-
-    frame_skipped=0;
 }

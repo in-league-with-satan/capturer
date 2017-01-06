@@ -18,12 +18,16 @@ public:
 
     FrameBuffer *frameBuffer();
 
+    bool isWorking();
+
 public slots:
     void setConfig(FFMpeg::Config cfg);
     void stopCoder();
 
 private:
     FrameBuffer *frame_buffer;
+
+    bool is_working;
 
 protected:
     void run();

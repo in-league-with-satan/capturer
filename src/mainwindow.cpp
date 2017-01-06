@@ -16,7 +16,7 @@
 #include "capture.h"
 #include "audio_output.h"
 #include "out_widget.h"
-
+#include "audio_level_widget.h"
 
 #include "mainwindow.h"
 
@@ -27,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     decklink_thread=new DeckLinkCapture(this);
     connect(decklink_thread, SIGNAL(formatChanged(QSize,int64_t,int64_t)), SLOT(onFormatChanged(QSize,int64_t,int64_t)), Qt::QueuedConnection);
-    connect(decklink_thread, SIGNAL(frameSkipped()), SLOT(onFrameSkipped(size_t)), Qt::QueuedConnection);
+    connect(decklink_thread, SIGNAL(frameSkipped()), SLOT(onFrameSkipped()), Qt::QueuedConnection);
 
     //
 
@@ -41,7 +41,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     decklink_thread->subscribeForAll(ffmpeg->frameBuffer());
 
-    connect(ffmpeg->frameBuffer(), SIGNAL(frameSkipped(size_t)), SLOT(onFrameSkipped(size_t)), Qt::QueuedConnection);
+    connect(ffmpeg->frameBuffer(), SIGNAL(frameSkipped()), SLOT(onFrameSkipped()), Qt::QueuedConnection);
     connect(ffmpeg, SIGNAL(stats(FFMpeg::Stats)), SLOT(updateStats(FFMpeg::Stats)));
 
     //
@@ -50,6 +50,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     out_widget->showFullScreen();
     decklink_thread->subscribeForAll(out_widget->frameBuffer());
+
+    //
+
+    audio_level=new AudioLevelWidget();
+    decklink_thread->subscribeForAudio(audio_level->frameBuffer());
 
     //
 
@@ -243,6 +248,7 @@ MainWindow::MainWindow(QWidget *parent) :
     la_h->addWidget(b_start_rec);
     la_h->addWidget(b_stop_rec);
     la_h->addLayout(la_stats);
+    la_h->addWidget(audio_level);
 
 
     QWidget *w_central=new QWidget();
@@ -364,11 +370,12 @@ void MainWindow::onStopRecording()
     ffmpeg->stopCoder();
 }
 
-void MainWindow::onFrameSkipped(size_t size)
+void MainWindow::onFrameSkipped()
 {
-    qCritical() << "frames skipped:" << size;
-
     if(!cb_stop_rec_on_frames_drop->isChecked())
+        return;
+
+    if(!ffmpeg->isWorking())
         return;
 
     ffmpeg->stopCoder();

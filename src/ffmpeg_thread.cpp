@@ -17,6 +17,8 @@ FFMpegThread::FFMpegThread(QObject *parent) :
 
     frame_buffer->setEnabled(false);
 
+    is_working=false;
+
     // start(QThread::NormalPriority);
     // start(QThread::HighPriority);
     // start(QThread::HighestPriority);
@@ -33,12 +35,19 @@ FrameBuffer *FFMpegThread::frameBuffer()
     return frame_buffer;
 }
 
+bool FFMpegThread::isWorking()
+{
+    return is_working;
+}
+
 void FFMpegThread::setConfig(FFMpeg::Config cfg)
 {
     emit sigSetConfig(cfg);
 
     frame_buffer->clear();
     frame_buffer->setEnabled(true);
+
+    is_working=true;
 }
 
 void FFMpegThread::stopCoder()
@@ -47,6 +56,8 @@ void FFMpegThread::stopCoder()
 
     frame_buffer->clear();
     frame_buffer->setEnabled(false);
+
+    is_working=false;
 }
 
 void FFMpegThread::run()
