@@ -32,6 +32,8 @@ private:
     QComboBox *cb_format;
     QComboBox *cb_pixel_format;
 
+    QLineEdit *le_video_mode;
+
     QComboBox *cb_audio_channels;
     QLineEdit *le_audio_delay;
 

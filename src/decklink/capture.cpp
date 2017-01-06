@@ -17,8 +17,8 @@
 
 #include "capture.h"
 
-const bool ext_converter=false;
-//const bool ext_converter=true;
+//const bool ext_converter=false;
+const bool ext_converter=true;
 
 class DeckLinkCaptureDelegate : public IDeckLinkInputCallback
 {
@@ -236,7 +236,6 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
     }
 
     int64_t frame_duration;
-    int64_t frame_scale;
 
     mode->GetFrameRate(&frame_duration, &frame_scale);
 
@@ -258,11 +257,27 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
         return;
 
     } else {
+        BMDTimeValue frame_time;
+        BMDTimeValue frame_duration;
+
+        video_frame->GetStreamTime(&frame_time, &frame_duration, frame_scale);
+
+        if(frame_time!=0) {
+            if(frame_time - frame_time_prev!=frame_duration) {
+                qCritical() << "decklink: frame dropped";
+
+                emit frameSkipped();
+            }
+        }
+
+        frame_time_prev=frame_time;
+
+        //
+
         if(ext_converter)
             conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet);
 
         else {
-
             FrameBuffer::Frame frame;
 
             void *d_video;

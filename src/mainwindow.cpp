@@ -27,6 +27,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     decklink_thread=new DeckLinkCapture(this);
     connect(decklink_thread, SIGNAL(formatChanged(QSize,int64_t,int64_t)), SLOT(onFormatChanged(QSize,int64_t,int64_t)), Qt::QueuedConnection);
+    connect(decklink_thread, SIGNAL(frameSkipped()), SLOT(onFrameSkipped(size_t)), Qt::QueuedConnection);
 
     //
 
@@ -55,6 +56,9 @@ MainWindow::MainWindow(QWidget *parent) :
     cb_device=new QComboBox();
     cb_format=new QComboBox();
     cb_pixel_format=new QComboBox();
+
+    le_video_mode=new QLineEdit();
+    le_video_mode->setReadOnly(true);
 
     cb_audio_channels=new QComboBox();
 
@@ -120,6 +124,8 @@ MainWindow::MainWindow(QWidget *parent) :
     QLabel *l_device=new QLabel("device:");
     QLabel *l_format=new QLabel("format:");
     QLabel *l_pixel_format=new QLabel("pixel format:");
+
+    QLabel *l_video_mode=new QLabel("input video mode:");
 
     QLabel *l_audio_channels=new QLabel("audio channels:");
 
@@ -188,6 +194,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     la_dev->addWidget(l_pixel_format, row, 0);
     la_dev->addWidget(cb_pixel_format, row, 1);
+
+    row++;
+
+    la_dev->addWidget(l_video_mode, row, 0);
+    la_dev->addWidget(le_video_mode, row, 1);
 
     row++;
 
@@ -270,6 +281,12 @@ MainWindow::~MainWindow()
 void MainWindow::onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale)
 {
     last_frame_size=size;
+
+    le_video_mode->setText(QString("%1x%2@%3")
+                           .arg(size.width())
+                           .arg(size.height())
+                           .arg(QString::number((double)frame_scale/(double)frame_duration, 'f', 2))
+                           );
 }
 
 void MainWindow::onDeviceChanged(int index)
@@ -355,6 +372,8 @@ void MainWindow::onFrameSkipped(size_t size)
         return;
 
     ffmpeg->stopCoder();
+
+    QMetaObject::invokeMethod(decklink_thread, "captureStop", Qt::QueuedConnection);
 
     if(!mb_rec_stopped)
         mb_rec_stopped=new QMessageBox(QMessageBox::Critical, "", "some frames was dropped, recording stopped", QMessageBox::Ok);

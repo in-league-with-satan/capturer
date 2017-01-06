@@ -72,6 +72,9 @@ private:
     DeckLinkPixelFormat pixel_format;
     int audio_channels;
 
+    int64_t frame_scale;
+    int64_t frame_time_prev;
+
     DlConvertThreadContainer *conv_thread;
 
     // FF::FormatConverter *ff_converter;
@@ -90,6 +93,7 @@ private:
 signals:
     void noInputSignalDetected();
     void formatChanged(QSize size, int64_t frame_duration, int64_t frame_scale);
+    void frameSkipped();
 };
 
 #endif // CAPTURE_H
