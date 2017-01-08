@@ -103,6 +103,8 @@ void DlConvertThread::run()
 
                 frame.size_video=QSize(frame_out->GetWidth(), frame_out->GetHeight());
 
+                frame.bmd_pixel_format=frame_out->GetPixelFormat();
+
                 //
 
                 frame_audio_src->GetBytes(&d_audio);

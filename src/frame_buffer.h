@@ -18,6 +18,7 @@ public:
         QByteArray ba_video;
         QSize size_video;
         QByteArray ba_audio;
+        uint32_t bmd_pixel_format;
     };
 
     void appendFrame(Frame frame);

@@ -8,6 +8,7 @@
 class DeckLinkCapture;
 class AudioOutputInterface;
 class OutWidget;
+class Sdl2VideoOutpitThread;
 class AudioLevelWidget;
 
 class QComboBox;
@@ -56,6 +57,8 @@ private:
     AudioOutputInterface *audio_output;
 
     OutWidget *out_widget;
+
+    Sdl2VideoOutpitThread *out_widget_2;
 
     QMessageBox *mb_rec_stopped;
 

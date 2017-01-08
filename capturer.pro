@@ -30,7 +30,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 #DEFINES += USE_X264_10B
 DEFINES += USE_PULSE_AUDIO
-#DEFINES += USE_SDL2
+DEFINES += USE_SDL2
 
 
 
@@ -87,14 +87,17 @@ contains(DEFINES, USE_SDL2) {
 INCLUDEPATH += \
     src \
     src/decklink \
-    src/audio_output
+    src/audio_output \
+    src/video_output
 
 SOURCES += \
     src/*.cpp \
     src/decklink/*.cpp \
-    src/audio_output/*.cpp
+    src/audio_output/*.cpp \
+    src/video_output/*.cpp
 
 HEADERS += \
     src/*.h \
     src/decklink/*.h \
-    src/audio_output/*.h
+    src/audio_output/*.h \
+    src/video_output/*.h

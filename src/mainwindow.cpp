@@ -16,6 +16,7 @@
 #include "capture.h"
 #include "audio_output.h"
 #include "out_widget.h"
+#include "sdl2_video_output_thread.h"
 #include "audio_level_widget.h"
 
 #include "mainwindow.h"
@@ -48,8 +49,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
     out_widget=new OutWidget();
 
-    out_widget->showFullScreen();
-    decklink_thread->subscribeForAll(out_widget->frameBuffer());
+    // out_widget->showFullScreen();
+    // decklink_thread->subscribeForAll(out_widget->frameBuffer());
+
+
+    out_widget_2=new Sdl2VideoOutpitThread();
+    decklink_thread->subscribeForAll(out_widget_2->frameBuffer());
 
     //
 
@@ -393,6 +398,7 @@ void MainWindow::onFrameSkipped()
 void MainWindow::onPreviewChanged(int)
 {
     out_widget->frameBuffer()->setEnabled(cb_preview->isChecked());
+    out_widget_2->frameBuffer()->setEnabled(cb_preview->isChecked());
 }
 
 void MainWindow::updateStats(FFMpeg::Stats s)

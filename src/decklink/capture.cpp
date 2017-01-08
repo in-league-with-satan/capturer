@@ -285,6 +285,7 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
             IDeckLinkMutableVideoFrame *frame_out=nullptr;
 
+            frame_out=(IDeckLinkMutableVideoFrame *)video_frame;
 
             if(video_frame->GetWidth()==1280) {
                 video_converter->ConvertFrame(video_frame, video_frame_converted_720p);
@@ -311,6 +312,8 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
             memcpy(frame.ba_video.data(), d_video, frame.ba_video.size());
 
             frame.size_video=QSize(frame_out->GetWidth(), frame_out->GetHeight());
+
+            frame.bmd_pixel_format=frame_out->GetPixelFormat();
 
             //
 

@@ -55,9 +55,39 @@ static bool avFrameToByteArray(AVFrame *frame_src, QByteArray *ba_dst)
 
 static AVFrame *alloc_frame(AVPixelFormat pix_fmt, int width, int height)
 {
+    /*
     AVFrame *av_frame;
     int ret;
 
+    av_frame=av_frame_alloc();
+
+    if(!av_frame) {
+        qCritical() << "Could not allocate video frame";
+        return nullptr;
+    }
+
+    av_frame->format=pix_fmt;
+    av_frame->width=width;
+    av_frame->height=height;
+
+    // the image can be allocated by any means and av_image_alloc() is
+    // just the most convenient way if av_malloc() is to be used
+    ret=av_image_alloc(av_frame->data, av_frame->linesize, width, height, pix_fmt, 32);
+
+    if(ret<0) {
+        qCritical() << "Could not allocate frame data";
+        return nullptr;
+    }
+
+    return av_frame;
+    */
+
+    ////////////////
+
+
+    AVFrame *av_frame;
+    int ret;
+    
     av_frame=av_frame_alloc();
 
     if(!av_frame)

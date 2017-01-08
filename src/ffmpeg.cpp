@@ -215,8 +215,8 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         switch(cfg.audio_channels_size) {
         case 6:
         case 8:
-            //  c->channel_layout=AV_CH_LAYOUT_7POINT1;
-            c->channel_layout=AV_CH_LAYOUT_7POINT1_WIDE_BACK;
+            c->channel_layout=AV_CH_LAYOUT_7POINT1;
+            // c->channel_layout=AV_CH_LAYOUT_7POINT1_WIDE_BACK;
             break;
 
         case 2:
