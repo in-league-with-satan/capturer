@@ -18,11 +18,24 @@
 PulseAudioOutputThread::PulseAudioOutputThread(QObject *parent) :
     AudioOutputInterface(parent)
 {
+#ifdef USE_PULSE_AUDIO
+
+    s=nullptr;
+
+#endif
+
     start(QThread::NormalPriority);
 }
 
 PulseAudioOutputThread::~PulseAudioOutputThread()
 {
+}
+
+void PulseAudioOutputThread::changeChannels(int size)
+{
+    AudioOutputInterface::changeChannels(size);
+
+    init();
 }
 
 void PulseAudioOutputThread::run()
@@ -35,32 +48,10 @@ void PulseAudioOutputThread::run()
     f_conv.open(QFile::ReadWrite | QFile::Truncate | QFile::Unbuffered);
 #endif
 
+
 #ifdef USE_PULSE_AUDIO
 
-    ss.rate=48000;
-    ss.format=PA_SAMPLE_S16LE;
-//    ss.channels=2;
-    ss.channels=6;
-
-    int error;
-
-    pa_channel_map map;
-    map.channels=6;
-    map.map[0]=PA_CHANNEL_POSITION_FRONT_LEFT;
-    map.map[1]=PA_CHANNEL_POSITION_FRONT_RIGHT;
-    map.map[2]=PA_CHANNEL_POSITION_LFE;
-    map.map[3]=PA_CHANNEL_POSITION_FRONT_CENTER;
-    map.map[4]=PA_CHANNEL_POSITION_REAR_LEFT;
-    map.map[5]=PA_CHANNEL_POSITION_REAR_RIGHT;
-
-    s=pa_simple_new(nullptr, "capturer", PA_STREAM_PLAYBACK, nullptr, "audio output", &ss, &map, nullptr, &error);
-
-    if(!s) {
-        qCritical() << "pa_simple_new err:" << pa_strerror(error);
-        exit(1);
-        // return;
-    }
-
+    init();
 
     FrameBuffer::Frame frame;
 
@@ -93,16 +84,6 @@ void PulseAudioOutputThread::onInputFrameArrived(QByteArray ba_data)
         return;
     }
 
-    /*
-    if(input_channels_size!=2) {
-        QByteArray ba_tmp;
-
-        mix8channelsTo2(&ba_data, &ba_tmp);
-
-        ba_data=ba_tmp;
-    }
-    */
-
     if(input_channels_size!=2) {
         QByteArray ba_tmp;
 
@@ -128,4 +109,66 @@ void PulseAudioOutputThread::onInputFrameArrived(QByteArray ba_data)
 //    pa_simple_drain(s, nullptr);
 
 #endif
+}
+
+void PulseAudioOutputThread::init()
+{
+
+#ifdef USE_PULSE_AUDIO
+
+    ss.rate=48000;
+    ss.format=PA_SAMPLE_S16LE;
+
+    pa_channel_map map;
+
+    if(input_channels_size==2) {
+        ss.channels=2;
+
+        map.channels=2;
+        map.map[0]=PA_CHANNEL_POSITION_FRONT_LEFT;
+        map.map[1]=PA_CHANNEL_POSITION_FRONT_RIGHT;
+
+    } else {
+        ss.channels=6;
+
+        map.channels=6;
+        map.map[0]=PA_CHANNEL_POSITION_FRONT_LEFT;
+        map.map[1]=PA_CHANNEL_POSITION_FRONT_RIGHT;
+        map.map[2]=PA_CHANNEL_POSITION_FRONT_CENTER;
+        map.map[3]=PA_CHANNEL_POSITION_LFE;
+        map.map[4]=PA_CHANNEL_POSITION_REAR_LEFT;
+        map.map[5]=PA_CHANNEL_POSITION_REAR_RIGHT;
+
+        /*
+        ss.channels=8;
+
+        map.channels=8;
+        map.map[0]=PA_CHANNEL_POSITION_FRONT_LEFT;
+        map.map[1]=PA_CHANNEL_POSITION_FRONT_RIGHT;
+        map.map[2]=PA_CHANNEL_POSITION_FRONT_CENTER;
+        map.map[3]=PA_CHANNEL_POSITION_LFE;
+        map.map[4]=PA_CHANNEL_POSITION_REAR_LEFT;
+        map.map[5]=PA_CHANNEL_POSITION_REAR_RIGHT;
+        map.map[4]=PA_CHANNEL_POSITION_SIDE_LEFT;
+        map.map[5]=PA_CHANNEL_POSITION_SIDE_RIGHT;
+        */
+    }
+
+    int error;
+
+    if(s) {
+        pa_simple_free(s);
+        s=nullptr;
+    }
+
+    s=pa_simple_new(nullptr, "capturer", PA_STREAM_PLAYBACK, nullptr, "audio output", &ss, &map, nullptr, &error);
+
+    if(!s) {
+        qCritical() << "pa_simple_new err:" << pa_strerror(error);
+        exit(1);
+        // return;
+    }
+
+#endif
+
 }

@@ -18,11 +18,14 @@ public:
     ~PulseAudioOutputThread();
 
 public slots:
+    virtual void changeChannels(int size);
 
 protected:
     virtual void run();
 
     void onInputFrameArrived(QByteArray ba_data);
+
+    void init();
 
 #ifdef USE_PULSE_AUDIO
     pa_simple *s;

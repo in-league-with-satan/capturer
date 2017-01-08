@@ -13,6 +13,8 @@ AudioOutputInterface::AudioOutputInterface(QObject *parent) :
     frame_buffer=new FrameBuffer(QMutex::Recursive, this);
     frame_buffer->setMaxBufferSize(2);
     frame_buffer->setDropSkipped(true);
+
+    input_channels_size=2;
 }
 
 AudioOutputInterface::~AudioOutputInterface()

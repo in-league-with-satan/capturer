@@ -26,10 +26,10 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 
-#apt-get install mesa-common-dev libgl-dev libpulse-dev
+#apt-get install mesa-common-dev libgl-dev libpulse-dev libsdl2-dev
 
 #DEFINES += USE_X264_10B
-#DEFINES += USE_PULSE_AUDIO
+DEFINES += USE_PULSE_AUDIO
 #DEFINES += USE_SDL2
 
 
