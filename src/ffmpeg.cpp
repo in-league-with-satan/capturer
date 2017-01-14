@@ -286,7 +286,22 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
             // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
             av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().data(), 0);
 
-        } else if(cfg.video_encoder==FFMpeg::VideoEncoder::nvenc_h264 || cfg.video_encoder==FFMpeg::VideoEncoder::nvenc_hevc) {
+        } else if(cfg.video_encoder==FFMpeg::VideoEncoder::nvenc_h264) {
+            c->bit_rate=0;
+
+            if(cfg.crf==0) {
+                av_opt_set(c->priv_data, "preset", "lossless", 0);
+
+            } else {
+                c->global_quality=cfg.crf;
+
+                // av_opt_set(c->priv_data, "preset", "fast", 0); // HP
+                av_opt_set(c->priv_data, "preset", "slow", 0); // HQ
+            }
+
+            // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
+
+        } else if(cfg.video_encoder==FFMpeg::VideoEncoder::nvenc_hevc) {
             c->bit_rate=0;
             c->global_quality=cfg.crf;
 

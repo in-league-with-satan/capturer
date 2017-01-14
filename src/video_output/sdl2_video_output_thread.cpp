@@ -181,7 +181,7 @@ void Sdl2VideoOutpitThread::init()
                     // SWS_GAUSS            // 22
                     // SWS_SINC             // 25
                     // SWS_LANCZOS          // 25
-                    // SWS_SPLINE             // 23
+                    // SWS_SPLINE           // 23
                     ,
                     nullptr,
                     nullptr,

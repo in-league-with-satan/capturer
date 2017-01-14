@@ -33,5 +33,9 @@ done
 
 filename=videos/$(date +%Y-%m-%d_%H-%M-%S)_q$quality.mkv
 
-./ffmpeg -channels 8 -f decklink -i "${device[@]}" -acodec copy -vcodec h264_nvenc -global_quality $quality $filename
 
+if [ "$quality" == "0" ]; then
+    quality="0 -preset lossless" 
+fi
+
+./ffmpeg -channels 8 -f decklink -i "${device[@]}" -acodec copy -vcodec h264_nvenc -global_quality $quality $filename

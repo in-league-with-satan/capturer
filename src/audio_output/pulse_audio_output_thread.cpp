@@ -8,7 +8,7 @@
 #include <pulse/error.h>
 #endif
 
-#define SAVE_STREAM
+//#define SAVE_STREAM
 
 #include "frame_buffer.h"
 #include "audio_tools.h"
@@ -41,11 +41,13 @@ void PulseAudioOutputThread::changeChannels(int size)
 void PulseAudioOutputThread::run()
 {
 #ifdef SAVE_STREAM
+
     f_src.setFileName(QApplication::applicationDirPath() + "/aud_src.raw");
     f_conv.setFileName(QApplication::applicationDirPath() + "/aud_conv.raw");
 
     f_src.open(QFile::ReadWrite | QFile::Truncate | QFile::Unbuffered);
     f_conv.open(QFile::ReadWrite | QFile::Truncate | QFile::Unbuffered);
+
 #endif
 
 
@@ -90,8 +92,10 @@ void PulseAudioOutputThread::onInputFrameArrived(QByteArray ba_data)
         mix8channelsTo6(&ba_data, &ba_tmp);
 
 #ifdef SAVE_STREAM
+
         f_src.write(ba_data);
         f_conv.write(ba_tmp);
+
 #endif
 
         ba_data=ba_tmp;
@@ -113,7 +117,6 @@ void PulseAudioOutputThread::onInputFrameArrived(QByteArray ba_data)
 
 void PulseAudioOutputThread::init()
 {
-
 #ifdef USE_PULSE_AUDIO
 
     ss.rate=48000;
@@ -170,5 +173,4 @@ void PulseAudioOutputThread::init()
     }
 
 #endif
-
 }
