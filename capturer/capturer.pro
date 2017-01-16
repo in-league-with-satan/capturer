@@ -10,7 +10,7 @@ TEMPLATE = app
 
 CONFIG += c++14
 
-DESTDIR = bin
+DESTDIR = ../bin
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked as deprecated (the exact warnings
@@ -47,8 +47,8 @@ CONFIG(debug, debug|release):{
 } else {
     DEFINES += QT_NO_DEBUG_OUTPUT
 
-    QMAKE_CFLAGS_RELEASE = "-march=native -O3 -msse -msse2 -msse3 -mssse3 -fomit-frame-pointer -pipe"
-    QMAKE_CXXFLAGS_RELEASE = "-march=native -O3 -msse -msse2 -msse3 -mssse3 -fomit-frame-pointer -pipe"
+    QMAKE_CFLAGS_RELEASE = "-march=native -O3 -fomit-frame-pointer -pipe"
+    QMAKE_CXXFLAGS_RELEASE = "-march=native -O3 -fomit-frame-pointer -pipe"
 }
 
 
@@ -59,7 +59,7 @@ RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-rcc
 
 
 INCLUDEPATH += \
-    externals/3rdparty/blackmagic_decklink_sdk/Linux/include
+    ../externals/3rdparty/blackmagic_decklink_sdk/Linux/include
 
 contains(DEFINES, USE_X264_10B) {
     TARGET = capturer_10bit
@@ -68,18 +68,18 @@ contains(DEFINES, USE_X264_10B) {
     MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-moc
     RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-rcc
 
-    INCLUDEPATH += externals/3rdparty/ffmpeg/10bit/include
-    LIBS += -Lexternals/3rdparty/ffmpeg/10bit/lib
+    INCLUDEPATH += ../externals/3rdparty/ffmpeg/10bit/include
+    LIBS += -L../externals/3rdparty/ffmpeg/10bit/lib
 
 } else {
-    INCLUDEPATH += externals/3rdparty/ffmpeg/8bit/include
-    LIBS += -Lexternals/3rdparty/ffmpeg/8bit/lib
+    INCLUDEPATH += ../externals/3rdparty/ffmpeg/8bit/include
+    LIBS += -L../externals/3rdparty/ffmpeg/8bit/lib
 }
 
 
 
 SOURCES += \
-    externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
+    ../externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
 
 LIBS += -lswresample  -lavformat -lavcodec -lavutil -lswscale -lswresample
 LIBS += -lz -ldl -lvorbis -lvorbisenc -logg -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
