@@ -3,7 +3,11 @@
 #include <QFile>
 #include <QDir>
 
+#ifdef __linux__
+
 #include <x264_config.h>
+
+#endif
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -14,20 +18,9 @@ extern "C" {
 #include <libavutil/mathematics.h>
 #include <libavutil/samplefmt.h>
 #include <libavutil/avassert.h>
-#include <libavutil/timestamp.h>
 #include "libswscale/swscale.h"
 #include <libswresample/swresample.h>
 }
-
-#ifdef av_ts2str(ts)
-#undef av_ts2str(ts)
-#define av_ts2str(ts) av_ts_make_string((char*)(char[AV_TS_MAX_STRING_SIZE]){0}, ts)
-#endif
-
-#ifdef av_ts2timestr(ts, tb)
-#undef av_ts2timestr(ts, tb)
-#define av_ts2timestr(ts, tb) av_ts_make_time_string((char*)(char[AV_TS_MAX_STRING_SIZE]){0}, ts, tb)
-#endif
 
 #include "ffmpeg_tools.h"
 #include "ffmpeg_format_converter.h"
@@ -118,17 +111,6 @@ QString errString(int error)
     return QString(buf);
 }
 
-static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt)
-{
-    AVRational *time_base=&fmt_ctx->streams[pkt->stream_index]->time_base;
-
-    printf("pts:%s pts_time:%s dts:%s dts_time:%s duration:%s duration_time:%s stream_index:%d\n",
-           av_ts2str(pkt->pts), av_ts2timestr(pkt->pts, time_base),
-           av_ts2str(pkt->dts), av_ts2timestr(pkt->dts, time_base),
-           av_ts2str(pkt->duration), av_ts2timestr(pkt->duration, time_base),
-           pkt->stream_index);
-}
-
 static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AVStream *st, AVPacket *pkt)
 {
     // rescale output packet timestamp values from codec to stream timebase
@@ -136,7 +118,6 @@ static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AV
     pkt->stream_index=st->index;
 
     // write the compressed frame to the media file
-    log_packet(fmt_ctx, pkt);
     return av_interleaved_write_frame(fmt_ctx, pkt);
 }
 
@@ -559,7 +540,13 @@ void FFMpeg::init()
 
 bool FFMpeg::isLib_x264_10bit()
 {
+#ifdef __linux__
+
     return X264_BIT_DEPTH==10;
+
+#endif
+
+    return false;
 }
 
 bool FFMpeg::setConfig(FFMpeg::Config cfg)

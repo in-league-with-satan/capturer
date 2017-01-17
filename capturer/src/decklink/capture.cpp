@@ -14,6 +14,7 @@
 #include "ffmpeg_format_converter.h"
 #include "convert_thread.h"
 #include "audio_tools.h"
+#include "decklink_tools.h"
 
 #include "capture.h"
 
@@ -208,14 +209,23 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
 {
     HRESULT	result;
 
-    char *display_mode_name=nullptr;
 
     BMDPixelFormat pixel_format=bmdFormat10BitYUV;
 
     if(format_flags & bmdDetectedVideoInputRGB444)
         pixel_format=bmdFormat10BitRGB;
 
+#ifdef __linux__
+
+    char *display_mode_name=nullptr;
     mode->GetName((const char**)&display_mode_name);
+
+#else
+
+    wchar_t *display_mode_name=nullptr;
+    mode->GetName(&display_mode_name);
+
+#endif
 
     qInfo() << "Video format changed to" << display_mode_name << (format_flags & bmdDetectedVideoInputRGB444 ? "RGB" : "YUV");
 
@@ -460,13 +470,13 @@ void DeckLinkCapture::init()
         case 6:
         case 8:
             qInfo() << "decklink_input->EnableAudioInput 8";
-            result=decklink_input->EnableAudioInput(bmdAudioSampleRate48kHz, 16, 8);
+            result=decklink_input->EnableAudioInput(bmdAudioSampleRate48kHz, bmdAudioSampleType16bitInteger, 8);
             break;
 
         case 2:
         default:
             qInfo() << "decklink_input->EnableAudioInput 2";
-            result=decklink_input->EnableAudioInput(bmdAudioSampleRate48kHz, 16, 2);
+            result=decklink_input->EnableAudioInput(bmdAudioSampleRate48kHz, bmdAudioSampleType16bitInteger, 2);
             break;
         }
 

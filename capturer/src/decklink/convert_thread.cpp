@@ -4,6 +4,7 @@
 
 #include "frame_buffer.h"
 #include "audio_tools.h"
+#include "decklink_tools.h"
 
 #include "convert_thread.h"
 

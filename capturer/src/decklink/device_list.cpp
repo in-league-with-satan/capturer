@@ -3,11 +3,17 @@
 
 #include <inttypes.h>
 
+#include "decklink_tools.h"
+
 #include "DeckLinkAPI.h"
 
 #include <device_list.h>
 
+#ifdef __linux__
 const BMDPixelFormat known_pixel_formats[]={
+#else
+const uint32_t known_pixel_formats[]={
+#endif
     bmdFormat8BitYUV,
     bmdFormat10BitYUV,
     bmdFormat8BitARGB,
@@ -47,6 +53,8 @@ int GetDevices(DeckLinkDevices *devices)
 
         // the model name of the DeckLink card
         {
+#ifdef __linux__
+
             char *device_name_string=nullptr;
 
             result=decklink->GetModelName((const char **)&device_name_string);
@@ -57,6 +65,21 @@ int GetDevices(DeckLinkDevices *devices)
             }
 
             dev.name=QString(device_name_string);
+
+#else
+
+            wchar_t *device_name_string=nullptr;
+
+            result=decklink->GetModelName(&device_name_string);
+
+            if(result!=S_OK) {
+                qCritical() << "decklink->GetModelName err";
+                return 2;
+            }
+
+            dev.name=QString::fromWCharArray(device_name_string);
+
+#endif
 
             free(device_name_string);
         }
@@ -112,15 +135,34 @@ int supportedInputFormats(IDeckLink *decklink, DeckLinkFormats *formats)
 
 
     while(display_mode_iterator->Next(&display_mode)==S_OK) {
+#ifdef __linux__
+
         char *display_mode_string=nullptr;
 
         result=display_mode->GetName((const char **)&display_mode_string);
+
+#else
+
+        wchar_t *display_mode_string=nullptr;
+
+        result=display_mode->GetName(&display_mode_string);
+
+#endif
 
         if(result==S_OK) {
             DeckLinkFormat format;
             format.index=format_index++;
 
+#ifdef __linux__
+
             format.display_mode_name=QString(display_mode_string);
+
+#else
+
+            format.display_mode_name=QString::fromWCharArray(display_mode_string);
+
+#endif
+
             free(display_mode_string);
 
             format.width=display_mode->GetWidth();
@@ -135,7 +177,7 @@ int supportedInputFormats(IDeckLink *decklink, DeckLinkFormats *formats)
                 BMDDisplayModeSupport display_mode_support;
 
                 while(known_pixel_formats[pixel_format_index]!=0) {
-                    if((decklink_input->DoesSupportVideoMode(display_mode->GetDisplayMode(), known_pixel_formats[pixel_format_index], bmdVideoInputFlagDefault, &display_mode_support, nullptr)==S_OK) && (display_mode_support!=bmdDisplayModeNotSupported))
+                    if((decklink_input->DoesSupportVideoMode(display_mode->GetDisplayMode(), (BMDPixelFormat)known_pixel_formats[pixel_format_index], bmdVideoInputFlagDefault, &display_mode_support, nullptr)==S_OK) && (display_mode_support!=bmdDisplayModeNotSupported))
                         format.pixel_formats.append(DeckLinkPixelFormat(known_pixel_formats[pixel_format_index]));
 
                     pixel_format_index++;

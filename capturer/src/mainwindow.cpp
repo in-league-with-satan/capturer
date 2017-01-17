@@ -47,14 +47,18 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //
 
-    out_widget=new OutWidget();
-
-    // out_widget->showFullScreen();
-    // decklink_thread->subscribeForAll(out_widget->frameBuffer());
-
+#ifdef __linux__
 
     out_widget_2=new Sdl2VideoOutpitThread();
     decklink_thread->subscribeForAll(out_widget_2->frameBuffer());
+
+#else
+
+    out_widget=new OutWidget();
+    out_widget->showFullScreen();
+    decklink_thread->subscribeForAll(out_widget->frameBuffer());
+
+#endif
 
     //
 
@@ -397,8 +401,15 @@ void MainWindow::onFrameSkipped()
 
 void MainWindow::onPreviewChanged(int)
 {
-    out_widget->frameBuffer()->setEnabled(cb_preview->isChecked());
+#ifdef __linux__
+
     out_widget_2->frameBuffer()->setEnabled(cb_preview->isChecked());
+
+#else
+
+    out_widget->frameBuffer()->setEnabled(cb_preview->isChecked());
+
+#endif
 }
 
 void MainWindow::updateStats(FFMpeg::Stats s)

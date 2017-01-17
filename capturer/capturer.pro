@@ -57,33 +57,56 @@ MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-moc
 RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-rcc
 
 
+linux {
+    INCLUDEPATH += \
+        ../externals/3rdparty/blackmagic_decklink_sdk/Linux/include
 
-INCLUDEPATH += \
-    ../externals/3rdparty/blackmagic_decklink_sdk/Linux/include
+    contains(DEFINES, USE_X264_10B) {
+        TARGET = capturer_10bit
 
-contains(DEFINES, USE_X264_10B) {
-    TARGET = capturer_10bit
+        OBJECTS_DIR = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-obj
+        MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-moc
+        RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-rcc
 
-    OBJECTS_DIR = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-obj
-    MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-moc
-    RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-rcc
+        INCLUDEPATH += ../externals/3rdparty/ffmpeg/10bit/include
+        LIBS += -L../externals/3rdparty/ffmpeg/10bit/lib
 
-    INCLUDEPATH += ../externals/3rdparty/ffmpeg/10bit/include
-    LIBS += -L../externals/3rdparty/ffmpeg/10bit/lib
+    } else {
+        INCLUDEPATH += ../externals/3rdparty/ffmpeg/8bit/include
+        LIBS += -L../externals/3rdparty/ffmpeg/8bit/lib
+    }
 
-} else {
-    INCLUDEPATH += ../externals/3rdparty/ffmpeg/8bit/include
-    LIBS += -L../externals/3rdparty/ffmpeg/8bit/lib
+
+    SOURCES += \
+        ../externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
+
+    LIBS += -lswresample -lavformat -lavcodec -lavutil -lswscale
+    LIBS += -lz -ldl -lvorbis -lvorbisenc -logg -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
 }
 
+windows {
+    DEFINES -= USE_X264_10B
+    DEFINES -= USE_PULSE_AUDIO
+    DEFINES -= USE_SDL2
+
+    INCLUDEPATH += \
+        ../externals/3rdparty/blackmagic_decklink_sdk-mingw
+
+    HEADERS += \
+        ../externals/3rdparty/blackmagic_decklink_sdk-mingw/*.h
+
+    SOURCES += \
+        ../externals/3rdparty/blackmagic_decklink_sdk-mingw/*.c
+
+    LIBS += -lole32
 
 
-SOURCES += \
-    ../externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
+    INCLUDEPATH += ../externals/3rdparty/ffmpeg/include
+    LIBS += -L../externals/3rdparty/ffmpeg/lib
 
-LIBS += -lswresample  -lavformat -lavcodec -lavutil -lswscale -lswresample
-LIBS += -lz -ldl -lvorbis -lvorbisenc -logg -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
-
+    LIBS += -lswresample -lavformat -lavcodec -lavutil -lswscale
+    LIBS += -lopengl32
+}
 
 contains(DEFINES, USE_PULSE_AUDIO) {
     LIBS += -lpulse-simple -lpulse
@@ -110,3 +133,4 @@ HEADERS += \
     src/decklink/*.h \
     src/audio_output/*.h \
     src/video_output/*.h
+
