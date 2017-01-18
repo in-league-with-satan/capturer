@@ -84,10 +84,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    if(proc.state()==QProcess::Running) {
-        proc.write("q");
-        proc.waitForFinished(-1);
-    }
+    stopProc();
 
     save();
 }
@@ -151,6 +148,15 @@ void MainWindow::init()
     }
 }
 
+void MainWindow::stopProc()
+{
+    while(proc.state()==QProcess::Running) {
+        proc.write("q");
+        proc.waitForFinished(300);
+        QApplication::processEvents();
+    }
+}
+
 void MainWindow::load()
 {
     QFile f;
@@ -174,6 +180,8 @@ void MainWindow::load()
     le_quality->setText(map.value("quality", 1).toString());
 
     cb_restart_rec_on_drop_frames->setChecked(map.value("restart_rec_on_drop_frames", true).toBool());
+
+    restoreGeometry(QByteArray::fromBase64(map.value("geometry").toByteArray()));
 }
 
 void MainWindow::save()
@@ -191,6 +199,7 @@ void MainWindow::save()
     map.insert("mode", cb_mode->currentIndex());
     map.insert("quality", le_quality->text().toInt());
     map.insert("restart_rec_on_drop_frames", cb_restart_rec_on_drop_frames->isChecked());
+    map.insert("geometry", QString(saveGeometry().toBase64()));
 
     f.write(QJsonDocument::fromVariant(map).toJson());
 
@@ -234,10 +243,10 @@ void MainWindow::startStop()
         return;
 
     if(proc.state()==QProcess::Running) {
-        proc.write("q");
-        proc.waitForFinished(-1);
+        stopProc();
         return;
     }
+
 
     QString args=QString("ffmpeg -channels 8 -f decklink -i \"%1@%2\" -acodec copy -vcodec h264_nvenc")
             .arg(cb_device->currentText())

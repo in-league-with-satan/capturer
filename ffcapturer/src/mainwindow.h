@@ -22,6 +22,8 @@ public:
 private:
     void init();
 
+    void stopProc();
+
     void load();
     void save();
 
