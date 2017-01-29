@@ -259,10 +259,13 @@ void MainWindow::startStop()
         args+=QString(" -preset lossless");
 
     else
-        args+=QString(" -preset fast -global_quality %1").arg(quality);
+        args+=QString(" -preset hq -global_quality %1").arg(quality);
 
 
-    args+=QString(" %1/videos/%2.mkv").arg(qApp->applicationDirPath()).arg(QDateTime::currentDateTimeUtc().toString("yyyy-MM-dd_hh-mm-ss"));
+    args+=QString(" %1/videos/%2_q%3.mkv")
+            .arg(qApp->applicationDirPath())
+            .arg(QDateTime::currentDateTimeUtc().toString("yyyy-MM-dd_hh-mm-ss"))
+            .arg(quality);
 
     qInfo() << args;
 
