@@ -15,10 +15,16 @@ public:
     ~FrameBuffer();
 
     struct Frame {
+        Frame() {
+            reset_counter=false;
+        }
+
         QByteArray ba_video;
         QSize size_video;
         QByteArray ba_audio;
         uint32_t bmd_pixel_format;
+        uint8_t counter;
+        bool reset_counter;
     };
 
     void appendFrame(Frame frame);

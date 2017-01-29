@@ -6,6 +6,7 @@
 #include <QSize>
 #include <QMutex>
 
+
 #include "frame_buffer.h"
 
 #include "device_list.h"
@@ -86,6 +87,8 @@ private:
 
     QList <FrameBuffer*> l_full;
     QList <FrameBuffer*> l_audio;
+
+    uint8_t frame_counter;
 
 
     QMutex mutex_subscription;

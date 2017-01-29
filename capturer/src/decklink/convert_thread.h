@@ -5,7 +5,7 @@
 #include <QMutex>
 #include <QVector>
 
-//#include "ffmpeg.h"
+#include "frame_buffer.h"
 
 class FrameBuffer;
 class DeckLinkCapture;
@@ -16,16 +16,17 @@ class IDeckLinkVideoFrame;
 class IDeckLinkAudioInputPacket;
 class IDeckLinkMutableVideoFrame;
 
-
 class DlConvertThread;
 class DlConvertThreadContainer;
+
+typedef void (*FrameCompletedCallback)(FrameBuffer::Frame);
 
 class DlConvertThreadContainer
 {
 public:
     explicit DlConvertThreadContainer(int thread_count);
 
-    void addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet);
+    void addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet, uint8_t counter, bool reset_counter);
 
     void subscribeForAll(FrameBuffer *obj);
     void subscribeForAudio(FrameBuffer *obj);
@@ -35,13 +36,23 @@ public:
 
     void init(IDeckLinkOutput *decklink_output);
 
+    void frameCompleted(FrameBuffer::Frame frame);
+
     QVector <DlConvertThread*> thread;
 
 private:
     int thread_count;
     int thread_num;
-};
 
+    QMutex mutex_subscription;
+
+    uint8_t last_frame_counter;
+
+    QList <FrameBuffer::Frame> queue;
+
+    QList <FrameBuffer*> l_full;
+    QList <FrameBuffer*> l_audio;
+};
 
 class DlConvertThread : public QThread
 {
@@ -50,19 +61,12 @@ class DlConvertThread : public QThread
     friend class DlConvertThreadContainer;
 
 public:
-    explicit DlConvertThread(QObject *parent=0);
+    explicit DlConvertThread(FrameCompletedCallback func_frame_completed, QObject *parent=0);
     ~DlConvertThread();
 
     FrameBuffer *frameBuffer();
 
-    void addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet);
-
-
-    void subscribeForAll(FrameBuffer *obj);
-    void subscribeForAudio(FrameBuffer *obj);
-    void unsubscribe(FrameBuffer *obj);
-
-public slots:
+    void addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet, uint8_t frame_counter, bool reset_counter);
 
 private:
     IDeckLinkVideoConversion *video_converter;
@@ -73,19 +77,17 @@ private:
     IDeckLinkVideoFrame *frame_video_src;
     IDeckLinkAudioInputPacket *frame_audio_src;
 
-    QList <FrameBuffer*> l_full;
-    QList <FrameBuffer*> l_audio;
+    uint8_t frame_counter;
+    bool reset_counter;
+
+    FrameCompletedCallback func_frame_completed;
 
     QMutex mutex;
-    QMutex mutex_subscription;
 
     int audio_channels;
 
 protected:
     void run();
-
-signals:
-
 };
 
 #endif // DL_CONVERT_THREAD_H

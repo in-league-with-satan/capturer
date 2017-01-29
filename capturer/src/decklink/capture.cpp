@@ -97,7 +97,7 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
     video_frame_converted_2160p=nullptr;
 
     if(ext_converter)
-        conv_thread=new DlConvertThreadContainer(4);
+        conv_thread=new DlConvertThreadContainer(2);
 
     else
         video_converter=CreateVideoConversionInstance();
@@ -268,14 +268,16 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
                 emit frameSkipped();
             }
-        }
+
+        } else
+            frame_counter=0;
 
         frame_time_prev=frame_time;
 
         //
 
         if(ext_converter)
-            conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet);
+            conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet, frame_counter++, frame_time==0);
 
         else {
             FrameBuffer::Frame frame;
