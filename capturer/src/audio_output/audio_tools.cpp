@@ -59,14 +59,14 @@ void mix8channelsTo6(QByteArray *ba_src, QByteArray *ba_dst)
         // ptr_data_dst[pos_dst + 1]=ptr_data_src[pos_src + 1];    // front right;
         // ptr_data_dst[pos_dst + 2]=ptr_data_src[pos_src + 2];    // front center;
         // ptr_data_dst[pos_dst + 3]=ptr_data_src[pos_src + 3];    // lfe;
-        // ptr_data_dst[pos_dst + 4]=ptr_data_src[pos_src + 6];    // rear left;
-        // ptr_data_dst[pos_dst + 5]=ptr_data_src[pos_src + 7];    // rear right;
+        // ptr_data_dst[pos_dst + 4]=ptr_data_src[pos_src + 4];    // rear left;
+        // ptr_data_dst[pos_dst + 5]=ptr_data_src[pos_src + 5];    // rear right;
 
-        ptr_data_dst[pos_dst + 0]=ptr_data_src[pos_src + 0]*.6 + ptr_data_src[pos_src + 4]*.4;    // front left;
-        ptr_data_dst[pos_dst + 1]=ptr_data_src[pos_src + 1]*.6 + ptr_data_src[pos_src + 5]*.4;    // front right;
+        ptr_data_dst[pos_dst + 0]=ptr_data_src[pos_src + 0]*.6 + ptr_data_src[pos_src + 6]*.4;    // front left;
+        ptr_data_dst[pos_dst + 1]=ptr_data_src[pos_src + 1]*.6 + ptr_data_src[pos_src + 7]*.4;    // front right;
         ptr_data_dst[pos_dst + 2]=ptr_data_src[pos_src + 2]*.6;                                   // front center;
         ptr_data_dst[pos_dst + 3]=ptr_data_src[pos_src + 3]*.6;                                   // lfe;
-        ptr_data_dst[pos_dst + 4]=ptr_data_src[pos_src + 6]*.6 + ptr_data_src[pos_src + 4]*.4;    // back left;
-        ptr_data_dst[pos_dst + 5]=ptr_data_src[pos_src + 7]*.6 + ptr_data_src[pos_src + 5]*.4;    // back right;
+        ptr_data_dst[pos_dst + 4]=ptr_data_src[pos_src + 4]*.6 + ptr_data_src[pos_src + 6]*.4;    // back left;
+        ptr_data_dst[pos_dst + 5]=ptr_data_src[pos_src + 5]*.6 + ptr_data_src[pos_src + 7]*.4;    // back right;
     }
 }
