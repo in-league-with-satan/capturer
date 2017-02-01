@@ -75,19 +75,7 @@ MainWindow::MainWindow(QWidget *parent) :
     le_audio_delay=new QLineEdit();
     le_audio_delay->setText("0");
 
-    cb_rec_fps=new QComboBox();
-
-    cb_rec_fps->addItem("25");
-    cb_rec_fps->addItem("29.97");
-    cb_rec_fps->addItem("30");
-    cb_rec_fps->addItem("25=50/2");
-    cb_rec_fps->addItem("29.97=59/2");
-    cb_rec_fps->addItem("30=60/2");
-    cb_rec_fps->addItem("50");
-    cb_rec_fps->addItem("59.97");
-    cb_rec_fps->addItem("60");
-
-    cb_rec_fps->setCurrentText("59.97");
+    cb_half_fps=new QCheckBox("half fps");
 
     cb_rec_pixel_format=new QComboBox();
 
@@ -140,8 +128,6 @@ MainWindow::MainWindow(QWidget *parent) :
     QLabel *l_audio_channels=new QLabel("audio channels:");
 
     QLabel *l_audio_delay=new QLabel("rec audio delay (ms):");
-
-    QLabel *l_rec_fps=new QLabel("rec fps:");
 
     QLabel *l_rec_pixel_format=new QLabel("rec pixel format::");
 
@@ -215,17 +201,10 @@ MainWindow::MainWindow(QWidget *parent) :
     la_dev->addWidget(l_audio_channels, row, 0);
     la_dev->addWidget(cb_audio_channels, row, 1);
 
-
     row++;
 
     la_dev->addWidget(l_audio_delay, row, 0);
     la_dev->addWidget(le_audio_delay, row, 1);
-
-
-    row++;
-
-    la_dev->addWidget(l_rec_fps, row, 0);
-    la_dev->addWidget(cb_rec_fps, row, 1);
 
     row++;
 
@@ -246,6 +225,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QVBoxLayout *la_h=new QVBoxLayout();
 
     la_h->addLayout(la_dev);
+    la_h->addWidget(cb_half_fps);
     la_h->addWidget(cb_preview);
     la_h->addWidget(cb_stop_rec_on_frames_drop);
     la_h->addWidget(b_start_cap);
@@ -291,7 +271,10 @@ MainWindow::~MainWindow()
 
 void MainWindow::onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale)
 {
-    last_frame_size=size;
+    current_frame_size=size;
+
+    current_frame_duration=frame_duration;
+    current_frame_scale=frame_scale;
 
     le_video_mode->setText(QString("%1x%2@%3")
                            .arg(size.width())
@@ -360,8 +343,8 @@ void MainWindow::onStartRecording()
     FFMpeg::Config cfg;
 
     cfg.audio_channels_size=cb_audio_channels->currentText().toInt();
-    cfg.framerate=(FFMpeg::Framerate::T)cb_rec_fps->currentIndex();
-    cfg.frame_resolution=last_frame_size;
+    cfg.framerate=FFMpeg::calcFps(current_frame_duration, current_frame_scale, cb_half_fps->isChecked());
+    cfg.frame_resolution=current_frame_size;
     cfg.pixel_format=(AVPixelFormat)cb_rec_pixel_format->currentData().toInt();
     cfg.video_encoder=(FFMpeg::VideoEncoder::T)cb_video_encoder->currentIndex();
     cfg.crf=le_crf->text().toUInt();

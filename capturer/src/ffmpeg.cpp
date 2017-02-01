@@ -243,9 +243,17 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         // identical to 1
 
         switch(cfg.framerate) {
+        case FFMpeg::Framerate::full_23:
+            ost->av_stream->time_base=(AVRational){ 1001, 24000 };
+            break;
+
+        case FFMpeg::Framerate::full_24:
+            ost->av_stream->time_base=(AVRational){ 1000, 24000 };
+            break;
+
         case FFMpeg::Framerate::full_25:
         case FFMpeg::Framerate::half_50:
-            ost->av_stream->time_base=(AVRational){ 1, 25 };
+            ost->av_stream->time_base=(AVRational){ 1000, 25000 };
             break;
 
         case FFMpeg::Framerate::full_29:
@@ -255,11 +263,11 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 
         case FFMpeg::Framerate::full_30:
         case FFMpeg::Framerate::half_60:
-            ost->av_stream->time_base=(AVRational){ 1, 30 };
+            ost->av_stream->time_base=(AVRational){ 1000, 30000 };
             break;
 
         case FFMpeg::Framerate::full_50:
-            ost->av_stream->time_base=(AVRational){ 1, 50 };
+            ost->av_stream->time_base=(AVRational){ 1000, 50000 };
             break;
 
         case FFMpeg::Framerate::full_59:
@@ -267,11 +275,11 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
             break;
 
         case FFMpeg::Framerate::full_60:
-            ost->av_stream->time_base=(AVRational){ 1, 60 };
+            ost->av_stream->time_base=(AVRational){ 1000, 60000 };
             break;
 
         default:
-            ost->av_stream->time_base=(AVRational){ 1, 30 };
+            ost->av_stream->time_base=(AVRational){ 1000, 30000 };
             break;
         }
 
@@ -560,6 +568,48 @@ void FFMpeg::init()
 bool FFMpeg::isLib_x264_10bit()
 {
     return X264_BIT_DEPTH==10;
+}
+
+FFMpeg::Framerate::T FFMpeg::calcFps(int64_t frame_duration, int64_t frame_scale, bool half_fps)
+{
+    if(half_fps) {
+        switch(frame_scale) {
+        case 24000:
+            return frame_duration==1000 ? Framerate::full_24 : Framerate::full_23;
+
+        case 25000:
+            return Framerate::full_25;
+
+        case 30000:
+            return frame_duration==1000 ? Framerate::full_30 : Framerate::full_29;
+
+        case 50000:
+            return Framerate::half_50;
+
+        case 60000:
+            return frame_duration==1000 ? Framerate::half_60: Framerate::half_59;
+        }
+
+    } else {
+        switch(frame_scale) {
+        case 24000:
+            return frame_duration==1000 ? Framerate::full_24 : Framerate::full_23;
+
+        case 25000:
+            return Framerate::full_25;
+
+        case 30000:
+            return frame_duration==1000 ? Framerate::full_30 : Framerate::full_29;
+
+        case 50000:
+            return Framerate::full_50;
+
+        case 60000:
+            return frame_duration==1000 ? Framerate::full_60: Framerate::full_59;
+        }
+    }
+
+    return Framerate::full_30;
 }
 
 bool FFMpeg::setConfig(FFMpeg::Config cfg)

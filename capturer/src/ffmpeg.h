@@ -29,6 +29,8 @@ public:
 
     struct Framerate {
         enum T {
+            full_23,
+            full_24,
             full_25,
             full_29,
             full_30,
@@ -66,6 +68,8 @@ public:
         double avg_bitrate_video;
         size_t streams_size;
     };
+
+    static Framerate::T calcFps(int64_t frame_duration, int64_t frame_scale, bool half_fps);
 
 public slots:
     bool setConfig(FFMpeg::Config cfg);

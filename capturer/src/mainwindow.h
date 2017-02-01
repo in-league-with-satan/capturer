@@ -39,7 +39,6 @@ private:
     QComboBox *cb_audio_channels;
     QLineEdit *le_audio_delay;
 
-    QComboBox *cb_rec_fps;
     QComboBox *cb_rec_pixel_format;
     QComboBox *cb_video_encoder;
 
@@ -51,6 +50,7 @@ private:
 
     QCheckBox *cb_preview;
     QCheckBox *cb_stop_rec_on_frames_drop;
+    QCheckBox *cb_half_fps;
 
     AudioLevelWidget *audio_level;
 
@@ -62,7 +62,9 @@ private:
 
     QMessageBox *mb_rec_stopped;
 
-    QSize last_frame_size;
+    QSize current_frame_size;
+    int64_t current_frame_duration;
+    int64_t current_frame_scale;
 
 private slots:
     void onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale);
