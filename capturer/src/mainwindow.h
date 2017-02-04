@@ -31,13 +31,8 @@ private:
     FFMpegThread *ffmpeg;
 
     QComboBox *cb_device;
-    QComboBox *cb_format;
-    QComboBox *cb_pixel_format;
 
     QLineEdit *le_video_mode;
-
-    QComboBox *cb_audio_channels;
-    QLineEdit *le_audio_delay;
 
     QComboBox *cb_rec_pixel_format;
     QComboBox *cb_video_encoder;
@@ -68,10 +63,6 @@ private:
 
 private slots:
     void onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale);
-
-    void onDeviceChanged(int index);
-    void onFormatChanged(int index);
-    void onPixelFormatChanged(int index);
 
     void onStartCapture();
 

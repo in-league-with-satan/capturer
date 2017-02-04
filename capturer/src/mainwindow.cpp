@@ -64,16 +64,10 @@ MainWindow::MainWindow(QWidget *parent) :
     //
 
     cb_device=new QComboBox();
-    cb_format=new QComboBox();
-    cb_pixel_format=new QComboBox();
 
     le_video_mode=new QLineEdit();
     le_video_mode->setReadOnly(true);
 
-    cb_audio_channels=new QComboBox();
-
-    le_audio_delay=new QLineEdit();
-    le_audio_delay->setText("0");
 
     cb_half_fps=new QCheckBox("half fps");
 
@@ -95,8 +89,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     connect(cb_device, SIGNAL(currentIndexChanged(int)), SLOT(onDeviceChanged(int)));
-    connect(cb_format, SIGNAL(currentIndexChanged(int)), SLOT(onFormatChanged(int)));
-    connect(cb_pixel_format, SIGNAL(currentIndexChanged(int)), SLOT(onPixelFormatChanged(int)));
 
 
     le_crf=new QLineEdit("10");
@@ -120,14 +112,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     QLabel *l_device=new QLabel("device:");
-    QLabel *l_format=new QLabel("format:");
-    QLabel *l_pixel_format=new QLabel("pixel format:");
 
     QLabel *l_video_mode=new QLabel("input video mode:");
-
-    QLabel *l_audio_channels=new QLabel("audio channels:");
-
-    QLabel *l_audio_delay=new QLabel("rec audio delay (ms):");
 
     QLabel *l_rec_pixel_format=new QLabel("rec pixel format::");
 
@@ -135,14 +121,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QLabel *l_video_encoder=new QLabel("video encoder:");
 
-    QPushButton *b_start_cap=new QPushButton("start capture");
-    QPushButton *b_stop_cap=new QPushButton("stop capture");
-
     QPushButton *b_start_rec=new QPushButton("start recording");
     QPushButton *b_stop_rec=new QPushButton("stop recording");
-
-    connect(b_start_cap, SIGNAL(clicked(bool)), SLOT(onStartCapture()));
-    connect(b_stop_cap, SIGNAL(clicked(bool)), decklink_thread, SLOT(captureStop()), Qt::QueuedConnection);
 
     connect(b_start_rec, SIGNAL(clicked(bool)), SLOT(onStartRecording()));
     connect(b_stop_rec, SIGNAL(clicked(bool)), SLOT(onStopRecording()));
@@ -183,28 +163,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     row++;
 
-    la_dev->addWidget(l_format, row, 0);
-    la_dev->addWidget(cb_format, row, 1);
-
-    row++;
-
-    la_dev->addWidget(l_pixel_format, row, 0);
-    la_dev->addWidget(cb_pixel_format, row, 1);
-
-    row++;
-
     la_dev->addWidget(l_video_mode, row, 0);
     la_dev->addWidget(le_video_mode, row, 1);
-
-    row++;
-
-    la_dev->addWidget(l_audio_channels, row, 0);
-    la_dev->addWidget(cb_audio_channels, row, 1);
-
-    row++;
-
-    la_dev->addWidget(l_audio_delay, row, 0);
-    la_dev->addWidget(le_audio_delay, row, 1);
 
     row++;
 
@@ -228,8 +188,6 @@ MainWindow::MainWindow(QWidget *parent) :
     la_h->addWidget(cb_half_fps);
     la_h->addWidget(cb_preview);
     la_h->addWidget(cb_stop_rec_on_frames_drop);
-    la_h->addWidget(b_start_cap);
-    la_h->addWidget(b_stop_cap);
     la_h->addWidget(b_start_rec);
     la_h->addWidget(b_stop_rec);
     la_h->addLayout(la_stats);
@@ -240,13 +198,6 @@ MainWindow::MainWindow(QWidget *parent) :
     w_central->setLayout(la_h);
 
     setCentralWidget(w_central);
-
-    //
-
-    cb_audio_channels->addItem(QString("2"));
-    cb_audio_channels->addItem(QString("8"));
-
-    cb_audio_channels->setCurrentText("8");
 
     //
 
@@ -283,56 +234,14 @@ void MainWindow::onFormatChanged(QSize size, int64_t frame_duration, int64_t fra
                            );
 }
 
-void MainWindow::onDeviceChanged(int index)
-{
-    Q_UNUSED(index);
-
-    cb_format->clear();
-    cb_pixel_format->clear();
-
-    DeckLinkDevice dev=cb_device->currentData().value<DeckLinkDevice>();
-
-    for(int i_format=0; i_format<dev.formats.size(); ++i_format) {
-        DeckLinkFormat fmt=dev.formats[i_format];
-
-        QVariant var;
-        var.setValue(fmt);
-
-        cb_format->addItem(fmt.display_mode_name, var);
-    }
-}
-
-void MainWindow::onFormatChanged(int index)
-{
-    Q_UNUSED(index);
-
-    cb_pixel_format->clear();
-
-    DeckLinkFormat fmt=cb_format->currentData().value<DeckLinkFormat>();
-
-    for(int i_pf=0; i_pf<fmt.pixel_formats.size(); ++i_pf) {
-        DeckLinkPixelFormat pf=fmt.pixel_formats[i_pf];
-
-        QVariant var;
-        var.setValue(pf);
-
-        cb_pixel_format->addItem(pf.name(), var);
-    }
-}
-
-void MainWindow::onPixelFormatChanged(int index)
-{
-    Q_UNUSED(index);
-}
-
 void MainWindow::onStartCapture()
 {
     decklink_thread->setup(cb_device->currentData().value<DeckLinkDevice>(),
-                           cb_format->currentData().value<DeckLinkFormat>(),
-                           cb_pixel_format->currentData().value<DeckLinkPixelFormat>(),
-                           cb_audio_channels->currentText().toInt());
+                           DeckLinkFormat(),
+                           DeckLinkPixelFormat(),
+                           8);
 
-    QMetaObject::invokeMethod(audio_output, "changeChannels", Qt::QueuedConnection, Q_ARG(int, cb_audio_channels->currentText().toInt()));
+    QMetaObject::invokeMethod(audio_output, "changeChannels", Qt::QueuedConnection, Q_ARG(int, 8));
 
 
     QMetaObject::invokeMethod(decklink_thread, "captureStart", Qt::QueuedConnection);
@@ -342,13 +251,11 @@ void MainWindow::onStartRecording()
 {
     FFMpeg::Config cfg;
 
-    cfg.audio_channels_size=cb_audio_channels->currentText().toInt();
     cfg.framerate=FFMpeg::calcFps(current_frame_duration, current_frame_scale, cb_half_fps->isChecked());
     cfg.frame_resolution=current_frame_size;
     cfg.pixel_format=(AVPixelFormat)cb_rec_pixel_format->currentData().toInt();
     cfg.video_encoder=(FFMpeg::VideoEncoder::T)cb_video_encoder->currentIndex();
     cfg.crf=le_crf->text().toUInt();
-    cfg.audio_dalay=le_audio_delay->text().toInt();
 
     ffmpeg->setConfig(cfg);
 }

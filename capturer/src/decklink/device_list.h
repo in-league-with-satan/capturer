@@ -5,9 +5,7 @@
 #include <QMetaType>
 
 struct DeckLinkPixelFormat {
-    DeckLinkPixelFormat() {
-        fmt=0;
-    }
+    DeckLinkPixelFormat();
 
     DeckLinkPixelFormat(int format) {
         fmt=format;
