@@ -28,6 +28,7 @@ protected:
 
     void init();
     void drawFrame(QByteArray *ba_frame);
+    void drawFrameQImage(QByteArray *ba_frame);
 
 private slots:
     void checkFrame();

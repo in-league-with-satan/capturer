@@ -248,6 +248,51 @@ void Sdl2VideoOutpitThread::drawFrame(QByteArray *ba_frame)
 #endif
 }
 
+void Sdl2VideoOutpitThread::drawFrameQImage(QByteArray *ba_frame)
+{
+#ifdef USE_SDL2
+
+    int ret;
+
+    ret=SDL_RenderClear(sdl_renderer);
+
+    if(ret!=0) {
+        qCritical() << "SDL_RenderClear err";
+    }
+
+    //
+
+    if(sdl_rect.w!=in_frame_size.width() || sdl_rect.h!=in_frame_size.height()) {
+        QImage img_src=QImage((uchar*)ba_frame->data(), in_frame_size.width(), in_frame_size.height(), QImage::Format_ARGB32);
+
+        QImage img_scaled=img_src.scaled(sdl_rect.w, sdl_rect.h);
+
+        if(img_scaled.isNull())
+            return;
+
+        ret=SDL_UpdateTexture(sdl_texture, &sdl_rect, img_scaled.bits(), img_scaled.width()*4);
+
+    } else {
+        ret=SDL_UpdateTexture(sdl_texture, &sdl_rect, ba_frame->data(), in_frame_size.width()*4);
+
+    }
+
+    if(ret!=0) {
+        qCritical() << "SDL_UpdateTexture err";
+    }
+
+    ret=SDL_RenderCopy(sdl_renderer, sdl_texture, &sdl_rect, &sdl_rect);
+
+    if(ret!=0) {
+        qCritical() << "SDL_RenderCopy err";
+    }
+
+    SDL_RenderPresent(sdl_renderer);
+
+#endif
+
+}
+
 void Sdl2VideoOutpitThread::checkFrame()
 {
 #ifdef USE_SDL2
@@ -272,7 +317,8 @@ void Sdl2VideoOutpitThread::checkFrame()
         init();
     }
 
-    drawFrame(&frame.ba_video);
+    // drawFrame(&frame.ba_video);
+    drawFrameQImage(&frame.ba_video);
 
 #endif
 }

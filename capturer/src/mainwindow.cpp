@@ -368,7 +368,7 @@ void MainWindow::onFrameSkipped()
 
     ffmpeg->stopCoder();
 
-    QMetaObject::invokeMethod(decklink_thread, "captureStop", Qt::QueuedConnection);
+    // QMetaObject::invokeMethod(decklink_thread, "captureStop", Qt::QueuedConnection);
 
     if(!mb_rec_stopped)
         mb_rec_stopped=new QMessageBox(QMessageBox::Critical, "", "some frames was dropped, recording stopped", QMessageBox::Ok);

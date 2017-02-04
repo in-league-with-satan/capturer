@@ -60,6 +60,8 @@ void FrameBuffer::setEnabled(bool value)
     QMutexLocker ml(mutex_frame_buffer);
 
     enabled=value;
+
+    queue.clear();
 }
 
 void FrameBuffer::clear()
