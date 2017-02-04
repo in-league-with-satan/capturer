@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <QApplication>
 #include <QLayout>
 #include <QLabel>
 #include <QComboBox>
@@ -9,6 +10,8 @@
 #include <QLineEdit>
 #include <QCheckBox>
 #include <QMessageBox>
+#include <QJsonDocument>
+#include <QFile>
 
 #include "DeckLinkAPI.h"
 
@@ -86,9 +89,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
         cb_rec_pixel_format->addItem("RGB24", AV_PIX_FMT_RGB24);
     }
-
-
-    connect(cb_device, SIGNAL(currentIndexChanged(int)), SLOT(onDeviceChanged(int)));
 
 
     le_crf=new QLineEdit("10");
@@ -212,12 +212,78 @@ MainWindow::MainWindow(QWidget *parent) :
         cb_device->addItem(dev.name, var);
     }
 
+    load();
+
     onStartCapture();
 }
 
 MainWindow::~MainWindow()
 {
     decklink_thread->exit();
+
+    save();
+}
+
+void MainWindow::load()
+{
+    QFile f;
+
+#ifdef USE_X264_10B
+
+    f.setFileName(QApplication::applicationDirPath() + "/capturer_10bit.json");
+
+#else
+
+    f.setFileName(QApplication::applicationDirPath() + "/capturer.json");
+
+#endif
+
+    if(!f.open(QFile::ReadOnly))
+        return;
+
+    QVariantMap map_cfg=QJsonDocument::fromJson(f.readAll()).toVariant().toMap();
+
+    cb_device->setCurrentIndex(map_cfg.value("device").toInt());
+    cb_rec_pixel_format->setCurrentIndex(map_cfg.value("rec_pixel_format").toInt());
+    le_crf->setText(map_cfg.value("crf").toString());
+    cb_video_encoder->setCurrentIndex(map_cfg.value("video_encoder").toInt());
+
+    cb_half_fps->setChecked(map_cfg.value("half_fps").toBool());
+    cb_preview->setChecked(map_cfg.value("preview").toBool());
+    cb_stop_rec_on_frames_drop->setChecked(map_cfg.value("stop_rec_on_frames_drop").toBool());
+
+    restoreGeometry(QByteArray::fromBase64(map_cfg.value("geometry").toByteArray()));
+}
+
+void MainWindow::save()
+{
+    QFile f;
+
+#ifdef USE_X264_10B
+
+    f.setFileName(QApplication::applicationDirPath() + "/capturer_10bit.json");
+
+#else
+
+    f.setFileName(QApplication::applicationDirPath() + "/capturer.json");
+
+#endif
+
+    if(!f.open(QFile::ReadWrite | QFile::Truncate))
+        return;
+
+    QVariantMap map_cfg;
+
+    map_cfg.insert("device", cb_device->currentIndex());
+    map_cfg.insert("rec_pixel_format", cb_rec_pixel_format->currentIndex());
+    map_cfg.insert("crf", le_crf->text().toInt());
+    map_cfg.insert("video_encoder", cb_video_encoder->currentIndex());
+    map_cfg.insert("half_fps", cb_half_fps->isChecked());
+    map_cfg.insert("preview", cb_preview->isChecked());
+    map_cfg.insert("stop_rec_on_frames_drop", cb_stop_rec_on_frames_drop->isChecked());
+    map_cfg.insert("geometry", QString(saveGeometry().toBase64()));
+
+    f.write(QJsonDocument::fromVariant(map_cfg).toJson());
 }
 
 void MainWindow::onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale)

@@ -62,6 +62,9 @@ private:
     int64_t current_frame_scale;
 
 private slots:
+    void load();
+    void save();
+
     void onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale);
 
     void onStartCapture();
