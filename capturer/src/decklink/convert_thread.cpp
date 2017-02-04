@@ -145,6 +145,14 @@ DlConvertThreadContainer::DlConvertThreadContainer(int thread_count)
 
 void DlConvertThreadContainer::addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet, uint8_t counter, bool reset_counter)
 {
+    if(reset_counter) {
+        qWarning() << "queue.clear";
+
+        QMutexLocker ml(&mutex_subscription);
+
+        queue.clear();
+    }
+
     thread[thread_num++]->addFrame(frame, audio_packet, counter, reset_counter);
 
     if(thread_num>=thread_count)
@@ -197,12 +205,13 @@ void DlConvertThreadContainer::frameCompleted(FrameBuffer::Frame frame)
     QMutexLocker ml(&mutex_subscription);
 
 
-    if(frame.reset_counter) {
+    if(frame.reset_counter || queue.size()>(thread_count + 1)) {
+        qWarning() << "reset queue" << frame.reset_counter << queue.size();
+
         last_frame_counter=frame.counter - 1;
 
         queue.clear();
     }
-
 
     if(frame.counter!=uint8_t(last_frame_counter + 1)) {
         queue.append(frame);

@@ -113,7 +113,7 @@ QString errString(int error)
 {
     char buf[1024]={0};
 
-    av_strerror(error, buf, 1024);
+    av_strerror(error, buf, 640);
 
     return QString(buf);
 }

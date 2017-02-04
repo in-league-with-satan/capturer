@@ -66,7 +66,7 @@ void Sdl2VideoOutpitThread::run()
 
         QCoreApplication::processEvents();
 
-        usleep(4000);
+        usleep(1000);
     }
 }
 
