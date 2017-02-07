@@ -25,7 +25,7 @@ Rectangle {
         font.bold : true
         style: Text.Outline
 
-        text: "00:10:50.234    120 mbit/s    frames dropped: 0"
+        text: ""
     }
 
     Rectangle {
@@ -59,8 +59,6 @@ Rectangle {
             duration: 100
 
             onStopped: {
-                messenger.hello();
-
                 scale_animation_pause.start();
             }
         }
@@ -108,10 +106,18 @@ Rectangle {
     ]
 
     Connections {
-       target: messenger
+        target: messenger
 
-       onUpdateRecStats: {
-           text_output.text=duration + "    " + size + " bytes" + "    " + bitrate + " mbit/s";
-       }
+        onUpdateRecStats: {
+            text_output.text=duration + "    " + size + " bytes" + "    " + bitrate + " mbit/s";
+        }
+
+        onRecStarted: {
+            rec_state_bar.state_visible=true
+        }
+
+        onRecStopped: {
+            rec_state_bar.state_visible=false
+        }
     }
 }

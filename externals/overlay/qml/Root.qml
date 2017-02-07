@@ -14,7 +14,6 @@ Rectangle {
     RecordState {
         anchors.horizontalCenter: parent.horizontalCenter
         opacity:0
-        state_visible: true
         y: Screen.height - height*1.5
     }
 }

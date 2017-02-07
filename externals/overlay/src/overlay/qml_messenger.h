@@ -12,11 +12,15 @@ public:
 
     ~QmlMessenger();
 
+    void recStats(QString duration, QString bitrate, QString size);
+
 public slots:
-    void hello();
 
 signals:
     void updateRecStats(QString duration, QString bitrate, QString size);
+
+    void recStarted();
+    void recStopped();
 
 };
 
