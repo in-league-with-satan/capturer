@@ -6,23 +6,26 @@ Rectangle {
     id: rec_state_bar
 
     visible: true
-    width: parent.width - parent.height*.08*.5
-    height: parent.height*.02
+    width: parent.width*.96
+    height: parent.height*.04
 
     property bool state_visible: false
 
+    // color: "blue"
     color: "transparent"
-
 
     Text {
         id: text_output
 
         anchors.left: circle.right
-        anchors.leftMargin: parent.height*.8
-        y: parent.height*.02
+        anchors.leftMargin: parent.height*.5
+        anchors.verticalCenter: parent.verticalCenter
+
         color: "white"
+
         font.pixelSize: parent.height*.8
         font.bold : true
+
         style: Text.Outline
 
         text: ""
@@ -31,8 +34,8 @@ Rectangle {
     Rectangle {
         id: circle
 
-        width: Screen.desktopAvailableHeight*.02
-        height: Screen.desktopAvailableHeight*.02
+        width: parent.height
+        height: parent.height
         color: "red"
 
         radius: width*.5
@@ -82,7 +85,7 @@ Rectangle {
 
             PropertyChanges {
                 target: rec_state_bar
-                opacity: 1.0
+                opacity: 1.
             }
         },
 
@@ -91,7 +94,7 @@ Rectangle {
 
             PropertyChanges {
                 target: rec_state_bar
-                opacity: 0.0
+                opacity: 0.
             }
         }
     ]
@@ -112,12 +115,8 @@ Rectangle {
             text_output.text=duration + "    " + size + " bytes" + "    " + bitrate + " mbit/s";
         }
 
-        onRecStarted: {
-            rec_state_bar.state_visible=true
-        }
-
-        onRecStopped: {
-            rec_state_bar.state_visible=false
-        }
+        onRecStarted: rec_state_bar.state_visible=true
+        onRecStopped: rec_state_bar.state_visible=false
+        onBack: rec_state_bar.state_visible=false
     }
 }

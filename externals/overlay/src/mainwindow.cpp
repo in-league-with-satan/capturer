@@ -24,14 +24,16 @@ MainWindow::MainWindow(QWidget *parent)
 
     QPushButton *b_stop_rec=new QPushButton("stop rec");
 
+    QPushButton *b_menu=new QPushButton("menu");
 
-
-
+    QPushButton *b_back=new QPushButton("back");
 
     QVBoxLayout *la_main=new QVBoxLayout();
 
     la_main->addWidget(b_start_rec);
     la_main->addWidget(b_stop_rec);
+    la_main->addWidget(b_menu);
+    la_main->addWidget(b_back);
 
     QWidget *w_central=new QWidget();
 
@@ -47,6 +49,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(b_start_rec, SIGNAL(clicked(bool)), SLOT(onRecStarted()));
 
     connect(b_stop_rec, SIGNAL(clicked(bool)), messenger, SIGNAL(recStopped()));
+
+    connect(b_menu, SIGNAL(clicked(bool)), messenger, SIGNAL(showMenu()));
+
+    connect(b_back, SIGNAL(clicked(bool)), messenger, SIGNAL(back()));
 
     OverlayView *overlay_view=new OverlayView();
 
@@ -74,7 +80,22 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     overlay_view->show();
+    overlay_view->resize(overlay_view->size() - QSize(1, 1));
     // overlay_view.showFullScreen();
+
+    //
+
+    messenger->setModelVideoEncoder(QStringList() << "libx264" << "libx264rgb" << "nvenc_h264" << "nvenc_hevc");
+
+    messenger->setModelPixelFormat(QStringList() << "yuv420p" << "yuv444p" << "yuv422p10" << "rgb");
+
+    messenger->videoEncoderIndexSet(2);
+
+    messenger->crfSet(4);
+
+    messenger->halfFpsSet(true);
+
+    messenger->stopOnDropSet(true);
 }
 
 MainWindow::~MainWindow()

@@ -115,7 +115,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QLabel *l_video_mode=new QLabel("input video mode:");
 
-    QLabel *l_rec_pixel_format=new QLabel("rec pixel format::");
+    QLabel *l_rec_pixel_format=new QLabel("rec pixel format:");
 
     QLabel *l_crf=new QLabel("crf:");
 
