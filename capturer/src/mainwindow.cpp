@@ -76,19 +76,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     cb_rec_pixel_format=new QComboBox();
 
-    if(FFMpeg::isLib_x264_10bit()) {
-        cb_rec_pixel_format->addItem("YUV420P10", AV_PIX_FMT_YUV420P10);
-        cb_rec_pixel_format->addItem("YUV444P10", AV_PIX_FMT_YUV444P10);
-
-        cb_rec_pixel_format->addItem("YUV420P", AV_PIX_FMT_YUV420P);
-        cb_rec_pixel_format->addItem("YUV444P", AV_PIX_FMT_YUV444P);
-
-    } else {
-        cb_rec_pixel_format->addItem("YUV420P", AV_PIX_FMT_YUV420P);
-        cb_rec_pixel_format->addItem("YUV444P", AV_PIX_FMT_YUV444P);
-
-        cb_rec_pixel_format->addItem("RGB24", AV_PIX_FMT_RGB24);
-    }
+    connect(cb_rec_pixel_format, SIGNAL(currentIndexChanged(int)), SLOT(onPixelFormatChanged(int)));
 
 
     le_crf=new QLineEdit("10");
@@ -96,11 +84,18 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
     cb_video_encoder=new QComboBox();
-    cb_video_encoder->addItem("libx264");
-    if(!FFMpeg::isLib_x264_10bit())
-        cb_video_encoder->addItem("libx264rgb");
-    cb_video_encoder->addItem("nvenc_h264");
-    cb_video_encoder->addItem("nvenc_hevc");
+    connect(cb_video_encoder, SIGNAL(currentIndexChanged(int)), SLOT(onEncoderChanged(int)));
+
+    if(FFMpeg::isLib_x264_10bit()) {
+        cb_video_encoder->addItem("libx264_10bit", FFMpeg::VideoEncoder::libx264_10bit);
+
+    } else {
+        cb_video_encoder->addItem("libx264", FFMpeg::VideoEncoder::libx264);
+        cb_video_encoder->addItem("libx264rgb", FFMpeg::VideoEncoder::libx264rgb);
+    }
+
+    cb_video_encoder->addItem("nvenc_h264", FFMpeg::VideoEncoder::nvenc_h264);
+    cb_video_encoder->addItem("nvenc_hevc", FFMpeg::VideoEncoder::nvenc_hevc);
 
 
     cb_preview=new QCheckBox("preview");
@@ -244,7 +239,7 @@ void MainWindow::load()
     QVariantMap map_cfg=QJsonDocument::fromJson(f.readAll()).toVariant().toMap();
 
     cb_device->setCurrentIndex(map_cfg.value("device").toInt());
-    cb_rec_pixel_format->setCurrentIndex(map_cfg.value("rec_pixel_format").toInt());
+    map_pixel_format=map_cfg.value("rec_pixel_format").toMap();
     le_crf->setText(map_cfg.value("crf").toString());
     cb_video_encoder->setCurrentIndex(map_cfg.value("video_encoder").toInt());
 
@@ -253,6 +248,8 @@ void MainWindow::load()
     cb_stop_rec_on_frames_drop->setChecked(map_cfg.value("stop_rec_on_frames_drop").toBool());
 
     restoreGeometry(QByteArray::fromBase64(map_cfg.value("geometry").toByteArray()));
+
+    onEncoderChanged(map_cfg.value("video_encoder").toInt());
 }
 
 void MainWindow::save()
@@ -275,7 +272,7 @@ void MainWindow::save()
     QVariantMap map_cfg;
 
     map_cfg.insert("device", cb_device->currentIndex());
-    map_cfg.insert("rec_pixel_format", cb_rec_pixel_format->currentIndex());
+    map_cfg.insert("rec_pixel_format", map_pixel_format);
     map_cfg.insert("crf", le_crf->text().toInt());
     map_cfg.insert("video_encoder", cb_video_encoder->currentIndex());
     map_cfg.insert("half_fps", cb_half_fps->isChecked());
@@ -284,6 +281,33 @@ void MainWindow::save()
     map_cfg.insert("geometry", QString(saveGeometry().toBase64()));
 
     f.write(QJsonDocument::fromVariant(map_cfg).toJson());
+}
+
+void MainWindow::onEncoderChanged(const int &index)
+{
+    Q_UNUSED(index);
+
+    QList <FFMpeg::PixelFormat::T> fmts=
+            FFMpeg::PixelFormat::compatiblePixelFormats((FFMpeg::VideoEncoder::T)cb_video_encoder->currentData().toInt());
+
+    cb_rec_pixel_format->blockSignals(true);
+
+    cb_rec_pixel_format->clear();
+
+    for(int i=0; i<fmts.size(); ++i)
+        cb_rec_pixel_format->addItem(FFMpeg::PixelFormat::toString(fmts[i]), fmts[i]);
+
+    cb_rec_pixel_format->setCurrentIndex(map_pixel_format.value(QString::number(cb_video_encoder->currentData().toInt()), 0).toInt());
+
+    cb_rec_pixel_format->blockSignals(false);
+}
+
+void MainWindow::onPixelFormatChanged(const int &index)
+{
+    if(index<0)
+        return;
+
+    map_pixel_format.insert(QString::number(cb_video_encoder->currentData().toInt()), index);
 }
 
 void MainWindow::onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale)
@@ -320,7 +344,7 @@ void MainWindow::onStartRecording()
     cfg.framerate=FFMpeg::calcFps(current_frame_duration, current_frame_scale, cb_half_fps->isChecked());
     cfg.frame_resolution=current_frame_size;
     cfg.pixel_format=(AVPixelFormat)cb_rec_pixel_format->currentData().toInt();
-    cfg.video_encoder=(FFMpeg::VideoEncoder::T)cb_video_encoder->currentIndex();
+    cfg.video_encoder=(FFMpeg::VideoEncoder::T)cb_video_encoder->currentData().toInt();
     cfg.crf=le_crf->text().toUInt();
 
     ffmpeg->setConfig(cfg);

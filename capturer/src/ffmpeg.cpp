@@ -153,8 +153,9 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 
     } else {
         switch(cfg.video_encoder) {
-        case FFMpeg::VideoEncoder::libx264: {
-            *codec=avcodec_find_encoder(codec_id);
+        case FFMpeg::VideoEncoder::libx264:
+        case FFMpeg::VideoEncoder::libx264_10bit: {
+            *codec=avcodec_find_encoder_by_name("libx264");
 
         } break;
 
@@ -837,4 +838,70 @@ void FFMpeg::calcStats()
     s.streams_size=context->out_stream_audio.size_total + context->out_stream_video.size_total;
 
     emit stats(s);
+}
+
+//
+
+QString FFMpeg::PixelFormat::toString(uint64_t format)
+{
+    switch(format) {
+    case RGB24:
+        return QString("rgb24");
+
+    case YUV420P:
+        return QString("yuv420p");
+
+    case YUV444P:
+        return QString("yuv444p");
+
+    case YUV420P10:
+        return QString("yuv420p10");
+
+    case YUV444P10:
+        return QString("yuv444p10");
+    }
+
+    return QString("unknown");
+}
+
+uint64_t FFMpeg::PixelFormat::fromString(QString format)
+{
+    if(format=="rgb24")
+        return RGB24;
+
+    else if(format=="yuv420p")
+        return YUV420P;
+
+    else if(format=="yuv444p")
+        return YUV444P;
+
+    else if(format=="yuv420p10")
+        return YUV420P10;
+
+    else if(format=="yuv444p10")
+        return YUV444P10;
+
+    return 0;
+}
+
+QList <FFMpeg::PixelFormat::T> FFMpeg::PixelFormat::compatiblePixelFormats(FFMpeg::VideoEncoder::T encoder)
+{
+    switch(encoder) {
+    case VideoEncoder::libx264:
+        return QList<T>() << YUV420P << YUV444P;
+
+    case VideoEncoder::libx264_10bit:
+        return QList<T>() << YUV420P10 << YUV444P10;
+
+    case VideoEncoder::libx264rgb:
+        return QList<T>() << RGB24;
+
+    case VideoEncoder::nvenc_h264:
+        return QList<T>() << YUV420P << YUV444P;
+
+    case VideoEncoder::nvenc_hevc:
+        return QList<T>() << YUV420P;
+    }
+
+    return QList<T>() << RGB24 << YUV420P << YUV444P << YUV420P10 << YUV444P10;
 }

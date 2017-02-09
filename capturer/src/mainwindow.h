@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QVariant>
 
 #include "ffmpeg_thread.h"
 
@@ -61,9 +62,14 @@ private:
     int64_t current_frame_duration;
     int64_t current_frame_scale;
 
+    QVariantMap map_pixel_format;
+
 private slots:
     void load();
     void save();
+
+    void onEncoderChanged(const int &index);
+    void onPixelFormatChanged(const int &index);
 
     void onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale);
 
