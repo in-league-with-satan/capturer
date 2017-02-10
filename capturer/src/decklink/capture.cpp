@@ -156,6 +156,9 @@ void DeckLinkCapture::unsubscribe(FrameBuffer *obj)
 
 void DeckLinkCapture::run()
 {
+    qInfo() << "DeckLinkCapture::run: priority" << priority();
+
+
     // Get the DeckLink device
     IDeckLinkIterator *decklink_iterator=CreateDeckLinkIteratorInstance();
 

@@ -3,6 +3,7 @@ QT += \
     gui \
     widgets \
     multimedia \
+    multimediawidgets \
     opengl
 
 TARGET = capturer

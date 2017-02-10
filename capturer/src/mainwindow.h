@@ -8,7 +8,7 @@
 
 class DeckLinkCapture;
 class AudioOutputInterface;
-class OutWidget;
+class OutWidget2;
 class Sdl2VideoOutpitThread;
 class AudioLevelWidget;
 
@@ -52,7 +52,7 @@ private:
 
     AudioOutputInterface *audio_output;
 
-    OutWidget *out_widget;
+    OutWidget2 *out_widget;
 
     Sdl2VideoOutpitThread *out_widget_2;
 
@@ -63,6 +63,9 @@ private:
     int64_t current_frame_scale;
 
     QVariantMap map_pixel_format;
+
+protected:
+    void closeEvent(QCloseEvent *);
 
 private slots:
     void load();

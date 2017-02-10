@@ -1,0 +1,135 @@
+#include <QWidget>
+#include <QVideoSurfaceFormat>
+#include <QPainter>
+
+#include "video_widget_surface.h"
+
+VideoWidgetSurface::VideoWidgetSurface(QWidget *widget, QObject *parent)
+    : QAbstractVideoSurface(parent)
+    , widget(widget)
+    , image_format(QImage::Format_Invalid)
+{
+}
+
+QList<QVideoFrame::PixelFormat> VideoWidgetSurface::supportedPixelFormats(QAbstractVideoBuffer::HandleType handleType) const
+{
+    if(handleType==QAbstractVideoBuffer::NoHandle) {
+        return QList<QVideoFrame::PixelFormat>()
+                << QVideoFrame::Format_ARGB32
+                << QVideoFrame::Format_BGRA32
+                << QVideoFrame::Format_YUV444
+                << QVideoFrame::Format_YUV420P;
+    }
+
+    return QList<QVideoFrame::PixelFormat>();
+}
+
+bool VideoWidgetSurface::isFormatSupported(const QVideoSurfaceFormat &format) const
+{
+    const QImage::Format image_format=QVideoFrame::imageFormatFromPixelFormat(format.pixelFormat());
+
+    const QSize size=format.frameSize();
+
+    return image_format!=QImage::Format_Invalid
+            && !size.isEmpty()
+            && format.handleType()==QAbstractVideoBuffer::NoHandle;
+}
+
+bool VideoWidgetSurface::start(const QVideoSurfaceFormat &format)
+{
+    const QImage::Format image_format=QVideoFrame::imageFormatFromPixelFormat(format.pixelFormat());
+
+    const QSize size=format.frameSize();
+
+    if(image_format!=QImage::Format_Invalid && !size.isEmpty()) {
+        this->image_format=image_format;
+
+        image_size=size;
+
+        rect_source=format.viewport();
+
+        QAbstractVideoSurface::start(format);
+
+        widget->updateGeometry();
+
+        updateVideoRect();
+
+        return true;
+    }
+
+    return false;
+}
+
+void VideoWidgetSurface::stop()
+{
+    current_frame=QVideoFrame();
+
+    rect_target=QRect();
+
+    QAbstractVideoSurface::stop();
+
+    widget->update();
+}
+
+bool VideoWidgetSurface::present(const QVideoFrame &frame)
+{
+    if(surfaceFormat().pixelFormat()!=frame.pixelFormat()
+            || surfaceFormat().frameSize()!=frame.size()) {
+        setError(IncorrectFormatError);
+
+        stop();
+
+        return false;
+
+    }
+
+    current_frame=frame;
+
+    widget->repaint(rect_target);
+
+    return true;
+}
+
+QRect VideoWidgetSurface::videoRect() const
+{
+    return rect_target;
+}
+
+void VideoWidgetSurface::updateVideoRect()
+{
+    QSize size=surfaceFormat().sizeHint();
+
+    size.scale(widget->size().boundedTo(size), Qt::KeepAspectRatio);
+
+
+    rect_target=QRect(QPoint(0, 0), size);
+
+    rect_target.moveCenter(widget->rect().center());
+}
+
+void VideoWidgetSurface::paint(QPainter *painter)
+{
+    // painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+
+    if(current_frame.map(QAbstractVideoBuffer::ReadOnly)) {
+        const QTransform old_transform=painter->transform();
+
+        if(surfaceFormat().scanLineDirection()==QVideoSurfaceFormat::BottomToTop) {
+           painter->scale(1, -1);
+
+           painter->translate(0, -widget->height());
+        }
+
+        QImage image(current_frame.bits(),
+                     current_frame.width(),
+                     current_frame.height(),
+                     current_frame.bytesPerLine(),
+                     image_format);
+
+        painter->drawImage(rect_target, image, rect_source);
+
+        painter->setTransform(old_transform);
+
+        current_frame.unmap();
+    }
+}

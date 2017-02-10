@@ -18,7 +18,7 @@
 #include "device_list.h"
 #include "capture.h"
 #include "audio_output.h"
-#include "out_widget.h"
+#include "out_widget_2.h"
 #include "sdl2_video_output_thread.h"
 #include "audio_level_widget.h"
 
@@ -50,14 +50,14 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //
 
-    out_widget=new OutWidget();
+    out_widget=new OutWidget2();
 
-    // out_widget->showFullScreen();
-    // decklink_thread->subscribeForAll(out_widget->frameBuffer());
+    out_widget->showFullScreen();
+    decklink_thread->subscribeForAll(out_widget->frameBuffer());
 
 
     out_widget_2=new Sdl2VideoOutpitThread();
-    decklink_thread->subscribeForAll(out_widget_2->frameBuffer());
+    // decklink_thread->subscribeForAll(out_widget_2->frameBuffer());
 
     //
 
@@ -217,6 +217,12 @@ MainWindow::~MainWindow()
     decklink_thread->exit();
 
     save();
+
+}
+
+void MainWindow::closeEvent(QCloseEvent *)
+{
+    out_widget->close();
 }
 
 void MainWindow::load()
