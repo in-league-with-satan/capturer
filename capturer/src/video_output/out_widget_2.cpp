@@ -6,15 +6,15 @@
 
 #include "frame_buffer.h"
 
-#include "video_widget_surface.h"
-#include "video_widget.h"
+#include "video_surface.h"
+#include "video_widget_gl.h"
 
 #include "out_widget_2.h"
 
 OutWidget2::OutWidget2(QWidget *parent)
     : QWidget(parent)
 {
-    video_widget=new VideoWidget();
+    video_widget=new VideoWidgetGl();
 
     QVBoxLayout *la_main=new QVBoxLayout();
 

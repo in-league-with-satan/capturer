@@ -6,12 +6,12 @@
 #include <QRect>
 #include <QVideoFrame>
 
-class VideoWidgetSurface : public QAbstractVideoSurface
+class VideoSurface : public QAbstractVideoSurface
 {
     Q_OBJECT
 
 public:
-    VideoWidgetSurface(QWidget *widget, QObject *parent=0);
+    VideoSurface(QWidget *widget, QObject *parent=0);
 
     QList<QVideoFrame::PixelFormat> supportedPixelFormats(QAbstractVideoBuffer::HandleType handleType=QAbstractVideoBuffer::NoHandle) const;
 

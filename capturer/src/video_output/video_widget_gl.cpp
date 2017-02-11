@@ -5,10 +5,10 @@
 #include "video_surface.h"
 
 
-#include "video_widget.h"
+#include "video_widget_gl.h"
 
-VideoWidget::VideoWidget(QWidget *parent)
-    : QWidget(parent)
+VideoWidgetGl::VideoWidgetGl(QWidget *parent)
+    : QGLWidget(parent)
     , surface(0)
 {
     setAutoFillBackground(false);
@@ -26,22 +26,39 @@ VideoWidget::VideoWidget(QWidget *parent)
     surface=new VideoSurface(this);
 }
 
-VideoWidget::~VideoWidget()
+VideoWidgetGl::~VideoWidgetGl()
 {
     delete surface;
 }
 
-QAbstractVideoSurface *VideoWidget::videoSurface() const
+QAbstractVideoSurface *VideoWidgetGl::videoSurface() const
 {
     return surface;
 }
 
-QSize VideoWidget::sizeHint() const
+QSize VideoWidgetGl::sizeHint() const
 {
     return surface->surfaceFormat().sizeHint();
 }
 
-void VideoWidget::paintEvent(QPaintEvent *event)
+void VideoWidgetGl::initializeGL()
+{
+    qglClearColor(Qt::black);
+
+    glEnable(GL_DEPTH_TEST);
+}
+
+void VideoWidgetGl::resizeGL(int width, int height)
+{
+    glViewport(0, 0, (GLint)width, (GLint)height);
+}
+
+void VideoWidgetGl::paintGL()
+{
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void VideoWidgetGl::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);
 
@@ -67,7 +84,7 @@ void VideoWidget::paintEvent(QPaintEvent *event)
     }
 }
 
-void VideoWidget::resizeEvent(QResizeEvent *event)
+void VideoWidgetGl::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
 

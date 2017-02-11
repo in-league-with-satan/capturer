@@ -6,7 +6,7 @@
 #include <QTimer>
 
 class FrameBuffer;
-class VideoWidget;
+class VideoWidgetGl;
 
 class OutWidget2 : public QWidget
 {
@@ -30,7 +30,7 @@ private:
 
     FrameBuffer *frame_buffer;
 
-    VideoWidget *video_widget;
+    VideoWidgetGl *video_widget;
 
     QTimer *timer;
 };

@@ -2,16 +2,16 @@
 #include <QVideoSurfaceFormat>
 #include <QPainter>
 
-#include "video_widget_surface.h"
+#include "video_surface.h"
 
-VideoWidgetSurface::VideoWidgetSurface(QWidget *widget, QObject *parent)
+VideoSurface::VideoSurface(QWidget *widget, QObject *parent)
     : QAbstractVideoSurface(parent)
     , widget(widget)
     , image_format(QImage::Format_Invalid)
 {
 }
 
-QList<QVideoFrame::PixelFormat> VideoWidgetSurface::supportedPixelFormats(QAbstractVideoBuffer::HandleType handleType) const
+QList<QVideoFrame::PixelFormat> VideoSurface::supportedPixelFormats(QAbstractVideoBuffer::HandleType handleType) const
 {
     if(handleType==QAbstractVideoBuffer::NoHandle) {
         return QList<QVideoFrame::PixelFormat>()
@@ -24,7 +24,7 @@ QList<QVideoFrame::PixelFormat> VideoWidgetSurface::supportedPixelFormats(QAbstr
     return QList<QVideoFrame::PixelFormat>();
 }
 
-bool VideoWidgetSurface::isFormatSupported(const QVideoSurfaceFormat &format) const
+bool VideoSurface::isFormatSupported(const QVideoSurfaceFormat &format) const
 {
     const QImage::Format image_format=QVideoFrame::imageFormatFromPixelFormat(format.pixelFormat());
 
@@ -35,7 +35,7 @@ bool VideoWidgetSurface::isFormatSupported(const QVideoSurfaceFormat &format) co
             && format.handleType()==QAbstractVideoBuffer::NoHandle;
 }
 
-bool VideoWidgetSurface::start(const QVideoSurfaceFormat &format)
+bool VideoSurface::start(const QVideoSurfaceFormat &format)
 {
     const QImage::Format image_format=QVideoFrame::imageFormatFromPixelFormat(format.pixelFormat());
 
@@ -60,7 +60,7 @@ bool VideoWidgetSurface::start(const QVideoSurfaceFormat &format)
     return false;
 }
 
-void VideoWidgetSurface::stop()
+void VideoSurface::stop()
 {
     current_frame=QVideoFrame();
 
@@ -71,7 +71,7 @@ void VideoWidgetSurface::stop()
     widget->update();
 }
 
-bool VideoWidgetSurface::present(const QVideoFrame &frame)
+bool VideoSurface::present(const QVideoFrame &frame)
 {
     if(surfaceFormat().pixelFormat()!=frame.pixelFormat()
             || surfaceFormat().frameSize()!=frame.size()) {
@@ -90,12 +90,12 @@ bool VideoWidgetSurface::present(const QVideoFrame &frame)
     return true;
 }
 
-QRect VideoWidgetSurface::videoRect() const
+QRect VideoSurface::videoRect() const
 {
     return rect_target;
 }
 
-void VideoWidgetSurface::updateVideoRect()
+void VideoSurface::updateVideoRect()
 {
     QSize size=surfaceFormat().sizeHint();
 
@@ -107,7 +107,7 @@ void VideoWidgetSurface::updateVideoRect()
     rect_target.moveCenter(widget->rect().center());
 }
 
-void VideoWidgetSurface::paint(QPainter *painter)
+void VideoSurface::paint(QPainter *painter)
 {
     // painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
 

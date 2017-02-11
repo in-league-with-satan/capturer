@@ -5,7 +5,7 @@
 
 class QAbstractVideoSurface;
 
-class VideoWidgetSurface;
+class VideoSurface;
 
 class VideoWidget: public QWidget
 {
@@ -24,7 +24,7 @@ protected:
     void resizeEvent(QResizeEvent *event);
 
 private:
-    VideoWidgetSurface *surface;
+    VideoSurface *surface;
 };
 
 #endif // VIDEO_WIDGET_H
