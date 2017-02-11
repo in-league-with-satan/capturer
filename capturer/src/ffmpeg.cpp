@@ -635,6 +635,8 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
             .arg(QApplication::applicationDirPath())
             .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss"));
 
+    // context->filename="/dev/null";
+
 
     // allocate the output media context
     // avformat_alloc_output_context2(&context->av_format_context, nullptr, nullptr, context->filename.toLatin1().data());
