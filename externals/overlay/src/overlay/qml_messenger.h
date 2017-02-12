@@ -26,15 +26,7 @@ public:
     void setModelPixelFormat(const QStringList &model);
 
 public slots:
-    void onVideoCodecIndexChanged(const int &index);
-
-    void onPixelFormatIndexChanged(const int &index);
-
-    void onCrfChanged(const int &value);
-
-    void onHalfFpsChanged(const bool &value);
-
-    void onStopOnDropChanged(const bool &value);
+    void keyEvent(const Qt::Key &key);
 
 private:
     QStringList model_video_encoder;
@@ -68,6 +60,13 @@ signals:
     void halfFpsSet(const bool &value);
 
     void stopOnDropSet(const bool &value);
+
+    void videoCodecIndexChanged(const int &index);
+    void pixelFormatIndexChanged(const int &index);
+    void crfChanged(const int &value);
+    void halfFpsChanged(const bool &value);
+    void stopOnDropChanged(const bool &value);
+
 };
 
 #endif // QML_MESSENGER_H

@@ -111,11 +111,10 @@ Rectangle {
         target: messenger
 
         onUpdateRecStats: {
-            text_output.text=duration + "    " + size + " bytes" + "    " + bitrate + " mbit/s";
+            text_output.text=duration + "    " + size + "    " + bitrate;
         }
 
         onRecStarted: rec_state_bar.state_visible=true
         onRecStopped: rec_state_bar.state_visible=false
-        onBack: rec_state_bar.state_visible=false
     }
 }

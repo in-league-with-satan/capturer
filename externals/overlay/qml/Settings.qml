@@ -81,7 +81,7 @@ Rectangle {
             font.pixelSize: Screen.height*.04
             model: messenger.modelVideoEncoder
 
-            onCurrentIndexChanged: messenger.onVideoCodecIndexChanged(currentIndex)
+            onCurrentIndexChanged: messenger.videoCodecIndexChanged(currentIndex)
 
             Connections {
                 target: messenger
@@ -106,7 +106,7 @@ Rectangle {
             font.pixelSize: Screen.height*.04
             model: messenger.modelPixelFormat
 
-            onCurrentIndexChanged: messenger.onPixelFormatIndexChanged(currentIndex)
+            onCurrentIndexChanged: messenger.pixelFormatIndexChanged(currentIndex)
 
             Connections {
                 target: messenger
@@ -130,7 +130,7 @@ Rectangle {
             font.pixelSize: Screen.height*.04
             model: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24 ]
 
-            onCurrentIndexChanged: messenger.onCrfChanged(currentIndex)
+            onCurrentIndexChanged: messenger.crfChanged(currentIndex)
 
             Connections {
                 target: messenger
@@ -153,7 +153,7 @@ Rectangle {
 
             font.pixelSize: Screen.height*.04
             scale: parent.height*.003
-            onCheckStateChanged: messenger.onHalfFpsChanged(checked)
+            onCheckStateChanged: messenger.halfFpsChanged(checked)
 
             Connections {
                 target: messenger
@@ -175,7 +175,7 @@ Rectangle {
             width: settings.width*.4
             font.pixelSize: Screen.height*.04
             scale: parent.height*.003
-            onCheckStateChanged: messenger.onStopOnDropChanged(checked)
+            onCheckStateChanged: messenger.stopOnDropChanged(checked)
 
             Connections {
                 target: messenger

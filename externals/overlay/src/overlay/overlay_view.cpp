@@ -1,5 +1,6 @@
 #include <QDebug>
 #include <QQmlContext>
+#include <QApplication>
 
 #include "qml_messenger.h"
 
@@ -42,6 +43,17 @@ void OverlayView::setMessenger(QmlMessenger *messenger)
 {
     rootContext()->setContextProperty("messenger", messenger);
 }
+
+void OverlayView::focusOutEvent(QFocusEvent *)
+{
+    QApplication::setOverrideCursor(Qt::ArrowCursor);
+}
+
+void OverlayView::focusInEvent(QFocusEvent *)
+{
+    QApplication::setOverrideCursor(Qt::BlankCursor);
+}
+
 /*
 bool OverlayView::eventFilter(QObject *object, QEvent *event)
 {

@@ -21,8 +21,8 @@ FFMpegThread::FFMpegThread(QObject *parent) :
 
     is_working=false;
 
-    start(QThread::NormalPriority);
-    // start(QThread::HighPriority);
+    // start(QThread::NormalPriority);
+    start(QThread::HighPriority);
     // start(QThread::HighestPriority);
     // start(QThread::TimeCriticalPriority);
 }
@@ -100,7 +100,8 @@ begin:
 end:
 
         QCoreApplication::processEvents();
-        usleep(100);
+        // usleep(100);
+        msleep(2);
 
 end2:
         ;

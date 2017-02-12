@@ -11,6 +11,8 @@ class AudioOutputInterface;
 class OutWidget2;
 class Sdl2VideoOutpitThread;
 class AudioLevelWidget;
+class QmlMessenger;
+class OverlayView;
 
 class QComboBox;
 class QLabel;
@@ -30,6 +32,10 @@ private:
     DeckLinkCapture *decklink_thread;
 
     FFMpegThread *ffmpeg;
+
+    QmlMessenger *messenger;
+    OverlayView *overlay_view;
+
 
     QComboBox *cb_device;
 
@@ -65,7 +71,8 @@ private:
     QVariantMap map_pixel_format;
 
 protected:
-    void closeEvent(QCloseEvent *);
+    virtual bool eventFilter(QObject *object, QEvent *event);
+    virtual void closeEvent(QCloseEvent *);
 
 private slots:
     void load();
@@ -76,12 +83,15 @@ private slots:
 
     void onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale);
 
+    void onCrfChanged(const QString &text);
+    void onCrfChanged(const int &crf);
+
     void onStartCapture();
 
-    void onStartRecording();
-    void onStopRecording();
+    void onStartStopRecording();
 
     void onFrameSkipped();
+    void onEncBufferOverload();
 
     void onPreviewChanged(int state);
 

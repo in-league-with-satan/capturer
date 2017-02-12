@@ -97,7 +97,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     overlay_view->show();
     overlay_view->resize(overlay_view->size() - QSize(1, 1));
-    // overlay_view.showFullScreen();
+    // overlay_view->showFullScreen();
 
     //
 
@@ -136,8 +136,8 @@ void MainWindow::onRecStarted()
 void MainWindow::onRecProgressTimer()
 {
     messenger->recStats(QDateTime::fromMSecsSinceEpoch(QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() - rec_progress_start_point.toMSecsSinceEpoch()).toUTC().toString("HH:mm:ss.zzz"),
-                        QString::number(48*1024 + qrand()%128*1024),
-                        QString::number(rec_progress_size));
+                        QString::number(48*1024 + qrand()%128*1024) + " kbits/s",
+                        QString::number(rec_progress_size) + " bytes");
 
     rec_progress_size+=qrand()%128*1024;
 }

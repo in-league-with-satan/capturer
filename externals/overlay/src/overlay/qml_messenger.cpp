@@ -1,4 +1,5 @@
 #include <QDebug>
+#include <QKeyEvent>
 
 #include "qml_messenger.h"
 
@@ -40,34 +41,29 @@ void QmlMessenger::setModelPixelFormat(const QStringList &model)
     emit modelPixelFormatChanged(model, QPrivateSignal());
 }
 
-void QmlMessenger::onVideoCodecIndexChanged(const int &index)
+void QmlMessenger::keyEvent(const Qt::Key &key)
 {
-    qInfo() << "VideoCodecIndexChanged" << index;
+    switch(key) {
+    case Qt::Key_Menu:
+        //qInfo() << "show_menu";
+        emit showMenu();
+        return;
 
-    model_video_encoder_index=index;
-}
+    case Qt::Key_HomePage:
+    case Qt::Key_Back:
+        emit back();
+        return;
 
-void QmlMessenger::onPixelFormatIndexChanged(const int &index)
-{
-    qInfo() << "PixelFormatIndexChanged" << index;
+    case Qt::Key_Return:
 
-    model_pixel_format_index=index;
-}
+        keyPressed(Qt::Key_Right);
+        return;
 
-void QmlMessenger::onCrfChanged(const int &value)
-{
-    qInfo() << "CrfChanged" << value;
 
-    this->crf=value;
-}
+    default:
+        break;
+    }
 
-void QmlMessenger::onHalfFpsChanged(const bool &value)
-{
-    qInfo() << "HalfFpsChanged" << value;
-}
-
-void QmlMessenger::onStopOnDropChanged(const bool &value)
-{
-    qInfo() << "StopOnDropChanged" << value;
+    keyPressed(key);
 }
 

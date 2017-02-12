@@ -16,6 +16,9 @@ public:
     void setMessenger(QmlMessenger *messenger);
 
 protected:
+    virtual void focusInEvent(QFocusEvent *);
+    virtual void focusOutEvent(QFocusEvent *);
+
     // virtual bool eventFilter(QObject *object, QEvent *event);
 
 private slots:
