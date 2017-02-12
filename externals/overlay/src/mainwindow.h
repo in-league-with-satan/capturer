@@ -7,6 +7,7 @@
 class QTimer;
 
 class QmlMessenger;
+class OverlayView;
 
 class MainWindow : public QMainWindow
 {
@@ -18,7 +19,7 @@ public:
 
 private:
     QmlMessenger *messenger;
-
+    OverlayView *overlay_view;
 
     QTimer *rec_progress_timer;
     QDateTime rec_progress_start_point;
@@ -30,6 +31,11 @@ protected:
 private slots:
     void onRecStarted();
     void onRecProgressTimer();
+
+    void keyUp();
+    void keyDown();
+    void keyLeft();
+    void keyRight();
 
 };
 

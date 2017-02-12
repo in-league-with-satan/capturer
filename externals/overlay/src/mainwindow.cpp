@@ -21,19 +21,30 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     QPushButton *b_start_rec=new QPushButton("start rec");
-
     QPushButton *b_stop_rec=new QPushButton("stop rec");
-
     QPushButton *b_menu=new QPushButton("menu");
-
     QPushButton *b_back=new QPushButton("back");
 
-    QVBoxLayout *la_main=new QVBoxLayout();
+    QPushButton *b_up=new QPushButton("up");
+    QPushButton *b_down=new QPushButton("down");
+    QPushButton *b_left=new QPushButton("left");
+    QPushButton *b_right=new QPushButton("right");
 
+    QGridLayout *la_arrows=new QGridLayout();
+    la_arrows->addWidget(b_up, 0, 1);
+    la_arrows->addWidget(b_down, 2, 1);
+    la_arrows->addWidget(b_left, 1, 0);
+    la_arrows->addWidget(b_right, 1, 2);
+
+
+    QVBoxLayout *la_main=new QVBoxLayout();
     la_main->addWidget(b_start_rec);
     la_main->addWidget(b_stop_rec);
     la_main->addWidget(b_menu);
     la_main->addWidget(b_back);
+    la_main->addLayout(la_arrows);
+    la_main->addStretch(1);
+
 
     QWidget *w_central=new QWidget();
 
@@ -53,6 +64,11 @@ MainWindow::MainWindow(QWidget *parent)
     connect(b_menu, SIGNAL(clicked(bool)), messenger, SIGNAL(showMenu()));
 
     connect(b_back, SIGNAL(clicked(bool)), messenger, SIGNAL(back()));
+
+    connect(b_up, SIGNAL(clicked(bool)), SLOT(keyUp()));
+    connect(b_down, SIGNAL(clicked(bool)), SLOT(keyDown()));
+    connect(b_left, SIGNAL(clicked(bool)), SLOT(keyLeft()));
+    connect(b_right, SIGNAL(clicked(bool)), SLOT(keyRight()));
 
     OverlayView *overlay_view=new OverlayView();
 
@@ -124,5 +140,25 @@ void MainWindow::onRecProgressTimer()
                         QString::number(rec_progress_size));
 
     rec_progress_size+=qrand()%128*1024;
+}
+
+void MainWindow::keyUp()
+{
+    messenger->keyPressed(Qt::Key_Up);
+}
+
+void MainWindow::keyDown()
+{
+    messenger->keyPressed(Qt::Key_Down);
+}
+
+void MainWindow::keyLeft()
+{
+    messenger->keyPressed(Qt::Key_Left);
+}
+
+void MainWindow::keyRight()
+{
+    messenger->keyPressed(Qt::Key_Right);
 }
 

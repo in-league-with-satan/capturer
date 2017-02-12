@@ -40,7 +40,6 @@ Rectangle {
 
         radius: width*.5
 
-
         ScaleAnimator {
             id: scale_animation_front
             target: circle;

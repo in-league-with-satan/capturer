@@ -15,7 +15,8 @@ public:
 
     void setMessenger(QmlMessenger *messenger);
 
-private:
+protected:
+    // virtual bool eventFilter(QObject *object, QEvent *event);
 
 private slots:
 

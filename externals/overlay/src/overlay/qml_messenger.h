@@ -53,6 +53,8 @@ signals:
 
     void showMenu();
 
+    void keyPressed(const Qt::Key &key);
+
     void back();
 
     void modelVideoEncoderChanged(const QStringList &model, QPrivateSignal);

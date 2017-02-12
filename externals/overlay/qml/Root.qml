@@ -13,6 +13,8 @@ Rectangle {
     height: Screen.height
 
     Settings {
+        id: settings
+
         width: parent.width*.8
         height: parent.height*.8
         anchors.centerIn: parent
@@ -21,10 +23,27 @@ Rectangle {
     }
 
     RecordState {
+        id: rec_state_bar
+
         anchors.horizontalCenter: parent.horizontalCenter
         y: parent.height - height*1.5
 
         opacity: 0
+    }
+
+    Connections {
+        target: messenger
+
+        onShowMenu: {
+            if(rec_state_bar.state_visible)
+                return
+
+            settings.state_visible=true
+        }
+
+        onRecStarted: {
+            settings.state_visible=false
+        }
     }
 }
 

@@ -1,3 +1,4 @@
+#include <QDebug>
 #include <QQmlContext>
 
 #include "qml_messenger.h"
@@ -29,6 +30,8 @@ OverlayView::OverlayView() :
     setClearBeforeRendering(true);
 
     setFlags(Qt::FramelessWindowHint);
+
+    installEventFilter(this);
 }
 
 OverlayView::~OverlayView()
@@ -39,3 +42,16 @@ void OverlayView::setMessenger(QmlMessenger *messenger)
 {
     rootContext()->setContextProperty("messenger", messenger);
 }
+/*
+bool OverlayView::eventFilter(QObject *object, QEvent *event)
+{
+    if(event->type()==QEvent::KeyPress) {
+        return true;
+
+    } else if(event->type()==QEvent::MouseButtonPress) {
+        return true;
+    }
+
+    return QObject::eventFilter(object, event);
+}
+*/
