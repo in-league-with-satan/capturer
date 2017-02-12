@@ -46,10 +46,27 @@ public:
     struct VideoEncoder {
         enum T {
             libx264,
+            libx264_10bit,
             libx264rgb,
             nvenc_h264,
             nvenc_hevc
         };
+    };
+
+    struct PixelFormat {
+        enum T {
+            RGB24=AV_PIX_FMT_RGB24,
+            YUV420P=AV_PIX_FMT_YUV420P,
+            YUV444P=AV_PIX_FMT_YUV444P,
+            YUV420P10=AV_PIX_FMT_YUV420P10,
+            YUV444P10=AV_PIX_FMT_YUV444P10
+        };
+
+        static QString toString(uint64_t format);
+
+        static uint64_t fromString(QString format);
+
+        static QList <T> compatiblePixelFormats(VideoEncoder::T encoder);
     };
 
     struct Config {

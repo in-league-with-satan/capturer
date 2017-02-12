@@ -2,12 +2,13 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QVariant>
 
 #include "ffmpeg_thread.h"
 
 class DeckLinkCapture;
 class AudioOutputInterface;
-class OutWidget;
+class OutWidget2;
 class Sdl2VideoOutpitThread;
 class AudioLevelWidget;
 
@@ -51,7 +52,7 @@ private:
 
     AudioOutputInterface *audio_output;
 
-    OutWidget *out_widget;
+    OutWidget2 *out_widget;
 
     Sdl2VideoOutpitThread *out_widget_2;
 
@@ -61,9 +62,17 @@ private:
     int64_t current_frame_duration;
     int64_t current_frame_scale;
 
+    QVariantMap map_pixel_format;
+
+protected:
+    void closeEvent(QCloseEvent *);
+
 private slots:
     void load();
     void save();
+
+    void onEncoderChanged(const int &index);
+    void onPixelFormatChanged(const int &index);
 
     void onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale);
 

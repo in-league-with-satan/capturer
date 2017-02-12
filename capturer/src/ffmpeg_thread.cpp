@@ -13,16 +13,18 @@ FFMpegThread::FFMpegThread(QObject *parent) :
 
     frame_buffer=new FrameBuffer(QMutex::Recursive, this);
 
-    frame_buffer->setMaxBufferSize(400);
+    frame_buffer->setMaxBufferSize(120);
+
+    frame_buffer->setDropSkipped(true);
 
     frame_buffer->setEnabled(false);
 
     is_working=false;
 
-    // start(QThread::NormalPriority);
+    start(QThread::NormalPriority);
     // start(QThread::HighPriority);
     // start(QThread::HighestPriority);
-    start(QThread::TimeCriticalPriority);
+    // start(QThread::TimeCriticalPriority);
 }
 
 FFMpegThread::~FFMpegThread()
@@ -72,7 +74,11 @@ void FFMpegThread::run()
 
     FrameBuffer::Frame frame;
 
+    bool queue_is_empty=true;
+
     while(true) {
+begin:
+
         {
             QMutexLocker ml(frame_buffer->mutex_frame_buffer);
 
@@ -80,9 +86,14 @@ void FFMpegThread::run()
                 goto end;
 
             frame=frame_buffer->queue.dequeue();
+
+            queue_is_empty=frame_buffer->queue.isEmpty();
         }
 
         ffmpeg->appendFrame(&frame.ba_video, &frame.size_video, &frame.ba_audio);
+
+        if(!queue_is_empty)
+            goto begin;
 
         goto end2;
 

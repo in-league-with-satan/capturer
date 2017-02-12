@@ -1,5 +1,6 @@
 #include <QDebug>
 #include <QMutexLocker>
+#include <QDateTime>
 #include <qcoreapplication.h>
 
 #include <stdio.h>
@@ -156,6 +157,9 @@ void DeckLinkCapture::unsubscribe(FrameBuffer *obj)
 
 void DeckLinkCapture::run()
 {
+    qInfo() << "DeckLinkCapture::run: priority" << priority();
+
+
     // Get the DeckLink device
     IDeckLinkIterator *decklink_iterator=CreateDeckLinkIteratorInstance();
 
@@ -266,11 +270,17 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
         if(frame_time!=0) {
             if(frame_time - frame_time_prev!=frame_duration) {
-                qCritical() << "decklink: frame dropped";
+                qCritical() << "decklink: frame dropped" << QDateTime::currentDateTime();
 
                 frame_dropped=true;
 
                 emit frameSkipped();
+
+                //
+
+                decklink_input->StopStreams();
+
+                decklink_input->StartStreams();
             }
 
         } else
