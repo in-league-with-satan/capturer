@@ -14,11 +14,14 @@ AudioOutputThread::AudioOutputThread(QObject *parent) :
     audio_output=nullptr;
     dev_audio_output=nullptr;
 
+    setTerminationEnabled();
+
     start(QThread::NormalPriority);
 }
 
 AudioOutputThread::~AudioOutputThread()
 {
+    terminate();
 }
 
 void AudioOutputThread::changeChannels(int size)

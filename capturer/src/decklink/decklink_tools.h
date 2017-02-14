@@ -5,6 +5,8 @@
 
 #ifndef __linux__
 
+bool comInit();
+
 IDeckLinkIterator *CreateDeckLinkIteratorInstance();
 
 IDeckLinkVideoConversion *CreateVideoConversionInstance();

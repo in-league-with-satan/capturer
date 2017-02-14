@@ -19,6 +19,8 @@ FFMpegThread::FFMpegThread(QObject *parent) :
 
     is_working=false;
 
+    setTerminationEnabled();
+
     // start(QThread::NormalPriority);
     // start(QThread::HighPriority);
     // start(QThread::HighestPriority);
@@ -27,6 +29,8 @@ FFMpegThread::FFMpegThread(QObject *parent) :
 
 FFMpegThread::~FFMpegThread()
 {
+    terminate();
+
     delete frame_buffer;
 }
 

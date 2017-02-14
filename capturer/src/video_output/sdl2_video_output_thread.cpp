@@ -24,6 +24,8 @@ Sdl2VideoOutpitThread::Sdl2VideoOutpitThread(QObject *parent) :
     frame_buffer->setMaxBufferSize(1);
     frame_buffer->setDropSkipped(true);
 
+    setTerminationEnabled(true);
+
 #ifdef USE_SDL2
 
     av_frame=nullptr;
@@ -52,6 +54,7 @@ Sdl2VideoOutpitThread::Sdl2VideoOutpitThread(QObject *parent) :
 
 Sdl2VideoOutpitThread::~Sdl2VideoOutpitThread()
 {
+    terminate();
 }
 
 FrameBuffer *Sdl2VideoOutpitThread::frameBuffer()

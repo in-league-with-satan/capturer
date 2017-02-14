@@ -55,7 +55,8 @@ MainWindow::MainWindow(QWidget *parent) :
 #else
 
     out_widget=new OutWidget();
-    out_widget->showFullScreen();
+    // out_widget->showFullScreen();
+    out_widget->show();
     decklink_thread->subscribeForAll(out_widget->frameBuffer());
 
 #endif
@@ -290,7 +291,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-    decklink_thread->exit();
 }
 
 void MainWindow::onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale)

@@ -15,6 +15,8 @@ AudioOutputInterface::AudioOutputInterface(QObject *parent) :
     frame_buffer->setDropSkipped(true);
 
     input_channels_size=2;
+
+    setTerminationEnabled();
 }
 
 AudioOutputInterface::~AudioOutputInterface()

@@ -4,13 +4,28 @@
 
 #ifndef __linux__
 
+bool comInit()
+{
+    int64_t result=CoInitialize(nullptr);
+
+    if(FAILED(result)) {
+        qCritical() << "Initialization of COM failed" << result;
+
+        return false;
+    }
+
+    return true;
+}
+
 IDeckLinkIterator *CreateDeckLinkIteratorInstance()
 {
     IDeckLinkIterator *ptr=nullptr;
 
-    if(CoCreateInstance(CLSID_CDeckLinkIterator, nullptr, CLSCTX_ALL, IID_IDeckLinkIterator, (void**)ptr)!=S_OK) {
-        qCritical() << "CoCreateInstance CLSID_CDeckLinkIterator err";
-        return nullptr;
+    int64_t result=CoCreateInstance(CLSID_CDeckLinkIterator, nullptr, CLSCTX_ALL, IID_IDeckLinkIterator, (void**)&ptr);
+
+    if(FAILED(result)) {
+        qCritical() << "A DeckLink iterator could not be created.  The DeckLink drivers may not be installed";
+        return 0;
     }
 
     return ptr;
@@ -20,7 +35,9 @@ IDeckLinkVideoConversion *CreateVideoConversionInstance()
 {
     IDeckLinkVideoConversion *ptr=nullptr;
 
-    if(CoCreateInstance(CLSID_CDeckLinkVideoConversion, nullptr, CLSCTX_ALL, IID_IDeckLinkVideoConversion, (void**)&ptr)!=S_OK) {
+    int64_t result=CoCreateInstance(CLSID_CDeckLinkVideoConversion, nullptr, CLSCTX_ALL, IID_IDeckLinkVideoConversion, (void**)&ptr);
+
+    if(FAILED(result)) {
         qCritical() << "CoCreateInstance IID_IDeckLinkVideoConversion err";
         return nullptr;
     }

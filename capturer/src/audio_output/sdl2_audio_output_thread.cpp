@@ -45,6 +45,7 @@ Sdl2AudioOutputThread::Sdl2AudioOutputThread(QObject *parent) :
 
 Sdl2AudioOutputThread::~Sdl2AudioOutputThread()
 {
+    terminate();
 }
 
 void Sdl2AudioOutputThread::run()

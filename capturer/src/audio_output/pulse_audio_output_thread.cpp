@@ -29,6 +29,7 @@ PulseAudioOutputThread::PulseAudioOutputThread(QObject *parent) :
 
 PulseAudioOutputThread::~PulseAudioOutputThread()
 {
+    terminate();
 }
 
 void PulseAudioOutputThread::changeChannels(int size)

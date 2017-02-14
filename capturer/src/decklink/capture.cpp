@@ -113,6 +113,7 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
 
 DeckLinkCapture::~DeckLinkCapture()
 {
+    terminate();
 }
 
 void DeckLinkCapture::setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels)
@@ -157,6 +158,13 @@ void DeckLinkCapture::unsubscribe(FrameBuffer *obj)
 
 void DeckLinkCapture::run()
 {
+#ifndef __linux__
+
+    if(!comInit())
+        return;
+
+#endif
+
     // Get the DeckLink device
     IDeckLinkIterator *decklink_iterator=CreateDeckLinkIteratorInstance();
 

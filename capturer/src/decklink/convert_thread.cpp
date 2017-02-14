@@ -21,12 +21,15 @@ DlConvertThread::DlConvertThread(QObject *parent) :
 
     audio_channels=8;
 
+    setTerminationEnabled();
+
     // start(QThread::TimeCriticalPriority);
     start(QThread::HighPriority);
 }
 
 DlConvertThread::~DlConvertThread()
 {
+    terminate();
 }
 
 void DlConvertThread::addFrame(IDeckLinkVideoFrame *frame,  IDeckLinkAudioInputPacket *audio_packet)
