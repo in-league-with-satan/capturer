@@ -3,6 +3,7 @@ QT += \
     gui \
     widgets \
     multimedia \
+    multimediawidgets \
     opengl
 
 TARGET = capturer
@@ -81,7 +82,7 @@ linux {
         ../externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
 
     LIBS += -lswresample -lavformat -lavcodec -lavutil -lswscale
-    LIBS += -lz -ldl -lvorbis -lvorbisenc -logg -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
+    LIBS += -lz -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
 }
 
 windows {

@@ -202,6 +202,11 @@ bail:
     return result;
 }
 
+DeckLinkPixelFormat::DeckLinkPixelFormat()
+{
+    fmt=bmdFormat8BitYUV;
+}
+
 QString DeckLinkPixelFormat::name()
 {
     static QMap <int, QString> format_names;

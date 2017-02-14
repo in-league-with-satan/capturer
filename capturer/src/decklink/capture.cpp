@@ -1,5 +1,6 @@
 #include <QDebug>
 #include <QMutexLocker>
+#include <QDateTime>
 #include <qcoreapplication.h>
 
 #include <stdio.h>
@@ -165,6 +166,8 @@ void DeckLinkCapture::run()
 
 #endif
 
+    qInfo() << "DeckLinkCapture::run: priority" << priority();
+
     // Get the DeckLink device
     IDeckLinkIterator *decklink_iterator=CreateDeckLinkIteratorInstance();
 
@@ -267,6 +270,8 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
     if(!video_frame || !audio_packet)
         return;
 
+    bool frame_dropped=false;
+
     if(video_frame->GetFlags() & bmdFrameHasNoInputSource) {
         qCritical() << "No input signal detected";
 
@@ -282,20 +287,33 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
         if(frame_time!=0) {
             if(frame_time - frame_time_prev!=frame_duration) {
-                qCritical() << "decklink: frame dropped";
+                qCritical() << "decklink: frame dropped" << QDateTime::currentDateTime();
+
+                frame_dropped=true;
 
                 emit frameSkipped();
+
+                //
+
+                decklink_input->StopStreams();
+
+                decklink_input->StartStreams();
             }
-        }
+
+        } else
+            frame_counter=0;
 
         frame_time_prev=frame_time;
 
         //
 
-        if(ext_converter)
-            conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet);
+        if(ext_converter) {
+            conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet, frame_counter++, frame_dropped || frame_time==0);
 
-        else {
+            // if(frame_time!=0)
+            //     conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet, frame_counter++, frame_time==0);
+
+        } else {
             FrameBuffer::Frame frame;
 
             void *d_video;

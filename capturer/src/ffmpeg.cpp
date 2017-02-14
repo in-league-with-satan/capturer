@@ -106,7 +106,7 @@ QString errString(int error)
 {
     char buf[1024]={0};
 
-    av_strerror(error, buf, 1024);
+    av_strerror(error, buf, 640);
 
     return QString(buf);
 }
@@ -134,8 +134,9 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 
     } else {
         switch(cfg.video_encoder) {
-        case FFMpeg::VideoEncoder::libx264: {
-            *codec=avcodec_find_encoder(codec_id);
+        case FFMpeg::VideoEncoder::libx264:
+        case FFMpeg::VideoEncoder::libx264_10bit: {
+            *codec=avcodec_find_encoder_by_name("libx264");
 
         } break;
 
@@ -224,9 +225,17 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         // identical to 1
 
         switch(cfg.framerate) {
+        case FFMpeg::Framerate::full_23:
+            ost->av_stream->time_base=(AVRational){ 1001, 24000 };
+            break;
+
+        case FFMpeg::Framerate::full_24:
+            ost->av_stream->time_base=(AVRational){ 1000, 24000 };
+            break;
+
         case FFMpeg::Framerate::full_25:
         case FFMpeg::Framerate::half_50:
-            ost->av_stream->time_base=(AVRational){ 1, 25 };
+            ost->av_stream->time_base=(AVRational){ 1000, 25000 };
             break;
 
         case FFMpeg::Framerate::full_29:
@@ -236,11 +245,11 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 
         case FFMpeg::Framerate::full_30:
         case FFMpeg::Framerate::half_60:
-            ost->av_stream->time_base=(AVRational){ 1, 30 };
+            ost->av_stream->time_base=(AVRational){ 1000, 30000 };
             break;
 
         case FFMpeg::Framerate::full_50:
-            ost->av_stream->time_base=(AVRational){ 1, 50 };
+            ost->av_stream->time_base=(AVRational){ 1000, 50000 };
             break;
 
         case FFMpeg::Framerate::full_59:
@@ -248,11 +257,11 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
             break;
 
         case FFMpeg::Framerate::full_60:
-            ost->av_stream->time_base=(AVRational){ 1, 60 };
+            ost->av_stream->time_base=(AVRational){ 1000, 60000 };
             break;
 
         default:
-            ost->av_stream->time_base=(AVRational){ 1, 30 };
+            ost->av_stream->time_base=(AVRational){ 1000, 30000 };
             break;
         }
 
@@ -549,6 +558,48 @@ bool FFMpeg::isLib_x264_10bit()
     return false;
 }
 
+FFMpeg::Framerate::T FFMpeg::calcFps(int64_t frame_duration, int64_t frame_scale, bool half_fps)
+{
+    if(half_fps) {
+        switch(frame_scale) {
+        case 24000:
+            return frame_duration==1000 ? Framerate::full_24 : Framerate::full_23;
+
+        case 25000:
+            return Framerate::full_25;
+
+        case 30000:
+            return frame_duration==1000 ? Framerate::full_30 : Framerate::full_29;
+
+        case 50000:
+            return Framerate::half_50;
+
+        case 60000:
+            return frame_duration==1000 ? Framerate::half_60: Framerate::half_59;
+        }
+
+    } else {
+        switch(frame_scale) {
+        case 24000:
+            return frame_duration==1000 ? Framerate::full_24 : Framerate::full_23;
+
+        case 25000:
+            return Framerate::full_25;
+
+        case 30000:
+            return frame_duration==1000 ? Framerate::full_30 : Framerate::full_29;
+
+        case 50000:
+            return Framerate::full_50;
+
+        case 60000:
+            return frame_duration==1000 ? Framerate::full_60: Framerate::full_59;
+        }
+    }
+
+    return Framerate::full_30;
+}
+
 bool FFMpeg::setConfig(FFMpeg::Config cfg)
 {
     int ret;
@@ -570,6 +621,8 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
     context->filename=QString("%1/videos/%2.mkv")
             .arg(QApplication::applicationDirPath())
             .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss"));
+
+    // context->filename="/dev/null";
 
 
     // allocate the output media context
@@ -774,4 +827,70 @@ void FFMpeg::calcStats()
     s.streams_size=context->out_stream_audio.size_total + context->out_stream_video.size_total;
 
     emit stats(s);
+}
+
+//
+
+QString FFMpeg::PixelFormat::toString(uint64_t format)
+{
+    switch(format) {
+    case RGB24:
+        return QString("rgb24");
+
+    case YUV420P:
+        return QString("yuv420p");
+
+    case YUV444P:
+        return QString("yuv444p");
+
+    case YUV420P10:
+        return QString("yuv420p10");
+
+    case YUV444P10:
+        return QString("yuv444p10");
+    }
+
+    return QString("unknown");
+}
+
+uint64_t FFMpeg::PixelFormat::fromString(QString format)
+{
+    if(format=="rgb24")
+        return RGB24;
+
+    else if(format=="yuv420p")
+        return YUV420P;
+
+    else if(format=="yuv444p")
+        return YUV444P;
+
+    else if(format=="yuv420p10")
+        return YUV420P10;
+
+    else if(format=="yuv444p10")
+        return YUV444P10;
+
+    return 0;
+}
+
+QList <FFMpeg::PixelFormat::T> FFMpeg::PixelFormat::compatiblePixelFormats(FFMpeg::VideoEncoder::T encoder)
+{
+    switch(encoder) {
+    case VideoEncoder::libx264:
+        return QList<T>() << YUV420P << YUV444P;
+
+    case VideoEncoder::libx264_10bit:
+        return QList<T>() << YUV420P10 << YUV444P10;
+
+    case VideoEncoder::libx264rgb:
+        return QList<T>() << RGB24;
+
+    case VideoEncoder::nvenc_h264:
+        return QList<T>() << YUV420P << YUV444P;
+
+    case VideoEncoder::nvenc_hevc:
+        return QList<T>() << YUV420P;
+    }
+
+    return QList<T>() << RGB24 << YUV420P << YUV444P << YUV420P10 << YUV444P10;
 }

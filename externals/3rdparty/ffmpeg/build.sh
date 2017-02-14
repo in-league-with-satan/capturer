@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#sudo apt-get -y install autoconf automake libtool build-essential cmake curl git mercurial
+#sudo apt-get -y install autoconf automake libtool build-essential cmake git mercurial
 
 
 str_opt="-march=native -O3"
@@ -57,6 +57,7 @@ if [ ! -e x265 ]; then
   hg clone https://bitbucket.org/multicoreware/x265
 fi
 cd $PATH_BUILD/x265/build/linux
+make clean
 export CFLAGS="$str_opt"
 cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$PATH_BASE" -DENABLE_SHARED:bool=off ../../source
 make -j$cpu_count
@@ -77,7 +78,7 @@ make install
 
 cd $PATH_BUILD
 if [ ! -e lame-3.99.5.tar.gz ]; then
-  curl -L -O http://downloads.sourceforge.net/project/lame/lame/3.99/lame-3.99.5.tar.gz
+  wget http://downloads.sourceforge.net/project/lame/lame/3.99/lame-3.99.5.tar.gz
   tar xzvf lame-3.99.5.tar.gz
 fi
 cd lame-3.99.5
@@ -101,7 +102,7 @@ make install
 
 cd $PATH_BUILD
 if [ ! -e libogg-1.3.2.tar.gz ]; then
-  curl -O http://downloads.xiph.org/releases/ogg/libogg-1.3.2.tar.gz
+  wget http://downloads.xiph.org/releases/ogg/libogg-1.3.2.tar.gz
   tar xzvf libogg-1.3.2.tar.gz
 fi
 cd libogg-1.3.2
@@ -113,11 +114,23 @@ make install
 
 cd $PATH_BUILD
 if [ ! -e libvorbis-1.3.5.tar.gz ]; then
-  curl -O http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.5.tar.gz
+  wget http://downloads.xiph.org/releases/vorbis/libvorbis-1.3.5.tar.gz
   tar xzvf libvorbis-1.3.5.tar.gz
 fi
 cd libvorbis-1.3.5
 CFLAGS="$str_opt" LDFLAGS="-L$PATH_BASE/lib" CPPFLAGS="-I$PATH_BASE/include" ./configure --prefix="$PATH_BASE" --with-ogg="$PATH_BASE" --disable-shared CFLAGS="$str_opt"
+make -j$cpu_count
+make install
+#make distclean
+
+
+cd $PATH_BUILD
+if [ ! -e speex-1.2.0 ]; then
+    wget http://downloads.us.xiph.org/releases/speex/speex-1.2.0.tar.gz
+    tar xzvf speex-1.2.0.tar.gz
+fi
+cd speex-1.2.0
+CFLAGS="$str_opt" ./configure --prefix="$PATH_BASE" --disable-shared CFLAGS="$str_opt"
 make -j$cpu_count
 make install
 #make distclean
@@ -149,6 +162,7 @@ make distclean
   --enable-libmp3lame \
   --enable-libopus \
   --enable-libvorbis \
+  --enable-libspeex \
   --enable-libvpx \
   --enable-libx264 \
   --enable-libx265 \
@@ -185,8 +199,9 @@ make install
 
 cd $PATH_BUILD
 cd $PATH_BUILD/x265/build/linux
+make clean
 export CFLAGS="$str_opt"
-cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$PATH_BASE" -DENABLE_SHARED:bool=off ../../source
+cmake -G "Unix Makefiles" -DHIGH_BIT_DEPTH=ON -DMAIN12=OFF -DCMAKE_INSTALL_PREFIX="$PATH_BASE" -DENABLE_SHARED:bool=off ../../source
 make -j$cpu_count
 make install
 
@@ -234,6 +249,14 @@ make install
 
 
 cd $PATH_BUILD
+cd speex-1.2.0
+CFLAGS="$str_opt" ./configure --prefix="$PATH_BASE" --disable-shared CFLAGS="$str_opt"
+make -j$cpu_count
+make install
+#make distclean
+
+
+cd $PATH_BUILD
 cd libvpx
 ./configure --prefix="$PATH_BASE" --disable-examples
 make -j$cpu_count
@@ -252,6 +275,7 @@ make distclean
   --enable-libmp3lame \
   --enable-libopus \
   --enable-libvorbis \
+  --enable-libspeex \
   --enable-libvpx \
   --enable-libx264 \
   --enable-libx265 \

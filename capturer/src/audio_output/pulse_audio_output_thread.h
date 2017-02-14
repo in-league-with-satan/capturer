@@ -32,6 +32,8 @@ protected:
     pa_sample_spec ss;
 #endif
 
+    int output_channels_size;
+
     QFile f_src;
     QFile f_conv;
 };

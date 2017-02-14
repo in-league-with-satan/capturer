@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Exec=/home/username/projects/capturer/bin/capturer_10bit
+Name=capturer_10bit
+GenericName=Video capture tool
+Icon=/home/username/projects/capturer/icon/capturer.svg
+Terminal=false
+Categories=Video;Utility;Application;

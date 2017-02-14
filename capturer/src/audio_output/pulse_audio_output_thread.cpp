@@ -24,6 +24,8 @@ PulseAudioOutputThread::PulseAudioOutputThread(QObject *parent) :
 
 #endif
 
+    output_channels_size=2;
+
     start(QThread::NormalPriority);
 }
 
@@ -87,10 +89,14 @@ void PulseAudioOutputThread::onInputFrameArrived(QByteArray ba_data)
         return;
     }
 
-    if(input_channels_size!=2) {
+    if(input_channels_size!=output_channels_size) {
         QByteArray ba_tmp;
 
-        mix8channelsTo6(&ba_data, &ba_tmp);
+        if(input_channels_size==8 && output_channels_size==2)
+            mix8channelsTo2(&ba_data, &ba_tmp);
+
+        else if(input_channels_size==8 && output_channels_size==6)
+            mix8channelsTo6(&ba_data, &ba_tmp);
 
 #ifdef SAVE_STREAM
 
@@ -125,37 +131,30 @@ void PulseAudioOutputThread::init()
 
     pa_channel_map map;
 
-    if(input_channels_size==2) {
-        ss.channels=2;
+    ss.channels=map.channels=output_channels_size;
 
-        map.channels=2;
+    if(output_channels_size==2) {
         map.map[0]=PA_CHANNEL_POSITION_FRONT_LEFT;
         map.map[1]=PA_CHANNEL_POSITION_FRONT_RIGHT;
+
+    } else if(output_channels_size==6) {
+        map.map[0]=PA_CHANNEL_POSITION_FRONT_LEFT;
+        map.map[1]=PA_CHANNEL_POSITION_FRONT_RIGHT;
+        map.map[2]=PA_CHANNEL_POSITION_FRONT_CENTER;
+        map.map[3]=PA_CHANNEL_POSITION_LFE;
+        map.map[4]=PA_CHANNEL_POSITION_REAR_LEFT;
+        map.map[5]=PA_CHANNEL_POSITION_REAR_RIGHT;
 
     } else {
-        ss.channels=6;
-
-        map.channels=6;
         map.map[0]=PA_CHANNEL_POSITION_FRONT_LEFT;
         map.map[1]=PA_CHANNEL_POSITION_FRONT_RIGHT;
         map.map[2]=PA_CHANNEL_POSITION_FRONT_CENTER;
         map.map[3]=PA_CHANNEL_POSITION_LFE;
         map.map[4]=PA_CHANNEL_POSITION_REAR_LEFT;
         map.map[5]=PA_CHANNEL_POSITION_REAR_RIGHT;
+        map.map[6]=PA_CHANNEL_POSITION_SIDE_LEFT;
+        map.map[7]=PA_CHANNEL_POSITION_SIDE_RIGHT;
 
-        /*
-        ss.channels=8;
-
-        map.channels=8;
-        map.map[0]=PA_CHANNEL_POSITION_FRONT_LEFT;
-        map.map[1]=PA_CHANNEL_POSITION_FRONT_RIGHT;
-        map.map[2]=PA_CHANNEL_POSITION_FRONT_CENTER;
-        map.map[3]=PA_CHANNEL_POSITION_LFE;
-        map.map[4]=PA_CHANNEL_POSITION_REAR_LEFT;
-        map.map[5]=PA_CHANNEL_POSITION_REAR_RIGHT;
-        map.map[4]=PA_CHANNEL_POSITION_SIDE_LEFT;
-        map.map[5]=PA_CHANNEL_POSITION_SIDE_RIGHT;
-        */
     }
 
     int error;
