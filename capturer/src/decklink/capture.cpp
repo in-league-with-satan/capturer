@@ -240,8 +240,11 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
 
     qInfo() << "Video format changed to" << display_mode_name << (format_flags & bmdDetectedVideoInputRGB444 ? "RGB" : "YUV");
 
+
+#ifndef _WIN64
     if(display_mode_name)
         free(display_mode_name);
+#endif
 
     if(decklink_input) {
         decklink_input->StopStreams();

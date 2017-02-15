@@ -81,7 +81,9 @@ int GetDevices(DeckLinkDevices *devices)
 
 #endif
 
+#ifndef _WIN64
             free(device_name_string);
+#endif
         }
 
         //
@@ -163,7 +165,9 @@ int supportedInputFormats(IDeckLink *decklink, DeckLinkFormats *formats)
 
 #endif
 
+#ifndef _WIN64
             free(display_mode_string);
+#endif
 
             format.width=display_mode->GetWidth();
             format.height=display_mode->GetHeight();
