@@ -58,6 +58,8 @@ MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-moc
 RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-rcc
 
 
+include(../externals/overlay/overlay.pri)
+
 linux {
     INCLUDEPATH += \
         ../externals/3rdparty/blackmagic_decklink_sdk/Linux/include

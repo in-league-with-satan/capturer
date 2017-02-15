@@ -17,6 +17,8 @@ OutWidget2::OutWidget2(QWidget *parent)
 {
     video_widget=(VideoWidgetGl*)new VideoWidget();
 
+    setFocusPolicy(Qt::StrongFocus);
+
     QVBoxLayout *la_main=new QVBoxLayout();
 
     la_main->setMargin(0);
@@ -48,14 +50,9 @@ FrameBuffer *OutWidget2::frameBuffer()
     return frame_buffer;
 }
 
-void OutWidget2::leaveEvent(QEvent*)
+void OutWidget2::focusInEvent(QFocusEvent *)
 {
-    QApplication::setOverrideCursor(Qt::ArrowCursor);
-}
-
-void OutWidget2::enterEvent(QEvent*)
-{
-    QApplication::setOverrideCursor(Qt::BlankCursor);
+    emit focusEvent();
 }
 
 void OutWidget2::checkFrame()

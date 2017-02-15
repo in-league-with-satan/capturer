@@ -23,8 +23,8 @@ FFMpegThread::FFMpegThread(QObject *parent) :
 
     setTerminationEnabled();
 
-    start(QThread::NormalPriority);
-    // start(QThread::HighPriority);
+    // start(QThread::NormalPriority);
+    start(QThread::HighPriority);
     // start(QThread::HighestPriority);
     // start(QThread::TimeCriticalPriority);
 }

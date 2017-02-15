@@ -14,7 +14,8 @@ int main(int argc, char *argv[])
 
     //
 
-    QApplication a(argc, argv);
+    QApplication application(argc, argv);
+
 
     qRegisterMetaType<int64_t>("int64_t");
     qRegisterMetaType<size_t>("size_t");
@@ -22,8 +23,11 @@ int main(int argc, char *argv[])
 
     FFMpeg::init();
 
-    MainWindow w;
-    w.show();
+    MainWindow main_window;
 
-    return a.exec();
+    main_window.show();
+
+    // application.installEventFilter(&main_window);
+
+    return application.exec();
 }

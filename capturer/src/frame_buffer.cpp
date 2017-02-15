@@ -70,3 +70,10 @@ void FrameBuffer::clear()
 
     queue.clear();
 }
+
+QPair <int, int> FrameBuffer::size()
+{
+    QMutexLocker ml(mutex_frame_buffer);
+
+    return qMakePair(queue.size(), buffer_max_size);
+}

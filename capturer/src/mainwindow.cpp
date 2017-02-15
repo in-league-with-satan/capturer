@@ -22,8 +22,11 @@
 #include "sdl2_video_output_thread.h"
 #include "audio_level_widget.h"
 
-#include "mainwindow.h"
+#include "qml_messenger.h"
+#include "overlay_view.h"
 
+
+#include "mainwindow.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
@@ -32,6 +35,18 @@ MainWindow::MainWindow(QWidget *parent) :
     decklink_thread=new DeckLinkCapture(this);
     connect(decklink_thread, SIGNAL(formatChanged(QSize,int64_t,int64_t)), SLOT(onFormatChanged(QSize,int64_t,int64_t)), Qt::QueuedConnection);
     connect(decklink_thread, SIGNAL(frameSkipped()), SLOT(onFrameSkipped()), Qt::QueuedConnection);
+
+    //
+
+    messenger=new QmlMessenger();
+
+    overlay_view=new OverlayView();
+
+    overlay_view->installEventFilter(this);
+
+    overlay_view->setMessenger(messenger);
+
+    overlay_view->setSource(QStringLiteral("qrc:/qml/Root.qml"));
 
     //
 
@@ -45,7 +60,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     decklink_thread->subscribeForAll(ffmpeg->frameBuffer());
 
-    connect(ffmpeg->frameBuffer(), SIGNAL(frameSkipped()), SLOT(onFrameSkipped()), Qt::QueuedConnection);
+    connect(ffmpeg->frameBuffer(), SIGNAL(frameSkipped()), SLOT(onEncBufferOverload()), Qt::QueuedConnection);
     connect(ffmpeg, SIGNAL(stats(FFMpeg::Stats)), SLOT(updateStats(FFMpeg::Stats)));
 
     //
@@ -64,6 +79,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
 #endif
 
+    connect(out_widget, SIGNAL(focusEvent()), overlay_view, SLOT(raise()));
+
     //
 
     audio_level=new AudioLevelWidget();
@@ -79,35 +96,59 @@ MainWindow::MainWindow(QWidget *parent) :
 
     cb_half_fps=new QCheckBox("half fps");
 
+    connect(cb_half_fps, SIGNAL(toggled(bool)), messenger, SIGNAL(halfFpsSet(bool)));
+
+    connect(messenger, SIGNAL(halfFpsChanged(bool)), cb_half_fps, SLOT(setChecked(bool)));
+
+
     cb_rec_pixel_format=new QComboBox();
 
     connect(cb_rec_pixel_format, SIGNAL(currentIndexChanged(int)), SLOT(onPixelFormatChanged(int)));
+    connect(cb_rec_pixel_format, SIGNAL(currentIndexChanged(int)), messenger, SIGNAL(pixelFormatIndexSet(int)));
+
+    connect(messenger, SIGNAL(pixelFormatIndexChanged(int)), cb_rec_pixel_format, SLOT(setCurrentIndex(int)));
 
 
     le_crf=new QLineEdit("10");
     le_crf->setInputMask("99");
 
+    connect(le_crf, SIGNAL(textChanged(QString)), SLOT(onCrfChanged(QString)));
+    connect(messenger, SIGNAL(crfChanged(int)), SLOT(onCrfChanged(int)));
 
     cb_video_encoder=new QComboBox();
     connect(cb_video_encoder, SIGNAL(currentIndexChanged(int)), SLOT(onEncoderChanged(int)));
+    connect(cb_video_encoder, SIGNAL(currentIndexChanged(int)), messenger, SIGNAL(videoEncoderIndexSet(int)));
+
+    connect(messenger, SIGNAL(videoCodecIndexChanged(int)), cb_video_encoder, SLOT(setCurrentIndex(int)));
 
     if(FFMpeg::isLib_x264_10bit()) {
         cb_video_encoder->addItem("libx264_10bit", FFMpeg::VideoEncoder::libx264_10bit);
+        cb_video_encoder->addItem("nvenc_h264", FFMpeg::VideoEncoder::nvenc_h264);
+        cb_video_encoder->addItem("nvenc_hevc", FFMpeg::VideoEncoder::nvenc_hevc);
+
+        messenger->setModelVideoEncoder(QStringList() << "libx264_10bit" << "nvenc_h264" << "nvenc_hevc");
 
     } else {
         cb_video_encoder->addItem("libx264", FFMpeg::VideoEncoder::libx264);
         cb_video_encoder->addItem("libx264rgb", FFMpeg::VideoEncoder::libx264rgb);
+        cb_video_encoder->addItem("nvenc_h264", FFMpeg::VideoEncoder::nvenc_h264);
+        cb_video_encoder->addItem("nvenc_hevc", FFMpeg::VideoEncoder::nvenc_hevc);
+
+        messenger->setModelVideoEncoder(QStringList() << "libx264" << "libx264rgb" << "nvenc_h264" << "nvenc_hevc");
     }
-
-    cb_video_encoder->addItem("nvenc_h264", FFMpeg::VideoEncoder::nvenc_h264);
-    cb_video_encoder->addItem("nvenc_hevc", FFMpeg::VideoEncoder::nvenc_hevc);
-
 
     cb_preview=new QCheckBox("preview");
     cb_preview->setChecked(true);
+
     connect(cb_preview, SIGNAL(stateChanged(int)), SLOT(onPreviewChanged(int)));
 
+
     cb_stop_rec_on_frames_drop=new QCheckBox("stop rec on frames drop");
+
+    connect(cb_stop_rec_on_frames_drop, SIGNAL(toggled(bool)), messenger, SIGNAL(stopOnDropSet(bool)));
+
+    connect(messenger, SIGNAL(stopOnDropChanged(bool)), cb_stop_rec_on_frames_drop, SLOT(setChecked(bool)));
+
     cb_stop_rec_on_frames_drop->setChecked(true);
 
 
@@ -115,17 +156,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
     QLabel *l_video_mode=new QLabel("input video mode:");
 
-    QLabel *l_rec_pixel_format=new QLabel("rec pixel format::");
+    QLabel *l_rec_pixel_format=new QLabel("rec pixel format:");
 
     QLabel *l_crf=new QLabel("crf:");
 
     QLabel *l_video_encoder=new QLabel("video encoder:");
 
-    QPushButton *b_start_rec=new QPushButton("start recording");
-    QPushButton *b_stop_rec=new QPushButton("stop recording");
+    QPushButton *b_start_stop_rec=new QPushButton("start/stop recording");
 
-    connect(b_start_rec, SIGNAL(clicked(bool)), SLOT(onStartRecording()));
-    connect(b_stop_rec, SIGNAL(clicked(bool)), SLOT(onStopRecording()));
+    connect(b_start_stop_rec, SIGNAL(clicked(bool)), SLOT(onStartStopRecording()));
 
     //
 
@@ -188,8 +227,7 @@ MainWindow::MainWindow(QWidget *parent) :
     la_h->addWidget(cb_half_fps);
     la_h->addWidget(cb_preview);
     la_h->addWidget(cb_stop_rec_on_frames_drop);
-    la_h->addWidget(b_start_rec);
-    la_h->addWidget(b_stop_rec);
+    la_h->addWidget(b_start_stop_rec);
     la_h->addLayout(la_stats);
     la_h->addWidget(audio_level);
 
@@ -215,18 +253,45 @@ MainWindow::MainWindow(QWidget *parent) :
     load();
 
     onStartCapture();
+
+
+    overlay_view->showFullScreen();
 }
 
 MainWindow::~MainWindow()
 {
 
     save();
+}
 
+bool MainWindow::eventFilter(QObject *object, QEvent *event)
+{
+    if(event->type()==QEvent::KeyPress) {
+        QKeyEvent *e=static_cast<QKeyEvent*>(event);
+
+        if(e) {
+            // qInfo() << "key pressed" << e->key();
+
+            switch(e->key()) {
+            case Qt::Key_F4:
+                onStartStopRecording();
+                return true;
+            }
+
+            messenger->keyEvent((Qt::Key)e->key());
+
+            return true;
+        }
+    }
+
+    return QObject::eventFilter(object, event);
 }
 
 void MainWindow::closeEvent(QCloseEvent *)
 {
     out_widget->close();
+
+    overlay_view->close();
 }
 
 void MainWindow::load()
@@ -304,12 +369,24 @@ void MainWindow::onEncoderChanged(const int &index)
 
     cb_rec_pixel_format->clear();
 
-    for(int i=0; i<fmts.size(); ++i)
-        cb_rec_pixel_format->addItem(FFMpeg::PixelFormat::toString(fmts[i]), fmts[i]);
+    QStringList sl;
 
-    cb_rec_pixel_format->setCurrentIndex(map_pixel_format.value(QString::number(cb_video_encoder->currentData().toInt()), 0).toInt());
+    for(int i=0; i<fmts.size(); ++i) {
+        cb_rec_pixel_format->addItem(FFMpeg::PixelFormat::toString(fmts[i]), fmts[i]);
+        sl << FFMpeg::PixelFormat::toString(fmts[i]);
+    }
+
+    messenger->setModelPixelFormat(sl);
 
     cb_rec_pixel_format->blockSignals(false);
+
+
+    int index_pf=map_pixel_format.value(QString::number(cb_video_encoder->currentData().toInt()), 0).toInt();
+
+    cb_rec_pixel_format->setCurrentIndex(index_pf);
+
+    messenger->pixelFormatIndexSet(index_pf);
+
 }
 
 void MainWindow::onPixelFormatChanged(const int &index)
@@ -334,6 +411,20 @@ void MainWindow::onFormatChanged(QSize size, int64_t frame_duration, int64_t fra
                            );
 }
 
+void MainWindow::onCrfChanged(const QString &text)
+{
+    messenger->crfSet(text.toInt());
+}
+
+void MainWindow::onCrfChanged(const int &crf)
+{
+    le_crf->blockSignals(true);
+
+    le_crf->setText(QString::number(crf));
+
+    le_crf->blockSignals(false);
+}
+
 void MainWindow::onStartCapture()
 {
     decklink_thread->setup(cb_device->currentData().value<DeckLinkDevice>(),
@@ -347,22 +438,27 @@ void MainWindow::onStartCapture()
     QMetaObject::invokeMethod(decklink_thread, "captureStart", Qt::QueuedConnection);
 }
 
-void MainWindow::onStartRecording()
+void MainWindow::onStartStopRecording()
 {
-    FFMpeg::Config cfg;
+    if(ffmpeg->isWorking()) {
+        ffmpeg->stopCoder();
 
-    cfg.framerate=FFMpeg::calcFps(current_frame_duration, current_frame_scale, cb_half_fps->isChecked());
-    cfg.frame_resolution=current_frame_size;
-    cfg.pixel_format=(AVPixelFormat)cb_rec_pixel_format->currentData().toInt();
-    cfg.video_encoder=(FFMpeg::VideoEncoder::T)cb_video_encoder->currentData().toInt();
-    cfg.crf=le_crf->text().toUInt();
+        messenger->recStopped();
 
-    ffmpeg->setConfig(cfg);
-}
+    } else {
+        FFMpeg::Config cfg;
 
-void MainWindow::onStopRecording()
-{
-    ffmpeg->stopCoder();
+        cfg.framerate=FFMpeg::calcFps(current_frame_duration, current_frame_scale, cb_half_fps->isChecked());
+        cfg.frame_resolution=current_frame_size;
+        cfg.pixel_format=(AVPixelFormat)cb_rec_pixel_format->currentData().toInt();
+        cfg.video_encoder=(FFMpeg::VideoEncoder::T)cb_video_encoder->currentData().toInt();
+        cfg.crf=le_crf->text().toUInt();
+
+        ffmpeg->setConfig(cfg);
+
+        messenger->updateRecStats(QString(), QString(), QString());
+        messenger->recStarted();
+    }
 }
 
 void MainWindow::onFrameSkipped()
@@ -374,11 +470,32 @@ void MainWindow::onFrameSkipped()
         return;
 
     ffmpeg->stopCoder();
+    messenger->recStopped();
 
     // QMetaObject::invokeMethod(decklink_thread, "captureStop", Qt::QueuedConnection);
 
     if(!mb_rec_stopped)
-        mb_rec_stopped=new QMessageBox(QMessageBox::Critical, "", "some frames was dropped, recording stopped", QMessageBox::Ok);
+        mb_rec_stopped=new QMessageBox(QMessageBox::Critical, "", "", QMessageBox::Ok);
+
+    mb_rec_stopped->setText("some frames was dropped, recording stopped");
+
+    mb_rec_stopped->show();
+    mb_rec_stopped->raise();
+    mb_rec_stopped->exec();
+}
+
+void MainWindow::onEncBufferOverload()
+{
+    if(!ffmpeg->isWorking())
+        return;
+
+    ffmpeg->stopCoder();
+    messenger->recStopped();
+
+    if(!mb_rec_stopped)
+        mb_rec_stopped=new QMessageBox(QMessageBox::Critical, "", "", QMessageBox::Ok);
+
+    mb_rec_stopped->setText("encoder buffer overload, recording stopped");
 
     mb_rec_stopped->show();
     mb_rec_stopped->raise();
@@ -405,4 +522,11 @@ void MainWindow::updateStats(FFMpeg::Stats s)
     le_stat_br->setText(QString("%1 kbits/s").arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/1000., 'f', 0)));
 
     le_stat_time->setText(s.time.toString("HH:mm:ss"));
+
+    const QPair <int, int> buffer_size=ffmpeg->frameBuffer()->size();
+
+    messenger->updateRecStats(s.time.toString("HH:mm:ss"),
+                              QString("%1 kbits/s").arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/1000., 'f', 0))
+                                                        + QString("    %1/%2").arg(buffer_size.first).arg(buffer_size.second),
+                              QString("%1 bytes").arg(QLocale().toString((qulonglong)s.streams_size)));
 }

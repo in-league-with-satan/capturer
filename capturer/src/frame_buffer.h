@@ -37,6 +37,8 @@ public:
 
     void clear();
 
+    QPair <int, int> size();
+
     QQueue <Frame> queue;
 
     QMutex *mutex_frame_buffer;

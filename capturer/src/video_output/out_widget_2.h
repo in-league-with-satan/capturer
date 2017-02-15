@@ -19,8 +19,7 @@ public:
     FrameBuffer *frameBuffer();
 
 protected:
-    virtual void leaveEvent(QEvent*);
-    virtual void enterEvent(QEvent*);
+    virtual void focusInEvent(QFocusEvent *);
 
 private slots:
     void checkFrame();
@@ -33,6 +32,9 @@ private:
     VideoWidgetGl *video_widget;
 
     QTimer *timer;
+
+signals:
+    void focusEvent();
 };
 
 #endif // OUT_WIDGET_2_H
