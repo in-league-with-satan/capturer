@@ -3,11 +3,15 @@
 #include <QDateTime>
 #include <qcoreapplication.h>
 
+#ifdef _MSC_VER
+#include <windows.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
-#include <unistd.h>
+//#include <pthread.h>
+//#include <unistd.h>
 #include <fcntl.h>
 #include <csignal>
 
@@ -36,7 +40,11 @@ public:
 private:
     DeckLinkCapture *d;
 
+#ifdef _MSC_VER
+    unsigned long long ref_count;
+#else
     int32_t ref_count;
+#endif
 };
 
 DeckLinkCaptureDelegate::DeckLinkCaptureDelegate(DeckLinkCapture *parent) :
@@ -47,12 +55,20 @@ DeckLinkCaptureDelegate::DeckLinkCaptureDelegate(DeckLinkCapture *parent) :
 
 ULONG DeckLinkCaptureDelegate::AddRef(void)
 {
+#ifdef _MSC_VER
+    return InterlockedExchangeAdd(&ref_count, 1);
+#else
     return __sync_add_and_fetch(&ref_count, 1);
+#endif
 }
 
 ULONG DeckLinkCaptureDelegate::Release(void)
 {
+#ifdef _MSC_VER
+    int32_t new_ref_value=InterlockedExchangeSubtract(&ref_count, 1);
+#else
     int32_t new_ref_value=__sync_sub_and_fetch(&ref_count, 1);
+#endif
 
     if(new_ref_value==0) {
         delete this;

@@ -45,12 +45,15 @@ void QmlMessenger::keyEvent(const Qt::Key &key)
 {
     switch(key) {
     case Qt::Key_Menu:
+    case Qt::Key_Space:
         //qInfo() << "show_menu";
         emit showMenu();
         return;
 
     case Qt::Key_HomePage:
     case Qt::Key_Back:
+    case Qt::Key_Backspace:
+    case Qt::Key_Delete:
         emit back();
         return;
 

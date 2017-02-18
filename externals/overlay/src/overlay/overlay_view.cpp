@@ -13,18 +13,12 @@ OverlayView::OverlayView() :
     QSurfaceFormat format;
     format.setAlphaBufferSize(8);
     format.setRenderableType(QSurfaceFormat::OpenGL);
+    format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
 
     setFormat(format);
 
 
-    QColor color;
-    color.setRedF(0.);
-    color.setGreenF(0.);
-    color.setBlueF(0.);
-    color.setAlphaF(0.);
-
-    setColor(color);
-
+    setColor(Qt::transparent);
 
     setSurfaceType(QSurface::OpenGLSurface);
 
@@ -32,7 +26,7 @@ OverlayView::OverlayView() :
 
     setFlags(Qt::FramelessWindowHint);
 
-    installEventFilter(this);
+    // installEventFilter(this);
 }
 
 OverlayView::~OverlayView()

@@ -255,7 +255,17 @@ MainWindow::MainWindow(QWidget *parent) :
     onStartCapture();
 
 
+#ifdef _WIN32
+
+    overlay_view->show();
+
+    overlay_view->resize(overlay_view->size() - QSize(1, 1));
+
+#else
+
     overlay_view->showFullScreen();
+
+#endif
 }
 
 MainWindow::~MainWindow()

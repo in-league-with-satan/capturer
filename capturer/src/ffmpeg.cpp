@@ -209,8 +209,12 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
 
         c->channels=av_get_channel_layout_nb_channels(c->channel_layout);
 
+#ifndef _MSC_VER
         ost->av_stream->time_base=(AVRational){ 1, c->sample_rate };
-
+#else
+        ost->av_stream->time_base.num=1;
+        ost->av_stream->time_base.den=c->sample_rate;
+#endif
         break;
 
     case AVMEDIA_TYPE_VIDEO:
@@ -223,7 +227,7 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         // of which frame timestamps are represented. For fixed-fps content,
         // timebase should be 1/framerate and timestamp increments should be
         // identical to 1
-
+#ifndef _MSC_VER
         switch(cfg.framerate) {
         case FFMpeg::Framerate::full_23:
             ost->av_stream->time_base=(AVRational){ 1001, 24000 };
@@ -264,7 +268,57 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
             ost->av_stream->time_base=(AVRational){ 1000, 30000 };
             break;
         }
+#else
+        switch(cfg.framerate) {
+        case FFMpeg::Framerate::full_23:
+            ost->av_stream->time_base.num=1001;
+            ost->av_stream->time_base.den=24000;
+            break;
 
+        case FFMpeg::Framerate::full_24:
+            ost->av_stream->time_base.num=1000;
+            ost->av_stream->time_base.den=24000;
+            break;
+
+        case FFMpeg::Framerate::full_25:
+        case FFMpeg::Framerate::half_50:
+            ost->av_stream->time_base.num=1000;
+            ost->av_stream->time_base.den=25000;
+            break;
+
+        case FFMpeg::Framerate::full_29:
+        case FFMpeg::Framerate::half_59:
+            ost->av_stream->time_base.num=1001;
+            ost->av_stream->time_base.den=30000;
+            break;
+
+        case FFMpeg::Framerate::full_30:
+        case FFMpeg::Framerate::half_60:
+            ost->av_stream->time_base.num=1000;
+            ost->av_stream->time_base.den=30000;
+            break;
+
+        case FFMpeg::Framerate::full_50:
+            ost->av_stream->time_base.num=1000;
+            ost->av_stream->time_base.den=50000;
+            break;
+
+        case FFMpeg::Framerate::full_59:
+            ost->av_stream->time_base.num=1001;
+            ost->av_stream->time_base.den=60000;
+            break;
+
+        case FFMpeg::Framerate::full_60:
+            ost->av_stream->time_base.num=1000;
+            ost->av_stream->time_base.den=60000;
+            break;
+
+        default:
+            ost->av_stream->time_base.num=1000;
+            ost->av_stream->time_base.den=30000;
+            break;
+        }
+#endif
         c->time_base=ost->av_stream->time_base;
 
         c->gop_size=12; // emit one intra frame every twelve frames at most

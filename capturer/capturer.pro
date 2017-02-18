@@ -48,8 +48,10 @@ CONFIG(debug, debug|release):{
 } else {
     DEFINES += QT_NO_DEBUG_OUTPUT
 
-    QMAKE_CFLAGS_RELEASE = "-march=native -O3 -fomit-frame-pointer -pipe"
-    QMAKE_CXXFLAGS_RELEASE = "-march=native -O3 -fomit-frame-pointer -pipe"
+    linux {
+        QMAKE_CFLAGS_RELEASE = "-march=native -O3 -fomit-frame-pointer -pipe"
+        QMAKE_CXXFLAGS_RELEASE = "-march=native -O3 -fomit-frame-pointer -pipe"
+    }
 }
 
 
@@ -59,6 +61,7 @@ RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-rcc
 
 
 include(../externals/overlay/overlay.pri)
+
 
 linux {
     INCLUDEPATH += \
