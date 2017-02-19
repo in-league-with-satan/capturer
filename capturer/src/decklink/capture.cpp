@@ -114,10 +114,12 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
     video_frame_converted_1080p=nullptr;
     video_frame_converted_2160p=nullptr;
 
-    if(ext_converter)
+    if(ext_converter) {
         conv_thread=new DlConvertThreadContainer(4);
 
-    else
+        connect(conv_thread, SIGNAL(frameSkipped()), this, SIGNAL(frameSkipped()));
+
+    } else
         video_converter=CreateVideoConversionInstance();
 
     //

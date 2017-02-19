@@ -66,6 +66,8 @@ private:
     int64_t current_frame_duration;
     int64_t current_frame_scale;
 
+    uint32_t dropped_frames_counter;
+
     QVariantMap map_pixel_format;
 
 protected:

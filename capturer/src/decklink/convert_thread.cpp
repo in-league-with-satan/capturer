@@ -20,9 +20,9 @@ void frameCompletedCallback(FrameBuffer::Frame frame)
     convert_thread_container->frameCompleted(frame);
 }
 
-DlConvertThread::DlConvertThread(FrameCompletedCallback func_frame_completed, QObject *parent) :
-    QThread(parent)
-  , func_frame_completed(func_frame_completed)
+DlConvertThread::DlConvertThread(FrameCompletedCallback func_frame_completed, QObject *parent)
+    : QThread(parent)
+    , func_frame_completed(func_frame_completed)
 {
     frame_video_src=nullptr;
 
@@ -133,7 +133,8 @@ void DlConvertThread::run()
     }
 }
 
-DlConvertThreadContainer::DlConvertThreadContainer(int thread_count)
+DlConvertThreadContainer::DlConvertThreadContainer(int thread_count, QObject *parent)
+    : QObject(parent)
 {
     this->thread_count=thread_count;
 
@@ -154,7 +155,7 @@ void DlConvertThreadContainer::addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAud
 
         QMutexLocker ml(&mutex_subscription);
 
-        queue.clear();
+        queueClear();
     }
 
     thread[thread_num++]->addFrame(frame, audio_packet, counter, reset_counter);
@@ -214,7 +215,7 @@ void DlConvertThreadContainer::frameCompleted(FrameBuffer::Frame frame)
 
         last_frame_counter=frame.counter - 1;
 
-        queue.clear();
+        queueClear();
     }
 
     if(frame.counter!=uint8_t(last_frame_counter + 1)) {
@@ -247,4 +248,13 @@ void DlConvertThreadContainer::frameCompleted(FrameBuffer::Frame frame)
         foreach(FrameBuffer *buf, l_audio)
             buf->appendFrame(frame);
     }
+}
+
+void DlConvertThreadContainer::queueClear()
+{
+    for(int i=0; i<queue.size(); ++i) {
+        emit frameSkipped();
+    }
+
+    queue.clear();
 }

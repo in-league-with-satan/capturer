@@ -460,13 +460,17 @@ void MainWindow::onStartStopRecording()
 
         ffmpeg->setConfig(cfg);
 
-        messenger->updateRecStats(QString(), QString(), QString());
+        messenger->updateRecStats();
         messenger->recStarted();
+
+        dropped_frames_counter=0;
     }
 }
 
 void MainWindow::onFrameSkipped()
 {
+    dropped_frames_counter++;
+
     if(!cb_stop_rec_on_frames_drop->isChecked())
         return;
 
@@ -523,7 +527,9 @@ void MainWindow::updateStats(FFMpeg::Stats s)
     const QPair <int, int> buffer_size=ffmpeg->frameBuffer()->size();
 
     messenger->updateRecStats(s.time.toString("HH:mm:ss"),
-                              QString("%1 kbits/s").arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/1000., 'f', 0))
-                                                        + QString("    %1/%2").arg(buffer_size.first).arg(buffer_size.second),
-                              QString("%1 bytes").arg(QLocale().toString((qulonglong)s.streams_size)));
+                              QString("%1 kbits/s").arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/1000., 'f', 0)),
+                              QString("%1 bytes").arg(QLocale().toString((qulonglong)s.streams_size)),
+                              QString("buf state: %1/%2").arg(buffer_size.first).arg(buffer_size.second),
+                              QString("frames dropped: %1").arg(dropped_frames_counter));
 }
+

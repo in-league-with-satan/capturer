@@ -111,7 +111,7 @@ Rectangle {
         target: messenger
 
         onUpdateRecStats: {
-            text_output.text=duration + "    " + size + "    " + bitrate;
+            text_output.text=duration + "    " + size + "    " + bitrate + "    " + buffer_state + "    " + dropped_frames_counter;
         }
 
         onRecStarted: rec_state_bar.state_visible=true

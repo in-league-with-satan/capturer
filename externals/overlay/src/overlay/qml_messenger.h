@@ -14,10 +14,7 @@ class QmlMessenger : public QObject
 
 public:
     explicit QmlMessenger(QObject *parent=0);
-
     ~QmlMessenger();
-
-    void recStats(QString duration, QString bitrate, QString size);
 
     QStringList getModelVideoEncoder() const;
     void setModelVideoEncoder(const QStringList &model);
@@ -38,7 +35,8 @@ private:
     int crf;
 
 signals:
-    void updateRecStats(QString duration, QString bitrate, QString size);
+    void updateRecStats(QString duration=QString(), QString bitrate=QString(), QString size=QString(),
+                        QString buffer_state=QString(), QString dropped_frames_counter=QString());
 
     void recStarted();
     void recStopped();

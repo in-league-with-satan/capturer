@@ -21,10 +21,12 @@ class DlConvertThreadContainer;
 
 typedef void (*FrameCompletedCallback)(FrameBuffer::Frame);
 
-class DlConvertThreadContainer
+class DlConvertThreadContainer : public QObject
 {
+    Q_OBJECT
+
 public:
-    explicit DlConvertThreadContainer(int thread_count);
+    explicit DlConvertThreadContainer(int thread_count, QObject *parent=0);
 
     void addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet, uint8_t counter, bool reset_counter);
 
@@ -41,6 +43,8 @@ public:
     QVector <DlConvertThread*> thread;
 
 private:
+    void queueClear();
+
     int thread_count;
     int thread_num;
 
@@ -52,6 +56,9 @@ private:
 
     QList <FrameBuffer*> l_full;
     QList <FrameBuffer*> l_audio;
+
+signals:
+    void frameSkipped();
 };
 
 class DlConvertThread : public QThread
