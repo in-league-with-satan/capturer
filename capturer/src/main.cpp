@@ -25,7 +25,9 @@ int main(int argc, char *argv[])
 
     MainWindow main_window;
 
+#ifndef __OPTIMIZE__
     main_window.show();
+#endif
 
     // application.installEventFilter(&main_window);
 

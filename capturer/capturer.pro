@@ -86,7 +86,7 @@ linux {
     SOURCES += \
         ../externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
 
-    LIBS += -lswresample -lavformat -lavcodec -lavutil -lswscale
+    LIBS += -lavformat -lavcodec -lavutil -lswscale -lswresample
     LIBS += -lz -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
 }
 

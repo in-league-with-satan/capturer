@@ -65,19 +65,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
     //
 
-#ifdef __linux__
-
-    out_widget_2=new Sdl2VideoOutpitThread();
-    decklink_thread->subscribeForAll(out_widget_2->frameBuffer());
-
-#else
-
     out_widget=new OutWidget2();
     out_widget->showFullScreen();
 
     decklink_thread->subscribeForAll(out_widget->frameBuffer());
-
-#endif
 
     connect(out_widget, SIGNAL(focusEvent()), overlay_view, SLOT(raise()));
 
@@ -270,7 +261,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
-
     save();
 }
 
@@ -285,6 +275,10 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             switch(e->key()) {
             case Qt::Key_F4:
                 onStartStopRecording();
+                return true;
+
+            case Qt::Key_F6:
+                cb_preview->setChecked(!cb_preview->isChecked());
                 return true;
             }
 
@@ -502,6 +496,7 @@ void MainWindow::onEncBufferOverload()
     ffmpeg->stopCoder();
     messenger->recStopped();
 
+
     if(!mb_rec_stopped)
         mb_rec_stopped=new QMessageBox(QMessageBox::Critical, "", "", QMessageBox::Ok);
 
@@ -514,15 +509,7 @@ void MainWindow::onEncBufferOverload()
 
 void MainWindow::onPreviewChanged(int)
 {
-#ifdef __linux__
-
-    out_widget_2->frameBuffer()->setEnabled(cb_preview->isChecked());
-
-#else
-
     out_widget->frameBuffer()->setEnabled(cb_preview->isChecked());
-
-#endif
 }
 
 void MainWindow::updateStats(FFMpeg::Stats s)

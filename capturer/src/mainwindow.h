@@ -60,8 +60,6 @@ private:
 
     OutWidget2 *out_widget;
 
-    Sdl2VideoOutpitThread *out_widget_2;
-
     QMessageBox *mb_rec_stopped;
 
     QSize current_frame_size;

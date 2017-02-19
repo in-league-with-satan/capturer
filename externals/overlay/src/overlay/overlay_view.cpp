@@ -12,6 +12,7 @@ OverlayView::OverlayView() :
 {
     QSurfaceFormat format;
     format.setAlphaBufferSize(8);
+    format.setStencilBufferSize(8);
     format.setRenderableType(QSurfaceFormat::OpenGL);
     format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
 
