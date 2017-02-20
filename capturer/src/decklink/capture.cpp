@@ -236,7 +236,9 @@ void DeckLinkCapture::captureStop()
 
 void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayMode *mode, uint32_t format_flags)
 {
-    HRESULT	result;
+    Q_UNUSED(events)
+
+    HRESULT result;
 
 
     BMDPixelFormat pixel_format=bmdFormat10BitYUV;
@@ -291,8 +293,6 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
     if(!video_frame || !audio_packet)
         return;
 
-    bool frame_dropped=false;
-
     if(video_frame->GetFlags() & bmdFrameHasNoInputSource) {
         qCritical() << "No input signal detected";
 
@@ -310,15 +310,15 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
             if(frame_time - frame_time_prev!=frame_duration) {
                 qCritical() << "decklink: frame dropped" << QDateTime::currentDateTime();
 
-                frame_dropped=true;
-
-                emit frameSkipped();
+                for(int i=0; i<(frame_time - frame_time_prev)/frame_duration - 1; ++i) {
+                    emit frameSkipped();
+                }
 
                 //
 
-                decklink_input->StopStreams();
+                // decklink_input->StopStreams();
 
-                decklink_input->StartStreams();
+                // decklink_input->StartStreams();
             }
 
         } else
@@ -329,7 +329,7 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
         //
 
         if(ext_converter) {
-            conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet, frame_counter++, frame_dropped || frame_time==0);
+            conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet, frame_counter++, frame_time==0);
 
             // if(frame_time!=0)
             //     conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet, frame_counter++, frame_time==0);

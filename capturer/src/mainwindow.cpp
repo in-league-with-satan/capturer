@@ -28,9 +28,9 @@
 
 #include "mainwindow.h"
 
-MainWindow::MainWindow(QWidget *parent) :
-    QMainWindow(parent)
-  , mb_rec_stopped(nullptr)
+MainWindow::MainWindow(QWidget *parent)
+    : QMainWindow(parent)
+    , mb_rec_stopped(nullptr)
 {
     decklink_thread=new DeckLinkCapture(this);
     connect(decklink_thread, SIGNAL(formatChanged(QSize,int64_t,int64_t)), SLOT(onFormatChanged(QSize,int64_t,int64_t)), Qt::QueuedConnection);
