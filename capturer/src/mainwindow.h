@@ -81,7 +81,7 @@ private slots:
     void onEncoderChanged(const int &index);
     void onPixelFormatChanged(const int &index);
 
-    void onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale);
+    void onFormatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format);
 
     void onCrfChanged(const QString &text);
     void onCrfChanged(const int &crf);

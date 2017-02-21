@@ -85,5 +85,7 @@ void AudioLevelWidget::checkBuffer()
         for(int channel=0; channel<8; ++channel)
             level[channel]=std::max(level[channel], ptr_data[pos + channel]);
 
+    emit levels(level[0], level[1], level[2], level[3], level[4], level[5], level[6], level[7]);
+
     update();
 }

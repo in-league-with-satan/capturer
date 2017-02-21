@@ -1,11 +1,19 @@
 #include <QDebug>
+#include <QApplication>
 #include <QKeyEvent>
+#include <QTimer>
+#include <QStorageInfo>
 
 #include "qml_messenger.h"
 
 QmlMessenger::QmlMessenger(QObject *parent)
     : QObject(parent)
 {
+    QTimer *timer=new QTimer();
+
+    connect(timer, SIGNAL(timeout()), SLOT(checkFreeSpace()));
+
+    timer->start(1000);
 }
 
 QmlMessenger::~QmlMessenger()
@@ -65,3 +73,11 @@ void QmlMessenger::keyEvent(const Qt::Key &key)
     keyPressed(key);
 }
 
+void QmlMessenger::checkFreeSpace()
+{
+    QStorageInfo info=QStorageInfo(QApplication::applicationDirPath() + "/videos");
+
+    emit freeSpace(QString("%1 MB").arg(QLocale().toString(info.bytesAvailable()/1024/1024)));
+
+    static_cast<QTimer*>(sender())->start(60*1000);
+}

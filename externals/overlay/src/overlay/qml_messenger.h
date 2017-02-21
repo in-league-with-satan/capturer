@@ -25,6 +25,9 @@ public:
 public slots:
     void keyEvent(const Qt::Key &key);
 
+private slots:
+    void checkFreeSpace();
+
 private:
     QStringList model_video_encoder;
     int model_video_encoder_index;
@@ -37,6 +40,13 @@ private:
 signals:
     void updateRecStats(QString duration=QString(), QString bitrate=QString(), QString size=QString(),
                         QString buffer_state=QString(), QString dropped_frames_counter=QString());
+
+    void formatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format);
+
+    void audioLevels(qint16 l, qint16 r, qint16 c, qint16 lfe, qint16 bl, qint16 br, qint16 sl, qint16 sr);
+
+
+    void freeSpace(QString size);
 
     void recStarted();
     void recStopped();
@@ -64,7 +74,6 @@ signals:
     void crfChanged(const int &value);
     void halfFpsChanged(const bool &value);
     void stopOnDropChanged(const bool &value);
-
 };
 
 #endif // QML_MESSENGER_H

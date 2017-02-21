@@ -33,12 +33,17 @@ MainWindow::MainWindow(QWidget *parent)
     , mb_rec_stopped(nullptr)
 {
     decklink_thread=new DeckLinkCapture(this);
-    connect(decklink_thread, SIGNAL(formatChanged(QSize,int64_t,int64_t)), SLOT(onFormatChanged(QSize,int64_t,int64_t)), Qt::QueuedConnection);
+    connect(decklink_thread, SIGNAL(formatChanged(int,int,quint64,quint64,bool,QString)),
+            SLOT(onFormatChanged(int,int,quint64,quint64,bool,QString)), Qt::QueuedConnection);
     connect(decklink_thread, SIGNAL(frameSkipped()), SLOT(onFrameSkipped()), Qt::QueuedConnection);
 
     //
 
     messenger=new QmlMessenger();
+
+    connect(decklink_thread, SIGNAL(formatChanged(int,int,quint64,quint64,bool,QString)),
+            messenger, SIGNAL(formatChanged(int,int,quint64,quint64,bool,QString)), Qt::QueuedConnection);
+
 
     overlay_view=new OverlayView();
 
@@ -76,6 +81,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     audio_level=new AudioLevelWidget();
     decklink_thread->subscribeForAudio(audio_level->frameBuffer());
+
+    connect(audio_level, SIGNAL(levels(qint16,qint16,qint16,qint16,qint16,qint16,qint16,qint16)),
+            messenger, SIGNAL(audioLevels(qint16,qint16,qint16,qint16,qint16,qint16,qint16,qint16)));
 
     //
 
@@ -401,17 +409,18 @@ void MainWindow::onPixelFormatChanged(const int &index)
     map_pixel_format.insert(QString::number(cb_video_encoder->currentData().toInt()), index);
 }
 
-void MainWindow::onFormatChanged(QSize size, int64_t frame_duration, int64_t frame_scale)
+void MainWindow::onFormatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format)
 {
-    current_frame_size=size;
+    current_frame_size=QSize(width, height);
 
     current_frame_duration=frame_duration;
     current_frame_scale=frame_scale;
 
-    le_video_mode->setText(QString("%1x%2@%3")
-                           .arg(size.width())
-                           .arg(size.height())
+    le_video_mode->setText(QString("%1%2@%3 %4")
+                           .arg(height)
+                           .arg(progressive_frame ? "p" : "i")
                            .arg(QString::number((double)frame_scale/(double)frame_duration, 'f', 2))
+                           .arg(pixel_format)
                            );
 }
 

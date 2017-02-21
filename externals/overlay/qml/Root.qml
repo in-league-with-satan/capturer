@@ -12,6 +12,19 @@ Rectangle {
     width: Screen.width
     height: Screen.height
 
+
+    MenuHeader {
+        id: menu_header
+
+        x: 0
+        y: 0
+
+        width: parent.width
+        height: parent.height*.1
+
+        opacity: 0
+    }
+
     Settings {
         id: settings
 
@@ -39,11 +52,13 @@ Rectangle {
                 return
 
             settings.state_visible=true
+
+            menu_header.state_visible=true
         }
 
-        onRecStarted: {
-            settings.state_visible=false
-        }
+        onRecStarted: settings.state_visible=false
+
+        onBack: menu_header.state_visible=false
     }
 }
 

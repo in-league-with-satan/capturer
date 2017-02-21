@@ -95,7 +95,7 @@ private:
 
 signals:
     void noInputSignalDetected();
-    void formatChanged(QSize size, int64_t frame_duration, int64_t frame_scale);
+    void formatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format);
     void frameSkipped();
 };
 

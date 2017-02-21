@@ -24,7 +24,7 @@ Rectangle {
         color: "white"
 
         font.pixelSize: parent.height*.8
-        font.bold : true
+        font.bold: true
 
         style: Text.Outline
 

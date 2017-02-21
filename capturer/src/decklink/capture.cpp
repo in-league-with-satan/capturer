@@ -246,26 +246,6 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
     if(format_flags & bmdDetectedVideoInputRGB444)
         pixel_format=bmdFormat10BitRGB;
 
-#ifdef __linux__
-
-    char *display_mode_name=nullptr;
-    mode->GetName((const char**)&display_mode_name);
-
-#else
-
-    wchar_t *display_mode_name=nullptr;
-    mode->GetName(&display_mode_name);
-
-#endif
-
-    qInfo() << "Video format changed to" << display_mode_name << (format_flags & bmdDetectedVideoInputRGB444 ? "RGB" : "YUV");
-
-
-#ifndef _WIN64
-    if(display_mode_name)
-        free(display_mode_name);
-#endif
-
     if(decklink_input) {
         decklink_input->StopStreams();
 
@@ -283,9 +263,10 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
 
     mode->GetFrameRate(&frame_duration, &frame_scale);
 
-    emit formatChanged(QSize(mode->GetWidth(), mode->GetHeight()), frame_duration, frame_scale);
-
-//    ff_converter->setup(AV_PIX_FMT_GBRP10LE, QSize(1920, 1080), AV_PIX_FMT_BGRA, QSize(1920, 1080));
+    emit formatChanged(mode->GetWidth(), mode->GetHeight(),
+                       frame_duration, frame_scale,
+                       (mode->GetFieldDominance()==bmdProgressiveFrame || mode->GetFieldDominance()==bmdProgressiveSegmentedFrame),
+                       pixel_format==bmdFormat10BitYUV ? "10BitYUV" : "10BitRGB");
 }
 
 void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet)

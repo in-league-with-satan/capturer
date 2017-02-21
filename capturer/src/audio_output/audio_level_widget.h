@@ -27,6 +27,9 @@ private:
     QTimer *timer;
 
     int16_t level[8];
+
+signals:
+    void levels(qint16 l, qint16 r, qint16 c, qint16 lfe, qint16 bl, qint16 br, qint16 sl, qint16 sr);
 };
 
 
