@@ -121,60 +121,26 @@ static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AV
     return av_interleaved_write_frame(fmt_ctx, pkt);
 }
 
-// add an output stream
-static void add_stream(OutputStream *ost, AVFormatContext *oc,
-                       AVCodec **codec,
-                       enum AVCodecID codec_id, FFMpeg::Config cfg)
+static void add_stream_audio(OutputStream *out_stream, AVFormatContext *format_context, AVCodec **codec, const FFMpeg::Config &cfg)
 {
     AVCodecContext *c;
 
     // find the encoder
-    if(codec_id!=AV_CODEC_ID_H264) {
-        *codec=avcodec_find_encoder(codec_id);
-
-    } else {
-        switch(cfg.video_encoder) {
-        case FFMpeg::VideoEncoder::libx264:
-        case FFMpeg::VideoEncoder::libx264_10bit: {
-            *codec=avcodec_find_encoder_by_name("libx264");
-
-        } break;
-
-        case FFMpeg::VideoEncoder::libx264rgb: {
-            *codec=avcodec_find_encoder_by_name("libx264rgb");
-
-        } break;
-
-        case FFMpeg::VideoEncoder::nvenc_h264: {
-            *codec=avcodec_find_encoder_by_name("h264_nvenc");
-
-        } break;
-
-        case FFMpeg::VideoEncoder::nvenc_hevc: {
-            *codec=avcodec_find_encoder_by_name("hevc_nvenc");
-
-            codec_id=AV_CODEC_ID_H265;
-
-        } break;
-
-        default:
-            break;
-        }
-    }
+    *codec=avcodec_find_encoder(AV_CODEC_ID_PCM_S16LE);
 
     if(!(*codec)) {
-        qCritical() << "could not find encoder for" << codec_id;
+        qCritical() << "could not find encoder for PCM_S16LE";
         exit(1);
     }
 
-    ost->av_stream=avformat_new_stream(oc, nullptr);
+    out_stream->av_stream=avformat_new_stream(format_context, nullptr);
 
-    if(!ost->av_stream) {
+    if(!out_stream->av_stream) {
         qCritical() << "could not allocate stream";
         exit(1);
     }
 
-    ost->av_stream->id=oc->nb_streams - 1;
+    out_stream->av_stream->id=format_context->nb_streams - 1;
 
     c=avcodec_alloc_context3(*codec);
 
@@ -183,99 +149,154 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         exit(1);
     }
 
-    ost->av_codec_context=c;
+    out_stream->av_codec_context=c;
 
-    switch((*codec)->type) {
-    case AVMEDIA_TYPE_AUDIO:
-        c->sample_fmt=(*codec)->sample_fmts ?
-                    (*codec)->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
+    c->sample_fmt=(*codec)->sample_fmts ? (*codec)->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
 
-        c->bit_rate=480000;
+    // c->bit_rate=480000;
 
-        c->sample_rate=48000;
+    c->sample_rate=48000;
 
-        switch(cfg.audio_channels_size) {
-        case 6:
-        case 8:
-            c->channel_layout=AV_CH_LAYOUT_7POINT1;
-            // c->channel_layout=AV_CH_LAYOUT_7POINT1_WIDE_BACK;
-            break;
-
-        case 2:
-        default:
-            c->channel_layout=AV_CH_LAYOUT_STEREO;
-            break;
-        }
-
-        c->channels=av_get_channel_layout_nb_channels(c->channel_layout);
-
-#ifndef _MSC_VER
-        ost->av_stream->time_base=(AVRational){ 1, c->sample_rate };
-#else
-        ost->av_stream->time_base.num=1;
-        ost->av_stream->time_base.den=c->sample_rate;
-#endif
+    switch(cfg.audio_channels_size) {
+    case 6:
+    case 8:
+        c->channel_layout=AV_CH_LAYOUT_7POINT1;
+        // c->channel_layout=AV_CH_LAYOUT_7POINT1_WIDE_BACK;
         break;
 
-    case AVMEDIA_TYPE_VIDEO:
-        c->codec_id=codec_id;
+    case 2:
+    default:
+        c->channel_layout=AV_CH_LAYOUT_STEREO;
+        break;
+    }
 
-        c->width=cfg.frame_resolution.width();
-        c->height=cfg.frame_resolution.height();
+    c->channels=av_get_channel_layout_nb_channels(c->channel_layout);
 
-        // timebase: This is the fundamental unit of time (in seconds) in terms
-        // of which frame timestamps are represented. For fixed-fps content,
-        // timebase should be 1/framerate and timestamp increments should be
-        // identical to 1
 #ifndef _MSC_VER
-        switch(cfg.framerate) {
-        case FFMpeg::Framerate::full_23:
-            ost->av_stream->time_base=(AVRational){ 1001, 24000 };
-            break;
 
-        case FFMpeg::Framerate::full_24:
-            ost->av_stream->time_base=(AVRational){ 1000, 24000 };
-            break;
+    out_stream->av_stream->time_base=(AVRational){ 1, c->sample_rate };
 
-        case FFMpeg::Framerate::full_25:
-        case FFMpeg::Framerate::half_50:
-            ost->av_stream->time_base=(AVRational){ 1000, 25000 };
-            break;
-
-        case FFMpeg::Framerate::full_29:
-        case FFMpeg::Framerate::half_59:
-            ost->av_stream->time_base=(AVRational){ 1001, 30000 };
-            break;
-
-        case FFMpeg::Framerate::full_30:
-        case FFMpeg::Framerate::half_60:
-            ost->av_stream->time_base=(AVRational){ 1000, 30000 };
-            break;
-
-        case FFMpeg::Framerate::full_50:
-            ost->av_stream->time_base=(AVRational){ 1000, 50000 };
-            break;
-
-        case FFMpeg::Framerate::full_59:
-            ost->av_stream->time_base=(AVRational){ 1001, 60000 };
-            break;
-
-        case FFMpeg::Framerate::full_60:
-            ost->av_stream->time_base=(AVRational){ 1000, 60000 };
-            break;
-
-        default:
-            ost->av_stream->time_base=(AVRational){ 1000, 30000 };
-            break;
-        }
 #else
-        switch(cfg.framerate) {
-        case FFMpeg::Framerate::full_23:
-            ost->av_stream->time_base.num=1001;
-            ost->av_stream->time_base.den=24000;
-            break;
 
-        case FFMpeg::Framerate::full_24:
+    ost->av_stream->time_base.num=1;
+    ost->av_stream->time_base.den=c->sample_rate;
+
+#endif
+
+    // some formats want stream headers to be separate
+    if(format_context->oformat->flags & AVFMT_GLOBALHEADER)
+        c->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
+}
+
+static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_context, AVCodec **codec, const FFMpeg::Config &cfg)
+{
+    AVCodecContext *c;
+
+    switch(cfg.video_encoder) {
+    case FFMpeg::VideoEncoder::libx264:
+    case FFMpeg::VideoEncoder::libx264_10bit:
+        *codec=avcodec_find_encoder_by_name("libx264");
+        break;
+
+    case FFMpeg::VideoEncoder::libx264rgb:
+        *codec=avcodec_find_encoder_by_name("libx264rgb");
+        break;
+
+    case FFMpeg::VideoEncoder::nvenc_h264:
+        *codec=avcodec_find_encoder_by_name("h264_nvenc");
+        break;
+
+    case FFMpeg::VideoEncoder::nvenc_hevc:
+        *codec=avcodec_find_encoder_by_name("hevc_nvenc");
+        break;
+
+    default:
+        break;
+    }
+
+    if(!(*codec)) {
+        qCritical() << "could not find encoder";
+        exit(1);
+    }
+
+    out_stream->av_stream=avformat_new_stream(format_context, nullptr);
+
+    if(!out_stream->av_stream) {
+        qCritical() << "could not allocate stream";
+        exit(1);
+    }
+
+    out_stream->av_stream->id=format_context->nb_streams - 1;
+
+    c=avcodec_alloc_context3(*codec);
+
+    if(!c) {
+        qCritical() << "could not alloc an encoding context";
+        exit(1);
+    }
+
+    out_stream->av_codec_context=c;
+
+    c->codec_id=(*codec)->id;
+
+    c->width=cfg.frame_resolution.width();
+    c->height=cfg.frame_resolution.height();
+
+    // timebase: This is the fundamental unit of time (in seconds) in terms
+    // of which frame timestamps are represented. For fixed-fps content,
+    // timebase should be 1/framerate and timestamp increments should be
+    // identical to 1
+#ifndef _MSC_VER
+    switch(cfg.framerate) {
+    case FFMpeg::Framerate::full_23:
+        out_stream->av_stream->time_base=(AVRational){ 1001, 24000 };
+        break;
+
+    case FFMpeg::Framerate::full_24:
+        out_stream->av_stream->time_base=(AVRational){ 1000, 24000 };
+        break;
+
+    case FFMpeg::Framerate::full_25:
+    case FFMpeg::Framerate::half_50:
+        out_stream->av_stream->time_base=(AVRational){ 1000, 25000 };
+        break;
+
+    case FFMpeg::Framerate::full_29:
+    case FFMpeg::Framerate::half_59:
+        out_stream->av_stream->time_base=(AVRational){ 1001, 30000 };
+        break;
+
+    case FFMpeg::Framerate::full_30:
+    case FFMpeg::Framerate::half_60:
+        out_stream->av_stream->time_base=(AVRational){ 1000, 30000 };
+        break;
+
+    case FFMpeg::Framerate::full_50:
+        out_stream->av_stream->time_base=(AVRational){ 1000, 50000 };
+        break;
+
+    case FFMpeg::Framerate::full_59:
+        out_stream->av_stream->time_base=(AVRational){ 1001, 60000 };
+        break;
+
+    case FFMpeg::Framerate::full_60:
+        out_stream->av_stream->time_base=(AVRational){ 1000, 60000 };
+        break;
+
+    default:
+        out_stream->av_stream->time_base=(AVRational){ 1000, 30000 };
+        break;
+    }
+
+#else
+
+    switch(cfg.framerate) {
+    case FFMpeg::Framerate::full_23:
+        ost->av_stream->time_base.num=1001;
+        ost->av_stream->time_base.den=24000;
+        break;
+
+    case FFMpeg::Framerate::full_24:
             ost->av_stream->time_base.num=1000;
             ost->av_stream->time_base.den=24000;
             break;
@@ -318,65 +339,62 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
             ost->av_stream->time_base.den=30000;
             break;
         }
+
 #endif
-        c->time_base=ost->av_stream->time_base;
 
-        c->gop_size=12; // emit one intra frame every twelve frames at most
 
-        c->pix_fmt=cfg.pixel_format;
+    c->time_base=out_stream->av_stream->time_base;
 
-        if(cfg.video_encoder==FFMpeg::VideoEncoder::libx264 || cfg.video_encoder==FFMpeg::VideoEncoder::libx264rgb) {
-            av_opt_set(c->priv_data, "preset", "ultrafast", 0);
-            // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
-            av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().data(), 0);
+    c->gop_size=12; // emit one intra frame every twelve frames at most
 
-        } else if(cfg.video_encoder==FFMpeg::VideoEncoder::nvenc_h264) {
-            c->bit_rate=0;
+    c->pix_fmt=cfg.pixel_format;
 
-            if(cfg.crf==0) {
-                av_opt_set(c->priv_data, "preset", "lossless", 0);
+    if(cfg.video_encoder==FFMpeg::VideoEncoder::libx264 || cfg.video_encoder==FFMpeg::VideoEncoder::libx264rgb) {
+        av_opt_set(c->priv_data, "preset", "ultrafast", 0);
+        // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
+        av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().data(), 0);
 
-            } else {
-                c->global_quality=cfg.crf;
+    } else if(cfg.video_encoder==FFMpeg::VideoEncoder::nvenc_h264) {
+        c->bit_rate=0;
 
-                // av_opt_set(c->priv_data, "preset", "fast", 0); // HP
-                av_opt_set(c->priv_data, "preset", "slow", 0); // HQ
-            }
+        if(cfg.crf==0) {
+            av_opt_set(c->priv_data, "preset", "lossless", 0);
 
-            // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
-
-        } else if(cfg.video_encoder==FFMpeg::VideoEncoder::nvenc_hevc) {
-            c->bit_rate=0;
+        } else {
             c->global_quality=cfg.crf;
 
             // av_opt_set(c->priv_data, "preset", "fast", 0); // HP
             av_opt_set(c->priv_data, "preset", "slow", 0); // HQ
-
-            // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
         }
 
-        // c->thread_count=8;
+        // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
 
-        if(c->codec_id==AV_CODEC_ID_MPEG2VIDEO) {
-            // just for testing, we also add B-frames
-            c->max_b_frames=2;
-        }
+    } else if(cfg.video_encoder==FFMpeg::VideoEncoder::nvenc_hevc) {
+        c->bit_rate=0;
+        c->global_quality=cfg.crf;
 
-        if(c->codec_id==AV_CODEC_ID_MPEG1VIDEO) {
-            // needed to avoid using macroblocks in which some coeffs overflow.
-            // this does not happen with normal video, it just happens here as
-            // the motion of the chroma plane does not match the luma plane
-            c->mb_decision=2;
-        }
+        // av_opt_set(c->priv_data, "preset", "fast", 0); // HP
+        av_opt_set(c->priv_data, "preset", "slow", 0); // HQ
 
-        break;
+        // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
+    }
 
-    default:
-        break;
+    // c->thread_count=8;
+
+    if(c->codec_id==AV_CODEC_ID_MPEG2VIDEO) {
+        // just for testing, we also add B-frames
+        c->max_b_frames=2;
+    }
+
+    if(c->codec_id==AV_CODEC_ID_MPEG1VIDEO) {
+        // needed to avoid using macroblocks in which some coeffs overflow.
+        // this does not happen with normal video, it just happens here as
+        // the motion of the chroma plane does not match the luma plane
+        c->mb_decision=2;
     }
 
     // some formats want stream headers to be separate
-    if(oc->oformat->flags & AVFMT_GLOBALHEADER)
+    if(format_context->oformat->flags & AVFMT_GLOBALHEADER)
         c->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
 }
 
@@ -692,8 +710,8 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
 
     // add the audio and video streams using the default format codecs
     // and initialize the codecs.
-    add_stream(&context->out_stream_video, context->av_format_context, &context->av_codec_video, AV_CODEC_ID_H264, cfg);
-    add_stream(&context->out_stream_audio, context->av_format_context, &context->av_codec_audio, AV_CODEC_ID_PCM_S16LE, cfg);
+    add_stream_video(&context->out_stream_video, context->av_format_context, &context->av_codec_video, cfg);
+    add_stream_audio(&context->out_stream_audio, context->av_format_context, &context->av_codec_audio, cfg);
 
     // now that all the parameters are set, we can open the audio and
     // video codecs and allocate the necessary encode buffers
