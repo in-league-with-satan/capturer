@@ -285,6 +285,10 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
                 onStartStopRecording();
                 return true;
 
+            case Qt::Key_F5:
+                messenger->showHideInfo();
+                return true;
+
             case Qt::Key_F6:
                 cb_preview->setChecked(!cb_preview->isChecked());
                 return true;

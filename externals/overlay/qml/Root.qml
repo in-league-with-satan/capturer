@@ -56,6 +56,8 @@ Rectangle {
             menu_header.state_visible=true
         }
 
+        onShowHideInfo: menu_header.state_visible=!menu_header.state_visible
+
         onRecStarted: settings.state_visible=false
 
         onBack: menu_header.state_visible=false

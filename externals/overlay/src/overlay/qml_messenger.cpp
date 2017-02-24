@@ -78,6 +78,4 @@ void QmlMessenger::checkFreeSpace()
     QStorageInfo info=QStorageInfo(QApplication::applicationDirPath() + "/videos");
 
     emit freeSpace(QString("%1 MB").arg(QLocale().toString(info.bytesAvailable()/1024/1024)));
-
-    static_cast<QTimer*>(sender())->start(60*1000);
 }

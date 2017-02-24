@@ -53,6 +53,8 @@ signals:
 
     void showMenu();
 
+    void showHideInfo();
+
     void keyPressed(const Qt::Key &key);
 
     void back();
