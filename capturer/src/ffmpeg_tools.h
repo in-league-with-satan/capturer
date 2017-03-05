@@ -13,7 +13,7 @@ extern "C" {
 
 const int alignment=32;
 
-static bool byteArrayToAvFrame(QByteArray *ba_src, AVFrame *frame_dst)
+static inline bool byteArrayToAvFrame(QByteArray *ba_src, AVFrame *frame_dst)
 {
     // const size_t data_size=frame_dst->linesize[0]*frame_dst->height;
     const int data_size=av_image_get_buffer_size((AVPixelFormat)frame_dst->format, frame_dst->width, frame_dst->height, alignment);
@@ -33,7 +33,7 @@ static bool byteArrayToAvFrame(QByteArray *ba_src, AVFrame *frame_dst)
     return true;
 }
 
-static bool avFrameToByteArray(AVFrame *frame_src, QByteArray *ba_dst)
+static inline bool avFrameToByteArray(AVFrame *frame_src, QByteArray *ba_dst)
 {
     // const int data_size=frame_src->linesize[0]*frame_src->height;
 

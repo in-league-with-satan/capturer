@@ -466,42 +466,32 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
     }
 }
 
-// encode one audio frame and send it to the muxer
-// return 1 when encoding is finished, 0 otherwise
 static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
 {
-    AVCodecContext *c;
-    AVPacket pkt={ 0 }; // data and size must be 0;
-    AVFrame *frame;
-
     int ret;
-    int got_packet;
 
-    av_init_packet(&pkt);
+    AVPacket *pkt=av_packet_alloc();
 
-    c=ost->av_codec_context;
-
-    frame=ost->frame;
-
-    ret=avcodec_encode_audio2(c, &pkt, frame, &got_packet);
+    ret=avcodec_send_frame(ost->av_codec_context, ost->frame);
 
     if(ret<0) {
         qCritical() << "error encoding audio frame" << errString(ret);
         exit(1);
     }
 
-    if(got_packet) {
-        ost->size_total+=pkt.size;
+    while(!ret) {
+        ret=avcodec_receive_packet(ost->av_codec_context, pkt);
 
-        ret=write_frame(oc, &c->time_base, ost->av_stream, &pkt);
+        if(!ret) {
+            ost->size_total+=pkt->size;
 
-        if(ret<0) {
-            qCritical() << "error while writing audio frame:" << errString(ret);
-            exit(1);
+            write_frame(oc, &ost->av_codec_context->time_base, ost->av_stream, pkt);
         }
     }
 
-    return (frame || got_packet) ? 0 : 1;
+    av_packet_free(&pkt);
+
+    return 0;
 }
 
 void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg, FFMpeg::Config cfg)
@@ -550,41 +540,32 @@ void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictio
     }
 }
 
-// encode one video frame and send it to the muxer
-// return 1 when encoding is finished, 0 otherwise
 static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
 {
     int ret;
 
-    AVCodecContext *c;
+    AVPacket *pkt=av_packet_alloc();
 
-    int got_packet=0;
-    AVPacket pkt={ 0 };
-
-    c=ost->av_codec_context;
-
-    av_init_packet(&pkt);
-
-    // encode the image
-    ret=avcodec_encode_video2(c, &pkt, ost->frame_converted, &got_packet);
+    ret=avcodec_send_frame(ost->av_codec_context, ost->frame_converted);
 
     if(ret<0) {
         qCritical() << "error encoding video frame:" << errString(ret);
         exit(1);
     }
 
-    if(got_packet) {
-        ost->size_total+=pkt.size;
+    while(!ret) {
+        ret=avcodec_receive_packet(ost->av_codec_context, pkt);
 
-        ret=write_frame(oc, &c->time_base, ost->av_stream, &pkt);
+        if(!ret) {
+            ost->size_total+=pkt->size;
 
-        if(ret<0) {
-            qCritical() << "error while writing video frame:" << errString(ret);
-            exit(1);
+            write_frame(oc, &ost->av_codec_context->time_base, ost->av_stream, pkt);
         }
     }
 
-    return (got_packet ? 0 : 1);
+    av_packet_free(&pkt);
+
+    return 0;
 }
 
 static void close_stream(AVFormatContext *oc, OutputStream *ost)
