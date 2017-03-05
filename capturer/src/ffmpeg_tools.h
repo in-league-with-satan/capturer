@@ -16,7 +16,7 @@ const int alignment=32;
 static bool byteArrayToAvFrame(QByteArray *ba_src, AVFrame *frame_dst)
 {
     // const size_t data_size=frame_dst->linesize[0]*frame_dst->height;
-    const size_t data_size=av_image_get_buffer_size((AVPixelFormat)frame_dst->format, frame_dst->width, frame_dst->height, alignment);
+    const int data_size=av_image_get_buffer_size((AVPixelFormat)frame_dst->format, frame_dst->width, frame_dst->height, alignment);
 
     if(ba_src->size()!=data_size) {
         qCritical() << "wrong bytearray size" << ba_src->size() << data_size;
@@ -35,9 +35,9 @@ static bool byteArrayToAvFrame(QByteArray *ba_src, AVFrame *frame_dst)
 
 static bool avFrameToByteArray(AVFrame *frame_src, QByteArray *ba_dst)
 {
-    // const size_t data_size=frame_src->linesize[0]*frame_src->height;
+    // const int data_size=frame_src->linesize[0]*frame_src->height;
 
-    const size_t data_size=av_image_get_buffer_size((AVPixelFormat)frame_src->format, frame_src->width, frame_src->height, alignment);
+    const int data_size=av_image_get_buffer_size((AVPixelFormat)frame_src->format, frame_src->width, frame_src->height, alignment);
 
     if(ba_dst->size()!=data_size)
         ba_dst->resize(data_size);

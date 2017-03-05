@@ -429,6 +429,8 @@ static AVFrame *alloc_audio_frame(enum AVSampleFormat sample_fmt, uint64_t chann
 
 static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg)
 {
+    Q_UNUSED(oc)
+
     AVCodecContext *c;
 
     int nb_samples;
@@ -504,6 +506,8 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
 
 void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg, FFMpeg::Config cfg)
 {
+    Q_UNUSED(oc)
+
     int ret;
 
     AVCodecContext *c=ost->av_codec_context;
@@ -585,6 +589,8 @@ static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
 
 static void close_stream(AVFormatContext *oc, OutputStream *ost)
 {
+    Q_UNUSED(oc)
+
     avcodec_free_context(&ost->av_codec_context);
     av_frame_free(&ost->frame);
     av_frame_free(&ost->frame_converted);
@@ -768,6 +774,8 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
 
 bool FFMpeg::appendFrame(QByteArray *ba_video, QSize *size, QByteArray *ba_audio)
 {
+    Q_UNUSED(size)
+
     if(!context->canAcceptFrame())
         return false;
 

@@ -79,6 +79,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
+    connect(overlay_view, SIGNAL(closing(QQuickCloseEvent*)), out_widget, SLOT(close()));
+
+    //
+
     audio_level=new AudioLevelWidget();
     decklink_thread->subscribeForAudio(audio_level->frameBuffer());
 
@@ -291,6 +295,10 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 
             case Qt::Key_F6:
                 cb_preview->setChecked(!cb_preview->isChecked());
+                return true;
+
+            case Qt::Key_F12:
+                QApplication::exit(0);
                 return true;
             }
 

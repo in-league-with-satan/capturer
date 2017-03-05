@@ -143,9 +143,13 @@ DlConvertThreadContainer::DlConvertThreadContainer(int thread_count, QObject *pa
     thread.resize(thread_count);
 
     for(int i=0; i<thread_count; ++i)
-        thread[i]=new DlConvertThread(&frameCompletedCallback);
+        thread[i]=new DlConvertThread(&frameCompletedCallback, this);
 
     convert_thread_container=this;
+}
+
+DlConvertThreadContainer::~DlConvertThreadContainer()
+{
 }
 
 void DlConvertThreadContainer::addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet, uint8_t counter, bool reset_counter)

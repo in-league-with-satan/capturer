@@ -27,6 +27,7 @@ class DlConvertThreadContainer : public QObject
 
 public:
     explicit DlConvertThreadContainer(int thread_count, QObject *parent=0);
+    ~DlConvertThreadContainer();
 
     void addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet, uint8_t counter, bool reset_counter);
 

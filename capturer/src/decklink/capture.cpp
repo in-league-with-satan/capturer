@@ -31,7 +31,7 @@ class DeckLinkCaptureDelegate : public IDeckLinkInputCallback
 public:
     DeckLinkCaptureDelegate(DeckLinkCapture *parent);
 
-    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, LPVOID *ppv) { return E_NOINTERFACE; }
+    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, LPVOID *ppv) { Q_UNUSED(iid); Q_UNUSED(ppv); return E_NOINTERFACE; }
     virtual ULONG STDMETHODCALLTYPE AddRef(void);
     virtual ULONG STDMETHODCALLTYPE Release(void);
     virtual HRESULT STDMETHODCALLTYPE VideoInputFormatChanged(BMDVideoInputFormatChangedEvents, IDeckLinkDisplayMode*, BMDDetectedVideoInputFormatFlags);
@@ -115,7 +115,7 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
     video_frame_converted_2160p=nullptr;
 
     if(ext_converter) {
-        conv_thread=new DlConvertThreadContainer(4);
+        conv_thread=new DlConvertThreadContainer(4, this);
 
         connect(conv_thread, SIGNAL(frameSkipped()), this, SIGNAL(frameSkipped()));
 
@@ -124,7 +124,7 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
 
     //
 
-    setTerminationEnabled(true);
+    setTerminationEnabled();
 
     // start(QThread::NormalPriority);
     start(QThread::TimeCriticalPriority);
@@ -132,6 +132,8 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
 
 DeckLinkCapture::~DeckLinkCapture()
 {
+    // captureStop();
+
     terminate();
 }
 

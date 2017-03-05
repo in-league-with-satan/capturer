@@ -1,3 +1,4 @@
+#include <QDebug>
 #include <QMutexLocker>
 #include <qcoreapplication.h>
 
@@ -9,8 +10,6 @@
 FFMpegThread::FFMpegThread(QObject *parent) :
     QThread(parent)
 {
-    setTerminationEnabled(true);
-
     frame_buffer=new FrameBuffer(QMutex::Recursive, this);
 
     frame_buffer->setMaxBufferSize(120);
