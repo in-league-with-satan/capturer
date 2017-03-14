@@ -6,6 +6,8 @@
 #include <QQueue>
 #include <QSize>
 
+#include "event_waiting.h"
+
 class FrameBuffer : public QObject
 {
     Q_OBJECT
@@ -42,6 +44,8 @@ public:
     QQueue <Frame> queue;
 
     QMutex *mutex_frame_buffer;
+
+    EventWaiting event;
 
 private:
     uint16_t buffer_max_size;

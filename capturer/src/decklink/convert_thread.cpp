@@ -36,8 +36,9 @@ DlConvertThread::DlConvertThread(FrameCompletedCallback func_frame_completed, QO
 
     setTerminationEnabled();
 
+    start(QThread::NormalPriority);
+    // start(QThread::HighPriority);
     // start(QThread::TimeCriticalPriority);
-    start(QThread::HighPriority);
 }
 
 DlConvertThread::~DlConvertThread()
@@ -57,6 +58,8 @@ void DlConvertThread::addFrame(IDeckLinkVideoFrame *frame,  IDeckLinkAudioInputP
 
     this->frame_counter=frame_counter;
     this->reset_counter=reset_counter;
+
+    event.next();
 }
 
 void DlConvertThread::run()
@@ -69,6 +72,8 @@ void DlConvertThread::run()
     IDeckLinkMutableVideoFrame *frame_out=nullptr;
 
     while(true) {
+        event.wait();
+
         if(frame_video_src) {
             {
                 QMutexLocker ml(&mutex);
@@ -128,8 +133,6 @@ void DlConvertThread::run()
 
             func_frame_completed(frame);
         }
-
-        usleep(100);
     }
 }
 

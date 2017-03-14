@@ -7,8 +7,8 @@
 
 #include "ffmpeg_thread.h"
 
-FFMpegThread::FFMpegThread(QObject *parent) :
-    QThread(parent)
+FFMpegThread::FFMpegThread(QObject *parent)
+    : QThread(parent)
 {
     frame_buffer=new FrameBuffer(QMutex::Recursive, this);
 
@@ -22,8 +22,8 @@ FFMpegThread::FFMpegThread(QObject *parent) :
 
     setTerminationEnabled();
 
-    // start(QThread::NormalPriority);
-    start(QThread::HighPriority);
+    start(QThread::NormalPriority);
+    // start(QThread::HighPriority);
     // start(QThread::HighestPriority);
     // start(QThread::TimeCriticalPriority);
 }
@@ -80,6 +80,8 @@ void FFMpegThread::run()
     bool queue_is_empty=true;
 
     while(true) {
+        frame_buffer->event.wait();
+
 begin:
 
         {
@@ -98,14 +100,8 @@ begin:
         if(!queue_is_empty)
             goto begin;
 
-        goto end2;
-
 end:
 
         QCoreApplication::processEvents();
-        usleep(100);
-
-end2:
-        ;
     }
 }

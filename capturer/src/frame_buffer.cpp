@@ -4,9 +4,9 @@
 #include "frame_buffer.h"
 
 
-FrameBuffer::FrameBuffer(QMutex::RecursionMode recursion_mode, QObject *parent) :
-    QObject(parent)
-  , mutex_frame_buffer(new QMutex(recursion_mode))
+FrameBuffer::FrameBuffer(QMutex::RecursionMode recursion_mode, QObject *parent)
+    : QObject(parent)
+    , mutex_frame_buffer(new QMutex(recursion_mode))
 {
     drop_skipped=false;
 
@@ -39,6 +39,8 @@ void FrameBuffer::appendFrame(FrameBuffer::Frame frame)
 
         emit frameSkipped();
     }
+
+    event.next();
 }
 
 void FrameBuffer::setMaxBufferSize(uint16_t size)
@@ -62,6 +64,8 @@ void FrameBuffer::setEnabled(bool value)
     enabled=value;
 
     queue.clear();
+
+    event.next();
 }
 
 void FrameBuffer::clear()
@@ -69,6 +73,8 @@ void FrameBuffer::clear()
     QMutexLocker ml(mutex_frame_buffer);
 
     queue.clear();
+
+    event.next();
 }
 
 QPair <int, int> FrameBuffer::size()

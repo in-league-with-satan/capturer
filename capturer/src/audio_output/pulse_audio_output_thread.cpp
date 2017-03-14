@@ -61,6 +61,8 @@ void PulseAudioOutputThread::run()
     FrameBuffer::Frame frame;
 
     while(true) {
+        frame_buffer->event.wait();
+
         {
             QMutexLocker ml(frame_buffer->mutex_frame_buffer);
 
@@ -74,8 +76,6 @@ void PulseAudioOutputThread::run()
 
 end:
         QCoreApplication::processEvents();
-
-        usleep(1000);
     }
 
 #endif

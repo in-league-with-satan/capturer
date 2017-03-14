@@ -7,6 +7,8 @@
 
 #include "frame_buffer.h"
 
+#include "event_waiting.h"
+
 class FrameBuffer;
 class DeckLinkCapture;
 
@@ -91,6 +93,8 @@ private:
     FrameCompletedCallback func_frame_completed;
 
     QMutex mutex;
+
+    EventWaiting event;
 
     int audio_channels;
 
