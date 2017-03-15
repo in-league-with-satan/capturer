@@ -4,6 +4,7 @@
 #include <QVideoSurfaceFormat>
 #include <QMutex>
 
+
 #include "frame_buffer.h"
 
 #include "video_surface.h"
@@ -30,15 +31,12 @@ OutWidget2::OutWidget2(QWidget *parent)
     //
 
     frame_buffer=new FrameBuffer(QMutex::Recursive, this);
-    frame_buffer->setMaxBufferSize(1);
+    frame_buffer->setMaxBufferSize(2);
     frame_buffer->setDropSkipped(true);
 
-    timer=new QTimer(this);
-    timer->setInterval(2);
+    //
 
-    connect(timer, SIGNAL(timeout()), SLOT(checkFrame()));
-
-    timer->start();
+    thread=new OutWidgetUpdateThread(frame_buffer, video_widget->videoSurface(), this);
 }
 
 OutWidget2::~OutWidget2()
@@ -50,36 +48,57 @@ FrameBuffer *OutWidget2::frameBuffer()
     return frame_buffer;
 }
 
-void OutWidget2::focusInEvent(QFocusEvent *)
+void OutWidget2::focusInEvent(QFocusEvent*)
 {
     emit focusEvent();
 }
 
-void OutWidget2::checkFrame()
+//
+
+OutWidgetUpdateThread::OutWidgetUpdateThread(FrameBuffer *frame_buffer, QAbstractVideoSurface *surface, QObject *parent)
+    : QThread(parent)
+    , frame_buffer(frame_buffer)
+    , surface(surface)
+{
+    setTerminationEnabled(true);
+
+    start();
+}
+
+void OutWidgetUpdateThread::run()
 {
     FrameBuffer::Frame frame;
+    QVideoFrame video_frame;
 
-    timer->stop();
+    bool queue_is_empty;
 
-    {
-        QMutexLocker ml(frame_buffer->mutex_frame_buffer);
+    while(true) {
+wait:
 
-        if(frame_buffer->queue.isEmpty()) {
-            timer->start();
-            return;
+        frame_buffer->event.wait();
+
+nowait:
+
+        {
+            QMutexLocker ml(frame_buffer->mutex_frame_buffer);
+
+            if(frame_buffer->queue.isEmpty()) {
+                goto wait;
+            }
+
+            frame=frame_buffer->queue.dequeue();
+
+            queue_is_empty=frame_buffer->queue.isEmpty();
         }
 
-        frame=frame_buffer->queue.dequeue();
+        video_frame=QVideoFrame(QImage((uchar*)frame.ba_video.data(), frame.size_video.width(), frame.size_video.height(), QImage::Format_ARGB32));
+
+        if(!surface->isActive())
+            surface->start(QVideoSurfaceFormat(video_frame.size(), video_frame.pixelFormat()));
+
+        surface->present(video_frame);
+
+        if(!queue_is_empty)
+            goto nowait;
     }
-
-    QVideoFrame video_frame=QVideoFrame(QImage((uchar*)frame.ba_video.data(), frame.size_video.width(), frame.size_video.height(), QImage::Format_ARGB32));
-
-    if(!video_widget->videoSurface()->isActive()) {
-        video_widget->videoSurface()->start(QVideoSurfaceFormat(video_frame.size(), video_frame.pixelFormat()));
-
-    }
-
-    video_widget->videoSurface()->present(video_frame);
-
-    timer->start();
 }

@@ -3,10 +3,13 @@
 
 #include <QWidget>
 #include <QImage>
-#include <QTimer>
+#include <QThread>
+
+class QAbstractVideoSurface;
 
 class FrameBuffer;
 class VideoWidgetGl;
+class OutWidgetUpdateThread;
 
 class OutWidget2 : public QWidget
 {
@@ -21,20 +24,30 @@ public:
 protected:
     virtual void focusInEvent(QFocusEvent *);
 
-private slots:
-    void checkFrame();
-
 private:
-    QImage img_frame;
-
     FrameBuffer *frame_buffer;
-
     VideoWidgetGl *video_widget;
-
-    QTimer *timer;
+    OutWidgetUpdateThread *thread;
 
 signals:
     void focusEvent();
+};
+
+//
+
+class OutWidgetUpdateThread : public QThread
+{
+    Q_OBJECT
+
+public:
+    OutWidgetUpdateThread(FrameBuffer *frame_buffer, QAbstractVideoSurface *surface, QObject *parent=0);
+
+protected:
+    void run();
+
+private:
+    FrameBuffer *frame_buffer;
+    QAbstractVideoSurface *surface;
 };
 
 #endif // OUT_WIDGET_2_H

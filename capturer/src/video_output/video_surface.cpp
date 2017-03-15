@@ -1,6 +1,7 @@
 #include <QWidget>
 #include <QVideoSurfaceFormat>
 #include <QPainter>
+#include <QMutexLocker>
 
 #include "video_surface.h"
 
@@ -37,6 +38,8 @@ bool VideoSurface::isFormatSupported(const QVideoSurfaceFormat &format) const
 
 bool VideoSurface::start(const QVideoSurfaceFormat &format)
 {
+    QMutexLocker ml(&mutex);
+
     const QImage::Format image_format=QVideoFrame::imageFormatFromPixelFormat(format.pixelFormat());
 
     const QSize size=format.frameSize();
@@ -73,6 +76,8 @@ void VideoSurface::stop()
 
 bool VideoSurface::present(const QVideoFrame &frame)
 {
+    QMutexLocker ml(&mutex);
+
     if(surfaceFormat().pixelFormat()!=frame.pixelFormat()
             || surfaceFormat().frameSize()!=frame.size()) {
         setError(IncorrectFormatError);
@@ -85,7 +90,10 @@ bool VideoSurface::present(const QVideoFrame &frame)
 
     current_frame=frame;
 
-    widget->repaint(rect_target);
+    // if(!widget->testAttribute(Qt::WA_WState_InPaintEvent))
+    //     widget->repaint(rect_target);
+
+    widget->update();
 
     return true;
 }

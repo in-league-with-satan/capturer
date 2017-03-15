@@ -5,6 +5,7 @@
 #include <QImage>
 #include <QRect>
 #include <QVideoFrame>
+#include <QMutex>
 
 class VideoSurface : public QAbstractVideoSurface
 {
@@ -35,6 +36,7 @@ private:
     QRect rect_source;
     QSize image_size;
     QVideoFrame current_frame;
+    QMutex mutex;
 };
 
 #endif // VIDEO_WIDGET_SURFACE_H
