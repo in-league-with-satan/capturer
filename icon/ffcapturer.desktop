@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Exec=/home/username/projects/capturer/bin/ffcapturer
-Name=ffcapturer
-GenericName=Video capture tool
-Icon=/home/username/projects/capturer/icon/capturer.svg
-Terminal=false
-Categories=Video;Utility;Application;

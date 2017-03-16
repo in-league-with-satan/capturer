@@ -11,7 +11,7 @@ TEMPLATE = app
 
 CONFIG += c++14
 
-DESTDIR = ../bin
+DESTDIR = bin
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked as deprecated (the exact warnings
@@ -60,12 +60,12 @@ MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-moc
 RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-rcc
 
 
-include(../externals/overlay/overlay.pri)
+include(externals/overlay/overlay.pri)
 
 
 linux {
     INCLUDEPATH += \
-        ../externals/3rdparty/blackmagic_decklink_sdk/Linux/include
+        externals/3rdparty/blackmagic_decklink_sdk/Linux/include
 
     contains(DEFINES, USE_X264_10B) {
         TARGET = capturer_10bit
@@ -74,17 +74,17 @@ linux {
         MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-moc
         RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-rcc
 
-        INCLUDEPATH += ../externals/3rdparty/ffmpeg/10bit/include
-        LIBS += -L../externals/3rdparty/ffmpeg/10bit/lib
+        INCLUDEPATH += externals/3rdparty/ffmpeg/10bit/include
+        LIBS += -Lexternals/3rdparty/ffmpeg/10bit/lib
 
     } else {
-        INCLUDEPATH += ../externals/3rdparty/ffmpeg/8bit/include
-        LIBS += -L../externals/3rdparty/ffmpeg/8bit/lib
+        INCLUDEPATH += externals/3rdparty/ffmpeg/8bit/include
+        LIBS += -Lexternals/3rdparty/ffmpeg/8bit/lib
     }
 
 
     SOURCES += \
-        ../externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
+        externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
 
     LIBS += -lavformat -lavcodec -lavutil -lswscale -lswresample
     LIBS += -lz -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
@@ -96,19 +96,19 @@ windows {
     DEFINES -= USE_SDL2
 
     INCLUDEPATH += \
-        ../externals/3rdparty/blackmagic_decklink_sdk-mingw
+        externals/3rdparty/blackmagic_decklink_sdk-mingw
 
     HEADERS += \
-        ../externals/3rdparty/blackmagic_decklink_sdk-mingw/*.h
+        externals/3rdparty/blackmagic_decklink_sdk-mingw/*.h
 
     SOURCES += \
-        ../externals/3rdparty/blackmagic_decklink_sdk-mingw/*.c
+        externals/3rdparty/blackmagic_decklink_sdk-mingw/*.c
 
     LIBS += -lole32
 
 
-    INCLUDEPATH += ../externals/3rdparty/ffmpeg/include
-    LIBS += -L../externals/3rdparty/ffmpeg/lib
+    INCLUDEPATH += externals/3rdparty/ffmpeg/include
+    LIBS += -Lexternals/3rdparty/ffmpeg/lib
 
     LIBS += -lswresample -lavformat -lavcodec -lavutil -lswscale
     LIBS += -lopengl32
