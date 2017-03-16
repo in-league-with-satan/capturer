@@ -1,9 +1,0 @@
-<RCC>
-    <qresource prefix="/">
-        <file>qml/Root.qml</file>
-        <file>qml/RecordState.qml</file>
-        <file>qml/Settings.qml</file>
-        <file>qml/MenuHeader.qml</file>
-        <file>qml/LevelMonitor.qml</file>
-    </qresource>
-</RCC>
