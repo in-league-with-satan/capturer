@@ -101,22 +101,22 @@ void FF::FormatConverter::convert(QByteArray *src, QByteArray *dst)
     if(!context->av_frame_src)
         return;
 
-//    av_image_fill_arrays(context->av_frame_src->data, context->av_frame_src->linesize, (const uint8_t*)src->data(), format_src, resolution_src.width(), resolution_src.height(), alignment);
+    // av_image_fill_arrays(context->av_frame_src->data, context->av_frame_src->linesize, (const uint8_t*)src->data(), format_src, resolution_src.width(), resolution_src.height(), alignment);
 
-//    convert(context->av_frame_src, context->av_frame_dst);
+    // convert(context->av_frame_src, context->av_frame_dst);
 
-//    int buf_size=av_image_get_buffer_size(format_dst, resolution_dst.width(), resolution_dst.height(), alignment);
+    // int buf_size=av_image_get_buffer_size(format_dst, resolution_dst.width(), resolution_dst.height(), alignment);
 
-//    if(dst->size()!=buf_size)
-//        dst->resize(buf_size);
+    // if(dst->size()!=buf_size)
+    //     dst->resize(buf_size);
 
-//    av_image_copy_to_buffer((uint8_t*)dst->data(), dst->size(), context->av_frame_dst->data, context->av_frame_dst->linesize, format_dst, resolution_dst.width(), resolution_dst.width(), alignment);
+    // av_image_copy_to_buffer((uint8_t*)dst->data(), dst->size(), context->av_frame_dst->data, context->av_frame_dst->linesize, format_dst, resolution_dst.width(), resolution_dst.width(), alignment);
 
-     byteArrayToAvFrame(src, context->av_frame_src);
+    // byteArrayToAvFrame(src, context->av_frame_src);  // !!!
 
-     convert(context->av_frame_src, context->av_frame_dst);
+    // convert(context->av_frame_src, context->av_frame_dst);
 
-     avFrameToByteArray(context->av_frame_dst, dst);
+    // avFrameToByteArray(context->av_frame_dst, dst);
 }
 
 void FF::FormatConverter::convert(AVFrame *src, AVFrame *dst)

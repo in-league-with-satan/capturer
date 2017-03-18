@@ -779,13 +779,17 @@ bool FFMpeg::appendFrame(QByteArray *ba_video, QSize *size, QByteArray *ba_audio
             }
 
             if(!context->skip_frame) {
-                byteArrayToAvFrame(ba_video, context->out_stream_video.frame);
+                uint8_t *ptr_orig=context->out_stream_video.frame->data[0];
+
+                context->out_stream_video.frame->data[0]=(uint8_t*)ba_video->data();
 
                 sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
 
                 context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
 
                 write_video_frame(context->av_format_context, &context->out_stream_video);
+
+                context->out_stream_video.frame->data[0]=ptr_orig;
             }
         }
     }

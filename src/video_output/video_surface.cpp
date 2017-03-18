@@ -138,6 +138,8 @@ void VideoSurface::paint(QPainter *painter)
 
         painter->setTransform(old_transform);
 
-        current_frame.unmap();
     }
+
+    if(current_frame.isMapped())
+        current_frame.unmap();
 }
