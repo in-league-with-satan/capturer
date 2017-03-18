@@ -91,10 +91,15 @@ nowait:
             queue_is_empty=frame_buffer->queue.isEmpty();
         }
 
+
         video_frame=QVideoFrame(QImage((uchar*)frame.ba_video.data(), frame.size_video.width(), frame.size_video.height(), QImage::Format_ARGB32));
 
-        if(!surface->isActive())
-            surface->start(QVideoSurfaceFormat(video_frame.size(), video_frame.pixelFormat()));
+        if(!surface->isActive()) {
+            // surface->start(QVideoSurfaceFormat(video_frame.size(), video_frame.pixelFormat()));
+
+            if(!((VideoSurface*)surface)->startForce(QImage::Format_RGB30, frame.size_video))
+                goto nowait;
+        }
 
         surface->present(video_frame);
 

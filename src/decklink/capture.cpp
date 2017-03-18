@@ -21,10 +21,14 @@
 #include "audio_tools.h"
 #include "decklink_tools.h"
 
+extern "C" {
+#include <libavutil/bswap.h>
+}
+
 #include "capture.h"
 
-//const bool ext_converter=false;
-const bool ext_converter=true;
+const bool ext_converter=false;
+//const bool ext_converter=true;
 
 class DeckLinkCaptureDelegate : public IDeckLinkInputCallback
 {
@@ -269,6 +273,8 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
                        frame_duration, frame_scale,
                        (mode->GetFieldDominance()==bmdProgressiveFrame || mode->GetFieldDominance()==bmdProgressiveSegmentedFrame),
                        pixel_format==bmdFormat10BitYUV ? "10BitYUV" : "10BitRGB");
+
+    //msleep(1000);
 }
 
 void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet)
@@ -325,7 +331,10 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
             IDeckLinkMutableVideoFrame *frame_out=nullptr;
 
+            /*
+
             frame_out=(IDeckLinkMutableVideoFrame *)video_frame;
+
 
             if(video_frame->GetWidth()==1280) {
                 video_converter->ConvertFrame(video_frame, video_frame_converted_720p);
@@ -343,9 +352,36 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
                 frame_out=video_frame_converted_2160p;
             }
 
+            */
+
             //
 
+            frame_out=(IDeckLinkMutableVideoFrame*)video_frame;
+
+
+            if(frame_out->GetPixelFormat()!=bmdFormat10BitRGB) {
+                qCritical() << "wrong pixel format";
+                return;
+            }
+
+
             frame_out->GetBytes(&d_video);
+
+
+            {
+                size_t pos;
+                uint32_t *d_ptr=(uint32_t*)d_video;
+
+                for(size_t i_row=0, rows=frame_out->GetHeight(); i_row<rows; ++i_row) {
+                    for(size_t i_col=0, cols=frame_out->GetWidth(); i_col<cols; ++i_col) {
+                        pos=i_row*cols + i_col;
+
+                        d_ptr[pos]=av_be2ne32(d_ptr[pos]);
+                    }
+                }
+            }
+
+
 
             frame.ba_video.resize(frame_out->GetRowBytes() * frame_out->GetHeight());
 
@@ -354,6 +390,9 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
             frame.size_video=QSize(frame_out->GetWidth(), frame_out->GetHeight());
 
             frame.bmd_pixel_format=frame_out->GetPixelFormat();
+
+
+
 
             //
 

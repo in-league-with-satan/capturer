@@ -27,6 +27,11 @@ extern "C" {
 
 #include "ffmpeg.h"
 
+
+//const AVPixelFormat pixel_format_src=AV_PIX_FMT_BGRA;
+//const AVPixelFormat pixel_format_src=AV_PIX_FMT_GBRP10BE;
+const AVPixelFormat pixel_format_src=AV_PIX_FMT_RGB48BE;
+
 class OutputStream
 {
 public:
@@ -516,7 +521,7 @@ void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictio
     }
 
     // allocate and init a re-usable frame
-    ost->frame=alloc_frame(AV_PIX_FMT_BGRA, c->width, c->height);
+    ost->frame=alloc_frame(pixel_format_src, c->width, c->height);
 
     if(!ost->frame) {
         qCritical() << "could not allocate video frame";
@@ -663,7 +668,7 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
 {
     int ret;
 
-    if(!converter->setup(AV_PIX_FMT_BGRA, cfg.frame_resolution, cfg.pixel_format, cfg.frame_resolution)) {
+    if(!converter->setup(pixel_format_src, cfg.frame_resolution, cfg.pixel_format, cfg.frame_resolution)) {
         qCritical() << "err init format converter" << cfg.frame_resolution;
         return false;
     }
@@ -708,7 +713,7 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
 
 
     context->out_stream_video.convert_context=sws_getContext(cfg.frame_resolution.width(), cfg.frame_resolution.height(),
-                                                             AV_PIX_FMT_BGRA,
+                                                             pixel_format_src,
                                                              cfg.frame_resolution.width(), cfg.frame_resolution.height(),
                                                              cfg.pixel_format,
                                                              SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
@@ -779,7 +784,36 @@ bool FFMpeg::appendFrame(QByteArray *ba_video, QSize *size, QByteArray *ba_audio
             }
 
             if(!context->skip_frame) {
-                byteArrayToAvFrame(ba_video, context->out_stream_video.frame);
+                int h, w;
+                int height=size->height();
+                int width=size->width();
+
+                uint16_t r, g, b;
+                uint32_t pixel;
+
+                uint32_t *src=(uint32_t*)ba_video->data();
+
+                uint8_t *dst_line=context->out_stream_video.frame->data[0];
+                uint16_t *dst;
+
+                for(h=0; h<height; h++) {
+                    dst=(uint16_t*)dst_line;
+
+                    for(w=0; w<width; w++) {
+                        pixel=*src++;
+
+                        b= pixel <<  6;
+                        g=(pixel >>  4) & 0xffc0;
+                        r=(pixel >> 14) & 0xffc0;
+
+                        *dst++=r | (r >> 8);
+                        *dst++=g | (g >> 8);
+                        *dst++=b | (b >> 8);
+                    }
+
+                    dst_line+=context->out_stream_video.frame->linesize[0];
+                }
+
 
                 sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
 

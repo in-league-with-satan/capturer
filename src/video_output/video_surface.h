@@ -19,6 +19,7 @@ public:
     bool isFormatSupported(const QVideoSurfaceFormat &format) const;
 
     bool start(const QVideoSurfaceFormat &format);
+    bool startForce(const int &format, const QSize &size);
     void stop();
 
     bool present(const QVideoFrame &frame);
@@ -28,6 +29,10 @@ public:
     void updateVideoRect();
 
     void paint(QPainter *painter);
+
+    enum {
+        Format_Rgb30=QVideoFrame::Format_User
+    };
 
 private:
     QWidget *widget;

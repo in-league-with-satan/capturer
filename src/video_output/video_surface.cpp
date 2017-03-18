@@ -1,3 +1,4 @@
+#include <QDebug>
 #include <QWidget>
 #include <QVideoSurfaceFormat>
 #include <QPainter>
@@ -19,7 +20,8 @@ QList<QVideoFrame::PixelFormat> VideoSurface::supportedPixelFormats(QAbstractVid
                 << QVideoFrame::Format_ARGB32
                 << QVideoFrame::Format_BGRA32
                 << QVideoFrame::Format_YUV444
-                << QVideoFrame::Format_YUV420P;
+                << QVideoFrame::Format_YUV420P
+                << QVideoFrame::Format_User;
     }
 
     return QList<QVideoFrame::PixelFormat>();
@@ -27,6 +29,9 @@ QList<QVideoFrame::PixelFormat> VideoSurface::supportedPixelFormats(QAbstractVid
 
 bool VideoSurface::isFormatSupported(const QVideoSurfaceFormat &format) const
 {
+    if(format.pixelFormat()==Format_Rgb30)
+        return true;
+
     const QImage::Format image_format=QVideoFrame::imageFormatFromPixelFormat(format.pixelFormat());
 
     const QSize size=format.frameSize();
@@ -40,14 +45,12 @@ bool VideoSurface::start(const QVideoSurfaceFormat &format)
 {
     QMutexLocker ml(&mutex);
 
-    const QImage::Format image_format=QVideoFrame::imageFormatFromPixelFormat(format.pixelFormat());
+    if(image_format==QImage::Format_Invalid || format.frameSize().isEmpty()) {
+        qCritical() << "VideoSurface::start err" << image_format << format.frameSize().isEmpty();
 
-    const QSize size=format.frameSize();
+        image_format=QVideoFrame::imageFormatFromPixelFormat(format.pixelFormat());
 
-    if(image_format!=QImage::Format_Invalid && !size.isEmpty()) {
-        this->image_format=image_format;
-
-        image_size=size;
+        image_size=format.frameSize();
 
         rect_source=format.viewport();
 
@@ -61,6 +64,17 @@ bool VideoSurface::start(const QVideoSurfaceFormat &format)
     }
 
     return false;
+}
+
+bool VideoSurface::startForce(const int &format, const QSize &size)
+{
+    int ret=start(QVideoSurfaceFormat(size, QVideoFrame::Format_ARGB32));
+
+    QMutexLocker ml(&mutex);
+
+    image_format=(QImage::Format)format;
+
+    return ret;
 }
 
 void VideoSurface::stop()
@@ -85,7 +99,6 @@ bool VideoSurface::present(const QVideoFrame &frame)
         stop();
 
         return false;
-
     }
 
     current_frame=frame;
@@ -128,16 +141,15 @@ void VideoSurface::paint(QPainter *painter)
            painter->translate(0, -widget->height());
         }
 
-        QImage image(current_frame.bits(),
-                     current_frame.width(),
-                     current_frame.height(),
-                     current_frame.bytesPerLine(),
-                     image_format);
-
-        painter->drawImage(rect_target, image, rect_source);
+        painter->drawImage(rect_target, QImage(current_frame.bits(),
+                                               current_frame.width(),
+                                               current_frame.height(),
+                                               image_format), rect_source);
 
         painter->setTransform(old_transform);
 
-        current_frame.unmap();
     }
+
+    if(current_frame.isMapped())
+        current_frame.unmap();
 }
