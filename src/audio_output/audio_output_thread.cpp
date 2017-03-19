@@ -107,7 +107,7 @@ void AudioOutputThread::run()
 
     //
 
-    FrameBuffer::Frame frame;
+    Frame::ptr frame;
 
     while(true) {
         {
@@ -119,7 +119,9 @@ void AudioOutputThread::run()
             frame=frame_buffer->queue.dequeue();
         }
 
-        onInputFrameArrived(frame.ba_audio);
+        onInputFrameArrived(frame->audio.raw);
+
+        frame.reset();
 
 end:
         QCoreApplication::processEvents();

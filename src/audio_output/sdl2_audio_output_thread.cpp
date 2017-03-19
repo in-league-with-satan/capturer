@@ -72,7 +72,7 @@ void Sdl2AudioOutputThread::run()
 
     SDL_PauseAudio(0);
 
-    FrameBuffer::Frame frame;
+    Frame::ptr frame;
 
     while(true) {
         {
@@ -84,7 +84,9 @@ void Sdl2AudioOutputThread::run()
             frame=frame_buffer->queue.dequeue();
         }
 
-        onInputFrameArrived(frame.ba_audio);
+        onInputFrameArrived(frame->audio.raw);
+
+        frame.reset();
 
 end:
         QCoreApplication::processEvents();

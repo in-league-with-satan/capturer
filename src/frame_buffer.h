@@ -7,6 +7,7 @@
 #include <QSize>
 
 #include "event_waiting.h"
+#include "frame.h"
 
 class FrameBuffer : public QObject
 {
@@ -16,24 +17,9 @@ public:
     explicit FrameBuffer(QMutex::RecursionMode recursion_mode=QMutex::Recursive, QObject *parent=0);
     ~FrameBuffer();
 
-    struct Frame {
-        Frame() {
-            reset_counter=false;
-        }
-
-        QByteArray ba_video;
-        QSize size_video;
-        QByteArray ba_audio;
-        uint32_t bmd_pixel_format;
-        uint8_t counter;
-        bool reset_counter;
-    };
-
-    void appendFrame(Frame frame);
+    void appendFrame(Frame::ptr frame);
 
     void setMaxBufferSize(uint16_t size);
-
-    void setDropSkipped(bool state);
 
     void setEnabled(bool value);
 
@@ -41,7 +27,7 @@ public:
 
     QPair <int, int> size();
 
-    QQueue <Frame> queue;
+    QQueue <Frame::ptr> queue;
 
     QMutex *mutex_frame_buffer;
 
@@ -50,7 +36,6 @@ public:
 private:
     uint16_t buffer_max_size;
 
-    bool drop_skipped;
     bool enabled;
 
 signals:

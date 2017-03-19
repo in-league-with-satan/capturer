@@ -57,13 +57,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     audio_output=newAudioOutput(this);
 
-    decklink_thread->subscribeForAudio(audio_output->frameBuffer());
+    decklink_thread->subscribe(audio_output->frameBuffer());
 
     //
 
     ffmpeg=new FFMpegThread(this);
 
-    decklink_thread->subscribeForAll(ffmpeg->frameBuffer());
+    decklink_thread->subscribe(ffmpeg->frameBuffer());
 
     connect(ffmpeg->frameBuffer(), SIGNAL(frameSkipped()), SLOT(onEncBufferOverload()), Qt::QueuedConnection);
     connect(ffmpeg, SIGNAL(stats(FFMpeg::Stats)), SLOT(updateStats(FFMpeg::Stats)));
@@ -73,7 +73,7 @@ MainWindow::MainWindow(QWidget *parent)
     out_widget=new OutWidget2();
     out_widget->showFullScreen();
 
-    decklink_thread->subscribeForAll(out_widget->frameBuffer());
+    decklink_thread->subscribe(out_widget->frameBuffer());
 
     connect(out_widget, SIGNAL(focusEvent()), overlay_view, SLOT(raise()));
 
@@ -84,7 +84,7 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     audio_level=new AudioLevelWidget();
-    decklink_thread->subscribeForAudio(audio_level->frameBuffer());
+    decklink_thread->subscribe(audio_level->frameBuffer());
 
     connect(audio_level, SIGNAL(levels(qint16,qint16,qint16,qint16,qint16,qint16,qint16,qint16)),
             messenger, SIGNAL(audioLevels(qint16,qint16,qint16,qint16,qint16,qint16,qint16,qint16)));

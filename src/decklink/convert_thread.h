@@ -21,7 +21,7 @@ class IDeckLinkMutableVideoFrame;
 class DlConvertThread;
 class DlConvertThreadContainer;
 
-typedef void (*FrameCompletedCallback)(FrameBuffer::Frame);
+typedef void (*FrameCompletedCallback)(Frame::ptr);
 
 class DlConvertThreadContainer : public QObject
 {
@@ -33,15 +33,14 @@ public:
 
     void addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet, uint8_t counter, bool reset_counter);
 
-    void subscribeForAll(FrameBuffer *obj);
-    void subscribeForAudio(FrameBuffer *obj);
+    void subscribe(FrameBuffer *obj);
     void unsubscribe(FrameBuffer *obj);
 
     void setAudioChannels(int value);
 
     void init(IDeckLinkOutput *decklink_output);
 
-    void frameCompleted(FrameBuffer::Frame frame);
+    void frameCompleted(Frame::ptr frame);
 
     QVector <DlConvertThread*> thread;
 
@@ -55,10 +54,9 @@ private:
 
     uint8_t last_frame_counter;
 
-    QList <FrameBuffer::Frame> queue;
+    QList <Frame::ptr> queue;
 
-    QList <FrameBuffer*> l_full;
-    QList <FrameBuffer*> l_audio;
+    QList <FrameBuffer*> subscription_list;
 
 signals:
     void frameSkipped();

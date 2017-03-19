@@ -25,7 +25,6 @@ AudioLevelWidget::AudioLevelWidget(QWidget *parent) :
 
     frame_buffer=new FrameBuffer(QMutex::Recursive, this);
     frame_buffer->setMaxBufferSize(1);
-    frame_buffer->setDropSkipped(true);
 
     timer=new QTimer(this);
     timer->setInterval(60);
@@ -66,7 +65,7 @@ void AudioLevelWidget::paintEvent(QPaintEvent*)
 
 void AudioLevelWidget::checkBuffer()
 {
-    FrameBuffer::Frame frame;
+    Frame::ptr frame;
 
     {
         QMutexLocker ml(frame_buffer->mutex_frame_buffer);
@@ -79,9 +78,9 @@ void AudioLevelWidget::checkBuffer()
 
     memset(level, 0, sizeof(int16_t)*8);
 
-    int16_t *ptr_data=(int16_t*)frame.ba_audio.data();
+    int16_t *ptr_data=(int16_t*)frame->audio.raw.data();
 
-    for(int pos=0, size=frame.ba_audio.size()/2; pos<size; pos+=8)
+    for(int pos=0, size=frame->audio.raw.size()/2; pos<size; pos+=8)
         for(int channel=0; channel<8; ++channel)
             level[channel]=std::max(level[channel], ptr_data[pos + channel]);
 

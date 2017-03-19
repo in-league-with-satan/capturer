@@ -14,8 +14,6 @@ FFMpegThread::FFMpegThread(QObject *parent)
 
     frame_buffer->setMaxBufferSize(120);
 
-    frame_buffer->setDropSkipped(true);
-
     frame_buffer->setEnabled(false);
 
     is_working=false;
@@ -75,7 +73,7 @@ void FFMpegThread::run()
     connect(this, SIGNAL(sigStopCoder()), ffmpeg, SLOT(stopCoder()), Qt::QueuedConnection);
     connect(ffmpeg, SIGNAL(stats(FFMpeg::Stats)), SIGNAL(stats(FFMpeg::Stats)), Qt::QueuedConnection);
 
-    FrameBuffer::Frame frame;
+    Frame::ptr frame;
 
     bool queue_is_empty=true;
 
@@ -95,7 +93,9 @@ begin:
             queue_is_empty=frame_buffer->queue.isEmpty();
         }
 
-        ffmpeg->appendFrame(&frame.ba_video, &frame.size_video, &frame.ba_audio);
+        ffmpeg->appendFrame(frame);
+
+        frame.reset();
 
         if(!queue_is_empty)
             goto begin;

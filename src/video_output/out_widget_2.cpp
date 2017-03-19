@@ -32,7 +32,6 @@ OutWidget2::OutWidget2(QWidget *parent)
 
     frame_buffer=new FrameBuffer(QMutex::Recursive, this);
     frame_buffer->setMaxBufferSize(2);
-    frame_buffer->setDropSkipped(true);
 
     //
 
@@ -67,7 +66,7 @@ OutWidgetUpdateThread::OutWidgetUpdateThread(FrameBuffer *frame_buffer, QAbstrac
 
 void OutWidgetUpdateThread::run()
 {
-    FrameBuffer::Frame frame;
+    Frame::ptr frame;
     QVideoFrame video_frame;
 
     bool queue_is_empty;
@@ -91,7 +90,9 @@ nowait:
             queue_is_empty=frame_buffer->queue.isEmpty();
         }
 
-        video_frame=QVideoFrame(QImage((uchar*)frame.ba_video.data(), frame.size_video.width(), frame.size_video.height(), QImage::Format_ARGB32));
+        video_frame=QVideoFrame(QImage((uchar*)frame->video.raw.data(), frame->video.size.width(), frame->video.size.height(), QImage::Format_ARGB32));
+
+        frame.reset();
 
         if(!surface->isActive())
             surface->start(QVideoSurfaceFormat(video_frame.size(), video_frame.pixelFormat()));

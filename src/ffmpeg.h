@@ -5,6 +5,8 @@
 #include <QImage>
 #include <QDateTime>
 
+#include "frame.h"
+
 extern "C" {
 #include <libavformat/avformat.h>
 }
@@ -96,7 +98,7 @@ public:
 public slots:
     bool setConfig(FFMpeg::Config cfg);
 
-    bool appendFrame(QByteArray *ba_video, QSize *size, QByteArray *ba_audio);
+    bool appendFrame(Frame::ptr frame);
 
     bool stopCoder();
 

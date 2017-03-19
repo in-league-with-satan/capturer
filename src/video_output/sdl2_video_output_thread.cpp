@@ -22,7 +22,6 @@ Sdl2VideoOutpitThread::Sdl2VideoOutpitThread(QObject *parent) :
 {
     frame_buffer=new FrameBuffer(QMutex::Recursive, this);
     frame_buffer->setMaxBufferSize(1);
-    frame_buffer->setDropSkipped(true);
 
     setTerminationEnabled();
 
@@ -300,7 +299,7 @@ void Sdl2VideoOutpitThread::checkFrame()
 {
 #ifdef USE_SDL2
 
-    FrameBuffer::Frame frame;
+    Frame::ptr frame;
 
     SDL_PollEvent(&sdl_event);
 
@@ -314,14 +313,14 @@ void Sdl2VideoOutpitThread::checkFrame()
         frame=frame_buffer->queue.dequeue();
     }
 
-    if(in_frame_size!=frame.size_video) {
-        in_frame_size=frame.size_video;
+    if(in_frame_size!=frame->video.size) {
+        in_frame_size=frame->video.size;
 
         init();
     }
 
     // drawFrame(&frame.ba_video);
-    drawFrameQImage(&frame.ba_video);
+    drawFrameQImage(&frame->video.raw);
 
 #endif
 }

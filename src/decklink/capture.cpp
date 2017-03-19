@@ -148,22 +148,13 @@ void DeckLinkCapture::setup(DeckLinkDevice device, DeckLinkFormat format, DeckLi
         conv_thread->setAudioChannels(audio_channels);
 }
 
-void DeckLinkCapture::subscribeForAll(FrameBuffer *obj)
+void DeckLinkCapture::subscribe(FrameBuffer *obj)
 {
     if(ext_converter)
-        conv_thread->subscribeForAll(obj);
+        conv_thread->subscribe(obj);
 
-    else if(!l_full.contains(obj))
-        l_full.append(obj);
-}
-
-void DeckLinkCapture::subscribeForAudio(FrameBuffer *obj)
-{
-    if(ext_converter)
-        conv_thread->subscribeForAudio(obj);
-
-    else if(!l_audio.contains(obj))
-        l_audio.append(obj);
+    else if(!subscription_list.contains(obj))
+        subscription_list.append(obj);
 }
 
 void DeckLinkCapture::unsubscribe(FrameBuffer *obj)
@@ -171,10 +162,8 @@ void DeckLinkCapture::unsubscribe(FrameBuffer *obj)
     if(ext_converter)
         conv_thread->unsubscribe(obj);
 
-    else {
-        l_full.removeAll(obj);
-        l_audio.removeAll(obj);
-    }
+    else
+        subscription_list.removeAll(obj);
 }
 
 void DeckLinkCapture::run()
@@ -318,7 +307,7 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
             //     conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet, frame_counter++, frame_time==0);
 
         } else {
-            FrameBuffer::Frame frame;
+            Frame::ptr frame=Frame::make();
 
             void *d_video;
             void *d_audio;
@@ -347,39 +336,32 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
             frame_out->GetBytes(&d_video);
 
-            frame.ba_video.resize(frame_out->GetRowBytes() * frame_out->GetHeight());
+            frame->video.raw.resize(frame_out->GetRowBytes() * frame_out->GetHeight());
 
-            memcpy(frame.ba_video.data(), d_video, frame.ba_video.size());
+            memcpy(frame->video.raw.data(), d_video, frame->video.raw.size());
 
-            frame.size_video=QSize(frame_out->GetWidth(), frame_out->GetHeight());
+            frame->video.size=QSize(frame_out->GetWidth(), frame_out->GetHeight());
 
-            frame.bmd_pixel_format=frame_out->GetPixelFormat();
+            frame->video.bmd_pixel_format=frame_out->GetPixelFormat();
 
             //
 
             audio_packet->GetBytes(&d_audio);
 
-            frame.ba_audio.resize(audio_packet->GetSampleFrameCount()*audio_channels*(16/8));
+            frame->audio.raw.resize(audio_packet->GetSampleFrameCount()*audio_channels*(16/8));
 
-            memcpy(frame.ba_audio.data(), d_audio, frame.ba_audio.size());
+            memcpy(frame->audio.raw.data(), d_audio, frame->audio.raw.size());
 
             if(audio_channels==8)
-                channelsRemap(&frame.ba_audio);
+                channelsRemap(&frame->audio.raw);
 
             //
 
 
             QMutexLocker ml(&mutex_subscription);
 
-            foreach(FrameBuffer *buf, l_full)
+            foreach(FrameBuffer *buf, subscription_list)
                 buf->appendFrame(frame);
-
-            if(!l_audio.isEmpty()) {
-                frame.ba_video.clear();
-
-                foreach(FrameBuffer *buf, l_audio)
-                    buf->appendFrame(frame);
-            }
         }
     }
 }

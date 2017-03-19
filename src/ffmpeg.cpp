@@ -753,50 +753,45 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
     return true;
 }
 
-bool FFMpeg::appendFrame(QByteArray *ba_video, QSize *size, QByteArray *ba_audio)
+bool FFMpeg::appendFrame(Frame::ptr frame)
 {
-    Q_UNUSED(size)
-
     if(!context->canAcceptFrame())
         return false;
 
 
     // video
     {
-        if(ba_video->isEmpty()) {
-            context->out_stream_video.next_pts++;
+        switch(context->cfg.framerate) {
+        case Framerate::half_50:
+        case Framerate::half_59:
+        case Framerate::half_60:
+            context->skip_frame=!context->skip_frame;
+            break;
 
-        } else {
-            switch(context->cfg.framerate) {
-            case Framerate::half_50:
-            case Framerate::half_59:
-            case Framerate::half_60:
-                context->skip_frame=!context->skip_frame;
-                break;
+        default:
+            break;
+        }
 
-            default:
-                break;
-            }
+        if(!context->skip_frame) {
+            uint8_t *ptr_orig=context->out_stream_video.frame->data[0];
 
-            if(!context->skip_frame) {
-                uint8_t *ptr_orig=context->out_stream_video.frame->data[0];
+            context->out_stream_video.frame->data[0]=(uint8_t*)frame->video.raw.data();
 
-                context->out_stream_video.frame->data[0]=(uint8_t*)ba_video->data();
+            sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
 
-                sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
+            context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
 
-                context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
+            write_video_frame(context->av_format_context, &context->out_stream_video);
 
-                write_video_frame(context->av_format_context, &context->out_stream_video);
-
-                context->out_stream_video.frame->data[0]=ptr_orig;
-            }
+            context->out_stream_video.frame->data[0]=ptr_orig;
         }
     }
 
     // audio
     {
-        ba_audio->insert(0, context->out_stream_audio.ba_audio_prev_part);
+        QByteArray ba_audio=frame->audio.raw;
+
+        ba_audio.insert(0, context->out_stream_audio.ba_audio_prev_part);
 
         int buffer_size=0;
 
@@ -806,7 +801,7 @@ bool FFMpeg::appendFrame(QByteArray *ba_video, QSize *size, QByteArray *ba_audio
             buffer_size=av_samples_get_buffer_size(nullptr, context->out_stream_audio.frame->channels, context->out_stream_audio.frame->nb_samples,
                                                    AV_SAMPLE_FMT_S16, 0);
 
-            if(ba_audio->size()>=buffer_size) {
+            if(ba_audio.size()>=buffer_size) {
 
                 break;
             }
@@ -814,9 +809,9 @@ bool FFMpeg::appendFrame(QByteArray *ba_video, QSize *size, QByteArray *ba_audio
             context->out_stream_audio.frame->nb_samples--;
         }
 
-        QByteArray ba_audio_tmp=ba_audio->left(buffer_size);
+        QByteArray ba_audio_tmp=ba_audio.left(buffer_size);
 
-        context->out_stream_audio.ba_audio_prev_part=ba_audio->remove(0, buffer_size);
+        context->out_stream_audio.ba_audio_prev_part=ba_audio.remove(0, buffer_size);
 
         int ret=avcodec_fill_audio_frame(context->out_stream_audio.frame, context->out_stream_audio.frame->channels, AV_SAMPLE_FMT_S16,
                                          (const uint8_t*)ba_audio_tmp.data(), buffer_size, 0);

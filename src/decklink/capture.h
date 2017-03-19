@@ -42,8 +42,7 @@ public:
 
     void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels);
 
-    void subscribeForAll(FrameBuffer *obj);
-    void subscribeForAudio(FrameBuffer *obj);
+    void subscribe(FrameBuffer *obj);
     void unsubscribe(FrameBuffer *obj);
 
 protected:
@@ -85,8 +84,7 @@ private:
     IDeckLinkMutableVideoFrame *video_frame_converted_1080p;
     IDeckLinkMutableVideoFrame *video_frame_converted_2160p;
 
-    QList <FrameBuffer*> l_full;
-    QList <FrameBuffer*> l_audio;
+    QList <FrameBuffer*> subscription_list;
 
     uint8_t frame_counter;
 

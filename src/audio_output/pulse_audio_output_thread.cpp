@@ -58,7 +58,7 @@ void PulseAudioOutputThread::run()
 
     init();
 
-    FrameBuffer::Frame frame;
+    Frame::ptr frame;
 
     while(true) {
         frame_buffer->event.wait();
@@ -72,7 +72,9 @@ void PulseAudioOutputThread::run()
             frame=frame_buffer->queue.dequeue();
         }
 
-        onInputFrameArrived(frame.ba_audio);
+        onInputFrameArrived(frame->audio.raw);
+
+        frame.reset();
 
 end:
         QCoreApplication::processEvents();

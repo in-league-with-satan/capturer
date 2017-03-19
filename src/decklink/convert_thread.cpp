@@ -12,7 +12,7 @@
 DlConvertThreadContainer *convert_thread_container=nullptr;
 
 
-void frameCompletedCallback(FrameBuffer::Frame frame)
+void frameCompletedCallback(Frame::ptr frame)
 {
     if(!convert_thread_container)
         return;
@@ -64,8 +64,7 @@ void DlConvertThread::addFrame(IDeckLinkVideoFrame *frame,  IDeckLinkAudioInputP
 
 void DlConvertThread::run()
 {
-    FrameBuffer::Frame frame;
-
+    Frame::ptr frame;
     void *d_video;
     void *d_audio;
 
@@ -96,31 +95,35 @@ void DlConvertThread::run()
 
                 //
 
+                frame=Frame::make();
+
+                //
+
                 frame_out->GetBytes(&d_video);
 
-                frame.ba_video.resize(frame_out->GetRowBytes() * frame_out->GetHeight());
+                frame->video.raw.resize(frame_out->GetRowBytes() * frame_out->GetHeight());
 
-                memcpy(frame.ba_video.data(), d_video, frame.ba_video.size());
+                memcpy(frame->video.raw.data(), d_video, frame->video.raw.size());
 
-                frame.size_video=QSize(frame_out->GetWidth(), frame_out->GetHeight());
+                frame->video.size=QSize(frame_out->GetWidth(), frame_out->GetHeight());
 
-                frame.bmd_pixel_format=frame_out->GetPixelFormat();
+                frame->video.bmd_pixel_format=frame_out->GetPixelFormat();
 
                 //
 
                 frame_audio_src->GetBytes(&d_audio);
 
-                frame.ba_audio.resize(frame_audio_src->GetSampleFrameCount()*audio_channels*(16/8));
+                frame->audio.raw.resize(frame_audio_src->GetSampleFrameCount()*audio_channels*(16/8));
 
-                memcpy(frame.ba_audio.data(), d_audio, frame.ba_audio.size());
+                memcpy(frame->audio.raw.data(), d_audio, frame->audio.raw.size());
 
                 if(audio_channels==8)
-                    channelsRemap(&frame.ba_audio);
+                    channelsRemap(&frame->audio.raw);
 
                 //
 
-                frame.counter=frame_counter;
-                frame.reset_counter=reset_counter;
+                frame->counter=frame_counter;
+                frame->reset_counter=reset_counter;
 
                 //
 
@@ -132,6 +135,8 @@ void DlConvertThread::run()
             }
 
             func_frame_completed(frame);
+
+            frame.reset();
         }
     }
 }
@@ -171,22 +176,15 @@ void DlConvertThreadContainer::addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAud
         thread_num=0;
 }
 
-void DlConvertThreadContainer::subscribeForAll(FrameBuffer *obj)
+void DlConvertThreadContainer::subscribe(FrameBuffer *obj)
 {
-    if(!l_full.contains(obj))
-        l_full.append(obj);
-}
-
-void DlConvertThreadContainer::subscribeForAudio(FrameBuffer *obj)
-{
-    if(!l_audio.contains(obj))
-        l_audio.append(obj);
+    if(!subscription_list.contains(obj))
+        subscription_list.append(obj);
 }
 
 void DlConvertThreadContainer::unsubscribe(FrameBuffer *obj)
 {
-    l_full.removeAll(obj);
-    l_audio.removeAll(obj);
+    subscription_list.removeAll(obj);
 }
 
 void DlConvertThreadContainer::setAudioChannels(int value)
@@ -212,49 +210,42 @@ void DlConvertThreadContainer::init(IDeckLinkOutput *decklink_output)
     }
 }
 
-void DlConvertThreadContainer::frameCompleted(FrameBuffer::Frame frame)
+void DlConvertThreadContainer::frameCompleted(Frame::ptr frame)
 {
     QMutexLocker ml(&mutex_subscription);
 
 
-    if(frame.reset_counter || queue.size()>(thread_count + 1)) {
-        qWarning() << "reset queue" << frame.reset_counter << queue.size();
+    if(frame->reset_counter || queue.size()>(thread_count + 1)) {
+        qWarning() << "reset queue" << frame->reset_counter << queue.size();
 
-        last_frame_counter=frame.counter - 1;
+        last_frame_counter=frame->counter - 1;
 
         queueClear();
     }
 
-    if(frame.counter!=uint8_t(last_frame_counter + 1)) {
+    if(frame->counter!=uint8_t(last_frame_counter + 1)) {
         queue.append(frame);
 
     } else {
         last_frame_counter++;
 
-        foreach(FrameBuffer *buf, l_full)
+        foreach(FrameBuffer *buf, subscription_list)
             buf->appendFrame(frame);
 
         for(int i=0; i<queue.size(); ++i) {
-            if(queue[i].counter==uint8_t(last_frame_counter + 1)) {
-                FrameBuffer::Frame f=queue[i];
+            if(queue[i]->counter==uint8_t(last_frame_counter + 1)) {
+                Frame::ptr f=queue[i];
 
                 queue.removeAt(i--);
 
                 last_frame_counter++;
 
-                foreach(FrameBuffer *buf, l_full)
+                foreach(FrameBuffer *buf, subscription_list)
                     buf->appendFrame(f);
             }
         }
     }
 
-
-    if(!l_audio.isEmpty()) {
-        frame.ba_video.clear();
-
-        foreach(FrameBuffer *buf, l_audio)
-            buf->appendFrame(frame);
-    }
 }
 
 void DlConvertThreadContainer::queueClear()

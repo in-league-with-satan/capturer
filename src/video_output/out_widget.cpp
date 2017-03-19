@@ -11,7 +11,6 @@ OutWidget::OutWidget(QWidget *parent) :
 {
     frame_buffer=new FrameBuffer(QMutex::Recursive, this);
     frame_buffer->setMaxBufferSize(1);
-    frame_buffer->setDropSkipped(true);
 
     timer=new QTimer(this);
     timer->setInterval(10);
@@ -74,7 +73,7 @@ void OutWidget::enterEvent(QEvent*)
 
 void OutWidget::checkFrame()
 {
-    FrameBuffer::Frame frame;
+    Frame::ptr frame;
 
     timer->stop();
 
@@ -92,7 +91,9 @@ void OutWidget::checkFrame()
 //    timer->start();
 //    return;
 
-    QImage img_tmp=QImage((uchar*)frame.ba_video.data(), frame.size_video.width(), frame.size_video.height(), QImage::Format_ARGB32);
+    QImage img_tmp=QImage((uchar*)frame->video.raw.data(), frame->video.size.width(), frame->video.size.height(), QImage::Format_ARGB32);
+
+    frame.reset();
 
     if(img_tmp.size()!=size()) {
         if(img_tmp.size().width()>1920)
