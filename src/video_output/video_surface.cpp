@@ -1,7 +1,7 @@
+#include <QDebug>
 #include <QWidget>
 #include <QVideoSurfaceFormat>
 #include <QPainter>
-#include <QMutexLocker>
 
 #include "video_surface.h"
 
@@ -38,8 +38,6 @@ bool VideoSurface::isFormatSupported(const QVideoSurfaceFormat &format) const
 
 bool VideoSurface::start(const QVideoSurfaceFormat &format)
 {
-    QMutexLocker ml(&mutex);
-
     const QImage::Format image_format=QVideoFrame::imageFormatFromPixelFormat(format.pixelFormat());
 
     const QSize size=format.frameSize();
@@ -65,7 +63,7 @@ bool VideoSurface::start(const QVideoSurfaceFormat &format)
 
 void VideoSurface::stop()
 {
-    current_frame=QVideoFrame();
+    frame.reset();
 
     rect_target=QRect();
 
@@ -76,26 +74,21 @@ void VideoSurface::stop()
 
 bool VideoSurface::present(const QVideoFrame &frame)
 {
-    QMutexLocker ml(&mutex);
+    Q_UNUSED(frame)
 
-    if(surfaceFormat().pixelFormat()!=frame.pixelFormat()
-            || surfaceFormat().frameSize()!=frame.size()) {
-        setError(IncorrectFormatError);
+    qWarning() << "VideoSurface::present(QVideoFrame) called";
 
-        stop();
+    return false;
+}
 
-        return false;
-
-    }
-
-    current_frame=frame;
+void VideoSurface::present(Frame::ptr frame)
+{
+    this->frame=frame;
 
     // if(!widget->testAttribute(Qt::WA_WState_InPaintEvent))
     //     widget->repaint(rect_target);
 
     widget->update();
-
-    return true;
 }
 
 QRect VideoSurface::videoRect() const
@@ -119,27 +112,25 @@ void VideoSurface::paint(QPainter *painter)
 {
     // painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
 
-    if(current_frame.map(QAbstractVideoBuffer::ReadOnly)) {
-        const QTransform old_transform=painter->transform();
+    if(!frame)
+        return;
 
-        if(surfaceFormat().scanLineDirection()==QVideoSurfaceFormat::BottomToTop) {
-           painter->scale(1, -1);
+    Frame::ptr frame_tmp=frame;
 
-           painter->translate(0, -widget->height());
-        }
+    const QTransform old_transform=painter->transform();
 
-        QImage image(current_frame.bits(),
-                     current_frame.width(),
-                     current_frame.height(),
-                     current_frame.bytesPerLine(),
-                     image_format);
+    if(surfaceFormat().scanLineDirection()==QVideoSurfaceFormat::BottomToTop) {
+        painter->scale(1, -1);
 
-        painter->drawImage(rect_target, image, rect_source);
-
-        painter->setTransform(old_transform);
-
+        painter->translate(0, -widget->height());
     }
 
-    if(current_frame.isMapped())
-        current_frame.unmap();
+    painter->drawImage(rect_target,
+                       QImage((uchar*)frame_tmp->video.raw.data(),
+                              frame_tmp->video.size.width(),
+                              frame_tmp->video.size.height(),
+                              image_format),
+                       rect_source);
+
+    painter->setTransform(old_transform);
 }

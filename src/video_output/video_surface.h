@@ -4,8 +4,9 @@
 #include <QAbstractVideoSurface>
 #include <QImage>
 #include <QRect>
-#include <QVideoFrame>
 #include <QMutex>
+
+#include "frame.h"
 
 class VideoSurface : public QAbstractVideoSurface
 {
@@ -22,6 +23,8 @@ public:
     void stop();
 
     bool present(const QVideoFrame &frame);
+    void present(Frame::ptr frame);
+
 
     QRect videoRect() const;
 
@@ -35,8 +38,7 @@ private:
     QRect rect_target;
     QRect rect_source;
     QSize image_size;
-    QVideoFrame current_frame;
-    QMutex mutex;
+    Frame::ptr frame;
 };
 
 #endif // VIDEO_WIDGET_SURFACE_H

@@ -23,14 +23,14 @@ void checkRoot()
 
 int main(int argc, char *argv[])
 {
+    QApplication application(argc, argv);
+
 #ifndef __linux__
 
     if(!comInit())
         return 1;
 
 #else
-
-    QApplication application(argc, argv);
 
     if(!application.arguments().contains("--dont-check-root", Qt::CaseInsensitive))
         checkRoot();

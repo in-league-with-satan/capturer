@@ -67,7 +67,6 @@ OutWidgetUpdateThread::OutWidgetUpdateThread(FrameBuffer *frame_buffer, QAbstrac
 void OutWidgetUpdateThread::run()
 {
     Frame::ptr frame;
-    QVideoFrame video_frame;
 
     bool queue_is_empty;
 
@@ -90,14 +89,12 @@ nowait:
             queue_is_empty=frame_buffer->queue.isEmpty();
         }
 
-        video_frame=QVideoFrame(QImage((uchar*)frame->video.raw.data(), frame->video.size.width(), frame->video.size.height(), QImage::Format_ARGB32));
+        if(!surface->isActive())
+            surface->start(QVideoSurfaceFormat(frame->video.size, QVideoFrame::Format_ARGB32));
+
+        ((VideoSurface*)surface)->present(frame);
 
         frame.reset();
-
-        if(!surface->isActive())
-            surface->start(QVideoSurfaceFormat(video_frame.size(), video_frame.pixelFormat()));
-
-        surface->present(video_frame);
 
         if(!queue_is_empty)
             goto nowait;
