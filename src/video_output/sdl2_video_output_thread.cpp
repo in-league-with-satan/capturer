@@ -1,7 +1,6 @@
 #include <QDebug>
 #include <QApplication>
 #include <QDesktopWidget>
-#include <QMutexLocker>
 
 #ifdef USE_SDL2
 #include <SDL2/SDL.h>
@@ -20,8 +19,8 @@ SDL_Event sdl_event;
 Sdl2VideoOutpitThread::Sdl2VideoOutpitThread(QObject *parent) :
     QThread(parent)
 {
-    frame_buffer=new FrameBuffer(QMutex::Recursive, this);
-    frame_buffer->setMaxBufferSize(1);
+    frame_buffer=new FrameBuffer(this);
+    frame_buffer->setMaxSize(1);
 
     setTerminationEnabled();
 
@@ -303,15 +302,11 @@ void Sdl2VideoOutpitThread::checkFrame()
 
     SDL_PollEvent(&sdl_event);
 
-    {
-        QMutexLocker ml(frame_buffer->mutex_frame_buffer);
 
-        if(frame_buffer->queue.isEmpty()) {
-            return;
-        }
+    if(frame_buffer->isEmpty())
+        return;
 
-        frame=frame_buffer->queue.dequeue();
-    }
+    frame=frame_buffer->take();
 
     if(in_frame_size!=frame->video.size) {
         in_frame_size=frame->video.size;

@@ -361,7 +361,7 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
             QMutexLocker ml(&mutex_subscription);
 
             foreach(FrameBuffer *buf, subscription_list)
-                buf->appendFrame(frame);
+                buf->append(frame);
         }
     }
 }

@@ -1,6 +1,5 @@
 #include <QDebug>
 #include <QAudioOutput>
-#include <QMutexLocker>
 #include <qcoreapplication.h>
 
 #include "frame_buffer.h"
@@ -110,20 +109,14 @@ void AudioOutputThread::run()
     Frame::ptr frame;
 
     while(true) {
-        {
-            QMutexLocker ml(frame_buffer->mutex_frame_buffer);
+        frame=frame_buffer->take();
 
-            if(frame_buffer->queue.isEmpty())
-                goto end;
+        if(frame) {
+            onInputFrameArrived(frame->audio.raw);
 
-            frame=frame_buffer->queue.dequeue();
+            frame.reset();
         }
 
-        onInputFrameArrived(frame->audio.raw);
-
-        frame.reset();
-
-end:
         QCoreApplication::processEvents();
 
         usleep(1000);

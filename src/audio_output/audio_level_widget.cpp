@@ -1,6 +1,5 @@
 #include <QDebug>
 #include <QTimer>
-#include <QMutexLocker>
 #include <QPainter>
 
 #include <algorithm>
@@ -23,8 +22,8 @@ AudioLevelWidget::AudioLevelWidget(QWidget *parent) :
 
     //
 
-    frame_buffer=new FrameBuffer(QMutex::Recursive, this);
-    frame_buffer->setMaxBufferSize(1);
+    frame_buffer=new FrameBuffer(this);
+    frame_buffer->setMaxSize(1);
 
     timer=new QTimer(this);
     timer->setInterval(60);
@@ -65,16 +64,10 @@ void AudioLevelWidget::paintEvent(QPaintEvent*)
 
 void AudioLevelWidget::checkBuffer()
 {
-    Frame::ptr frame;
+    if(frame_buffer->isEmpty())
+        return;
 
-    {
-        QMutexLocker ml(frame_buffer->mutex_frame_buffer);
-
-        if(frame_buffer->queue.isEmpty())
-            return;
-
-        frame=frame_buffer->queue.dequeue();
-    }
+    Frame::ptr frame=frame_buffer->take();
 
     memset(level, 0, sizeof(int16_t)*8);
 

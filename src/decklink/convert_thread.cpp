@@ -230,7 +230,7 @@ void DlConvertThreadContainer::frameCompleted(Frame::ptr frame)
         last_frame_counter++;
 
         foreach(FrameBuffer *buf, subscription_list)
-            buf->appendFrame(frame);
+            buf->append(frame);
 
         for(int i=0; i<queue.size(); ++i) {
             if(queue[i]->counter==uint8_t(last_frame_counter + 1)) {
@@ -241,7 +241,7 @@ void DlConvertThreadContainer::frameCompleted(Frame::ptr frame)
                 last_frame_counter++;
 
                 foreach(FrameBuffer *buf, subscription_list)
-                    buf->appendFrame(f);
+                    buf->append(f);
             }
         }
     }

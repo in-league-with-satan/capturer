@@ -1,5 +1,4 @@
 #include <QDebug>
-#include <QMutexLocker>
 #include <qcoreapplication.h>
 
 #include "capture.h"
@@ -10,9 +9,9 @@
 FFMpegThread::FFMpegThread(QObject *parent)
     : QThread(parent)
 {
-    frame_buffer=new FrameBuffer(QMutex::Recursive, this);
+    frame_buffer=new FrameBuffer(this);
 
-    frame_buffer->setMaxBufferSize(120);
+    frame_buffer->setMaxSize(120);
 
     frame_buffer->setEnabled(false);
 
@@ -75,32 +74,17 @@ void FFMpegThread::run()
 
     Frame::ptr frame;
 
-    bool queue_is_empty=true;
-
     while(true) {
-        frame_buffer->event.wait();
+        if(frame_buffer->isEmpty())
+            frame_buffer->wait();
 
-begin:
+        frame=frame_buffer->take();
 
-        {
-            QMutexLocker ml(frame_buffer->mutex_frame_buffer);
+        if(frame) {
+            ffmpeg->appendFrame(frame);
 
-            if(frame_buffer->queue.isEmpty())
-                goto end;
-
-            frame=frame_buffer->queue.dequeue();
-
-            queue_is_empty=frame_buffer->queue.isEmpty();
+            frame.reset();
         }
-
-        ffmpeg->appendFrame(frame);
-
-        frame.reset();
-
-        if(!queue_is_empty)
-            goto begin;
-
-end:
 
         QCoreApplication::processEvents();
     }

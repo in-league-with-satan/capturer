@@ -9,8 +9,8 @@
 OutWidget::OutWidget(QWidget *parent) :
     QGLWidget(parent)
 {
-    frame_buffer=new FrameBuffer(QMutex::Recursive, this);
-    frame_buffer->setMaxBufferSize(1);
+    frame_buffer=new FrameBuffer(this);
+    frame_buffer->setMaxSize(1);
 
     timer=new QTimer(this);
     timer->setInterval(10);
@@ -77,16 +77,14 @@ void OutWidget::checkFrame()
 
     timer->stop();
 
-    {
-        QMutexLocker ml(frame_buffer->mutex_frame_buffer);
 
-        if(frame_buffer->queue.isEmpty()) {
-            timer->start();
-            return;
-        }
-
-        frame=frame_buffer->queue.dequeue();
+    if(frame_buffer->isEmpty()) {
+        timer->start();
+        return;
     }
+
+    frame=frame_buffer->take();
+
 
 //    timer->start();
 //    return;

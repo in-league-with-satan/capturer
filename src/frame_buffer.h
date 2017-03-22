@@ -14,28 +14,31 @@ class FrameBuffer : public QObject
     Q_OBJECT
 
 public:
-    explicit FrameBuffer(QMutex::RecursionMode recursion_mode=QMutex::Recursive, QObject *parent=0);
+    explicit FrameBuffer(QObject *parent=0);
     ~FrameBuffer();
 
-    void appendFrame(Frame::ptr frame);
+    void append(Frame::ptr frame);
 
-    void setMaxBufferSize(uint16_t size);
+    Frame::ptr take();
+
+    void wait();
+
+    void setMaxSize(uint16_t size);
 
     void setEnabled(bool value);
 
     void clear();
 
+    bool isEmpty();
+
     QPair <int, int> size();
 
-    QQueue <Frame::ptr> queue;
-
-    QMutex *mutex_frame_buffer;
-
-    EventWaiting event;
 
 private:
-    uint16_t buffer_max_size;
-
+    QQueue <Frame::ptr> queue;
+    QMutex mutex;
+    uint16_t max_size;
+    EventWaiting event;
     bool enabled;
 
 signals:

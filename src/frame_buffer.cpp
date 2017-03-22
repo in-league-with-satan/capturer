@@ -4,28 +4,26 @@
 #include "frame_buffer.h"
 
 
-FrameBuffer::FrameBuffer(QMutex::RecursionMode recursion_mode, QObject *parent)
+FrameBuffer::FrameBuffer(QObject *parent)
     : QObject(parent)
-    , mutex_frame_buffer(new QMutex(recursion_mode))
 {
     enabled=true;
 
-    buffer_max_size=10;
+    max_size=10;
 }
 
 FrameBuffer::~FrameBuffer()
 {
-    delete mutex_frame_buffer;
 }
 
-void FrameBuffer::appendFrame(Frame::ptr frame)
+void FrameBuffer::append(Frame::ptr frame)
 {
-    QMutexLocker ml(mutex_frame_buffer);
+    QMutexLocker ml(&mutex);
 
     if(!enabled)
         return;
 
-    if(queue.size()<buffer_max_size) {
+    if(queue.size()<max_size) {
         queue.append(frame);
 
     } else {
@@ -35,16 +33,31 @@ void FrameBuffer::appendFrame(Frame::ptr frame)
     event.next();
 }
 
-void FrameBuffer::setMaxBufferSize(uint16_t size)
+Frame::ptr FrameBuffer::take()
 {
-    QMutexLocker ml(mutex_frame_buffer);
+    QMutexLocker ml(&mutex);
 
-    buffer_max_size=size;
+    if(queue.isEmpty())
+        return Frame::ptr();
+
+    return queue.dequeue();
+}
+
+void FrameBuffer::wait()
+{
+    event.wait();
+}
+
+void FrameBuffer::setMaxSize(uint16_t size)
+{
+    QMutexLocker ml(&mutex);
+
+    max_size=size;
 }
 
 void FrameBuffer::setEnabled(bool value)
 {
-    QMutexLocker ml(mutex_frame_buffer);
+    QMutexLocker ml(&mutex);
 
     enabled=value;
 
@@ -55,16 +68,23 @@ void FrameBuffer::setEnabled(bool value)
 
 void FrameBuffer::clear()
 {
-    QMutexLocker ml(mutex_frame_buffer);
+    QMutexLocker ml(&mutex);
 
     queue.clear();
 
     event.next();
 }
 
+bool FrameBuffer::isEmpty()
+{
+    QMutexLocker ml(&mutex);
+
+    return queue.isEmpty();
+}
+
 QPair <int, int> FrameBuffer::size()
 {
-    QMutexLocker ml(mutex_frame_buffer);
+    QMutexLocker ml(&mutex);
 
-    return qMakePair(queue.size(), buffer_max_size);
+    return qMakePair(queue.size(), max_size);
 }

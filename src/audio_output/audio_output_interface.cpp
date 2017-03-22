@@ -1,6 +1,5 @@
 #include <QDebug>
 #include <QAudioOutput>
-#include <QMutexLocker>
 #include <qcoreapplication.h>
 
 #include "frame_buffer.h"
@@ -10,8 +9,8 @@
 AudioOutputInterface::AudioOutputInterface(QObject *parent) :
     QThread(parent)
 {
-    frame_buffer=new FrameBuffer(QMutex::Recursive, this);
-    frame_buffer->setMaxBufferSize(2);
+    frame_buffer=new FrameBuffer(this);
+    frame_buffer->setMaxSize(2);
 
     input_channels_size=2;
 

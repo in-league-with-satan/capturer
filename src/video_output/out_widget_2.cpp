@@ -30,8 +30,8 @@ OutWidget2::OutWidget2(QWidget *parent)
 
     //
 
-    frame_buffer=new FrameBuffer(QMutex::Recursive, this);
-    frame_buffer->setMaxBufferSize(2);
+    frame_buffer=new FrameBuffer(this);
+    frame_buffer->setMaxSize(2);
 
     //
 
@@ -68,35 +68,19 @@ void OutWidgetUpdateThread::run()
 {
     Frame::ptr frame;
 
-    bool queue_is_empty;
-
     while(true) {
-wait:
+        if(frame_buffer->isEmpty())
+            frame_buffer->wait();
 
-        frame_buffer->event.wait();
+        frame=frame_buffer->take();
 
-nowait:
+        if(frame) {
+            if(!surface->isActive())
+                surface->start(QVideoSurfaceFormat(frame->video.size, QVideoFrame::Format_ARGB32));
 
-        {
-            QMutexLocker ml(frame_buffer->mutex_frame_buffer);
+            ((VideoSurface*)surface)->present(frame);
 
-            if(frame_buffer->queue.isEmpty()) {
-                goto wait;
-            }
-
-            frame=frame_buffer->queue.dequeue();
-
-            queue_is_empty=frame_buffer->queue.isEmpty();
+            frame.reset();
         }
-
-        if(!surface->isActive())
-            surface->start(QVideoSurfaceFormat(frame->video.size, QVideoFrame::Format_ARGB32));
-
-        ((VideoSurface*)surface)->present(frame);
-
-        frame.reset();
-
-        if(!queue_is_empty)
-            goto nowait;
     }
 }
