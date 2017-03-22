@@ -200,7 +200,7 @@ void DlConvertThreadContainer::init(IDeckLinkOutput *decklink_output)
 {
     for(int i=0; i<thread_count; ++i) {
         if(!thread[i]->video_frame_converted_720p)
-            decklink_output->CreateVideoFrame(1280, 720, 720*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &thread[i]->video_frame_converted_720p);
+            decklink_output->CreateVideoFrame(1280, 720, 1280*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &thread[i]->video_frame_converted_720p);
 
         if(!thread[i]->video_frame_converted_1080p)
             decklink_output->CreateVideoFrame(1920, 1080, 1920*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &thread[i]->video_frame_converted_1080p);

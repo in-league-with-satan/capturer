@@ -85,6 +85,9 @@ void VideoSurface::present(Frame::ptr frame)
 {
     this->frame=frame;
 
+    if(rect_source.size()!=frame->video.size)
+        rect_source.setSize(frame->video.size);
+
     // if(!widget->testAttribute(Qt::WA_WState_InPaintEvent))
     //     widget->repaint(rect_target);
 
