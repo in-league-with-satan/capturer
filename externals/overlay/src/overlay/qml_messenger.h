@@ -55,6 +55,8 @@ signals:
 
     void showHideInfo();
 
+    void showHideDetailedRecState();
+
     void keyPressed(const Qt::Key &key);
 
     void back();

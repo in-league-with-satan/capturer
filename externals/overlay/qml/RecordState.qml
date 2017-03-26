@@ -11,6 +11,8 @@ Rectangle {
 
     property bool state_visible: false
 
+    property bool hide_text: false
+
     // color: "blue"
     color: "transparent"
 
@@ -111,7 +113,15 @@ Rectangle {
         target: messenger
 
         onUpdateRecStats: {
-            text_output.text=duration + "    " + size + "    " + bitrate + "    " + buffer_state + "    " + dropped_frames_counter;
+            if(!hide_text)
+                text_output.text=duration + "    " + size + "    " + bitrate + "    " + buffer_state + "    " + dropped_frames_counter;
+        }
+
+        onShowHideDetailedRecState: {
+            hide_text=!hide_text
+
+            if(hide_text)
+                text_output.text=""
         }
 
         onRecStarted: rec_state_bar.state_visible=true

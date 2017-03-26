@@ -294,6 +294,10 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
                 return true;
 
             case Qt::Key_F6:
+                messenger->showHideDetailedRecState();
+                return true;
+
+            case Qt::Key_F7:
                 cb_preview->setChecked(!cb_preview->isChecked());
                 return true;
 
@@ -548,7 +552,8 @@ void MainWindow::updateStats(FFMpeg::Stats s)
     const QPair <int, int> buffer_size=ffmpeg->frameBuffer()->size();
 
     messenger->updateRecStats(s.time.toString("HH:mm:ss"),
-                              QString("%1 kbits/s").arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/1000., 'f', 0)),
+                              QString("%1 Mbits/s (%2 MB/s)").arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/1000./1000., 'f', 2))
+                              .arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/8/1024./1024., 'f', 2)),
                               QString("%1 bytes").arg(QLocale().toString((qulonglong)s.streams_size)),
                               QString("buf state: %1/%2").arg(buffer_size.first).arg(buffer_size.second),
                               QString("frames dropped: %1").arg(dropped_frames_counter));
