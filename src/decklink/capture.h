@@ -45,6 +45,8 @@ public:
     void subscribe(FrameBuffer *obj);
     void unsubscribe(FrameBuffer *obj);
 
+    bool isRunning();
+
 protected:
     void run();
 
@@ -65,7 +67,6 @@ private:
 
     IDeckLinkDisplayMode *display_mode;
     IDeckLinkInput *decklink_input;
-    IDeckLinkOutput *decklink_output;
 
     DeckLinkDevice device;
     DeckLinkFormat format;
@@ -80,9 +81,6 @@ private:
     // FF::FormatConverter *ff_converter;
 
     IDeckLinkVideoConversion *video_converter;
-    IDeckLinkMutableVideoFrame *video_frame_converted_720p;
-    IDeckLinkMutableVideoFrame *video_frame_converted_1080p;
-    IDeckLinkMutableVideoFrame *video_frame_converted_2160p;
 
     QList <FrameBuffer*> subscription_list;
 

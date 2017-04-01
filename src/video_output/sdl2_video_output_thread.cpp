@@ -308,14 +308,14 @@ void Sdl2VideoOutpitThread::checkFrame()
 
     frame=frame_buffer->take();
 
-    if(in_frame_size!=frame->video.size) {
-        in_frame_size=frame->video.size;
+    if(in_frame_size!=frame->video.decklink_frame.getSize()) {
+        in_frame_size=frame->video.decklink_frame.getSize();
 
         init();
     }
 
     // drawFrame(&frame.ba_video);
-    drawFrameQImage(&frame->video.raw);
+    drawFrameQImage(frame->video.raw);
 
 #endif
 }

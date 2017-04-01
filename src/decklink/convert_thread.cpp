@@ -26,10 +26,6 @@ DlConvertThread::DlConvertThread(FrameCompletedCallback func_frame_completed, QO
 {
     frame_video_src=nullptr;
 
-    video_frame_converted_720p=nullptr;
-    video_frame_converted_1080p=nullptr;
-    video_frame_converted_2160p=nullptr;
-
     video_converter=CreateVideoConversionInstance();
 
     audio_channels=8;
@@ -65,10 +61,7 @@ void DlConvertThread::addFrame(IDeckLinkVideoFrame *frame,  IDeckLinkAudioInputP
 void DlConvertThread::run()
 {
     Frame::ptr frame;
-    void *d_video;
     void *d_audio;
-
-    IDeckLinkMutableVideoFrame *frame_out=nullptr;
 
     while(true) {
         event.wait();
@@ -77,37 +70,13 @@ void DlConvertThread::run()
             {
                 QMutexLocker ml(&mutex);
 
-                if(frame_video_src->GetWidth()==1280) {
-                    video_converter->ConvertFrame(frame_video_src, video_frame_converted_720p);
-
-                    frame_out=video_frame_converted_720p;
-
-                } else if(frame_video_src->GetWidth()==1920) {
-                    video_converter->ConvertFrame(frame_video_src, video_frame_converted_1080p);
-
-                    frame_out=video_frame_converted_1080p;
-
-                } else {
-                    video_converter->ConvertFrame(frame_video_src, video_frame_converted_2160p);
-
-                    frame_out=video_frame_converted_2160p;
-                }
-
                 //
 
                 frame=Frame::make();
 
-                //
+                frame->video.decklink_frame.init(QSize(frame_video_src->GetWidth(), frame_video_src->GetHeight()), bmdFormat8BitBGRA);
 
-                frame_out->GetBytes(&d_video);
-
-                frame->video.raw.resize(frame_out->GetRowBytes() * frame_out->GetHeight());
-
-                memcpy(frame->video.raw.data(), d_video, frame->video.raw.size());
-
-                frame->video.size=QSize(frame_out->GetWidth(), frame_out->GetHeight());
-
-                frame->video.bmd_pixel_format=frame_out->GetPixelFormat();
+                video_converter->ConvertFrame(frame_video_src, &frame->video.decklink_frame);
 
                 //
 
@@ -193,20 +162,6 @@ void DlConvertThreadContainer::setAudioChannels(int value)
         QMutexLocker ml(&thread[i]->mutex);
 
         thread[i]->audio_channels=value;
-    }
-}
-
-void DlConvertThreadContainer::init(IDeckLinkOutput *decklink_output)
-{
-    for(int i=0; i<thread_count; ++i) {
-        if(!thread[i]->video_frame_converted_720p)
-            decklink_output->CreateVideoFrame(1280, 720, 1280*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &thread[i]->video_frame_converted_720p);
-
-        if(!thread[i]->video_frame_converted_1080p)
-            decklink_output->CreateVideoFrame(1920, 1080, 1920*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &thread[i]->video_frame_converted_1080p);
-
-        if(!thread[i]->video_frame_converted_2160p)
-            decklink_output->CreateVideoFrame(3840, 2160, 3840*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &thread[i]->video_frame_converted_2160p);
     }
 }
 

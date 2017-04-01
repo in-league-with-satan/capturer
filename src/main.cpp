@@ -10,6 +10,8 @@
 
 void checkRoot()
 {
+    return;
+
     if(getuid()!=0) {
         if(!QProcess::startDetached(QString("gksu %1").arg(QApplication::applicationFilePath())))
             QProcess::startDetached(QApplication::applicationFilePath(), QStringList() << "--dont-check-root");
@@ -48,7 +50,9 @@ int main(int argc, char *argv[])
     MainWindow main_window;
 
 #ifndef __OPTIMIZE__
+
     main_window.show();
+
 #endif
 
     return application.exec();

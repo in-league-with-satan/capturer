@@ -38,6 +38,8 @@ private:
 
 
     QComboBox *cb_device;
+    QComboBox *cb_device_screen_format;
+    QComboBox *cb_device_pixel_format;
 
     QLineEdit *le_video_mode;
 
@@ -83,10 +85,13 @@ private slots:
 
     void onFormatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format);
 
+    void onDeviceChanged(int index);
+    void onDeviceScreenFormatChanged(int index);
+
     void onCrfChanged(const QString &text);
     void onCrfChanged(const int &crf);
 
-    void onStartCapture();
+    void startStopCapture();
 
     void onStartStopRecording();
 

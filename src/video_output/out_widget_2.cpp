@@ -76,7 +76,7 @@ void OutWidgetUpdateThread::run()
 
         if(frame) {
             if(!surface->isActive())
-                surface->start(QVideoSurfaceFormat(frame->video.size, QVideoFrame::Format_ARGB32));
+                surface->start(QVideoSurfaceFormat(frame->video.decklink_frame.getSize(), QVideoFrame::Format_ARGB32));
 
             ((VideoSurface*)surface)->present(frame);
 

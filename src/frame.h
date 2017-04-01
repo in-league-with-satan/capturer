@@ -6,6 +6,8 @@
 
 #include <memory>
 
+#include "decklink_video_frame.h"
+
 struct Frame
 {
     typedef std::shared_ptr<Frame> ptr;
@@ -19,9 +21,13 @@ struct Frame
     }
 
     struct DataVideo {
-        QByteArray raw;
-        QSize size;
-        uint32_t bmd_pixel_format;
+        DataVideo() {
+            raw=decklink_frame.getBuffer();
+        }
+
+        DeckLinkVideoFrame decklink_frame;
+
+        QByteArray *raw;
 
     } video;
 

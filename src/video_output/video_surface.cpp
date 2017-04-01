@@ -85,8 +85,8 @@ void VideoSurface::present(Frame::ptr frame)
 {
     this->frame=frame;
 
-    if(rect_source.size()!=frame->video.size)
-        rect_source.setSize(frame->video.size);
+    if(rect_source.size()!=frame->video.decklink_frame.getSize())
+        rect_source.setSize(frame->video.decklink_frame.getSize());
 
     // if(!widget->testAttribute(Qt::WA_WState_InPaintEvent))
     //     widget->repaint(rect_target);
@@ -129,9 +129,9 @@ void VideoSurface::paint(QPainter *painter)
     }
 
     painter->drawImage(rect_target,
-                       QImage((uchar*)frame_tmp->video.raw.data(),
-                              frame_tmp->video.size.width(),
-                              frame_tmp->video.size.height(),
+                       QImage((uchar*)frame_tmp->video.raw->data(),
+                              frame_tmp->video.decklink_frame.getSize().width(),
+                              frame_tmp->video.decklink_frame.getSize().height(),
                               image_format),
                        rect_source);
 

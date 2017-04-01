@@ -775,7 +775,7 @@ bool FFMpeg::appendFrame(Frame::ptr frame)
         if(!context->skip_frame) {
             uint8_t *ptr_orig=context->out_stream_video.frame->data[0];
 
-            context->out_stream_video.frame->data[0]=(uint8_t*)frame->video.raw.data();
+            context->out_stream_video.frame->data[0]=(uint8_t*)frame->video.raw->data();
 
             sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
 

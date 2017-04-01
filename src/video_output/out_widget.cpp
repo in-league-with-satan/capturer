@@ -89,7 +89,7 @@ void OutWidget::checkFrame()
 //    timer->start();
 //    return;
 
-    QImage img_tmp=QImage((uchar*)frame->video.raw.data(), frame->video.size.width(), frame->video.size.height(), QImage::Format_ARGB32);
+    QImage img_tmp=QImage((uchar*)frame->video.raw->data(), frame->video.decklink_frame.getSize().width(), frame->video.decklink_frame.getSize().height(), QImage::Format_ARGB32);
 
     frame.reset();
 

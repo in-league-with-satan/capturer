@@ -49,7 +49,7 @@ private:
 
 DeckLinkCaptureDelegate::DeckLinkCaptureDelegate(DeckLinkCapture *parent) :
     d(parent)
-  ,ref_count(1)
+  , ref_count(1)
 {
 }
 
@@ -110,10 +110,6 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
 
     video_converter=nullptr;
 
-    video_frame_converted_720p=nullptr;
-    video_frame_converted_1080p=nullptr;
-    video_frame_converted_2160p=nullptr;
-
     if(ext_converter) {
         conv_thread=new DlConvertThreadContainer(4, this);
 
@@ -164,6 +160,14 @@ void DeckLinkCapture::unsubscribe(FrameBuffer *obj)
 
     else
         subscription_list.removeAll(obj);
+}
+
+bool DeckLinkCapture::isRunning()
+{
+    if(decklink)
+        return true;
+
+    return false;
 }
 
 void DeckLinkCapture::run()
@@ -257,7 +261,7 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
     emit formatChanged(mode->GetWidth(), mode->GetHeight(),
                        frame_duration, frame_scale,
                        (mode->GetFieldDominance()==bmdProgressiveFrame || mode->GetFieldDominance()==bmdProgressiveSegmentedFrame),
-                       pixel_format==bmdFormat10BitYUV ? "10BitYUV" : "10BitRGB");
+                       BMDPixelFormatToString(pixel_format));
 }
 
 void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet)
@@ -285,12 +289,6 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
                 for(int i=0; i<(frame_time - frame_time_prev)/frame_duration - 1; ++i) {
                     emit frameSkipped();
                 }
-
-                //
-
-                // decklink_input->StopStreams();
-
-                // decklink_input->StartStreams();
             }
 
         } else
@@ -303,48 +301,12 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
         if(ext_converter) {
             conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet, frame_counter++, frame_time==0);
 
-            // if(frame_time!=0)
-            //     conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet, frame_counter++, frame_time==0);
-
         } else {
             Frame::ptr frame=Frame::make();
 
-            void *d_video;
+            frame->video.decklink_frame.init(QSize(video_frame->GetWidth(), video_frame->GetHeight()), bmdFormat8BitBGRA);
+
             void *d_audio;
-
-            IDeckLinkMutableVideoFrame *frame_out=nullptr;
-
-            frame_out=(IDeckLinkMutableVideoFrame *)video_frame;
-
-            if(video_frame->GetWidth()==1280) {
-                video_converter->ConvertFrame(video_frame, video_frame_converted_720p);
-
-                frame_out=video_frame_converted_720p;
-
-            } else if(video_frame->GetWidth()==1920) {
-                video_converter->ConvertFrame(video_frame, video_frame_converted_1080p);
-
-                frame_out=video_frame_converted_1080p;
-
-            } else {
-                video_converter->ConvertFrame(video_frame, video_frame_converted_2160p);
-
-                frame_out=video_frame_converted_2160p;
-            }
-
-            //
-
-            frame_out->GetBytes(&d_video);
-
-            frame->video.raw.resize(frame_out->GetRowBytes() * frame_out->GetHeight());
-
-            memcpy(frame->video.raw.data(), d_video, frame->video.raw.size());
-
-            frame->video.size=QSize(frame_out->GetWidth(), frame_out->GetHeight());
-
-            frame->video.bmd_pixel_format=frame_out->GetPixelFormat();
-
-            //
 
             audio_packet->GetBytes(&d_audio);
 
@@ -356,7 +318,6 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
                 channelsRemap(&frame->audio.raw);
 
             //
-
 
             QMutexLocker ml(&mutex_subscription);
 
@@ -403,26 +364,9 @@ void DeckLinkCapture::init()
     // Get the input (capture) interface of the DeckLink device
     result=decklink->QueryInterface(IID_IDeckLinkInput, (void**)&decklink_input);
 
-    if(result!=S_OK)
+    if(result!=S_OK) {
+        qCritical() << "QueryInterface DeckLinkInput err";
         goto bail;
-
-    result=decklink->QueryInterface(IID_IDeckLinkOutput, (void**)&decklink_output);
-
-    if(result!=S_OK)
-        goto bail;
-
-    if(ext_converter)
-        conv_thread->init(decklink_output);
-
-    else {
-        if(!video_frame_converted_720p)
-            decklink_output->CreateVideoFrame(1280, 720, 720*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &video_frame_converted_720p);
-
-        if(!video_frame_converted_1080p)
-            decklink_output->CreateVideoFrame(1920, 1080, 1920*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &video_frame_converted_1080p);
-
-        if(!video_frame_converted_2160p)
-            decklink_output->CreateVideoFrame(3840, 2160, 3840*4, bmdFormat8BitBGRA, bmdFrameFlagDefault, &video_frame_converted_2160p);
     }
 
     //
@@ -505,6 +449,8 @@ void DeckLinkCapture::init()
         }
     }
 
+    qInfo() << "DeckLinkCapture: started";
+
     return;
 
 bail:
@@ -518,11 +464,6 @@ void DeckLinkCapture::release()
         decklink_input=nullptr;
     }
 
-    if(decklink_output) {
-        decklink_output->Release();
-        decklink_output=nullptr;
-    }
-
     if(display_mode) {
         display_mode->Release();
         display_mode=nullptr;
@@ -532,4 +473,6 @@ void DeckLinkCapture::release()
         decklink->Release();
         decklink=nullptr;
     }
+
+    qInfo() << "DeckLinkCapture: released";
 }

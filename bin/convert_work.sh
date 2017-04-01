@@ -39,8 +39,6 @@ done
         -map 0:v -c:v $v_enc -crf $crf -preset $preset $pix_fmt -vlevel 5.1 \
         $ch_map \
         -map 0:a -c:a:0 flac -compression_level 6 \
-        -map 0:a -c:a:1 libvorbis -ac:2 6 -aq 6 \
-        -map 0:a -c:a:2 libvorbis -ac:3 2 -aq 6 \
     videos/converted/$filename
 
-mkvpropedit videos/converted/$filename --edit track:a2 --set flag-default=0 --edit track:a3 --set flag-default=0
+#mkvpropedit videos/converted/$filename --edit track:a2 --set flag-default=0 --edit track:a3 --set flag-default=0

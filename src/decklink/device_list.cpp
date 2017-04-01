@@ -26,6 +26,42 @@ const uint32_t known_pixel_formats[]={
     0
 };
 
+QString BMDPixelFormatToString(uint32_t format)
+{
+    static QMap <int, QString> format_names;
+
+    if(format_names.isEmpty()) {
+        format_names[bmdFormat8BitYUV]=
+                "8BitYUV";
+
+        format_names[bmdFormat10BitYUV]=
+                "10BitYUV";
+
+        format_names[bmdFormat8BitARGB]=
+                "8BitARGB";
+
+        format_names[bmdFormat8BitBGRA]=
+                "8BitBGRA";
+
+        format_names[bmdFormat10BitRGB]=
+                "10BitRGB";
+
+        format_names[bmdFormat12BitRGB]=
+                "12BitRGB";
+
+        format_names[bmdFormat12BitRGBLE]=
+                "12BitRGBLE";
+
+        format_names[bmdFormat10BitRGBXLE]=
+                "10BitRGBXLE";
+
+        format_names[bmdFormat10BitRGBX]=
+                "10BitRGBX";
+    }
+
+    return format_names.value(format, "unknown");
+}
+
 int supportedInputFormats(IDeckLink *decklink, DeckLinkFormats *formats);
 
 int GetDevices(DeckLinkDevices *devices)
@@ -213,36 +249,5 @@ DeckLinkPixelFormat::DeckLinkPixelFormat()
 
 QString DeckLinkPixelFormat::name()
 {
-    static QMap <int, QString> format_names;
-
-    if(format_names.isEmpty()) {
-        format_names[bmdFormat8BitYUV]=
-                "8-bit YUV";
-
-        format_names[bmdFormat10BitYUV]=
-                "10-bit YUV";
-
-        format_names[bmdFormat8BitARGB]=
-                "8-bit ARGB";
-
-        format_names[bmdFormat8BitBGRA]=
-                "8-bit BGRA";
-
-        format_names[bmdFormat10BitRGB]=
-                "10-bit RGB";
-
-        format_names[bmdFormat12BitRGB]=
-                "12-bit RGB";
-
-        format_names[bmdFormat12BitRGBLE]=
-                "12-bit RGBLE";
-
-        format_names[bmdFormat10BitRGBXLE]=
-                "10-bit RGBXLE";
-
-        format_names[bmdFormat10BitRGBX]=
-                "10-bit RGBX";
-    }
-
-    return format_names.value(fmt, "unknown");
+    return BMDPixelFormatToString(fmt);
 }

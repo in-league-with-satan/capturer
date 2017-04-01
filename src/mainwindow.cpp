@@ -71,7 +71,6 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     out_widget=new OutWidget2();
-    out_widget->showFullScreen();
 
     decklink_thread->subscribe(out_widget->frameBuffer());
 
@@ -92,6 +91,14 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     cb_device=new QComboBox();
+    connect(cb_device, SIGNAL(currentIndexChanged(int)), SLOT(onDeviceChanged(int)));
+
+    cb_device_screen_format=new QComboBox();
+    connect(cb_device_screen_format, SIGNAL(currentIndexChanged(int)), SLOT(onDeviceScreenFormatChanged(int)));
+
+    cb_device_pixel_format=new QComboBox();
+
+    //
 
     le_video_mode=new QLineEdit();
     le_video_mode->setReadOnly(true);
@@ -156,6 +163,8 @@ MainWindow::MainWindow(QWidget *parent)
 
 
     QLabel *l_device=new QLabel("device:");
+    QLabel *l_device_screen_format=new QLabel("dev screen format:");
+    QLabel *l_device_pixel_format=new QLabel("dev pixel format:");
 
     QLabel *l_video_mode=new QLabel("input video mode:");
 
@@ -165,8 +174,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     QLabel *l_video_encoder=new QLabel("video encoder:");
 
-    QPushButton *b_start_stop_rec=new QPushButton("start/stop recording");
+    QPushButton *b_start_stop_dev=new QPushButton("start/stop dev");
+    connect(b_start_stop_dev, SIGNAL(clicked(bool)), SLOT(startStopCapture()));
 
+    QPushButton *b_start_stop_rec=new QPushButton("start/stop recording");
     connect(b_start_stop_rec, SIGNAL(clicked(bool)), SLOT(onStartStopRecording()));
 
     //
@@ -205,6 +216,16 @@ MainWindow::MainWindow(QWidget *parent)
 
     row++;
 
+    la_dev->addWidget(l_device_screen_format, row, 0);
+    la_dev->addWidget(cb_device_screen_format, row, 1);
+
+    row++;
+
+    la_dev->addWidget(l_device_pixel_format, row, 0);
+    la_dev->addWidget(cb_device_pixel_format, row, 1);
+
+    row++;
+
     la_dev->addWidget(l_video_mode, row, 0);
     la_dev->addWidget(le_video_mode, row, 1);
 
@@ -230,6 +251,7 @@ MainWindow::MainWindow(QWidget *parent)
     la_h->addWidget(cb_half_fps);
     la_h->addWidget(cb_preview);
     la_h->addWidget(cb_stop_rec_on_frames_drop);
+    la_h->addWidget(b_start_stop_dev);
     la_h->addWidget(b_start_stop_rec);
     la_h->addLayout(la_stats);
     la_h->addWidget(audio_level);
@@ -255,7 +277,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     load();
 
-    onStartCapture();
+    startStopCapture();
 
 
 #ifdef _WIN32
@@ -266,9 +288,19 @@ MainWindow::MainWindow(QWidget *parent)
 
 #else
 
+#ifndef __OPTIMIZE__
+
+    out_widget->setMinimumSize(640, 480);
+    out_widget->show();
+
+#else
+
+    out_widget->showFullScreen();
     overlay_view->showFullScreen();
 
-#endif
+#endif // __OPTIMIZE__
+
+#endif // _WIN32
 }
 
 MainWindow::~MainWindow()
@@ -440,6 +472,42 @@ void MainWindow::onFormatChanged(int width, int height, quint64 frame_duration, 
                            );
 }
 
+void MainWindow::onDeviceChanged(int index)
+{
+    Q_UNUSED(index)
+
+    cb_device_screen_format->clear();
+
+    DeckLinkDevice dev=cb_device->currentData().value<DeckLinkDevice>();
+
+    for(int i=0; i<dev.formats.size(); ++i) {
+        DeckLinkFormat fmt=dev.formats[i];
+
+        QVariant var;
+        var.setValue(fmt);
+
+        cb_device_screen_format->addItem(fmt.display_mode_name, var);
+    }
+}
+
+void MainWindow::onDeviceScreenFormatChanged(int index)
+{
+    Q_UNUSED(index)
+
+    cb_device_pixel_format->clear();
+
+    DeckLinkFormat sf=cb_device_screen_format->currentData().value<DeckLinkFormat>();
+
+    for(int i=0; i<sf.pixel_formats.size(); ++i) {
+        DeckLinkPixelFormat pf=sf.pixel_formats[i];
+
+        QVariant var;
+        var.setValue(pf);
+
+        cb_device_pixel_format->addItem(pf.name(), var);
+    }
+}
+
 void MainWindow::onCrfChanged(const QString &text)
 {
     messenger->crfSet(text.toInt());
@@ -454,15 +522,31 @@ void MainWindow::onCrfChanged(const int &crf)
     le_crf->blockSignals(false);
 }
 
-void MainWindow::onStartCapture()
+void MainWindow::startStopCapture()
 {
+    if(decklink_thread->isRunning()) {
+        QMetaObject::invokeMethod(decklink_thread, "captureStop", Qt::QueuedConnection);
+        return;
+    }
+
+
+#ifndef __OPTIMIZE__
+
+    decklink_thread->setup(cb_device->currentData().value<DeckLinkDevice>(),
+                           cb_device_screen_format->currentData().value<DeckLinkFormat>(),
+                           cb_device_pixel_format->currentData().value<DeckLinkPixelFormat>(),
+                           8);
+
+#else
+
     decklink_thread->setup(cb_device->currentData().value<DeckLinkDevice>(),
                            DeckLinkFormat(),
                            DeckLinkPixelFormat(),
                            8);
 
-    QMetaObject::invokeMethod(audio_output, "changeChannels", Qt::QueuedConnection, Q_ARG(int, 8));
+#endif
 
+    QMetaObject::invokeMethod(audio_output, "changeChannels", Qt::QueuedConnection, Q_ARG(int, 8));
 
     QMetaObject::invokeMethod(decklink_thread, "captureStart", Qt::QueuedConnection);
 }

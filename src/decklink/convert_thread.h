@@ -13,7 +13,6 @@ class FrameBuffer;
 class DeckLinkCapture;
 
 class IDeckLinkVideoConversion;
-class IDeckLinkOutput;
 class IDeckLinkVideoFrame;
 class IDeckLinkAudioInputPacket;
 class IDeckLinkMutableVideoFrame;
@@ -37,8 +36,6 @@ public:
     void unsubscribe(FrameBuffer *obj);
 
     void setAudioChannels(int value);
-
-    void init(IDeckLinkOutput *decklink_output);
 
     void frameCompleted(Frame::ptr frame);
 
@@ -78,9 +75,6 @@ public:
 
 private:
     IDeckLinkVideoConversion *video_converter;
-    IDeckLinkMutableVideoFrame *video_frame_converted_720p;
-    IDeckLinkMutableVideoFrame *video_frame_converted_1080p;
-    IDeckLinkMutableVideoFrame *video_frame_converted_2160p;
 
     IDeckLinkVideoFrame *frame_video_src;
     IDeckLinkAudioInputPacket *frame_audio_src;

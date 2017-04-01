@@ -4,6 +4,8 @@
 #include <QtGlobal>
 #include <QMetaType>
 
+QString BMDPixelFormatToString(uint32_t format);
+
 struct DeckLinkPixelFormat {
     DeckLinkPixelFormat();
 
