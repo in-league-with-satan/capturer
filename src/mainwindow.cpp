@@ -282,8 +282,9 @@ MainWindow::MainWindow(QWidget *parent)
 
 #ifdef _WIN32
 
-    overlay_view->show();
+    out_widget->showFullScreen();
 
+    overlay_view->show();
     overlay_view->resize(overlay_view->size() - QSize(1, 1));
 
 #else

@@ -3,7 +3,7 @@
 DeckLinkVideoFrame::DeckLinkVideoFrame()
 {
     buffer=nullptr;
-    pixel_format=0;
+    pixel_format=bmdFormat8BitBGRA;
     flags=bmdFrameFlagDefault;
 }
 

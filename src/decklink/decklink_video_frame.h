@@ -21,19 +21,19 @@ public:
 
     QByteArray *getBuffer();
 
-    virtual long GetWidth();
-    virtual long GetHeight();
-    virtual long GetRowBytes();
-    virtual BMDPixelFormat GetPixelFormat();
-    virtual BMDFrameFlags GetFlags();
-    virtual HRESULT GetBytes(void **buffer);
+    virtual long STDMETHODCALLTYPE GetWidth();
+    virtual long STDMETHODCALLTYPE GetHeight();
+    virtual long STDMETHODCALLTYPE GetRowBytes();
+    virtual BMDPixelFormat STDMETHODCALLTYPE GetPixelFormat();
+    virtual BMDFrameFlags STDMETHODCALLTYPE GetFlags();
+    virtual HRESULT STDMETHODCALLTYPE GetBytes(void **buffer);
 
-    virtual HRESULT GetTimecode(BMDTimecodeFormat format, IDeckLinkTimecode **timecode);
-    virtual HRESULT GetAncillaryData(IDeckLinkVideoFrameAncillary **ancillary);
+    virtual HRESULT STDMETHODCALLTYPE GetTimecode(BMDTimecodeFormat format, IDeckLinkTimecode **timecode);
+    virtual HRESULT STDMETHODCALLTYPE GetAncillaryData(IDeckLinkVideoFrameAncillary **ancillary);
 
-    virtual HRESULT QueryInterface(REFIID iid, LPVOID *ppv);
-    virtual ULONG AddRef(void);
-    virtual ULONG Release(void);
+    virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, LPVOID *ppv);
+    virtual ULONG STDMETHODCALLTYPE AddRef(void);
+    virtual ULONG STDMETHODCALLTYPE Release(void);
 
 private:
     BMDPixelFormat pixel_format;
