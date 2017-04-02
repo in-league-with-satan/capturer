@@ -96,11 +96,12 @@ HRESULT DeckLinkCaptureDelegate::VideoInputFrameArrived(IDeckLinkVideoInputFrame
 DeckLinkCapture::DeckLinkCapture(QObject *parent) :
     QThread(parent)
 {
-    deck_link_capture_delegate=nullptr;
+    decklink_capture_delegate=nullptr;
 
     decklink=nullptr;
-    display_mode=nullptr;
+    decklink_display_mode=nullptr;
     decklink_input=nullptr;
+    decklink_configuration=nullptr;
 
     device.index=0;
     format.index=0;
@@ -197,13 +198,13 @@ void DeckLinkCapture::run()
 
     // ff_converter->setup(AV_PIX_FMT_GBRP10LE, QSize(1920, 1080), AV_PIX_FMT_BGRA, QSize(1920, 1080));
 
-    deck_link_capture_delegate=new DeckLinkCaptureDelegate(this);
+    decklink_capture_delegate=new DeckLinkCaptureDelegate(this);
 
     qInfo() << "DeckLinkCapture thread started";
 
     exec();
 
-    deck_link_capture_delegate->Release();
+    decklink_capture_delegate->Release();
 
     // delete ff_converter;
 
@@ -361,6 +362,22 @@ void DeckLinkCapture::init()
         goto bail;
     }
 
+
+    result=decklink->QueryInterface(IID_IDeckLinkConfiguration, (void**)&decklink_configuration);
+
+    if(result!=S_OK) {
+        qCritical() << "The device is not configurable";
+        goto bail;
+    }
+
+
+    result=decklink_configuration->SetInt(bmdDeckLinkConfigVideoInputConnection, bmdVideoConnectionHDMI);
+
+    if(result!=S_OK) {
+        qCritical() << "The device does not have an hdmi input";
+        goto bail;
+    }
+
     // Get the input (capture) interface of the DeckLink device
     result=decklink->QueryInterface(IID_IDeckLinkInput, (void**)&decklink_input);
 
@@ -381,25 +398,25 @@ void DeckLinkCapture::init()
             goto bail;
         }
 
-        while((result=display_mode_iterator->Next(&display_mode))==S_OK) {
+        while((result=display_mode_iterator->Next(&decklink_display_mode))==S_OK) {
             if(format_index==0)
                 break;
 
             --format_index;
 
-            display_mode->Release();
+            decklink_display_mode->Release();
         }
 
         display_mode_iterator->Release();
 
-        if(result!=S_OK || display_mode==nullptr) {
+        if(result!=S_OK || decklink_display_mode==nullptr) {
             qCritical() << "Unable to get display mode" << format.index;
             goto bail;
         }
 
 
         // Check display mode is supported with given options
-        result=decklink_input->DoesSupportVideoMode(display_mode->GetDisplayMode(), (BMDPixelFormat)pixel_format.fmt, bmdVideoInputFlagDefault, &display_mode_supported, nullptr);
+        result=decklink_input->DoesSupportVideoMode(decklink_display_mode->GetDisplayMode(), (BMDPixelFormat)pixel_format.fmt, bmdVideoInputFlagDefault, &display_mode_supported, nullptr);
 
         if(result!=S_OK) {
             qCritical() << "DoesSupportVideoMode err" << result;
@@ -412,10 +429,10 @@ void DeckLinkCapture::init()
         }
 
         // Configure the capture callback
-        decklink_input->SetCallback(deck_link_capture_delegate);
+        decklink_input->SetCallback(decklink_capture_delegate);
 
         // Start capturing
-        result=decklink_input->EnableVideoInput(display_mode->GetDisplayMode(), (BMDPixelFormat)pixel_format.fmt, bmdVideoInputEnableFormatDetection);
+        result=decklink_input->EnableVideoInput(decklink_display_mode->GetDisplayMode(), (BMDPixelFormat)pixel_format.fmt, bmdVideoInputEnableFormatDetection);
 
         if(result!=S_OK) {
             qCritical() << "Failed to enable video input. Is another application using the card?" << result;
@@ -464,9 +481,14 @@ void DeckLinkCapture::release()
         decklink_input=nullptr;
     }
 
-    if(display_mode) {
-        display_mode->Release();
-        display_mode=nullptr;
+    if(decklink_display_mode) {
+        decklink_display_mode->Release();
+        decklink_display_mode=nullptr;
+    }
+
+    if(decklink_configuration) {
+        decklink_configuration->Release();
+        decklink_configuration=nullptr;
     }
 
     if(decklink) {

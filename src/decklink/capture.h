@@ -25,6 +25,7 @@ class IDeckLinkAudioInputPacket;
 class IDeckLinkAttributes;
 class IDeckLinkVideoConversion;
 class IDeckLinkMutableVideoFrame;
+class IDeckLinkConfiguration;
 
 namespace FF {
     class FormatConverter;
@@ -61,11 +62,11 @@ private:
     void init();
     void release();
 
-    DeckLinkCaptureDelegate *deck_link_capture_delegate;
+    DeckLinkCaptureDelegate *decklink_capture_delegate;
 
     IDeckLink *decklink;
-
-    IDeckLinkDisplayMode *display_mode;
+    IDeckLinkConfiguration *decklink_configuration;
+    IDeckLinkDisplayMode *decklink_display_mode;
     IDeckLinkInput *decklink_input;
 
     DeckLinkDevice device;
