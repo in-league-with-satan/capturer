@@ -1,6 +1,7 @@
 QT += \
     qml \
     quick \
+    quickwidgets \
     widgets
 
 

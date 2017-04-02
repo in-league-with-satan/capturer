@@ -22,15 +22,12 @@ public:
     FrameBuffer *frameBuffer();
 
 protected:
-    virtual void focusInEvent(QFocusEvent *);
+    virtual void resizeEvent(QResizeEvent *event);
 
 private:
     FrameBuffer *frame_buffer;
     VideoWidgetGl *video_widget;
     OutWidgetUpdateThread *thread;
-
-signals:
-    void focusEvent();
 };
 
 //

@@ -47,8 +47,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     overlay_view=new OverlayView();
 
-    overlay_view->installEventFilter(this);
-
     overlay_view->setMessenger(messenger);
 
     overlay_view->setSource(QStringLiteral("qrc:/qml/Root.qml"));
@@ -73,12 +71,6 @@ MainWindow::MainWindow(QWidget *parent)
     out_widget=new OutWidget2();
 
     decklink_thread->subscribe(out_widget->frameBuffer());
-
-    connect(out_widget, SIGNAL(focusEvent()), overlay_view, SLOT(raise()));
-
-    //
-
-    connect(overlay_view, SIGNAL(closing(QQuickCloseEvent*)), out_widget, SLOT(close()));
 
     //
 
@@ -280,14 +272,16 @@ MainWindow::MainWindow(QWidget *parent)
     startStopCapture();
 
 
-#ifdef _WIN32
+    //
 
-    out_widget->showFullScreen();
+    QVBoxLayout *la_container=new QVBoxLayout();
+    la_container->addWidget(overlay_view);
+    la_container->setMargin(0);
 
-    overlay_view->show();
-    overlay_view->resize(overlay_view->size() - QSize(1, 1));
+    out_widget->setLayout(la_container);
 
-#else
+    QApplication::instance()->installEventFilter(this);
+
 
 #ifndef __OPTIMIZE__
 
@@ -297,11 +291,8 @@ MainWindow::MainWindow(QWidget *parent)
 #else
 
     out_widget->showFullScreen();
-    overlay_view->showFullScreen();
 
-#endif // __OPTIMIZE__
-
-#endif // _WIN32
+#endif
 }
 
 MainWindow::~MainWindow()

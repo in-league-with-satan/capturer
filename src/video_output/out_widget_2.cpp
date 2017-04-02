@@ -3,6 +3,7 @@
 #include <QLayout>
 #include <QVideoSurfaceFormat>
 #include <QMutex>
+#include <QResizeEvent>
 
 
 #include "frame_buffer.h"
@@ -16,17 +17,9 @@
 OutWidget2::OutWidget2(QWidget *parent)
     : QWidget(parent)
 {
-    video_widget=(VideoWidgetGl*)new VideoWidget();
+    video_widget=(VideoWidgetGl*)new VideoWidget(this);
 
     setFocusPolicy(Qt::StrongFocus);
-
-    QVBoxLayout *la_main=new QVBoxLayout();
-
-    la_main->setMargin(0);
-
-    la_main->addWidget(video_widget);
-
-    setLayout(la_main);
 
     //
 
@@ -47,9 +40,9 @@ FrameBuffer *OutWidget2::frameBuffer()
     return frame_buffer;
 }
 
-void OutWidget2::focusInEvent(QFocusEvent*)
+void OutWidget2::resizeEvent(QResizeEvent *event)
 {
-    emit focusEvent();
+    video_widget->resize(event->size());
 }
 
 //

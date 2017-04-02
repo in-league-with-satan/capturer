@@ -8,7 +8,7 @@
 #include "overlay_view.h"
 
 OverlayView::OverlayView() :
-    QQuickView()
+    QQuickWidget()
 {
     QSurfaceFormat format;
     format.setAlphaBufferSize(8);
@@ -16,18 +16,14 @@ OverlayView::OverlayView() :
     format.setRenderableType(QSurfaceFormat::OpenGL);
     format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
 
-    setFormat(format);
+    // setFormat(format);
 
+    setAttribute(Qt::WA_TranslucentBackground, true);
+    setAttribute(Qt::WA_AlwaysStackOnTop, true);
 
-    setColor(Qt::transparent);
+    setClearColor(Qt::transparent);
 
-    setSurfaceType(QSurface::OpenGLSurface);
-
-    setClearBeforeRendering(true);
-
-    setFlags(Qt::FramelessWindowHint);
-
-    // installEventFilter(this);
+    setResizeMode(QQuickWidget::SizeRootObjectToView);
 }
 
 OverlayView::~OverlayView()
@@ -48,17 +44,3 @@ void OverlayView::focusInEvent(QFocusEvent *)
 {
     QApplication::setOverrideCursor(Qt::BlankCursor);
 }
-
-/*
-bool OverlayView::eventFilter(QObject *object, QEvent *event)
-{
-    if(event->type()==QEvent::KeyPress) {
-        return true;
-
-    } else if(event->type()==QEvent::MouseButtonPress) {
-        return true;
-    }
-
-    return QObject::eventFilter(object, event);
-}
-*/

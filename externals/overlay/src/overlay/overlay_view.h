@@ -1,11 +1,11 @@
 #ifndef OVERLAY_VIEW_H
 #define OVERLAY_VIEW_H
 
-#include <QQuickView>
+#include <QQuickWidget>
 
 class QmlMessenger;
 
-class OverlayView : public QQuickView
+class OverlayView : public QQuickWidget
 {
     Q_OBJECT
 
@@ -18,10 +18,6 @@ public:
 protected:
     virtual void focusInEvent(QFocusEvent *);
     virtual void focusOutEvent(QFocusEvent *);
-
-    // virtual bool eventFilter(QObject *object, QEvent *event);
-
-private slots:
 
 };
 
