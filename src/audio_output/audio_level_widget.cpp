@@ -8,6 +8,10 @@
 
 #include "audio_level_widget.h"
 
+#ifdef _MSC_VER
+#undef max
+#endif
+
 const int16_t max_value=std::numeric_limits<int16_t>::max();
 
 const QString channel_name[]={ "L", "R", "C", "LFE", "BL", "BR", "SL", "SR" };

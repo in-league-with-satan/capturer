@@ -49,10 +49,12 @@ int main(int argc, char *argv[])
 
     MainWindow main_window;
 
+#ifndef _MSC_VER
 #ifndef __OPTIMIZE__
 
     main_window.show();
 
+#endif
 #endif
 
     return application.exec();
