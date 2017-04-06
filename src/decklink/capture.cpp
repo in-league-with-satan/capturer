@@ -129,7 +129,7 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
 
 DeckLinkCapture::~DeckLinkCapture()
 {
-    // captureStop();
+    captureStop();
 
     terminate();
 }
@@ -194,10 +194,6 @@ void DeckLinkCapture::run()
 
     //
 
-    // ff_converter=new FF::FormatConverter();
-
-    // ff_converter->setup(AV_PIX_FMT_GBRP10LE, QSize(1920, 1080), AV_PIX_FMT_BGRA, QSize(1920, 1080));
-
     decklink_capture_delegate=new DeckLinkCaptureDelegate(this);
 
     qInfo() << "DeckLinkCapture thread started";
@@ -205,8 +201,6 @@ void DeckLinkCapture::run()
     exec();
 
     decklink_capture_delegate->Release();
-
-    // delete ff_converter;
 
     deleteLater();
 }
@@ -263,6 +257,14 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
                        frame_duration, frame_scale,
                        (mode->GetFieldDominance()==bmdProgressiveFrame || mode->GetFieldDominance()==bmdProgressiveSegmentedFrame),
                        BMDPixelFormatToString(pixel_format));
+
+    qInfo().noquote() << "InputFormatChanged:"
+                      << QString("%1x%2@%3%4 %5")
+                         .arg(mode->GetWidth())
+                         .arg(mode->GetHeight())
+                         .arg(frame_scale/frame_duration)
+                         .arg(mode->GetFieldDominance()==bmdProgressiveFrame || mode->GetFieldDominance()==bmdProgressiveSegmentedFrame ? "p" : "i")
+                         .arg(BMDPixelFormatToString(pixel_format));
 }
 
 void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet)
@@ -319,8 +321,6 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
                 channelsRemap(&frame->audio.raw);
 
             //
-
-            QMutexLocker ml(&mutex_subscription);
 
             foreach(FrameBuffer *buf, subscription_list)
                 buf->append(frame);
