@@ -282,17 +282,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     QApplication::instance()->installEventFilter(this);
 
+    if(qApp->arguments().contains("--windowed")) {
+        out_widget->setMinimumSize(640, 480);
+        out_widget->resize(640, 480);
+        out_widget->show();
 
-#ifndef __OPTIMIZE__
-
-    out_widget->setMinimumSize(640, 480);
-    out_widget->show();
-
-#else
-
-    out_widget->showFullScreen();
-
-#endif
+    } else {
+        out_widget->showFullScreen();
+    }
 }
 
 MainWindow::~MainWindow()

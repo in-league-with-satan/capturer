@@ -91,7 +91,9 @@ void VideoSurface::present(Frame::ptr frame)
     // if(!widget->testAttribute(Qt::WA_WState_InPaintEvent))
     //     widget->repaint(rect_target);
 
-    widget->update();
+    // widget->update();
+
+    // QMetaObject::invokeMethod(widget, "update", Qt::QueuedConnection);
 }
 
 QRect VideoSurface::videoRect() const

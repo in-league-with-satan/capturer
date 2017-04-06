@@ -9,6 +9,7 @@ class QAbstractVideoSurface;
 
 class FrameBuffer;
 class VideoWidgetGl;
+class VideoWidget;
 class OutWidgetUpdateThread;
 
 class OutWidget2 : public QWidget
@@ -26,7 +27,7 @@ protected:
 
 private:
     FrameBuffer *frame_buffer;
-    VideoWidgetGl *video_widget;
+    VideoWidget *video_widget;
     OutWidgetUpdateThread *thread;
 };
 
@@ -45,6 +46,9 @@ protected:
 private:
     FrameBuffer *frame_buffer;
     QAbstractVideoSurface *surface;
+
+signals:
+    void update();
 };
 
 #endif // OUT_WIDGET_2_H

@@ -17,7 +17,7 @@
 OutWidget2::OutWidget2(QWidget *parent)
     : QWidget(parent)
 {
-    video_widget=(VideoWidgetGl*)new VideoWidget(this);
+    video_widget=new VideoWidget(this);
 
     setFocusPolicy(Qt::StrongFocus);
 
@@ -29,6 +29,8 @@ OutWidget2::OutWidget2(QWidget *parent)
     //
 
     thread=new OutWidgetUpdateThread(frame_buffer, video_widget->videoSurface(), this);
+
+    connect(thread, SIGNAL(update()), video_widget, SLOT(update()), Qt::QueuedConnection);
 }
 
 OutWidget2::~OutWidget2()
@@ -74,6 +76,8 @@ void OutWidgetUpdateThread::run()
             ((VideoSurface*)surface)->present(frame);
 
             frame.reset();
+
+            emit update();
         }
     }
 }
