@@ -8,6 +8,9 @@ EventWaiting::EventWaiting(QObject *parent)
 
 EventWaiting::~EventWaiting()
 {
+    while(!mutex.tryLock(10))
+        mutex.unlock();
+
     mutex.unlock();
 }
 

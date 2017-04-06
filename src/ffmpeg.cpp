@@ -178,8 +178,8 @@ static void add_stream_audio(OutputStream *out_stream, AVFormatContext *format_c
 
 #else
 
-    ost->av_stream->time_base.num=1;
-    ost->av_stream->time_base.den=c->sample_rate;
+    out_stream->av_stream->time_base.num=1;
+    out_stream->av_stream->time_base.den=c->sample_rate;
 
 #endif
 
@@ -292,51 +292,51 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
 
     switch(cfg.framerate) {
     case FFMpeg::Framerate::full_23:
-        ost->av_stream->time_base.num=1001;
-        ost->av_stream->time_base.den=24000;
+        out_stream->av_stream->time_base.num=1001;
+        out_stream->av_stream->time_base.den=24000;
         break;
 
     case FFMpeg::Framerate::full_24:
-            ost->av_stream->time_base.num=1000;
-            ost->av_stream->time_base.den=24000;
+            out_stream->av_stream->time_base.num=1000;
+            out_stream->av_stream->time_base.den=24000;
             break;
 
         case FFMpeg::Framerate::full_25:
         case FFMpeg::Framerate::half_50:
-            ost->av_stream->time_base.num=1000;
-            ost->av_stream->time_base.den=25000;
+            out_stream->av_stream->time_base.num=1000;
+            out_stream->av_stream->time_base.den=25000;
             break;
 
         case FFMpeg::Framerate::full_29:
         case FFMpeg::Framerate::half_59:
-            ost->av_stream->time_base.num=1001;
-            ost->av_stream->time_base.den=30000;
+            out_stream->av_stream->time_base.num=1001;
+            out_stream->av_stream->time_base.den=30000;
             break;
 
         case FFMpeg::Framerate::full_30:
         case FFMpeg::Framerate::half_60:
-            ost->av_stream->time_base.num=1000;
-            ost->av_stream->time_base.den=30000;
+            out_stream->av_stream->time_base.num=1000;
+            out_stream->av_stream->time_base.den=30000;
             break;
 
         case FFMpeg::Framerate::full_50:
-            ost->av_stream->time_base.num=1000;
-            ost->av_stream->time_base.den=50000;
+            out_stream->av_stream->time_base.num=1000;
+            out_stream->av_stream->time_base.den=50000;
             break;
 
         case FFMpeg::Framerate::full_59:
-            ost->av_stream->time_base.num=1001;
-            ost->av_stream->time_base.den=60000;
+            out_stream->av_stream->time_base.num=1001;
+            out_stream->av_stream->time_base.den=60000;
             break;
 
         case FFMpeg::Framerate::full_60:
-            ost->av_stream->time_base.num=1000;
-            ost->av_stream->time_base.den=60000;
+            out_stream->av_stream->time_base.num=1000;
+            out_stream->av_stream->time_base.den=60000;
             break;
 
         default:
-            ost->av_stream->time_base.num=1000;
-            ost->av_stream->time_base.den=30000;
+            out_stream->av_stream->time_base.num=1000;
+            out_stream->av_stream->time_base.den=30000;
             break;
         }
 

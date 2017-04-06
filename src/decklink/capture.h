@@ -4,8 +4,6 @@
 #include <QObject>
 #include <QThread>
 #include <QSize>
-#include <QMutex>
-
 
 #include "frame_buffer.h"
 
@@ -79,16 +77,11 @@ private:
 
     DlConvertThreadContainer *conv_thread;
 
-    // FF::FormatConverter *ff_converter;
-
     IDeckLinkVideoConversion *video_converter;
 
     QList <FrameBuffer*> subscription_list;
 
     uint8_t frame_counter;
-
-
-    QMutex mutex_subscription;
 
 signals:
     void noInputSignalDetected();
