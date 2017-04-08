@@ -3,8 +3,7 @@ QT += \
     gui \
     widgets \
     multimedia \
-    multimediawidgets \
-    opengl
+    multimediawidgets
 
 TARGET = capturer
 TEMPLATE = app
@@ -111,7 +110,6 @@ windows {
     LIBS += -Lexternals/3rdparty/ffmpeg/lib
 
     LIBS += -lswresample -lavformat -lavcodec -lavutil -lswscale
-    LIBS += -lopengl32
 }
 
 contains(DEFINES, USE_PULSE_AUDIO) {

@@ -3,7 +3,8 @@
 #include <QPaintEvent>
 
 #include "video_surface.h"
-
+#include "frame_buffer.h"
+#include "video_widget_update_thread.h"
 
 #include "video_widget.h"
 
@@ -13,8 +14,8 @@ VideoWidget::VideoWidget(QWidget *parent)
 {
     setAutoFillBackground(false);
 
-    setAttribute(Qt::WA_NoSystemBackground, true);
-
+    frame_buffer=new FrameBuffer(this);
+    frame_buffer->setMaxSize(2);
 
     QPalette palette=this->palette();
 
@@ -24,16 +25,20 @@ VideoWidget::VideoWidget(QWidget *parent)
 
 
     surface=new VideoSurface(this);
+
+
+    update_thread=new VideoWidgetUpdateThread(frame_buffer, surface, this, this);
+
+    connect(update_thread, SIGNAL(update()), SLOT(update()), Qt::QueuedConnection);
 }
 
 VideoWidget::~VideoWidget()
 {
-    delete surface;
 }
 
-QAbstractVideoSurface *VideoWidget::videoSurface() const
+FrameBuffer *VideoWidget::frameBuffer()
 {
-    return surface;
+    return frame_buffer;
 }
 
 QSize VideoWidget::sizeHint() const
@@ -60,7 +65,7 @@ void VideoWidget::paintEvent(QPaintEvent *event)
                 painter.fillRect(rect, brush);
         }
 
-        surface->paint(&painter);
+        surface->paint(&painter, false);
 
     } else {
         painter.fillRect(event->rect(), palette().background());

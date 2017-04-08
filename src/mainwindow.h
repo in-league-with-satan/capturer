@@ -8,7 +8,7 @@
 
 class DeckLinkCapture;
 class AudioOutputInterface;
-class OutWidget2;
+class VideoWidget;
 class Sdl2VideoOutpitThread;
 class AudioLevelWidget;
 class QmlMessenger;
@@ -60,7 +60,7 @@ private:
 
     AudioOutputInterface *audio_output;
 
-    OutWidget2 *out_widget;
+    VideoWidget *out_widget;
 
     QMessageBox *mb_rec_stopped;
 

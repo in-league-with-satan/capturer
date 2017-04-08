@@ -33,7 +33,6 @@ public:
 
     QPair <int, int> size();
 
-
 private:
     QQueue <Frame::ptr> queue;
     QMutex mutex;

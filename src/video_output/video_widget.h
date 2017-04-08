@@ -6,6 +6,8 @@
 class QAbstractVideoSurface;
 
 class VideoSurface;
+class FrameBuffer;
+class VideoWidgetUpdateThread;
 
 class VideoWidget: public QWidget
 {
@@ -15,7 +17,7 @@ public:
     VideoWidget(QWidget *parent=0);
     ~VideoWidget();
 
-    QAbstractVideoSurface *videoSurface() const;
+    FrameBuffer *frameBuffer();
 
     QSize sizeHint() const;
 
@@ -25,6 +27,10 @@ protected:
 
 private:
     VideoSurface *surface;
+
+    FrameBuffer *frame_buffer;
+
+    VideoWidgetUpdateThread *update_thread;
 };
 
 #endif // VIDEO_WIDGET_H

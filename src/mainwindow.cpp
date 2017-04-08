@@ -18,7 +18,7 @@
 #include "device_list.h"
 #include "capture.h"
 #include "audio_output.h"
-#include "out_widget_2.h"
+#include "video_widget.h"
 #include "sdl2_video_output_thread.h"
 #include "audio_level_widget.h"
 
@@ -68,7 +68,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    out_widget=new OutWidget2();
+    out_widget=new VideoWidget();
 
     decklink_thread->subscribe(out_widget->frameBuffer());
 
@@ -283,8 +283,8 @@ MainWindow::MainWindow(QWidget *parent)
     QApplication::instance()->installEventFilter(this);
 
     if(qApp->arguments().contains("--windowed")) {
-        out_widget->setMinimumSize(640, 480);
-        out_widget->resize(640, 480);
+        out_widget->setMinimumSize(640, 640/(16/9.));
+        out_widget->resize(640, 640/(16/9.));
         out_widget->show();
 
     } else {

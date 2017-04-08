@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QMutex>
+#include <QWaitCondition>
 
 class EventWaiting : public QObject
 {
@@ -17,6 +18,7 @@ public:
 
 private:
     QMutex mutex;
+    QWaitCondition wait_condition;
 };
 
 #endif // EVENT_WAITING_H

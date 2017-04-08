@@ -12,9 +12,9 @@ VideoSurface::VideoSurface(QWidget *widget, QObject *parent)
 {
 }
 
-QList<QVideoFrame::PixelFormat> VideoSurface::supportedPixelFormats(QAbstractVideoBuffer::HandleType handleType) const
+QList<QVideoFrame::PixelFormat> VideoSurface::supportedPixelFormats(QAbstractVideoBuffer::HandleType handle_type) const
 {
-    if(handleType==QAbstractVideoBuffer::NoHandle) {
+    if(handle_type==QAbstractVideoBuffer::NoHandle) {
         return QList<QVideoFrame::PixelFormat>()
                 << QVideoFrame::Format_ARGB32
                 << QVideoFrame::Format_BGRA32
@@ -63,6 +63,8 @@ bool VideoSurface::start(const QVideoSurfaceFormat &format)
 
 void VideoSurface::stop()
 {
+    QMutexLocker ml(&mutex);
+
     frame.reset();
 
     rect_target=QRect();
@@ -83,17 +85,12 @@ bool VideoSurface::present(const QVideoFrame &frame)
 
 void VideoSurface::present(Frame::ptr frame)
 {
+    QMutexLocker ml(&mutex);
+
     this->frame=frame;
 
     if(rect_source.size()!=frame->video.decklink_frame.getSize())
         rect_source.setSize(frame->video.decklink_frame.getSize());
-
-    // if(!widget->testAttribute(Qt::WA_WState_InPaintEvent))
-    //     widget->repaint(rect_target);
-
-    // widget->update();
-
-    // QMetaObject::invokeMethod(widget, "update", Qt::QueuedConnection);
 }
 
 QRect VideoSurface::videoRect() const
@@ -113,14 +110,28 @@ void VideoSurface::updateVideoRect()
     rect_target.moveCenter(widget->rect().center());
 }
 
-void VideoSurface::paint(QPainter *painter)
+void VideoSurface::paint(QPainter *painter, bool smooth_transform)
 {
-    // painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+    {
+        QMutexLocker ml(&mutex);
 
-    if(!frame)
-        return;
+        if(!frame)
+            return;
+    }
 
-    Frame::ptr frame_tmp=frame;
+    if(smooth_transform) {
+        painter->save();
+
+        painter->setRenderHint(QPainter::SmoothPixmapTransform, true);
+    }
+
+    Frame::ptr frame_tmp;
+
+    {
+        QMutexLocker ml(&mutex);
+
+        frame_tmp=frame;
+    }
 
     const QTransform old_transform=painter->transform();
 
@@ -138,4 +149,7 @@ void VideoSurface::paint(QPainter *painter)
                        rect_source);
 
     painter->setTransform(old_transform);
+
+    if(smooth_transform)
+        painter->restore();
 }
