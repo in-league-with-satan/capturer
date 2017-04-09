@@ -96,6 +96,8 @@ HRESULT DeckLinkCaptureDelegate::VideoInputFrameArrived(IDeckLinkVideoInputFrame
 DeckLinkCapture::DeckLinkCapture(QObject *parent) :
     QThread(parent)
 {
+    signal_lost=true;
+
     decklink_capture_delegate=nullptr;
 
     decklink=nullptr;
@@ -275,11 +277,15 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
     if(video_frame->GetFlags() & bmdFrameHasNoInputSource) {
         qCritical() << "No input signal detected";
 
-        emit noInputSignalDetected();
+        if(!signal_lost)
+            emit signalLost(signal_lost=true);
 
         return;
 
     } else {
+        if(signal_lost)
+            emit signalLost(signal_lost=false);
+
         BMDTimeValue frame_time;
         BMDTimeValue frame_duration;
 

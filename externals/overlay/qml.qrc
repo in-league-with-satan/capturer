@@ -5,5 +5,6 @@
         <file>qml/Settings.qml</file>
         <file>qml/MenuHeader.qml</file>
         <file>qml/LevelMonitor.qml</file>
+        <file>qml/NoSignal.qml</file>
     </qresource>
 </RCC>

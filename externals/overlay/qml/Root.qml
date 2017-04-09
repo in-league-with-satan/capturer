@@ -5,13 +5,13 @@ import "qrc:/qml"
 
 
 Rectangle {
+    id: root
+
     visible: true
 
     color: "transparent"
 
-    width: Screen.width
-    height: Screen.height
-
+    NoSignal {}
 
     MenuHeader {
         id: menu_header

@@ -78,6 +78,8 @@ signals:
     void crfChanged(const int &value);
     void halfFpsChanged(const bool &value);
     void stopOnDropChanged(const bool &value);
+
+    void signalLost(const bool &value);
 };
 
 #endif // QML_MESSENGER_H

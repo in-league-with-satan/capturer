@@ -26,10 +26,7 @@ VideoWidget::VideoWidget(QWidget *parent)
 
     surface=new VideoSurface(this);
 
-
     update_thread=new VideoWidgetUpdateThread(frame_buffer, surface, this, this);
-
-    connect(update_thread, SIGNAL(update()), SLOT(update()), Qt::QueuedConnection);
 }
 
 VideoWidget::~VideoWidget()

@@ -83,8 +83,10 @@ private:
 
     uint8_t frame_counter;
 
+    bool signal_lost;
+
 signals:
-    void noInputSignalDetected();
+    void signalLost(const bool &value);
     void formatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format);
     void frameSkipped();
 };
