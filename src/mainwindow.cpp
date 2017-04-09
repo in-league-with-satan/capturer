@@ -12,6 +12,7 @@
 #include <QMessageBox>
 #include <QJsonDocument>
 #include <QFile>
+#include <QDir>
 
 #include "DeckLinkAPI.h"
 
@@ -269,8 +270,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     load();
 
-    startStopCapture();
+    //
 
+    QDir dir(qApp->applicationDirPath() + "/videos");
+
+    if(!dir.exists())
+        dir.mkdir(dir.absolutePath());
 
     //
 
@@ -290,6 +295,8 @@ MainWindow::MainWindow(QWidget *parent)
     } else {
         out_widget->showFullScreen();
     }
+
+    startStopCapture();
 }
 
 MainWindow::~MainWindow()
