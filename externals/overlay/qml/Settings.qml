@@ -2,6 +2,7 @@ import QtQuick 2.7
 import QtQuick.Window 2.2
 //import QtQuick.Controls 1.5
 import QtQuick.Controls 2.1
+import QtQuick.Layouts 1.3
 
 
 Rectangle {
@@ -29,39 +30,62 @@ Rectangle {
         id: focus_indicator
         color: "#aa3355ff"
 
-        property int new_y: grid.y + l_video_encoder.y - l_video_encoder.height/3.5
+        property int y_video_encoder: grid.y + cb_video_encoder.y + cb_video_encoder.height/2 - focus_indicator.height/2
+        property int y_pixel_format: grid.y + cb_pixel_format.y + cb_pixel_format.height/2 - focus_indicator.height/2
+        property int y_crf: grid.y + cb_crf.y + cb_crf.height/2 - focus_indicator.height/2
+        property int y_half_fps: grid.y + cb_half_fps.y + cb_half_fps.height/2 - focus_indicator.height/2
+        property int y_stop_on_drop: grid.y + cb_stop_on_drop.y + cb_stop_on_drop.height/2 - focus_indicator.height/2
 
-        height: cb_video_encoder.height * 1.4
+        height: cb_video_encoder.height * 1.24
         width: grid.width * 1.1
 
         x: grid.x - (width - grid.width)/2
-        y: grid.y + l_video_encoder.y - l_video_encoder.height/3.5
+        y: y_video_encoder
         z: 1
 
         PropertyAnimation {
             id: focus_indicator_animation
             properties: "y"
-            target: focus_indicator;
-            easing.period: 0.3
+            target: focus_indicator
+            easing.period: .3
             easing.type: Easing.InQuint
-            from: focus_indicator.y;
-            to: focus_indicator.new_y;
-            duration: 100
-            running: true
+            from: focus_indicator.y
+            to: {
+                switch(focus_index) {
+                case field_id.video_encoder:
+                    return focus_indicator.y_video_encoder
+
+                case field_id.pixel_format:
+                    return focus_indicator.y_pixel_format
+
+                case field_id.crf:
+                    return focus_indicator.y_crf
+
+                case field_id.half_fps:
+                    return focus_indicator.y_half_fps
+
+                case field_id.stop_on_drop:
+                    return focus_indicator.y_stop_on_drop
+                }
+
+                return focus_indicator.y_video_enco
+            }
+
+            duration: 200
         }
     }
 
     //
 
-    Grid {
+    GridLayout {
         id: grid
+
+        width: parent.width*.78
 
         z: 2
 
         columns: 2
-        // spacing: Screen.height*.04
-        rowSpacing: Screen.height*.02
-        columnSpacing: Screen.height*.02
+        rowSpacing: settings.height*.04
 
         anchors.centerIn: parent
 
@@ -69,16 +93,19 @@ Rectangle {
 
         Text {
             id: l_video_encoder
-            font.pixelSize: Screen.height*.04
+            font.pixelSize: (settings.width + settings.height)/2*.04
+            anchors.verticalCenter: cb_video_encoder.verticalCenter
             color: "white"
             text: "Video encoder:"
         }
 
         ComboBox {
             id: cb_video_encoder
-            width: settings.width*.4
 
-            font.pixelSize: Screen.height*.04
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+
+            font.pixelSize: (settings.width + settings.height)/2*.04
             model: messenger.modelVideoEncoder
 
             onCurrentIndexChanged: messenger.videoCodecIndexChanged(currentIndex)
@@ -93,17 +120,19 @@ Rectangle {
 
         Text {
             id: l_pixel_format
-            font.pixelSize: Screen.height*.04
+            font.pixelSize: (settings.width + settings.height)/2*.04
+            anchors.verticalCenter: cb_pixel_format.verticalCenter
             color: "white"
             text: "Pixel format:"
         }
 
-
         ComboBox {
             id: cb_pixel_format
-            width: settings.width*.4
 
-            font.pixelSize: Screen.height*.04
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+
+            font.pixelSize: (settings.width + settings.height)/2*.04
             model: messenger.modelPixelFormat
 
             onCurrentIndexChanged: messenger.pixelFormatIndexChanged(currentIndex)
@@ -118,16 +147,19 @@ Rectangle {
 
         Text {
             id: l_crf
-            font.pixelSize: Screen.height*.04
+            font.pixelSize: (settings.width + settings.height)/2*.04
+            anchors.verticalCenter: cb_crf.verticalCenter
             color: "white"
             text: "Constant rate factor / quality:"
         }
 
         ComboBox {
             id: cb_crf
-            width: settings.width*.4
 
-            font.pixelSize: Screen.height*.04
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+
+            font.pixelSize: (settings.width + settings.height)/2*.04
             model: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24 ]
 
             onCurrentIndexChanged: messenger.crfChanged(currentIndex)
@@ -142,17 +174,20 @@ Rectangle {
 
         Text {
             id: l_half_fps
-            font.pixelSize: Screen.height*.04
+            font.pixelSize: (settings.width + settings.height)/2*.04
+            anchors.verticalCenter: cb_half_fps.verticalCenter
             color: "white"
             text: "Half-fps:"
         }
 
         CheckBox {
             id: cb_half_fps
-            width: settings.width*.4
 
-            font.pixelSize: Screen.height*.04
-            scale: parent.height*.003
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+
+            font.pixelSize: (settings.width + settings.height)/2*.04
+            scale: cb_crf.height*.02
             onCheckStateChanged: messenger.halfFpsChanged(checked)
 
             Connections {
@@ -165,16 +200,20 @@ Rectangle {
 
         Text {
             id: l_stop_on_drop
-            font.pixelSize: Screen.height*.04
+            font.pixelSize: (settings.width + settings.height)/2*.04
+            anchors.verticalCenter: cb_stop_on_drop.verticalCenter
             color: "white"
             text: "Stop rec on frames drop:"
         }
 
         CheckBox {
             id: cb_stop_on_drop
-            width: settings.width*.4
-            font.pixelSize: Screen.height*.04
-            scale: parent.height*.003
+
+            Layout.fillHeight: true
+            Layout.fillWidth: true
+
+            font.pixelSize: (settings.width + settings.height)/2*.04
+            scale: cb_crf.height*.02
             onCheckStateChanged: messenger.stopOnDropChanged(checked)
 
             Connections {
@@ -255,7 +294,7 @@ Rectangle {
         if(settings.focus_index>field_id.max)
             settings.focus_index=field_id.video_encoder
 
-        setFocus(settings.focus_index)
+        focus_indicator_animation.start()
     }
 
     function focusPrev() {
@@ -264,7 +303,7 @@ Rectangle {
         if(settings.focus_index<0)
             settings.focus_index=field_id.stop_on_drop
 
-        setFocus(settings.focus_index)
+         focus_indicator_animation.start()
     }
 
     function valueNext() {
@@ -354,33 +393,5 @@ Rectangle {
             cb_stop_on_drop.checked=!cb_stop_on_drop.checked
             break
         }
-
-    }
-
-    function setFocus(focus_index) {
-        switch(focus_index) {
-        case field_id.video_encoder:
-            focus_indicator.new_y=grid.y + l_video_encoder.y - l_video_encoder.height/3.5
-            break
-
-        case field_id.pixel_format:
-            focus_indicator.new_y=grid.y + l_pixel_format.y - l_pixel_format.height/3.5
-            break
-
-        case field_id.crf:
-            focus_indicator.new_y=grid.y + l_crf.y - l_crf.height/3.5
-            break
-
-        case field_id.half_fps:
-            focus_indicator.new_y=grid.y + l_half_fps.y - l_half_fps.height/3.5
-            break
-
-        case field_id.stop_on_drop:
-            focus_indicator.new_y=grid.y + l_stop_on_drop.y - l_stop_on_drop.height/3.5
-            break
-        }
-
-        focus_indicator_animation.start()
     }
 }
-
