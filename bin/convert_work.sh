@@ -23,6 +23,7 @@ do
 
     if [ "${i}" == "--x265" ]; then
         v_enc="libx265"
+        preset="medium -x265-params strong-intra-smoothing=0"
     fi
 
     if [ "${i}" == "--remap_ac" ]; then
@@ -35,7 +36,7 @@ do
     fi
 done
 
-./$ff_bin -i videos/$filename -async 1 \
+./$ff_bin -i videos/$filename \
         -map 0:v -c:v $v_enc -crf $crf -preset $preset $pix_fmt -vlevel 5.1 \
         $ch_map \
         -map 0:a -c:a:0 flac -compression_level 6 \
