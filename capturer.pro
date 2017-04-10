@@ -3,7 +3,11 @@ QT += \
     gui \
     widgets \
     multimedia \
-    multimediawidgets
+    multimediawidgets\
+    qml \
+    quick \
+    quickwidgets
+
 
 TARGET = capturer
 TEMPLATE = app
@@ -57,9 +61,6 @@ CONFIG(debug, debug|release):{
 OBJECTS_DIR = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-obj
 MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-moc
 RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-rcc
-
-
-include(externals/overlay/overlay.pri)
 
 
 linux {
@@ -124,17 +125,22 @@ INCLUDEPATH += \
     src \
     src/decklink \
     src/audio_output \
-    src/video_output
+    src/video_output \
+    src/overlay
 
 SOURCES += \
     src/*.cpp \
     src/decklink/*.cpp \
     src/audio_output/*.cpp \
-    src/video_output/*.cpp
+    src/video_output/*.cpp \
+    src/overlay/*.cpp
 
 HEADERS += \
     src/*.h \
     src/decklink/*.h \
     src/audio_output/*.h \
-    src/video_output/*.h
+    src/video_output/*.h \
+    src/overlay/*.h
 
+RESOURCES += \
+    qml.qrc
