@@ -24,6 +24,7 @@ do
     if [ "${i}" == "--x265" ]; then
         v_enc="libx265"
         preset="medium -x265-params strong-intra-smoothing=0"
+        crf=17
     fi
 
     if [ "${i}" == "--remap_ac" ]; then

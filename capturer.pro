@@ -30,11 +30,11 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 
-#apt-get install mesa-common-dev libgl-dev libpulse-dev libsdl2-dev
+#apt-get install mesa-common-dev libgl-dev libpulse-dev libsdl2-dev libbz2-dev
 
 #DEFINES += USE_X264_10B
 DEFINES += USE_PULSE_AUDIO
-DEFINES += USE_SDL2
+#DEFINES += USE_SDL2
 
 
 
@@ -87,7 +87,7 @@ linux {
         externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
 
     LIBS += -lavformat -lavcodec -lavutil -lswscale -lswresample
-    LIBS += -lz -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
+    LIBS += -lz -lbz2 -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
 }
 
 windows {
