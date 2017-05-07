@@ -18,7 +18,7 @@ public:
 
 private:
     QMutex mutex;
-    QWaitCondition wait_condition;
+    // QWaitCondition wait_condition;
 };
 
 #endif // EVENT_WAITING_H

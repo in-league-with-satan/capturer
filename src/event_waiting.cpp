@@ -6,23 +6,28 @@
 EventWaiting::EventWaiting(QObject *parent)
     : QObject(parent)
 {
+    mutex.lock();
 }
 
 EventWaiting::~EventWaiting()
 {
-    wait_condition.wakeAll();
+    mutex.unlock();
+
+    // wait_condition.wakeAll();
 }
 
 void EventWaiting::wait()
 {
     mutex.lock();
 
-    wait_condition.wait(&mutex);
+    // wait_condition.wait(&mutex);
 
-    mutex.unlock();
+    // mutex.unlock();
 }
 
 void EventWaiting::next()
 {
-    wait_condition.wakeAll();
+    mutex.unlock();
+
+    // wait_condition.wakeAll();
 }
