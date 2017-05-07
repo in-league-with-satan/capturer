@@ -16,6 +16,22 @@ CONFIG += c++14
 
 DESTDIR = bin
 
+GIT_VERSION = $$system(git --git-dir $$PWD/.git --work-tree $$PWD describe --always)
+
+linux {
+    DATE_VERSION = $$system(date +%y.%-m.%-d)
+    DEFINES += VERSION_STRING=\\\"$$DATE_VERSION-$$GIT_VERSION\\\"
+}
+
+windows {
+    DATE_VERSION = $$system(echo '%date:~8,2%.%date:~3,2%.%date:~0,2%')
+    DEFINES += VERSION_STRING=QString(\\\"$$DATE_VERSION-$$GIT_VERSION\\\").replace(\\\".0\\\",\\\".\\\")
+}
+
+
+
+
+
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which as been marked as deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the

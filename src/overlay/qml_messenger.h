@@ -22,6 +22,14 @@ public:
     QStringList getModelPixelFormat() const;
     void setModelPixelFormat(const QStringList &model);
 
+    Q_INVOKABLE QString versionThis() const;
+    Q_INVOKABLE QString versionLibAVUtil() const;
+    Q_INVOKABLE QString versionlibAVCodec() const;
+    Q_INVOKABLE QString versionlibAVFormat() const;
+    Q_INVOKABLE QString versionlibAVFilter() const;
+    Q_INVOKABLE QString versionlibSWScale() const;
+    Q_INVOKABLE QString versionlibSWResample() const;
+
 public slots:
     void keyEvent(const Qt::Key &key);
 
@@ -54,6 +62,8 @@ signals:
     void showMenu();
 
     void showHideInfo();
+
+    void showHideAbout();
 
     void showHideDetailedRecState();
 

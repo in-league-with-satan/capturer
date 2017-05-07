@@ -314,6 +314,10 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             // qInfo() << "key pressed" << e->key();
 
             switch(e->key()) {
+            case Qt::Key_F1:
+                messenger->showHideAbout();
+                return true;
+
             case Qt::Key_F4:
                 onStartStopRecording();
                 return true;

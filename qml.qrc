@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+        <file>qml/About.qml</file>
         <file>qml/Root.qml</file>
         <file>qml/RecordState.qml</file>
         <file>qml/Settings.qml</file>

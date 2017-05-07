@@ -4,6 +4,8 @@
 #include <QTimer>
 #include <QStorageInfo>
 
+#include "ffmpeg_tools.h"
+
 #include "qml_messenger.h"
 
 QmlMessenger::QmlMessenger(QObject *parent)
@@ -42,6 +44,41 @@ void QmlMessenger::setModelPixelFormat(const QStringList &model)
     model_pixel_format=model;
 
     emit modelPixelFormatChanged(model, QPrivateSignal());
+}
+
+QString QmlMessenger::versionThis() const
+{
+    return QString(VERSION_STRING);
+}
+
+QString QmlMessenger::versionLibAVUtil() const
+{
+    return versionlibavutil();
+}
+
+QString QmlMessenger::versionlibAVCodec() const
+{
+    return versionlibavcodec();
+}
+
+QString QmlMessenger::versionlibAVFormat() const
+{
+    return versionlibavformat();
+}
+
+QString QmlMessenger::versionlibAVFilter() const
+{
+    return versionlibavfilter();
+}
+
+QString QmlMessenger::versionlibSWScale() const
+{
+    return versionlibswscale();
+}
+
+QString QmlMessenger::versionlibSWResample() const
+{
+    return versionlibswresample();
 }
 
 void QmlMessenger::keyEvent(const Qt::Key &key)

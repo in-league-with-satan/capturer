@@ -35,6 +35,15 @@ Rectangle {
         opacity: 0
     }
 
+    About {
+        id: about
+        width: parent.width*.8
+        height: parent.height*.8
+        anchors.centerIn: parent
+
+        opacity: 0
+    }
+
     RecordState {
         id: rec_state_bar
 
@@ -54,6 +63,15 @@ Rectangle {
             settings.state_visible=true
 
             menu_header.state_visible=true
+        }
+
+        onShowHideAbout: {
+            about.state_visible=!about.state_visible
+
+            if(about.state_visible) {
+                settings.state_visible=false
+                menu_header.state_visible=false
+            }
         }
 
         onShowHideInfo: menu_header.state_visible=!menu_header.state_visible
