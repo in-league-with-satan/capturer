@@ -1,5 +1,5 @@
-#ifndef FFMPEG_H
-#define FFMPEG_H
+#ifndef FF_ENCODER_H
+#define FF_ENCODER_H
 
 #include <QObject>
 #include <QImage>
@@ -17,13 +17,13 @@ namespace FF {
     class FormatConverter;
 }
 
-class FFMpeg : public QObject
+class FFEncoder : public QObject
 {
     Q_OBJECT
 
 public:
-    FFMpeg(QObject *parent=0);
-    ~FFMpeg();
+    FFEncoder(QObject *parent=0);
+    ~FFEncoder();
 
     static void init();
 
@@ -96,7 +96,7 @@ public:
     static Framerate::T calcFps(int64_t frame_duration, int64_t frame_scale, bool half_fps);
 
 public slots:
-    bool setConfig(FFMpeg::Config cfg);
+    bool setConfig(FFEncoder::Config cfg);
 
     bool appendFrame(Frame::ptr frame);
 
@@ -111,11 +111,11 @@ private:
     QSize last_frame_size;
 
 signals:
-    void stats(FFMpeg::Stats s);
+    void stats(FFEncoder::Stats s);
 
 };
 
-Q_DECLARE_METATYPE(FFMpeg::Config)
-Q_DECLARE_METATYPE(FFMpeg::Stats)
+Q_DECLARE_METATYPE(FFEncoder::Config)
+Q_DECLARE_METATYPE(FFEncoder::Stats)
 
-#endif // FFMPEG_H
+#endif // FF_ENCODER_H

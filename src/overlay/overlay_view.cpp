@@ -1,11 +1,12 @@
 #include <QDebug>
 #include <QQmlContext>
 #include <QApplication>
+#include <QQmlEngine>
 
 #include "qml_messenger.h"
 
-
 #include "overlay_view.h"
+
 
 OverlayView::OverlayView() :
     QQuickWidget()
@@ -33,6 +34,11 @@ OverlayView::~OverlayView()
 void OverlayView::setMessenger(QmlMessenger *messenger)
 {
     rootContext()->setContextProperty("messenger", messenger);
+}
+
+void OverlayView::addImageProvider(const QString &id, QQmlImageProviderBase *image_provider)
+{
+    engine()->addImageProvider(id, image_provider);
 }
 
 void OverlayView::focusOutEvent(QFocusEvent *)

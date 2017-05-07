@@ -9,6 +9,12 @@
 QmlMessenger::QmlMessenger(QObject *parent)
     : QObject(parent)
 {
+    file_system_model=new FileSystemModel();
+
+    connect(file_system_model, SIGNAL(changed(FileSystemModel*)), SIGNAL(fileSystemModelChanged(FileSystemModel*)));
+
+    file_system_model->setRootPath(getRootPath());
+
     QTimer *timer=new QTimer();
 
     connect(timer, SIGNAL(timeout()), SLOT(checkFreeSpace()));
@@ -44,12 +50,22 @@ void QmlMessenger::setModelPixelFormat(const QStringList &model)
     emit modelPixelFormatChanged(model, QPrivateSignal());
 }
 
+FileSystemModel *QmlMessenger::fileSystemModel()
+{
+    return file_system_model;
+}
+
+QString QmlMessenger::getRootPath()
+{
+    return qApp->applicationDirPath() + "/videos";
+}
+
 void QmlMessenger::keyEvent(const Qt::Key &key)
 {
     switch(key) {
     case Qt::Key_Menu:
     case Qt::Key_Space:
-        //qInfo() << "show_menu";
+        // qInfo() << "show_menu";
         emit showMenu();
         return;
 
@@ -61,10 +77,8 @@ void QmlMessenger::keyEvent(const Qt::Key &key)
         return;
 
     case Qt::Key_Return:
-
         keyPressed(Qt::Key_Right);
         return;
-
 
     default:
         break;

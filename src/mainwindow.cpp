@@ -34,11 +34,14 @@ MainWindow::MainWindow(QWidget *parent)
     , mb_rec_stopped(nullptr)
 {
     decklink_thread=new DeckLinkCapture(this);
+
     connect(decklink_thread, SIGNAL(formatChanged(int,int,quint64,quint64,bool,QString)),
             SLOT(onFormatChanged(int,int,quint64,quint64,bool,QString)), Qt::QueuedConnection);
     connect(decklink_thread, SIGNAL(frameSkipped()), SLOT(onFrameSkipped()), Qt::QueuedConnection);
 
     //
+
+    qmlRegisterType<SnapshotListModel>("FuckTheSystem", 0, 0, "SnapshotListModel");
 
     messenger=new QmlMessenger();
 
@@ -53,6 +56,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     overlay_view->setSource(QStringLiteral("qrc:/qml/Root.qml"));
 
+    overlay_view->addImageProvider("fs_image_provider", (QQmlImageProviderBase*)messenger->fileSystemModel()->imageProvider());
+
     //
 
     audio_output=newAudioOutput(this);
@@ -61,12 +66,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    ffmpeg=new FFMpegThread(this);
+    ffmpeg=new FFEncoderThread(this);
 
     decklink_thread->subscribe(ffmpeg->frameBuffer());
 
     connect(ffmpeg->frameBuffer(), SIGNAL(frameSkipped()), SLOT(onEncBufferOverload()), Qt::QueuedConnection);
-    connect(ffmpeg, SIGNAL(stats(FFMpeg::Stats)), SLOT(updateStats(FFMpeg::Stats)));
+    connect(ffmpeg, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)));
 
     //
 
@@ -125,18 +130,18 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(messenger, SIGNAL(videoCodecIndexChanged(int)), cb_video_encoder, SLOT(setCurrentIndex(int)));
 
-    if(FFMpeg::isLib_x264_10bit()) {
-        cb_video_encoder->addItem("libx264_10bit", FFMpeg::VideoEncoder::libx264_10bit);
-        cb_video_encoder->addItem("nvenc_h264", FFMpeg::VideoEncoder::nvenc_h264);
-        cb_video_encoder->addItem("nvenc_hevc", FFMpeg::VideoEncoder::nvenc_hevc);
+    if(FFEncoder::isLib_x264_10bit()) {
+        cb_video_encoder->addItem("libx264_10bit", FFEncoder::VideoEncoder::libx264_10bit);
+        cb_video_encoder->addItem("nvenc_h264", FFEncoder::VideoEncoder::nvenc_h264);
+        cb_video_encoder->addItem("nvenc_hevc", FFEncoder::VideoEncoder::nvenc_hevc);
 
         messenger->setModelVideoEncoder(QStringList() << "libx264_10bit" << "nvenc_h264" << "nvenc_hevc");
 
     } else {
-        cb_video_encoder->addItem("libx264", FFMpeg::VideoEncoder::libx264);
-        cb_video_encoder->addItem("libx264rgb", FFMpeg::VideoEncoder::libx264rgb);
-        cb_video_encoder->addItem("nvenc_h264", FFMpeg::VideoEncoder::nvenc_h264);
-        cb_video_encoder->addItem("nvenc_hevc", FFMpeg::VideoEncoder::nvenc_hevc);
+        cb_video_encoder->addItem("libx264", FFEncoder::VideoEncoder::libx264);
+        cb_video_encoder->addItem("libx264rgb", FFEncoder::VideoEncoder::libx264rgb);
+        cb_video_encoder->addItem("nvenc_h264", FFEncoder::VideoEncoder::nvenc_h264);
+        cb_video_encoder->addItem("nvenc_hevc", FFEncoder::VideoEncoder::nvenc_hevc);
 
         messenger->setModelVideoEncoder(QStringList() << "libx264" << "libx264rgb" << "nvenc_h264" << "nvenc_hevc");
     }
@@ -314,6 +319,10 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             // qInfo() << "key pressed" << e->key();
 
             switch(e->key()) {
+            case Qt::Key_F2:
+                messenger->showFileBrowser();
+                return true;
+
             case Qt::Key_F4:
                 onStartStopRecording();
                 return true;
@@ -419,8 +428,8 @@ void MainWindow::onEncoderChanged(const int &index)
 {
     Q_UNUSED(index);
 
-    QList <FFMpeg::PixelFormat::T> fmts=
-            FFMpeg::PixelFormat::compatiblePixelFormats((FFMpeg::VideoEncoder::T)cb_video_encoder->currentData().toInt());
+    QList <FFEncoder::PixelFormat::T> fmts=
+            FFEncoder::PixelFormat::compatiblePixelFormats((FFEncoder::VideoEncoder::T)cb_video_encoder->currentData().toInt());
 
     cb_rec_pixel_format->blockSignals(true);
 
@@ -429,8 +438,8 @@ void MainWindow::onEncoderChanged(const int &index)
     QStringList sl;
 
     for(int i=0; i<fmts.size(); ++i) {
-        cb_rec_pixel_format->addItem(FFMpeg::PixelFormat::toString(fmts[i]), fmts[i]);
-        sl << FFMpeg::PixelFormat::toString(fmts[i]);
+        cb_rec_pixel_format->addItem(FFEncoder::PixelFormat::toString(fmts[i]), fmts[i]);
+        sl << FFEncoder::PixelFormat::toString(fmts[i]);
     }
 
     messenger->setModelPixelFormat(sl);
@@ -556,12 +565,12 @@ void MainWindow::onStartStopRecording()
         messenger->recStopped();
 
     } else {
-        FFMpeg::Config cfg;
+        FFEncoder::Config cfg;
 
-        cfg.framerate=FFMpeg::calcFps(current_frame_duration, current_frame_scale, cb_half_fps->isChecked());
+        cfg.framerate=FFEncoder::calcFps(current_frame_duration, current_frame_scale, cb_half_fps->isChecked());
         cfg.frame_resolution=current_frame_size;
         cfg.pixel_format=(AVPixelFormat)cb_rec_pixel_format->currentData().toInt();
-        cfg.video_encoder=(FFMpeg::VideoEncoder::T)cb_video_encoder->currentData().toInt();
+        cfg.video_encoder=(FFEncoder::VideoEncoder::T)cb_video_encoder->currentData().toInt();
         cfg.crf=le_crf->text().toUInt();
 
         ffmpeg->setConfig(cfg);
@@ -622,7 +631,7 @@ void MainWindow::onPreviewChanged(int)
     out_widget->frameBuffer()->setEnabled(cb_preview->isChecked());
 }
 
-void MainWindow::updateStats(FFMpeg::Stats s)
+void MainWindow::updateStats(FFEncoder::Stats s)
 {
     le_stat_size->setText(QString("%1 bytes").arg(QLocale().toString((qulonglong)s.streams_size)));
 

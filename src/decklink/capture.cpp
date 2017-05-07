@@ -16,7 +16,7 @@
 #include <csignal>
 
 #include "DeckLinkAPI.h"
-#include "ffmpeg_format_converter.h"
+#include "ff_format_converter.h"
 #include "convert_thread.h"
 #include "audio_tools.h"
 #include "decklink_tools.h"

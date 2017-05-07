@@ -9,23 +9,10 @@
 
 #endif
 
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavutil/opt.h>
-#include <libavutil/channel_layout.h>
-#include <libavutil/common.h>
-#include <libavutil/imgutils.h>
-#include <libavutil/mathematics.h>
-#include <libavutil/samplefmt.h>
-#include <libavutil/avassert.h>
-#include "libswscale/swscale.h"
-#include <libswresample/swresample.h>
-}
+#include "ff_tools.h"
+#include "ff_format_converter.h"
 
-#include "ffmpeg_tools.h"
-#include "ffmpeg_format_converter.h"
-
-#include "ffmpeg.h"
+#include "ff_encoder.h"
 
 class OutputStream
 {
@@ -95,21 +82,12 @@ public:
 
     AVDictionary *opt;
 
-    FFMpeg::Config cfg;
+    FFEncoder::Config cfg;
 
     bool skip_frame;
 
     qint64 last_stats_update_time;
 };
-
-QString errString(int error)
-{
-    char buf[1024]={0};
-
-    av_strerror(error, buf, 640);
-
-    return QString(buf);
-}
 
 static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AVStream *st, AVPacket *pkt)
 {
@@ -121,7 +99,7 @@ static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AV
     return av_interleaved_write_frame(fmt_ctx, pkt);
 }
 
-static void add_stream_audio(OutputStream *out_stream, AVFormatContext *format_context, AVCodec **codec, const FFMpeg::Config &cfg)
+static void add_stream_audio(OutputStream *out_stream, AVFormatContext *format_context, AVCodec **codec, const FFEncoder::Config &cfg)
 {
     AVCodecContext *c;
 
@@ -188,25 +166,25 @@ static void add_stream_audio(OutputStream *out_stream, AVFormatContext *format_c
         c->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
 }
 
-static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_context, AVCodec **codec, const FFMpeg::Config &cfg)
+static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_context, AVCodec **codec, const FFEncoder::Config &cfg)
 {
     AVCodecContext *c;
 
     switch(cfg.video_encoder) {
-    case FFMpeg::VideoEncoder::libx264:
-    case FFMpeg::VideoEncoder::libx264_10bit:
+    case FFEncoder::VideoEncoder::libx264:
+    case FFEncoder::VideoEncoder::libx264_10bit:
         *codec=avcodec_find_encoder_by_name("libx264");
         break;
 
-    case FFMpeg::VideoEncoder::libx264rgb:
+    case FFEncoder::VideoEncoder::libx264rgb:
         *codec=avcodec_find_encoder_by_name("libx264rgb");
         break;
 
-    case FFMpeg::VideoEncoder::nvenc_h264:
+    case FFEncoder::VideoEncoder::nvenc_h264:
         *codec=avcodec_find_encoder_by_name("h264_nvenc");
         break;
 
-    case FFMpeg::VideoEncoder::nvenc_hevc:
+    case FFEncoder::VideoEncoder::nvenc_hevc:
         *codec=avcodec_find_encoder_by_name("hevc_nvenc");
         break;
 
@@ -248,38 +226,38 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
     // identical to 1
 #ifndef _MSC_VER
     switch(cfg.framerate) {
-    case FFMpeg::Framerate::full_23:
+    case FFEncoder::Framerate::full_23:
         out_stream->av_stream->time_base=(AVRational){ 1001, 24000 };
         break;
 
-    case FFMpeg::Framerate::full_24:
+    case FFEncoder::Framerate::full_24:
         out_stream->av_stream->time_base=(AVRational){ 1000, 24000 };
         break;
 
-    case FFMpeg::Framerate::full_25:
-    case FFMpeg::Framerate::half_50:
+    case FFEncoder::Framerate::full_25:
+    case FFEncoder::Framerate::half_50:
         out_stream->av_stream->time_base=(AVRational){ 1000, 25000 };
         break;
 
-    case FFMpeg::Framerate::full_29:
-    case FFMpeg::Framerate::half_59:
+    case FFEncoder::Framerate::full_29:
+    case FFEncoder::Framerate::half_59:
         out_stream->av_stream->time_base=(AVRational){ 1001, 30000 };
         break;
 
-    case FFMpeg::Framerate::full_30:
-    case FFMpeg::Framerate::half_60:
+    case FFEncoder::Framerate::full_30:
+    case FFEncoder::Framerate::half_60:
         out_stream->av_stream->time_base=(AVRational){ 1000, 30000 };
         break;
 
-    case FFMpeg::Framerate::full_50:
+    case FFEncoder::Framerate::full_50:
         out_stream->av_stream->time_base=(AVRational){ 1000, 50000 };
         break;
 
-    case FFMpeg::Framerate::full_59:
+    case FFEncoder::Framerate::full_59:
         out_stream->av_stream->time_base=(AVRational){ 1001, 60000 };
         break;
 
-    case FFMpeg::Framerate::full_60:
+    case FFEncoder::Framerate::full_60:
         out_stream->av_stream->time_base=(AVRational){ 1000, 60000 };
         break;
 
@@ -349,12 +327,12 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
 
     c->pix_fmt=cfg.pixel_format;
 
-    if(cfg.video_encoder==FFMpeg::VideoEncoder::libx264 || cfg.video_encoder==FFMpeg::VideoEncoder::libx264rgb) {
+    if(cfg.video_encoder==FFEncoder::VideoEncoder::libx264 || cfg.video_encoder==FFEncoder::VideoEncoder::libx264rgb) {
         av_opt_set(c->priv_data, "preset", "ultrafast", 0);
         // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
         av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().data(), 0);
 
-    } else if(cfg.video_encoder==FFMpeg::VideoEncoder::nvenc_h264) {
+    } else if(cfg.video_encoder==FFEncoder::VideoEncoder::nvenc_h264) {
         c->bit_rate=0;
 
         if(cfg.crf==0) {
@@ -369,7 +347,7 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
 
         // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
 
-    } else if(cfg.video_encoder==FFMpeg::VideoEncoder::nvenc_hevc) {
+    } else if(cfg.video_encoder==FFEncoder::VideoEncoder::nvenc_hevc) {
         c->bit_rate=0;
         c->global_quality=cfg.crf;
 
@@ -448,7 +426,7 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
     av_dict_free(&opt);
 
     if(ret<0) {
-        qCritical() << "could not open audio codec:" << errString(ret);
+        qCritical() << "could not open audio codec:" << ffErrorString(ret);
         return;
     }
 
@@ -475,7 +453,7 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
     ret=avcodec_send_frame(ost->av_codec_context, ost->frame);
 
     if(ret<0) {
-        qCritical() << "error encoding audio frame" << errString(ret);
+        qCritical() << "error encoding audio frame" << ffErrorString(ret);
         exit(1);
     }
 
@@ -494,7 +472,7 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
     return 0;
 }
 
-void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg, FFMpeg::Config cfg)
+void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg, FFEncoder::Config cfg)
 {
     Q_UNUSED(oc)
 
@@ -511,7 +489,7 @@ void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictio
     av_dict_free(&opt);
 
     if(ret<0) {
-        qCritical() << "could not open video codec:" << errString(ret);
+        qCritical() << "could not open video codec:" << ffErrorString(ret);
         exit(1);
     }
 
@@ -549,7 +527,7 @@ static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
     ret=avcodec_send_frame(ost->av_codec_context, ost->frame_converted);
 
     if(ret<0) {
-        qCritical() << "error encoding video frame:" << errString(ret);
+        qCritical() << "error encoding video frame:" << ffErrorString(ret);
         exit(1);
     }
 
@@ -581,7 +559,7 @@ static void close_stream(AVFormatContext *oc, OutputStream *ost)
 
 // ------------------------------
 
-FFMpeg::FFMpeg(QObject *parent) :
+FFEncoder::FFEncoder(QObject *parent) :
     QObject(parent)
 {
     context=new FFMpegContext();
@@ -589,7 +567,7 @@ FFMpeg::FFMpeg(QObject *parent) :
     converter=new FF::FormatConverter();
 }
 
-FFMpeg::~FFMpeg()
+FFEncoder::~FFEncoder()
 {
     stopCoder();
 
@@ -598,15 +576,15 @@ FFMpeg::~FFMpeg()
     delete converter;
 }
 
-void FFMpeg::init()
+void FFEncoder::init()
 {
-    qRegisterMetaType<FFMpeg::Config>("FFMpeg::Config");
-    qRegisterMetaType<FFMpeg::Stats>("FFMpeg::Stats");
+    qRegisterMetaType<FFEncoder::Config>("FFMpeg::Config");
+    qRegisterMetaType<FFEncoder::Stats>("FFMpeg::Stats");
 
     av_register_all();
 }
 
-bool FFMpeg::isLib_x264_10bit()
+bool FFEncoder::isLib_x264_10bit()
 {
 #ifdef __linux__
 
@@ -617,7 +595,7 @@ bool FFMpeg::isLib_x264_10bit()
     return false;
 }
 
-FFMpeg::Framerate::T FFMpeg::calcFps(int64_t frame_duration, int64_t frame_scale, bool half_fps)
+FFEncoder::Framerate::T FFEncoder::calcFps(int64_t frame_duration, int64_t frame_scale, bool half_fps)
 {
     if(half_fps) {
         switch(frame_scale) {
@@ -659,7 +637,7 @@ FFMpeg::Framerate::T FFMpeg::calcFps(int64_t frame_duration, int64_t frame_scale
     return Framerate::full_30;
 }
 
-bool FFMpeg::setConfig(FFMpeg::Config cfg)
+bool FFEncoder::setConfig(FFEncoder::Config cfg)
 {
     int ret;
 
@@ -720,7 +698,7 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
     ret=avio_open(&context->av_format_context->pb, context->filename.toLatin1().data(), AVIO_FLAG_WRITE);
 
     if(ret<0) {
-        qCritical() << "could not open" << context->filename << errString(ret);
+        qCritical() << "could not open" << context->filename << ffErrorString(ret);
         return false;
     }
 
@@ -729,7 +707,7 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
     ret=avformat_write_header(context->av_format_context, &context->opt);
 
     if(ret<0) {
-        qCritical() << "error occurred when opening output file:" << errString(ret);
+        qCritical() << "error occurred when opening output file:" << ffErrorString(ret);
         return false;
     }
 
@@ -753,7 +731,7 @@ bool FFMpeg::setConfig(FFMpeg::Config cfg)
     return true;
 }
 
-bool FFMpeg::appendFrame(Frame::ptr frame)
+bool FFEncoder::appendFrame(Frame::ptr frame)
 {
     if(!context->canAcceptFrame())
         return false;
@@ -839,7 +817,7 @@ bool FFMpeg::appendFrame(Frame::ptr frame)
     return true;
 }
 
-bool FFMpeg::stopCoder()
+bool FFEncoder::stopCoder()
 {
     if(!context->canAcceptFrame())
         return false;
@@ -863,7 +841,7 @@ bool FFMpeg::stopCoder()
     return true;
 }
 
-void FFMpeg::calcStats()
+void FFEncoder::calcStats()
 {
     double cf_a=av_stream_get_end_pts(context->out_stream_audio.av_stream) * av_q2d(context->out_stream_audio.av_stream->time_base);
 
@@ -891,7 +869,7 @@ void FFMpeg::calcStats()
 
 //
 
-QString FFMpeg::PixelFormat::toString(uint64_t format)
+QString FFEncoder::PixelFormat::toString(uint64_t format)
 {
     switch(format) {
     case RGB24:
@@ -913,7 +891,7 @@ QString FFMpeg::PixelFormat::toString(uint64_t format)
     return QString("unknown");
 }
 
-uint64_t FFMpeg::PixelFormat::fromString(QString format)
+uint64_t FFEncoder::PixelFormat::fromString(QString format)
 {
     if(format=="rgb24")
         return RGB24;
@@ -933,7 +911,7 @@ uint64_t FFMpeg::PixelFormat::fromString(QString format)
     return 0;
 }
 
-QList <FFMpeg::PixelFormat::T> FFMpeg::PixelFormat::compatiblePixelFormats(FFMpeg::VideoEncoder::T encoder)
+QList <FFEncoder::PixelFormat::T> FFEncoder::PixelFormat::compatiblePixelFormats(FFEncoder::VideoEncoder::T encoder)
 {
     switch(encoder) {
     case VideoEncoder::libx264:

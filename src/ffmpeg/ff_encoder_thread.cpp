@@ -4,9 +4,9 @@
 #include "capture.h"
 #include "frame_buffer.h"
 
-#include "ffmpeg_thread.h"
+#include "ff_encoder_thread.h"
 
-FFMpegThread::FFMpegThread(QObject *parent)
+FFEncoderThread::FFEncoderThread(QObject *parent)
     : QThread(parent)
 {
     frame_buffer=new FrameBuffer(this);
@@ -25,24 +25,24 @@ FFMpegThread::FFMpegThread(QObject *parent)
     // start(QThread::TimeCriticalPriority);
 }
 
-FFMpegThread::~FFMpegThread()
+FFEncoderThread::~FFEncoderThread()
 {
     terminate();
 
     delete frame_buffer;
 }
 
-FrameBuffer *FFMpegThread::frameBuffer()
+FrameBuffer *FFEncoderThread::frameBuffer()
 {
     return frame_buffer;
 }
 
-bool FFMpegThread::isWorking()
+bool FFEncoderThread::isWorking()
 {
     return is_working;
 }
 
-void FFMpegThread::setConfig(FFMpeg::Config cfg)
+void FFEncoderThread::setConfig(FFEncoder::Config cfg)
 {
     emit sigSetConfig(cfg);
 
@@ -52,7 +52,7 @@ void FFMpegThread::setConfig(FFMpeg::Config cfg)
     is_working=true;
 }
 
-void FFMpegThread::stopCoder()
+void FFEncoderThread::stopCoder()
 {
     emit sigStopCoder();
 
@@ -62,15 +62,15 @@ void FFMpegThread::stopCoder()
     is_working=false;
 }
 
-void FFMpegThread::run()
+void FFEncoderThread::run()
 {
-    FFMpeg *ffmpeg=new FFMpeg();
+    FFEncoder *ffmpeg=new FFEncoder();
 
     ffmpeg->moveToThread(this);
 
-    connect(this, SIGNAL(sigSetConfig(FFMpeg::Config)), ffmpeg, SLOT(setConfig(FFMpeg::Config)), Qt::QueuedConnection);
+    connect(this, SIGNAL(sigSetConfig(FFEncoder::Config)), ffmpeg, SLOT(setConfig(FFEncoder::Config)), Qt::QueuedConnection);
     connect(this, SIGNAL(sigStopCoder()), ffmpeg, SLOT(stopCoder()), Qt::QueuedConnection);
-    connect(ffmpeg, SIGNAL(stats(FFMpeg::Stats)), SIGNAL(stats(FFMpeg::Stats)), Qt::QueuedConnection);
+    connect(ffmpeg, SIGNAL(stats(FFEncoder::Stats)), SIGNAL(stats(FFEncoder::Stats)), Qt::QueuedConnection);
 
     Frame::ptr frame;
 

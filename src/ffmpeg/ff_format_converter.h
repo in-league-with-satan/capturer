@@ -1,5 +1,5 @@
-#ifndef FFMPEG_FORMAT_CONVERTER_H
-#define FFMPEG_FORMAT_CONVERTER_H
+#ifndef FF_FORMAT_CONVERTER_H
+#define FF_FORMAT_CONVERTER_H
 
 #include <QByteArray>
 #include <QImage>
@@ -58,4 +58,4 @@ private:
 
 }
 
-#endif // FFMPEG_FORMAT_CONVERTER_H
+#endif // FF_FORMAT_CONVERTER_H

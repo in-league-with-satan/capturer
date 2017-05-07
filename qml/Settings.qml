@@ -5,12 +5,11 @@ import QtQuick.Controls 2.1
 import QtQuick.Layouts 1.3
 
 
-Rectangle {
+ShowHideRect {
     id: settings
 
     color: "#bb000000"
 
-    property bool state_visible: false
     property int focus_index: field_id.video_encoder
 
     QtObject {
@@ -224,35 +223,6 @@ Rectangle {
     }
 
     //
-
-    states: [
-        State {
-            when: state_visible
-
-            PropertyChanges {
-                target: settings
-                opacity: 1.
-            }
-        },
-
-        State {
-            when: !state_visible
-
-            PropertyChanges {
-                target: settings
-                opacity: 0.
-            }
-        }
-    ]
-
-    transitions: [
-        Transition {
-            NumberAnimation {
-                property: "opacity"
-                duration: 500
-            }
-        }
-    ]
 
     Connections {
         target: messenger

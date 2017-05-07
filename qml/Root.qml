@@ -21,8 +21,6 @@ Rectangle {
 
         width: parent.width
         height: parent.height*.1
-
-        opacity: 0
     }
 
     Settings {
@@ -31,8 +29,14 @@ Rectangle {
         width: parent.width*.8
         height: parent.height*.8
         anchors.centerIn: parent
+    }
 
-        opacity: 0
+    FileBrowser {
+        id: file_browser
+
+        width: parent.width*.8
+        height: parent.height*.8
+        anchors.centerIn: parent
     }
 
     RecordState {
@@ -40,8 +44,6 @@ Rectangle {
 
         anchors.horizontalCenter: parent.horizontalCenter
         y: parent.height - height*1.5
-
-        opacity: 0
     }
 
     Connections {
@@ -54,13 +56,27 @@ Rectangle {
             settings.state_visible=true
 
             menu_header.state_visible=true
+
+            file_browser.state_visible=false
+        }
+
+        onShowFileBrowser: {
+            if(file_browser.state_visible)
+                return
+
+            file_browser.state_visible=true
+            settings.state_visible=false
+            menu_header.state_visible=false
         }
 
         onShowHideInfo: menu_header.state_visible=!menu_header.state_visible
 
         onRecStarted: settings.state_visible=false
 
-        onBack: menu_header.state_visible=false
+        onBack: {
+            menu_header.state_visible=false
+            file_browser.state_visible=false
+        }
     }
 }
 

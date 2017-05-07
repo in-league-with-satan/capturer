@@ -124,6 +124,7 @@ contains(DEFINES, USE_SDL2) {
 INCLUDEPATH += \
     src \
     src/decklink \
+    src/ffmpeg \
     src/audio_output \
     src/video_output \
     src/overlay
@@ -131,6 +132,7 @@ INCLUDEPATH += \
 SOURCES += \
     src/*.cpp \
     src/decklink/*.cpp \
+    src/ffmpeg/*.cpp \
     src/audio_output/*.cpp \
     src/video_output/*.cpp \
     src/overlay/*.cpp
@@ -138,9 +140,12 @@ SOURCES += \
 HEADERS += \
     src/*.h \
     src/decklink/*.h \
+    src/ffmpeg/*.h \
     src/audio_output/*.h \
     src/video_output/*.h \
     src/overlay/*.h
 
 RESOURCES += \
-    qml.qrc
+    qml.qrc \
+    images.qrc
+
