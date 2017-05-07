@@ -37,7 +37,12 @@ void VideoWidgetUpdateThread::run()
 
             surface->present(frame);
 
-            widget->update();
+            // widget->update();
+            // widget->setUpdatesEnabled(false);
+            // widget->repaint();
+            // widget->setUpdatesEnabled(true);
+
+            emit update();
 
             frame.reset();
         }

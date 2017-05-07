@@ -23,6 +23,9 @@ private:
     FrameBuffer *frame_buffer;
     VideoSurface *surface;
     QWidget *widget;
+
+signals:
+    void update();
 };
 
 #endif // VIDEO_WIDGET_UPDATE_THREAD_H
