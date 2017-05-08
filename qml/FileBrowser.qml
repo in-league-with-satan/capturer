@@ -132,7 +132,7 @@ ShowHideRect {
                 CoverFlow {
                     id: cover_flow
 
-                    width: (fs_delegate.width - icon.width)*.65
+                    width: (fs_delegate.width - icon.width)*.65 - base_height*.5
                     height: t_media_info.paintedHeight
 
                     anchors.left: t_media_info.right

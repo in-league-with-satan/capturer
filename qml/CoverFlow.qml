@@ -15,6 +15,8 @@ Rectangle {
 
     color : "transparent"
 
+    clip: true
+
     function next() {
         if(view.count<1)
             return
@@ -125,4 +127,9 @@ Rectangle {
             }
         }
     }
+
+    // Rectangle {
+    //     anchors.fill: parent
+    //     color: "#33ff0000"
+    // }
 }

@@ -60,13 +60,13 @@ void FFSnapshot::checkQueue()
 
         int ret;
 
-        AVFormatContext *format_context=0;
-        AVCodecContext *codec_context_video=0;
-        AVCodec *codec_video=0;
-        AVStream *stream_video=0;
-        SwsContext *convert_context=0;
+        AVFormatContext *format_context=nullptr;
+        AVCodecContext *codec_context_video=nullptr;
+        AVCodec *codec_video=nullptr;
+        AVStream *stream_video=nullptr;
+        SwsContext *convert_context=nullptr;
         AVFrame *frame=av_frame_alloc();
-        AVFrame *frame_rgb=0;
+        AVFrame *frame_rgb=nullptr;
         AVPacket packet;
 
         unsigned int stream_video_index;
@@ -131,7 +131,16 @@ void FFSnapshot::checkQueue()
             goto end;
         }
 
-        // codec_context_video->thread_count=4;
+
+        if(codec_video->capabilities & CODEC_CAP_TRUNCATED)
+            codec_context_video->flags|=CODEC_FLAG_TRUNCATED;
+
+        codec_context_video->flags2|=CODEC_FLAG2_FAST;
+
+        codec_context_video->thread_count=QThread::idealThreadCount();
+
+        av_opt_set(codec_context_video->priv_data, "tune", "fastdecode", 0);
+
 
         ret=avcodec_open2(codec_context_video, codec_video, nullptr);
 
@@ -175,8 +184,8 @@ void FFSnapshot::checkQueue()
 
         shots_count=per_10_min_count*shots_per_10_min + 1;
 
-        if(shots_count>100)
-            shots_count=100;
+        if(shots_count>33)
+            shots_count=33;
 
         step=duration/shots_count;
 
@@ -281,13 +290,19 @@ end:
 
         //
 
-        av_frame_unref(frame);
-        av_frame_unref(frame_rgb);
+        if(frame)
+            av_frame_unref(frame);
 
-        avcodec_free_context(&codec_context_video);
+        if(frame_rgb)
+            av_frame_unref(frame_rgb);
 
-        avformat_close_input(&format_context);
+        if(codec_context_video)
+            avcodec_free_context(&codec_context_video);
 
-        sws_freeContext(convert_context);
+        if(format_context)
+            avformat_close_input(&format_context);
+
+        if(convert_context)
+            sws_freeContext(convert_context);
     }
 }
