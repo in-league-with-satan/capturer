@@ -11,7 +11,10 @@ AudioOutputThread::AudioOutputThread(QObject *parent) :
     AudioOutputInterface(parent)
 {
     audio_output=nullptr;
-    dev_audio_output=nullptr;
+
+    dev_audio_output.open(AudioIODevice::ReadWrite);
+
+    frame_buffer->setMaxSize(2);
 
     setTerminationEnabled();
 
@@ -54,8 +57,6 @@ void AudioOutputThread::changeChannels(int size)
         qWarning() << "input and device channels missmatch" << input_channels_size << audio_format.channelCount();
     }
 
-    dev_audio_output=nullptr;
-
     audio_output->stop();
 
     audio_output->deleteLater();
@@ -67,12 +68,7 @@ void AudioOutputThread::changeChannels(int size)
         return;
     }
 
-    dev_audio_output=audio_output->start();
-
-    if(!dev_audio_output) {
-        qCritical() << "audio_output->start err";
-        return;
-    }
+    audio_output->start(&dev_audio_output);
 }
 
 void AudioOutputThread::run()
@@ -94,39 +90,45 @@ void AudioOutputThread::run()
     }
 
     audio_output=new QAudioOutput(QAudioDeviceInfo::defaultOutputDevice(), audio_format);
-    audio_output->setBufferSize(1024*20);
+    // audio_output->setBufferSize(1024*20);
 
-
-    dev_audio_output=audio_output->start();
-
-    if(!dev_audio_output) {
-        qCritical() << "audio_output->start err";
-        return;
-    }
+    audio_output->start(&dev_audio_output);
 
     //
+
+    // int buf_trig_size=audio_output->bufferSize()*2;
+    int buf_trig_size=audio_output->bufferSize();
 
     Frame::ptr frame;
 
     while(true) {
-        frame=frame_buffer->take();
+        if(dev_audio_output.size()<buf_trig_size)
+            frame=frame_buffer->take();
 
         if(frame) {
-            onInputFrameArrived(frame->audio.raw);
+            if(!frame->audio.raw.isEmpty()) {
+                //buf_trig_size=frame->audio.raw.size()*.5;
+
+                onInputFrameArrived(frame->audio.raw);
+
+                if(audio_output->state()!=QAudio::ActiveState) {
+                    audio_output->start(&dev_audio_output);
+                }
+            }
 
             frame.reset();
         }
 
         QCoreApplication::processEvents();
 
-        usleep(1000);
+        usleep(1);
     }
 }
 
 void AudioOutputThread::onInputFrameArrived(QByteArray ba_data)
 {
-    if(!dev_audio_output)
-        return;
+    // if(!dev_audio_output)
+    //     return;
 
     if(input_channels_size!=2) {
         QByteArray ba_tmp;
@@ -136,5 +138,5 @@ void AudioOutputThread::onInputFrameArrived(QByteArray ba_data)
         ba_data=ba_tmp;
     }
 
-    dev_audio_output->write(ba_data);
+    dev_audio_output.write(ba_data);
 }

@@ -9,6 +9,8 @@ Rectangle {
     property real row_1: .9
     property real row_2: .1
 
+    visible: false
+
     GridLayout {
         columns: 1
         rows: 2

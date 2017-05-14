@@ -9,5 +9,6 @@
         <file>qml/CoverFlow.qml</file>
         <file>qml/FileBrowser.qml</file>
         <file>qml/ShowHideRect.qml</file>
+        <file>qml/PlayerState.qml</file>
     </qresource>
 </RCC>

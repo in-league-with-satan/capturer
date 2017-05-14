@@ -165,12 +165,17 @@ void DeckLinkCapture::unsubscribe(FrameBuffer *obj)
         subscription_list.removeAll(obj);
 }
 
-bool DeckLinkCapture::isRunning()
+bool DeckLinkCapture::isRunning() const
 {
     if(decklink)
         return true;
 
     return false;
+}
+
+bool DeckLinkCapture::gotSignal() const
+{
+    return !signal_lost;
 }
 
 void DeckLinkCapture::run()

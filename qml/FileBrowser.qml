@@ -208,6 +208,11 @@ ShowHideRect {
             if(messenger.fileSystemModel.isDir(path)) {
                 fs_model.file_path_last=path
                 fs_model.rootIndex=messenger.fileSystemModel.index(path)
+
+            } else {
+                messenger.fileSystemModel.playMedia(path);
+
+                root.state_visible=false
             }
         }
 

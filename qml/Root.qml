@@ -46,6 +46,13 @@ Rectangle {
         y: parent.height - height*1.5
     }
 
+    PlayerState {
+        width: parent.width*.8
+        height: parent.height*.075
+        y: parent.height*.8
+        anchors.horizontalCenter: parent.horizontalCenter
+    }
+
     Connections {
         target: messenger
 

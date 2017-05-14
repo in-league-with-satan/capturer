@@ -67,6 +67,9 @@ signals:
 
     void showHideInfo();
 
+    void showHidePlayerState();
+    void showPlayerState(bool visible);
+
     void showHideDetailedRecState();
 
     void showFileBrowser();
@@ -96,6 +99,11 @@ signals:
     void stopOnDropChanged(const bool &value);
 
     void signalLost(const bool &value);
+
+    void playerDurationChanged(const qint64 &duration);
+    void playerPositionChanged(const qint64 &position);
+    void playerSetPosition(const qint64 &position);
+
 };
 
 #endif // QML_MESSENGER_H

@@ -67,6 +67,8 @@ private:
 
 signals:
     void changed(FileSystemModel *model);
+
+    void playMedia(const QString &filename);
 };
 
 #endif // FILE_SYSTEM_MODEL_H

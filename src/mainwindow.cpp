@@ -66,18 +66,31 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    ffmpeg=new FFEncoderThread(this);
-
-    decklink_thread->subscribe(ffmpeg->frameBuffer());
-
-    connect(ffmpeg->frameBuffer(), SIGNAL(frameSkipped()), SLOT(onEncBufferOverload()), Qt::QueuedConnection);
-    connect(ffmpeg, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)));
-
-    //
-
     out_widget=new VideoWidget();
 
     decklink_thread->subscribe(out_widget->frameBuffer());
+
+
+    //
+
+    ff_enc=new FFEncoderThread(this);
+
+    decklink_thread->subscribe(ff_enc->frameBuffer());
+
+    connect(ff_enc->frameBuffer(), SIGNAL(frameSkipped()), SLOT(onEncBufferOverload()), Qt::QueuedConnection);
+    connect(ff_enc, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)));
+
+    //
+
+    ff_dec=new FFDecoderThread(this);
+    ff_dec->subscribeVideo(out_widget->frameBuffer());
+    ff_dec->subscribeAudio(audio_output->frameBuffer());
+
+    connect(messenger->fileSystemModel(), SIGNAL(playMedia(QString)), ff_dec, SLOT(open(QString)), Qt::QueuedConnection);
+    connect(ff_dec, SIGNAL(durationChanged(qint64)), messenger, SIGNAL(playerDurationChanged(qint64)), Qt::QueuedConnection);
+    connect(ff_dec, SIGNAL(positionChanged(qint64)), messenger, SIGNAL(playerPositionChanged(qint64)), Qt::QueuedConnection);
+    connect(ff_dec, SIGNAL(stateChanged(int)), SLOT(onPlayerStateChanged(int)), Qt::QueuedConnection);
+    connect(messenger, SIGNAL(playerSetPosition(qint64)), ff_dec, SLOT(seek(qint64)));
 
     //
 
@@ -318,21 +331,34 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
         if(e) {
             // qInfo() << "key pressed" << e->key();
 
-            switch(e->key()) {
+            int key=e->key();
+
+            switch(key) {
             case Qt::Key_F2:
-                messenger->showFileBrowser();
+                if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
+                    messenger->showFileBrowser();
+
                 return true;
 
             case Qt::Key_F4:
-                onStartStopRecording();
+                if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
+                    onStartStopRecording();
+
                 return true;
 
             case Qt::Key_F5:
-                messenger->showHideInfo();
+                if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
+                    messenger->showHideInfo();
+
+                else
+                    messenger->showHidePlayerState();
+
                 return true;
 
             case Qt::Key_F6:
-                messenger->showHideDetailedRecState();
+                if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
+                    messenger->showHideDetailedRecState();
+
                 return true;
 
             case Qt::Key_F7:
@@ -342,9 +368,73 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             case Qt::Key_F12:
                 QApplication::exit(0);
                 return true;
-            }
 
-            messenger->keyEvent((Qt::Key)e->key());
+            case Qt::Key_Menu:
+            case Qt::Key_Space:
+                // qInfo() << "show_menu";
+                if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
+                    emit messenger->showMenu();
+
+                else {
+                    if(ff_dec->currentState()==FFDecoderThread::ST_PLAY)
+                        ff_dec->pause();
+
+                    else
+                        ff_dec->play();
+                }
+
+                return true;
+
+            case Qt::Key_HomePage:
+            case Qt::Key_Back:
+            case Qt::Key_Backspace:
+            case Qt::Key_Delete:
+                if(ff_dec->currentState()!=FFDecoderThread::ST_STOPPED)
+                    ff_dec->stop();
+
+                else
+                    emit messenger->back();
+
+                return true;
+
+            case Qt::Key_Return:
+                emit messenger->keyPressed(Qt::Key_Right);
+
+                return true;
+
+            case Qt::Key_Up:
+            case Qt::Key_Down:
+            case Qt::Key_Left:
+            case Qt::Key_Right:
+                if(ff_dec->currentState()!=FFDecoderThread::ST_STOPPED) {
+                    int64_t pos=0;
+
+                    if(Qt::Key_Left==key) {
+                        pos=ff_dec->currentPos() - 30*1000;
+
+                        if(pos<0)
+                            pos=0;
+
+                        ff_dec->seek(pos);
+
+                        return true;
+                    }
+
+                    if(Qt::Key_Right==key) {
+                        pos=ff_dec->currentPos() + 30*1000;
+
+                        if(pos<ff_dec->currentDuration()) {
+                            ff_dec->seek(pos);
+
+                            return true;
+                        }
+                    }
+                }
+
+                emit messenger->keyPressed((Qt::Key)key);
+
+                return true;
+            }
 
             return true;
         }
@@ -559,8 +649,8 @@ void MainWindow::startStopCapture()
 
 void MainWindow::onStartStopRecording()
 {
-    if(ffmpeg->isWorking()) {
-        ffmpeg->stopCoder();
+    if(ff_enc->isWorking()) {
+        ff_enc->stopCoder();
 
         messenger->recStopped();
 
@@ -573,7 +663,7 @@ void MainWindow::onStartStopRecording()
         cfg.video_encoder=(FFEncoder::VideoEncoder::T)cb_video_encoder->currentData().toInt();
         cfg.crf=le_crf->text().toUInt();
 
-        ffmpeg->setConfig(cfg);
+        ff_enc->setConfig(cfg);
 
         messenger->updateRecStats();
         messenger->recStarted();
@@ -589,10 +679,10 @@ void MainWindow::onFrameSkipped()
     if(!cb_stop_rec_on_frames_drop->isChecked())
         return;
 
-    if(!ffmpeg->isWorking())
+    if(!ff_enc->isWorking())
         return;
 
-    ffmpeg->stopCoder();
+    ff_enc->stopCoder();
     messenger->recStopped();
 
     // QMetaObject::invokeMethod(decklink_thread, "captureStop", Qt::QueuedConnection);
@@ -609,10 +699,10 @@ void MainWindow::onFrameSkipped()
 
 void MainWindow::onEncBufferOverload()
 {
-    if(!ffmpeg->isWorking())
+    if(!ff_enc->isWorking())
         return;
 
-    ffmpeg->stopCoder();
+    ff_enc->stopCoder();
     messenger->recStopped();
 
 
@@ -631,6 +721,22 @@ void MainWindow::onPreviewChanged(int)
     out_widget->frameBuffer()->setEnabled(cb_preview->isChecked());
 }
 
+void MainWindow::onPlayerStateChanged(int state)
+{
+    if(state!=FFDecoderThread::ST_STOPPED || decklink_thread->gotSignal()) {
+        emit messenger->signalLost(false);
+
+    } else {
+        emit messenger->signalLost(true);
+
+        emit messenger->showPlayerState(false);
+    }
+
+    if(state!=FFDecoderThread::ST_STOPPED) {
+        QMetaObject::invokeMethod(audio_output, "changeChannels", Qt::QueuedConnection, Q_ARG(int, 2));
+    }
+}
+
 void MainWindow::updateStats(FFEncoder::Stats s)
 {
     le_stat_size->setText(QString("%1 bytes").arg(QLocale().toString((qulonglong)s.streams_size)));
@@ -639,7 +745,7 @@ void MainWindow::updateStats(FFEncoder::Stats s)
 
     le_stat_time->setText(s.time.toString("HH:mm:ss"));
 
-    const QPair <int, int> buffer_size=ffmpeg->frameBuffer()->size();
+    const QPair <int, int> buffer_size=ff_enc->frameBuffer()->size();
 
     messenger->updateRecStats(s.time.toString("HH:mm:ss"),
                               QString("%1 Mbits/s (%2 MB/s)").arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/1000./1000., 'f', 2))
