@@ -57,6 +57,8 @@ void FFDecoderThread::play()
     if(state!=ST_IDLE)
         return;
 
+    context.frame_timer=av_gettime();
+
     state=ST_PLAY;
 }
 

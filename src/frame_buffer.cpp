@@ -44,6 +44,13 @@ Frame::ptr FrameBuffer::take()
 
 void FrameBuffer::wait()
 {
+    {
+        QMutexLocker ml(&mutex);
+
+        if(!queue.isEmpty())
+            return;
+    }
+
     event.wait();
 }
 

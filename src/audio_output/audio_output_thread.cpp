@@ -39,7 +39,7 @@ void AudioOutputThread::changeChannels(int size)
     new_audio_format.setSampleSize(16);
     new_audio_format.setCodec("audio/pcm");
     new_audio_format.setByteOrder(QAudioFormat::LittleEndian);
-    new_audio_format.setSampleType(QAudioFormat::UnSignedInt);
+    new_audio_format.setSampleType(QAudioFormat::SignedInt);
 
     if(audio_format==new_audio_format)
         return;
@@ -78,7 +78,7 @@ void AudioOutputThread::run()
     audio_format.setSampleSize(16);
     audio_format.setCodec("audio/pcm");
     audio_format.setByteOrder(QAudioFormat::LittleEndian);
-    audio_format.setSampleType(QAudioFormat::UnSignedInt);
+    audio_format.setSampleType(QAudioFormat::SignedInt);
 
 
     QAudioDeviceInfo audio_device_info(QAudioDeviceInfo::defaultOutputDevice());

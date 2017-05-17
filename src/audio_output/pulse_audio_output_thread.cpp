@@ -5,6 +5,8 @@
 
 #ifdef USE_PULSE_AUDIO
 #include <pulse/error.h>
+#include <pulse/thread-mainloop.h>
+#include <pulse/stream.h>
 #endif
 
 //#define SAVE_STREAM
@@ -13,6 +15,18 @@
 #include "audio_tools.h"
 
 #include "pulse_audio_output_thread.h"
+
+/*
+struct pa_simple {
+    pa_threaded_mainloop *mainloop;
+    pa_context *context;
+    pa_stream *stream;
+    pa_stream_direction_t direction;
+    const void *read_data;
+    size_t read_index, read_length;
+    int operation_success;
+};
+*/
 
 PulseAudioOutputThread::PulseAudioOutputThread(QObject *parent) :
     AudioOutputInterface(parent)
@@ -37,7 +51,7 @@ void PulseAudioOutputThread::changeChannels(int size)
 {
     AudioOutputInterface::changeChannels(size);
 
-    init();
+    // init();
 }
 
 void PulseAudioOutputThread::run()
@@ -71,6 +85,8 @@ void PulseAudioOutputThread::run()
         }
 
         QCoreApplication::processEvents();
+
+        // usleep(1);
     }
 
 #endif
@@ -105,14 +121,19 @@ void PulseAudioOutputThread::onInputFrameArrived(QByteArray ba_data)
 
     int error=0;
 
-    if(pa_simple_write(s, ba_data.data(), ba_data.size(), &error)<0) {
-        qCritical() << "pa_simple_write err" << pa_strerror(error);
+    // if(pa_simple_drain(s, &error)<0) {
+    //     qCritical() << "pa_simple_drain err" << pa_strerror(error);
 
-//        pa_simple_free(s);
-//        s=nullptr;
+    //     init();
+    // }
+
+    if(pa_simple_write(s, ba_data.data(), ba_data.size(), &error)<0) {
+        qCritical() << "pa_simple_write err" << pa_strerror(error) << ba_data.size();
+
+        init();
     }
 
-//    pa_simple_drain(s, nullptr);
+    // pa_simple_drain(s, nullptr);
 
 #endif
 }
@@ -120,6 +141,11 @@ void PulseAudioOutputThread::onInputFrameArrived(QByteArray ba_data)
 void PulseAudioOutputThread::init()
 {
 #ifdef USE_PULSE_AUDIO
+
+    if(s) {
+        pa_simple_free(s);
+        s=nullptr;
+    }
 
     ss.rate=48000;
     ss.format=PA_SAMPLE_S16LE;

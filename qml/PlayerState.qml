@@ -16,14 +16,18 @@ ShowHideRect {
     Rectangle {
         id: progress_background
         anchors.fill: progress_contur
-        color: "white"
+        color: "#88ffffff"
     }
 
     Rectangle {
         id: progress
-        width: parent.width*(root.position/root.duration)
-        height: parent.height*.3
+        property real border_width: parent.height*.03
+        x: border_width
+        y: border_width
+        width: (parent.width - border_width*2)*(root.position/root.duration)
+        height: parent.height*.3 - border_width
         anchors.verticalCenter: parent.verticalCenter
+        antialiasing: true
         color: "lightblue"
     }
 
