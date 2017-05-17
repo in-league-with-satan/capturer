@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
     qRegisterMetaType<size_t>("size_t");
 
 
-    FFMpeg::init();
+    FFEncoder::init();
 
     MainWindow main_window;
 

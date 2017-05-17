@@ -4,6 +4,7 @@
 #include <QAudioFormat>
 
 #include "audio_output_interface.h"
+#include "audio_io_device.h"
 
 class QAudioOutput;
 class QIODevice;
@@ -26,7 +27,8 @@ private:
     void onInputFrameArrived(QByteArray ba_data);
 
     QAudioOutput *audio_output;
-    QIODevice *dev_audio_output;
+
+    AudioIODevice dev_audio_output;
 
     QAudioFormat audio_format;
 };

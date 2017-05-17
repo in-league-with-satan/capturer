@@ -3,7 +3,7 @@ import QtQuick.Window 2.2
 
 
 Rectangle {
-    id: level_monitor
+    id: root
 
     color: "transparent"
 
@@ -276,14 +276,14 @@ Rectangle {
         target: messenger
 
         onAudioLevels: {
-            line_left.height=l*level_monitor.max_height/level_monitor.max_value
-            line_right.height=r*level_monitor.max_height/level_monitor.max_value
-            line_center.height=c*level_monitor.max_height/level_monitor.max_value
-            line_lfe.height=lfe*level_monitor.max_height/level_monitor.max_value
-            line_back_left.height=bl*level_monitor.max_height/level_monitor.max_value
-            line_back_right.height=br*level_monitor.max_height/level_monitor.max_value
-            line_side_left.height=sl*level_monitor.max_height/level_monitor.max_value
-            line_side_right.height=sr*level_monitor.max_height/level_monitor.max_value
+            line_left.height=l*root.max_height/root.max_value
+            line_right.height=r*root.max_height/root.max_value
+            line_center.height=c*root.max_height/root.max_value
+            line_lfe.height=lfe*root.max_height/root.max_value
+            line_back_left.height=bl*root.max_height/root.max_value
+            line_back_right.height=br*root.max_height/root.max_value
+            line_side_left.height=sl*root.max_height/root.max_value
+            line_side_right.height=sr*root.max_height/root.max_value
         }
     }
 }

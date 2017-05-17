@@ -1,8 +1,7 @@
 import QtQuick 2.7
 
-Rectangle {
-    id: about
 
+ShowHideRect {
     color: "#bb000000"
 
     property string version_software: messenger.versionThis()
@@ -12,9 +11,6 @@ Rectangle {
     property string version_avfilter: messenger.versionlibAVFilter()
     property string version_swscale: messenger.versionlibSWScale()
     property string version_swresample: messenger.versionlibSWResample()
-
-    property bool state_visible: false
-
 
     Text {
         font.pixelSize: (parent.width + parent.height)/2*.04
@@ -29,33 +25,4 @@ Rectangle {
               "swscale: " + version_swscale + "\n" +
               "swresample: " + version_swresample
     }
-
-    states: [
-        State {
-            when: state_visible
-
-            PropertyChanges {
-                target: about
-                opacity: 1.
-            }
-        },
-
-        State {
-            when: !state_visible
-
-            PropertyChanges {
-                target: about
-                opacity: 0.
-            }
-        }
-    ]
-
-    transitions: [
-        Transition {
-            NumberAnimation {
-                property: "opacity"
-                duration: 500
-            }
-        }
-    ]
 }

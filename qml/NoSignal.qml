@@ -2,12 +2,16 @@ import QtQuick 2.7
 import QtQuick.Window 2.2
 import QtQuick.Layouts 1.3
 
+
 Rectangle {
-    id: no_signal
+    id: root
+
     anchors.fill: parent
 
     property real row_1: .9
     property real row_2: .1
+
+    visible: false
 
     GridLayout {
         columns: 1
@@ -28,49 +32,49 @@ Rectangle {
                 color: "#ffffffff"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.maximumHeight: no_signal.height*no_signal.row_1
+                Layout.maximumHeight: root.height*root.row_1
             }
 
             Rectangle {
                 color: "#ffffff00"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.maximumHeight: no_signal.height*no_signal.row_1
+                Layout.maximumHeight: root.height*root.row_1
             }
 
             Rectangle {
                 color: "#ff00ffff"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.maximumHeight: no_signal.height*no_signal.row_1
+                Layout.maximumHeight: root.height*root.row_1
             }
 
             Rectangle {
                 color: "#ff00ff00"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.maximumHeight: no_signal.height*no_signal.row_1
+                Layout.maximumHeight: root.height*root.row_1
             }
 
             Rectangle {
                 color: "#ffff00ff"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.maximumHeight: no_signal.height*no_signal.row_1
+                Layout.maximumHeight: root.height*root.row_1
             }
 
             Rectangle {
                 color: "#ffff0000"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.maximumHeight: no_signal.height*no_signal.row_1
+                Layout.maximumHeight: root.height*root.row_1
             }
 
             Rectangle {
                 color: "#ff0000ff"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.maximumHeight: no_signal.height*no_signal.row_1
+                Layout.maximumHeight: root.height*root.row_1
             }
         }
 
@@ -84,49 +88,49 @@ Rectangle {
                 color: "#ff0000ff"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.maximumHeight: no_signal.height*no_signal.row_2
+                Layout.maximumHeight: root.height*root.row_2
             }
 
             Rectangle {
                 color: "#ff000000"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.maximumHeight: no_signal.height*no_signal.row_2
+                Layout.maximumHeight: root.height*root.row_2
             }
 
             Rectangle {
                 color: "#ffff00ff"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.maximumHeight: no_signal.height*no_signal.row_2
+                Layout.maximumHeight: root.height*root.row_2
             }
 
             Rectangle {
                 color: "#ff555555"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.maximumHeight: no_signal.height*no_signal.row_2
+                Layout.maximumHeight: root.height*root.row_2
             }
 
             Rectangle {
                 color: "#ff00ffff"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.maximumHeight: no_signal.height*no_signal.row_2
+                Layout.maximumHeight: root.height*root.row_2
             }
 
             Rectangle {
                 color: "#ffaaaaaa"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.maximumHeight: no_signal.height*no_signal.row_2
+                Layout.maximumHeight: root.height*root.row_2
             }
 
             Rectangle {
                 color: "#ffffffff"
                 Layout.fillHeight: true
                 Layout.fillWidth: true
-                Layout.maximumHeight: no_signal.height*no_signal.row_2
+                Layout.maximumHeight: root.height*root.row_2
             }
         }
     }
@@ -148,6 +152,6 @@ Rectangle {
 
     Connections {
         target: messenger
-        onSignalLost: no_signal.visible=value
+        onSignalLost: root.visible=value
     }
 }

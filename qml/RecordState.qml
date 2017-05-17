@@ -2,14 +2,12 @@ import QtQuick 2.7
 import QtQuick.Window 2.2
 
 
-Rectangle {
-    id: rec_state_bar
+ShowHideRect {
+    id: root
 
     visible: true
     width: parent.width*.96
     height: parent.height*.04
-
-    property bool state_visible: false
 
     property bool hide_text: false
 
@@ -80,35 +78,6 @@ Rectangle {
         }
     }
 
-    states: [
-        State {
-            when: state_visible;
-
-            PropertyChanges {
-                target: rec_state_bar
-                opacity: 1.
-            }
-        },
-
-        State {
-            when: !state_visible
-
-            PropertyChanges {
-                target: rec_state_bar
-                opacity: 0.
-            }
-        }
-    ]
-
-    transitions: [
-        Transition {
-            NumberAnimation {
-                property: "opacity"
-                duration: 500
-            }
-        }
-    ]
-
     Connections {
         target: messenger
 
@@ -124,7 +93,7 @@ Rectangle {
                 text_output.text=""
         }
 
-        onRecStarted: rec_state_bar.state_visible=true
-        onRecStopped: rec_state_bar.state_visible=false
+        onRecStarted: root.state_visible=true
+        onRecStopped: root.state_visible=false
     }
 }

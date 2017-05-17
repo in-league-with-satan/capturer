@@ -1,16 +1,14 @@
 import QtQuick 2.7
 import QtQuick.Window 2.2
-//import QtQuick.Controls 1.5
 import QtQuick.Controls 2.1
 import QtQuick.Layouts 1.3
 
 
-Rectangle {
-    id: settings
+ShowHideRect {
+    id: root
 
     color: "#bb000000"
 
-    property bool state_visible: false
     property int focus_index: field_id.video_encoder
 
     QtObject {
@@ -85,7 +83,7 @@ Rectangle {
         z: 2
 
         columns: 2
-        rowSpacing: settings.height*.04
+        rowSpacing: root.height*.04
 
         anchors.centerIn: parent
 
@@ -93,7 +91,7 @@ Rectangle {
 
         Text {
             id: l_video_encoder
-            font.pixelSize: (settings.width + settings.height)/2*.04
+            font.pixelSize: (root.width + root.height)/2*.04
             anchors.verticalCenter: cb_video_encoder.verticalCenter
             color: "white"
             text: "Video encoder:"
@@ -105,7 +103,7 @@ Rectangle {
             Layout.fillHeight: true
             Layout.fillWidth: true
 
-            font.pixelSize: (settings.width + settings.height)/2*.04
+            font.pixelSize: (root.width + root.height)/2*.04
             model: messenger.modelVideoEncoder
 
             onCurrentIndexChanged: messenger.videoCodecIndexChanged(currentIndex)
@@ -120,7 +118,7 @@ Rectangle {
 
         Text {
             id: l_pixel_format
-            font.pixelSize: (settings.width + settings.height)/2*.04
+            font.pixelSize: (root.width + root.height)/2*.04
             anchors.verticalCenter: cb_pixel_format.verticalCenter
             color: "white"
             text: "Pixel format:"
@@ -132,7 +130,7 @@ Rectangle {
             Layout.fillHeight: true
             Layout.fillWidth: true
 
-            font.pixelSize: (settings.width + settings.height)/2*.04
+            font.pixelSize: (root.width + root.height)/2*.04
             model: messenger.modelPixelFormat
 
             onCurrentIndexChanged: messenger.pixelFormatIndexChanged(currentIndex)
@@ -147,7 +145,7 @@ Rectangle {
 
         Text {
             id: l_crf
-            font.pixelSize: (settings.width + settings.height)/2*.04
+            font.pixelSize: (root.width + root.height)/2*.04
             anchors.verticalCenter: cb_crf.verticalCenter
             color: "white"
             text: "Constant rate factor / quality:"
@@ -159,7 +157,7 @@ Rectangle {
             Layout.fillHeight: true
             Layout.fillWidth: true
 
-            font.pixelSize: (settings.width + settings.height)/2*.04
+            font.pixelSize: (root.width + root.height)/2*.04
             model: [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24 ]
 
             onCurrentIndexChanged: messenger.crfChanged(currentIndex)
@@ -174,7 +172,7 @@ Rectangle {
 
         Text {
             id: l_half_fps
-            font.pixelSize: (settings.width + settings.height)/2*.04
+            font.pixelSize: (root.width + root.height)/2*.04
             anchors.verticalCenter: cb_half_fps.verticalCenter
             color: "white"
             text: "Half-fps:"
@@ -186,7 +184,7 @@ Rectangle {
             Layout.fillHeight: true
             Layout.fillWidth: true
 
-            font.pixelSize: (settings.width + settings.height)/2*.04
+            font.pixelSize: (root.width + root.height)/2*.04
             scale: cb_crf.height*.02
             onCheckStateChanged: messenger.halfFpsChanged(checked)
 
@@ -200,7 +198,7 @@ Rectangle {
 
         Text {
             id: l_stop_on_drop
-            font.pixelSize: (settings.width + settings.height)/2*.04
+            font.pixelSize: (root.width + root.height)/2*.04
             anchors.verticalCenter: cb_stop_on_drop.verticalCenter
             color: "white"
             text: "Stop rec on frames drop:"
@@ -212,7 +210,7 @@ Rectangle {
             Layout.fillHeight: true
             Layout.fillWidth: true
 
-            font.pixelSize: (settings.width + settings.height)/2*.04
+            font.pixelSize: (root.width + root.height)/2*.04
             scale: cb_crf.height*.02
             onCheckStateChanged: messenger.stopOnDropChanged(checked)
 
@@ -225,39 +223,10 @@ Rectangle {
 
     //
 
-    states: [
-        State {
-            when: state_visible
-
-            PropertyChanges {
-                target: settings
-                opacity: 1.
-            }
-        },
-
-        State {
-            when: !state_visible
-
-            PropertyChanges {
-                target: settings
-                opacity: 0.
-            }
-        }
-    ]
-
-    transitions: [
-        Transition {
-            NumberAnimation {
-                property: "opacity"
-                duration: 500
-            }
-        }
-    ]
-
     Connections {
         target: messenger
 
-        onBack: settings.state_visible=false
+        onBack: root.state_visible=false
 
         onKeyPressed: {
             if(!state_visible)
@@ -289,19 +258,19 @@ Rectangle {
     //
 
     function focusNext() {
-        settings.focus_index++
+        root.focus_index++
 
-        if(settings.focus_index>field_id.max)
-            settings.focus_index=field_id.video_encoder
+        if(root.focus_index>field_id.max)
+            root.focus_index=field_id.video_encoder
 
         focus_indicator_animation.start()
     }
 
     function focusPrev() {
-        settings.focus_index--
+        root.focus_index--
 
-        if(settings.focus_index<0)
-            settings.focus_index=field_id.stop_on_drop
+        if(root.focus_index<0)
+            root.focus_index=field_id.stop_on_drop
 
          focus_indicator_animation.start()
     }
@@ -309,7 +278,7 @@ Rectangle {
     function valueNext() {
         var tmp=0
 
-        switch(settings.focus_index) {
+        switch(root.focus_index) {
         case field_id.video_encoder:
             tmp=cb_video_encoder.currentIndex + 1
 
@@ -354,7 +323,7 @@ Rectangle {
     function valuePrev() {
         var tmp=0
 
-        switch(settings.focus_index) {
+        switch(root.focus_index) {
         case field_id.video_encoder:
             tmp=cb_video_encoder.currentIndex - 1
 

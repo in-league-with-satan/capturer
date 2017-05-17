@@ -3,7 +3,10 @@
 
 #include <QObject>
 #include <QDebug>
+#include <QFileSystemModel>
 
+#include "file_system_model.h"
+#include "snapshot_list_model.h"
 
 class QmlMessenger : public QObject
 {
@@ -11,6 +14,9 @@ class QmlMessenger : public QObject
 
     Q_PROPERTY(QStringList modelVideoEncoder READ getModelVideoEncoder WRITE setModelVideoEncoder NOTIFY modelVideoEncoderChanged)
     Q_PROPERTY(QStringList modelPixelFormat READ getModelPixelFormat WRITE setModelPixelFormat NOTIFY modelPixelFormatChanged)
+    Q_PROPERTY(FileSystemModel* fileSystemModel READ fileSystemModel NOTIFY fileSystemModelChanged)
+
+    Q_PROPERTY(QString rootPath READ getRootPath NOTIFY fileSystemModelChanged)
 
 public:
     explicit QmlMessenger(QObject *parent=0);
@@ -21,6 +27,10 @@ public:
 
     QStringList getModelPixelFormat() const;
     void setModelPixelFormat(const QStringList &model);
+
+    FileSystemModel *fileSystemModel();
+
+    QString getRootPath();
 
     Q_INVOKABLE QString versionThis() const;
     Q_INVOKABLE QString versionLibAVUtil() const;
@@ -42,6 +52,8 @@ private:
 
     QStringList model_pixel_format;
     int model_pixel_format_index;
+
+    FileSystemModel *file_system_model;
 
     int crf;
 
@@ -65,7 +77,12 @@ signals:
 
     void showHideAbout();
 
+    void showHidePlayerState();
+    void showPlayerState(bool visible);
+
     void showHideDetailedRecState();
+
+    void showFileBrowser();
 
     void keyPressed(const Qt::Key &key);
 
@@ -76,6 +93,8 @@ signals:
 
     void modelPixelFormatChanged(const QStringList, QPrivateSignal);
     void pixelFormatIndexSet(const int &index);
+
+    void fileSystemModelChanged(FileSystemModel *model);
 
     void crfSet(const int &value);
 
@@ -90,6 +109,11 @@ signals:
     void stopOnDropChanged(const bool &value);
 
     void signalLost(const bool &value);
+
+    void playerDurationChanged(const qint64 &duration);
+    void playerPositionChanged(const qint64 &position);
+    void playerSetPosition(const qint64 &position);
+
 };
 
 #endif // QML_MESSENGER_H

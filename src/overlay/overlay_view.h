@@ -4,6 +4,7 @@
 #include <QQuickWidget>
 
 class QmlMessenger;
+class QQmlImageProviderBase;
 
 class OverlayView : public QQuickWidget
 {
@@ -14,6 +15,8 @@ public:
     ~OverlayView();
 
     void setMessenger(QmlMessenger *messenger);
+
+    void addImageProvider(const QString &id, QQmlImageProviderBase *image_provider);
 
 protected:
     virtual void focusInEvent(QFocusEvent *);

@@ -1,6 +1,8 @@
-#include "ffmpeg_tools.h"
+#include <QDebug>
 
-#include "ffmpeg_format_converter.h"
+#include "ff_tools.h"
+
+#include "ff_format_converter.h"
 
 namespace FF {
 

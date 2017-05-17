@@ -2,15 +2,8 @@ import QtQuick 2.7
 import QtQuick.Window 2.2
 
 
-Rectangle {
-    id: menu_header
-
-    visible: true
-
-    property bool state_visible: false
-
+ShowHideRect {
     color: "#bb000000"
-
 
     LevelMonitor {
         width: parent.width*.2
@@ -72,36 +65,6 @@ Rectangle {
             onTriggered: t_time.text=Qt.formatTime(new Date(), "hh:mm")
         }
     }
-
-
-    states: [
-        State {
-            when: state_visible;
-
-            PropertyChanges {
-                target: menu_header
-                opacity: 1.
-            }
-        },
-
-        State {
-            when: !state_visible
-
-            PropertyChanges {
-                target: menu_header
-                opacity: 0.
-            }
-        }
-    ]
-
-    transitions: [
-        Transition {
-            NumberAnimation {
-                property: "opacity"
-                duration: 500
-            }
-        }
-    ]
 
     Connections {
         target: messenger

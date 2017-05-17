@@ -44,7 +44,9 @@ public:
     void subscribe(FrameBuffer *obj);
     void unsubscribe(FrameBuffer *obj);
 
-    bool isRunning();
+    bool isRunning() const;
+
+    bool gotSignal() const;
 
 protected:
     void run();
@@ -83,7 +85,7 @@ private:
 
     uint8_t frame_counter;
 
-    bool signal_lost;
+    std::atomic <bool> signal_lost;
 
 signals:
     void signalLost(const bool &value);

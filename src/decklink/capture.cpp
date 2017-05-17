@@ -16,7 +16,7 @@
 #include <csignal>
 
 #include "DeckLinkAPI.h"
-#include "ffmpeg_format_converter.h"
+#include "ff_format_converter.h"
 #include "convert_thread.h"
 #include "audio_tools.h"
 #include "decklink_tools.h"
@@ -165,12 +165,17 @@ void DeckLinkCapture::unsubscribe(FrameBuffer *obj)
         subscription_list.removeAll(obj);
 }
 
-bool DeckLinkCapture::isRunning()
+bool DeckLinkCapture::isRunning() const
 {
     if(decklink)
         return true;
 
     return false;
+}
+
+bool DeckLinkCapture::gotSignal() const
+{
+    return !signal_lost;
 }
 
 void DeckLinkCapture::run()

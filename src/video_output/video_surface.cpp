@@ -102,7 +102,7 @@ void VideoSurface::updateVideoRect()
 {
     QSize size=surfaceFormat().sizeHint();
 
-    size.scale(widget->size().boundedTo(size), Qt::KeepAspectRatio);
+    size.scale(widget->size(), Qt::KeepAspectRatio);
 
 
     rect_target=QRect(QPoint(0, 0), size);

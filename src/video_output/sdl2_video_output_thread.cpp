@@ -12,7 +12,7 @@ SDL_Event sdl_event;
 
 
 #include "frame_buffer.h"
-#include "ffmpeg_tools.h"
+#include "ff_tools.h"
 
 #include "sdl2_video_output_thread.h"
 

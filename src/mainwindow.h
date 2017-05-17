@@ -4,7 +4,8 @@
 #include <QMainWindow>
 #include <QVariant>
 
-#include "ffmpeg_thread.h"
+#include "ff_encoder_thread.h"
+#include "ff_decoder_thread.h"
 
 class DeckLinkCapture;
 class AudioOutputInterface;
@@ -31,7 +32,8 @@ public:
 private:
     DeckLinkCapture *decklink_thread;
 
-    FFMpegThread *ffmpeg;
+    FFEncoderThread *ff_enc;
+    FFDecoderThread *ff_dec;
 
     QmlMessenger *messenger;
     OverlayView *overlay_view;
@@ -100,7 +102,9 @@ private slots:
 
     void onPreviewChanged(int state);
 
-    void updateStats(FFMpeg::Stats s);
+    void onPlayerStateChanged(int state);
+
+    void updateStats(FFEncoder::Stats s);
 };
 
 #endif // MAINWINDOW_H
