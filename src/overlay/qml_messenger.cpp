@@ -103,6 +103,19 @@ void QmlMessenger::keyEvent(const Qt::Key &key)
     Q_UNUSED(key)
 }
 
+void QmlMessenger::setRecStarted(bool value)
+{
+    file_system_model->disableSnapshots(value);
+
+    if(value) {
+        emit recStarted();
+
+    } else {
+        emit recStopped();
+
+    }
+}
+
 void QmlMessenger::checkFreeSpace()
 {
     QStorageInfo info=QStorageInfo(QApplication::applicationDirPath() + "/videos");

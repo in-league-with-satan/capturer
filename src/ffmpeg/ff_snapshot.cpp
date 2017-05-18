@@ -15,22 +15,28 @@ FFSnapshot::FFSnapshot(QObject *paretn)
 {
     accurate_seek=false;
     shots_per_10_min=4;
+    on_pause=false;
 
     start();
 }
 
-void FFSnapshot::enqueue(QString file)
+void FFSnapshot::enqueue(const QString &filename)
 {
     QMutexLocker ml(&mutex_queue);
 
-    queue.enqueue(file);
+    queue.enqueue(filename);
+}
+
+void FFSnapshot::pause(bool state)
+{
+    on_pause=state;
 }
 
 void FFSnapshot::run()
 {
     timer=new QTimer();
     timer->moveToThread(this);
-    timer->setInterval(10);
+    timer->setInterval(100);
     connect(timer, SIGNAL(timeout()), SLOT(checkQueue()), Qt::DirectConnection);
 
     timer->start();
@@ -40,6 +46,9 @@ void FFSnapshot::run()
 
 void FFSnapshot::checkQueue()
 {
+    if(on_pause)
+        return;
+
     timer->stop();
 
     QString filename;
@@ -193,6 +202,9 @@ void FFSnapshot::checkQueue()
 
 
         for(int i_frame=1; i_frame<shots_count; i_frame++) {
+            while(on_pause)
+                sleep(1);
+
             qInfo().nospace() << "frame: " << i_frame << "/" << shots_count - 1;
 
             timestamp=av_rescale_q(i_frame*step*AV_TIME_BASE, AV_TIME_BASE_Q, stream_video->time_base);

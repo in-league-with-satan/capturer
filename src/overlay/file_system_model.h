@@ -4,6 +4,7 @@
 #include <QFileSystemModel>
 #include <QSortFilterProxyModel>
 
+class FFMediaInfoThread;
 class FFSnapshot;
 class ImageProvider;
 class SnapshotListModel;
@@ -44,10 +45,12 @@ public:
     };
 
 public slots:
+    void disableSnapshots(bool value);
 
 private slots:
     void srcRowsInserted(const QModelIndex &parent, int first, int last);
-    void snapshotAdded(QString key, QImage image);
+    void addMediaInfo(QString key, QString info);
+    void addSnapshot(QString key, QImage image);
 
 protected:
     virtual bool filterAcceptsRow(int source_row, const QModelIndex &source_parent) const;
@@ -63,6 +66,7 @@ private:
 
     ImageProvider *image_provider;
 
+    FFMediaInfoThread *media_info;
     FFSnapshot *snapshot;
 
 signals:

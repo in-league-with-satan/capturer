@@ -112,7 +112,7 @@ private:
 
 signals:
     void stats(FFEncoder::Stats s);
-
+    void stateChanged(bool state);
 };
 
 Q_DECLARE_METATYPE(FFEncoder::Config)

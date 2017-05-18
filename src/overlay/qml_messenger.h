@@ -42,6 +42,7 @@ public:
 
 public slots:
     void keyEvent(const Qt::Key &key);
+    void setRecStarted(bool value);
 
 private slots:
     void checkFreeSpace();

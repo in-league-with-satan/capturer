@@ -10,6 +10,7 @@ import FuckTheSystem 0.0
 ShowHideRect {
     id: root
     color: "#bbbbbbbb"
+    clip: true
 
     ListView {
         id: list

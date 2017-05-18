@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QDebug>
+#include <QThread>
 #include <QFile>
 #include <QDir>
 
@@ -728,6 +729,9 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     if(cfg.audio_dalay!=0)
         context->out_stream_audio.next_pts=cfg.audio_dalay/1000.*context->out_stream_audio.av_codec_context->sample_rate;
 
+
+    emit stateChanged(true);
+
     return true;
 }
 
@@ -837,6 +841,9 @@ bool FFEncoder::stopCoder()
     avformat_free_context(context->av_format_context);
 
     context->av_format_context=nullptr;
+
+
+    emit stateChanged(false);
 
     return true;
 }

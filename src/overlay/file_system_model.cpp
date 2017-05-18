@@ -7,8 +7,8 @@
 #include "image_provider.h"
 #include "snapshot_list_model.h"
 
+#include "ff_media_info_thread.h"
 #include "ff_snapshot.h"
-#include "ff_media_info.h"
 
 #include "file_system_model.h"
 
@@ -18,8 +18,11 @@ FileSystemModel::FileSystemModel(QObject *parent)
 {
     image_provider=new ImageProvider();
 
-    snapshot=new FFSnapshot();
-    connect(snapshot, SIGNAL(ready(QString,QImage)), SLOT(snapshotAdded(QString,QImage)), Qt::QueuedConnection);
+    media_info=new FFMediaInfoThread(this);
+    connect(media_info, SIGNAL(ready(QString,QString)), SLOT(addMediaInfo(QString,QString)), Qt::QueuedConnection);
+
+    snapshot=new FFSnapshot(this);
+    connect(snapshot, SIGNAL(ready(QString,QImage)), SLOT(addSnapshot(QString,QImage)), Qt::QueuedConnection);
 
     filter_ext << "mkv";
 
@@ -90,7 +93,13 @@ bool FileSystemModel::isDir(const QString &path) const
 
 QString FileSystemModel::fileSize(const QModelIndex &index) const
 {
-    return QString("%1 MB").arg(QLocale().toString(model->fileInfo(mapToSource(index)).size()/1024/1024));
+    const QString filepath=
+            index.data(QFileSystemModel::FilePathRole).toString();
+
+    if(filepath.isEmpty())
+        return QString("0 MB");
+
+    return QString("%1 MB").arg(QLocale().toString(QFileInfo(filepath).size()/1024/1024));
 }
 
 QString FileSystemModel::ext(const QModelIndex &index) const
@@ -138,17 +147,18 @@ void FileSystemModel::srcRowsInserted(const QModelIndex &parent, int first, int 
             continue;
 
         snapshot->enqueue(file_info.filePath());
-
-        const QString info=FFMediaInfo::getInfoString(file_info.filePath());
-
-        if(!info.isEmpty())
-            file_media_info[file_info.filePath()]=info;
+        media_info->enqueue(file_info.filePath());
     }
+}
+
+void FileSystemModel::addMediaInfo(QString key, QString info)
+{
+    file_media_info[key]=info;
 
     emit changed(this);
 }
 
-void FileSystemModel::snapshotAdded(QString key, QImage image)
+void FileSystemModel::addSnapshot(QString key, QImage image)
 {
     SnapshotListModel *mdl=nullptr;
 
@@ -165,6 +175,12 @@ void FileSystemModel::snapshotAdded(QString key, QImage image)
     image_provider->addImage(id, image);
 
     mdl->add(id);
+}
+
+void FileSystemModel::disableSnapshots(bool value)
+{
+    media_info->pause(value);
+    snapshot->pause(value);
 }
 
 bool FileSystemModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const

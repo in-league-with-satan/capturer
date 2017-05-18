@@ -94,6 +94,8 @@ private slots:
     void onCrfChanged(const int &crf);
 
     void startStopCapture();
+    void captureStart();
+    void captureStop();
 
     void onStartStopRecording();
 
@@ -102,6 +104,7 @@ private slots:
 
     void onPreviewChanged(int state);
 
+    void onEncoderStateChanged(bool state);
     void onPlayerStateChanged(int state);
 
     void updateStats(FFEncoder::Stats s);

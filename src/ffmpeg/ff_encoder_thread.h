@@ -37,6 +37,7 @@ signals:
     void sigStopCoder();
 
     void stats(FFEncoder::Stats s);
+    void stateChanged(bool state);
 };
 
 #endif // FF_ENCODER_THREAD_H

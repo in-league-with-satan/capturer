@@ -16,7 +16,9 @@ public:
     FFSnapshot(QObject *paretn=0);
 
 public slots:
-    void enqueue(QString file);
+    void enqueue(const QString &filename);
+
+    void pause(bool state);
 
 protected:
     void run();
@@ -33,9 +35,10 @@ private:
     QQueue <QString> queue;
     QMutex mutex_queue;
 
+    std::atomic <bool> on_pause;
+
 signals:
     void ready(QString key, QImage image);
-
 };
 
 #endif // FF_SNAPSHOT_H

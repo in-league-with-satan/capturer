@@ -78,7 +78,8 @@ MainWindow::MainWindow(QWidget *parent)
     decklink_thread->subscribe(ff_enc->frameBuffer());
 
     connect(ff_enc->frameBuffer(), SIGNAL(frameSkipped()), SLOT(onEncBufferOverload()), Qt::QueuedConnection);
-    connect(ff_enc, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)));
+    connect(ff_enc, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
+    connect(ff_enc, SIGNAL(stateChanged(bool)), SLOT(onEncoderStateChanged(bool)), Qt::QueuedConnection);
 
     //
 
@@ -314,6 +315,8 @@ MainWindow::MainWindow(QWidget *parent)
     } else {
         out_widget->showFullScreen();
     }
+
+    emit messenger->signalLost(true);
 
     startStopCapture();
 }
@@ -625,11 +628,15 @@ void MainWindow::onCrfChanged(const int &crf)
 void MainWindow::startStopCapture()
 {
     if(decklink_thread->isRunning()) {
-        QMetaObject::invokeMethod(decklink_thread, "captureStop", Qt::QueuedConnection);
+        captureStop();
         return;
     }
 
+    captureStart();
+}
 
+void MainWindow::captureStart()
+{
 #ifndef __OPTIMIZE__
 
     decklink_thread->setup(cb_device->currentData().value<DeckLinkDevice>(),
@@ -651,12 +658,15 @@ void MainWindow::startStopCapture()
     QMetaObject::invokeMethod(decklink_thread, "captureStart", Qt::QueuedConnection);
 }
 
+void MainWindow::captureStop()
+{
+    QMetaObject::invokeMethod(decklink_thread, "captureStop", Qt::QueuedConnection);
+}
+
 void MainWindow::onStartStopRecording()
 {
     if(ff_enc->isWorking()) {
         ff_enc->stopCoder();
-
-        messenger->recStopped();
 
     } else {
         FFEncoder::Config cfg;
@@ -670,7 +680,7 @@ void MainWindow::onStartStopRecording()
         ff_enc->setConfig(cfg);
 
         messenger->updateRecStats();
-        messenger->recStarted();
+        messenger->setRecStarted(true);
 
         dropped_frames_counter=0;
     }
@@ -687,7 +697,6 @@ void MainWindow::onFrameSkipped()
         return;
 
     ff_enc->stopCoder();
-    messenger->recStopped();
 
     // QMetaObject::invokeMethod(decklink_thread, "captureStop", Qt::QueuedConnection);
 
@@ -707,8 +716,6 @@ void MainWindow::onEncBufferOverload()
         return;
 
     ff_enc->stopCoder();
-    messenger->recStopped();
-
 
     if(!mb_rec_stopped)
         mb_rec_stopped=new QMessageBox(QMessageBox::Critical, "", "", QMessageBox::Ok);
@@ -725,6 +732,12 @@ void MainWindow::onPreviewChanged(int)
     out_widget->frameBuffer()->setEnabled(cb_preview->isChecked());
 }
 
+void MainWindow::onEncoderStateChanged(bool state)
+{
+    if(!state)
+        messenger->setRecStarted(false);
+}
+
 void MainWindow::onPlayerStateChanged(int state)
 {
     if(state!=FFDecoderThread::ST_STOPPED || decklink_thread->gotSignal()) {
@@ -733,10 +746,16 @@ void MainWindow::onPlayerStateChanged(int state)
     } else {
         emit messenger->signalLost(true);
 
-        emit messenger->showPlayerState(false);
     }
 
-    if(state!=FFDecoderThread::ST_STOPPED) {
+    if(state==FFDecoderThread::ST_STOPPED) {
+        decklink_thread->captureStart();
+
+        emit messenger->showPlayerState(false);
+
+    } else {
+        decklink_thread->captureStop();
+
         QMetaObject::invokeMethod(audio_output, "changeChannels", Qt::QueuedConnection, Q_ARG(int, 2));
     }
 }
