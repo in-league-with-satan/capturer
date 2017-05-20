@@ -79,9 +79,6 @@ private:
             frame_video=nullptr;
             frame_audio=nullptr;
             frame_rgb=nullptr;
-
-            //skip_pkt=-10;
-            skip_pkt=0;
         }
 
         AVFormatContext *format_context;
@@ -137,9 +134,7 @@ private:
         int64_t frame_timer;
         int64_t frame_last_delay;
 
-        int skip_pkt;
-        int skipped_pkt_video;
-        int skipped_pkt_audio;
+        bool reset_audio;
 
     } context;
 

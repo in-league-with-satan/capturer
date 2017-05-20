@@ -24,7 +24,7 @@ protected:
     virtual void run();
 
 private:
-    void onInputFrameArrived(QByteArray ba_data);
+    void onInputFrameArrived(QByteArray ba_data, int channels);
 
     QAudioOutput *audio_output;
 

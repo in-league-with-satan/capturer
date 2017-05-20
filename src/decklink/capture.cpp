@@ -505,5 +505,5 @@ void DeckLinkCapture::release()
         decklink=nullptr;
     }
 
-    qInfo() << "DeckLinkCapture: released";
+    // qInfo() << "DeckLinkCapture: released";
 }

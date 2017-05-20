@@ -89,6 +89,8 @@ void DlConvertThread::run()
                 if(audio_channels==8)
                     channelsRemap(&frame->audio.raw);
 
+                frame->audio.channels=audio_channels;
+
                 //
 
                 frame->counter=frame_counter;

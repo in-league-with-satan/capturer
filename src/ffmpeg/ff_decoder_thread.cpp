@@ -54,12 +54,11 @@ void FFDecoderThread::play()
         return;
     }
 
-    if(state!=ST_IDLE)
+    if(state==ST_IDLE) {
+        seek(currentPos());
+
         return;
-
-    context.frame_timer=av_gettime();
-
-    state=ST_PLAY;
+    }
 }
 
 void FFDecoderThread::pause()
@@ -327,9 +326,7 @@ void FFDecoderThread::_open()
     context.frame_last_pts=0;
     context.pict_pts=0;
     context.frame_last_delay=0;
-
-    context.skipped_pkt_video=0;
-    context.skipped_pkt_audio=0;
+    context.reset_audio=true;
 
     position=0;
 
@@ -389,20 +386,15 @@ void FFDecoderThread::_play()
 
                     context.video_frame_duration=computeDelay();
 
-                    if(context.skip_pkt<=0 || (context.skip_pkt>0 && abs(context.skipped_pkt_video)==abs(context.skip_pkt))) {
-                        context.wait_video=true;
+                    if(!context.frame_rgb)
+                        context.frame_rgb=alloc_frame(AV_PIX_FMT_BGRA, context.target_size.width(), context.target_size.height());
 
-                        if(!context.frame_rgb)
-                            context.frame_rgb=alloc_frame(AV_PIX_FMT_BGRA, context.target_size.width(), context.target_size.height());
+                    sws_scale(context.convert_context_video,
+                              context.frame_video->data, context.frame_video->linesize,
+                              0, context.codec_context_video->height,
+                              context.frame_rgb->data, context.frame_rgb->linesize);
 
-                        sws_scale(context.convert_context_video,
-                                  context.frame_video->data, context.frame_video->linesize,
-                                  0, context.codec_context_video->height,
-                                  context.frame_rgb->data, context.frame_rgb->linesize);
-
-                    } else {
-                        context.skipped_pkt_video++;
-                    }
+                    context.wait_video=true;
                 }
 
                 av_packet_unref(&packet);
@@ -470,41 +462,36 @@ void FFDecoderThread::_play()
                 }
 
                 if(frame_finished) {
-                    if(context.skip_pkt>=0 ||(context.skip_pkt<0 && abs(context.skipped_pkt_audio)==abs(context.skip_pkt))) {
-                        uint8_t *out_samples;
-                        int out_num_samples=av_rescale_rnd(swr_get_delay(context.convert_context_audio, context.codec_context_audio->sample_rate)
-                                                           + context.frame_audio->nb_samples, 48000, context.codec_context_audio->sample_rate, AV_ROUND_UP);
+                    uint8_t *out_samples;
+                    int out_num_samples=av_rescale_rnd(swr_get_delay(context.convert_context_audio, context.codec_context_audio->sample_rate)
+                                                       + context.frame_audio->nb_samples, 48000, context.codec_context_audio->sample_rate, AV_ROUND_UP);
 
-                        av_samples_alloc(&out_samples, nullptr, 2, out_num_samples, AV_SAMPLE_FMT_S16, 0);
+                    av_samples_alloc(&out_samples, nullptr, 2, out_num_samples, AV_SAMPLE_FMT_S16, 0);
 
-                        out_num_samples=swr_convert(context.convert_context_audio, &out_samples, out_num_samples,
-                                                    (const uint8_t**)&context.frame_audio->extended_data[0], context.frame_audio->nb_samples);
-
-
-                        int data_size=av_samples_get_buffer_size(nullptr, context.codec_context_audio->channels,
-                                                                 context.frame_audio->nb_samples,
-                                                                 context.codec_context_audio->sample_fmt, alignment);
+                    out_num_samples=swr_convert(context.convert_context_audio, &out_samples, out_num_samples,
+                                                (const uint8_t**)&context.frame_audio->extended_data[0], context.frame_audio->nb_samples);
 
 
-                        context.audio_buf_size+=data_size;
+                    int data_size=av_samples_get_buffer_size(nullptr, context.codec_context_audio->channels,
+                                                             context.frame_audio->nb_samples,
+                                                             context.codec_context_audio->sample_fmt, alignment);
 
 
-                        int64_t ts=av_frame_get_best_effort_timestamp(context.frame_video);
+                    context.audio_buf_size+=data_size;
 
-                        if(context.ba_audio.isEmpty()) {
-                            if(ts!=AV_NOPTS_VALUE)
-                                context.pts_audio=ts;
 
-                            context.audio_clock=av_q2d(context.stream_audio->time_base)*context.pts_audio*1000000;
-                        }
+                    int64_t ts=av_frame_get_best_effort_timestamp(context.frame_video);
 
-                        context.ba_audio.append(QByteArray((char*)out_samples, av_samples_get_buffer_size(nullptr, 2, out_num_samples, AV_SAMPLE_FMT_S16, 0)));
+                    if(context.ba_audio.isEmpty()) {
+                        if(ts!=AV_NOPTS_VALUE)
+                            context.pts_audio=ts;
 
-                        av_freep(&out_samples);
-
-                    } else {
-                        context.skipped_pkt_audio++;
+                        context.audio_clock=av_q2d(context.stream_audio->time_base)*context.pts_audio*1000000;
                     }
+
+                    context.ba_audio.append(QByteArray((char*)out_samples, av_samples_get_buffer_size(nullptr, 2, out_num_samples, AV_SAMPLE_FMT_S16, 0)));
+
+                    av_freep(&out_samples);
                 }
 
                 context.wait_audio=true;
@@ -524,6 +511,11 @@ void FFDecoderThread::_play()
 
             context.ba_audio.clear();
             context.audio_buf_size=0;
+
+            if(context.reset_audio) {
+                f->reset_counter=true;
+                context.reset_audio=false;
+            }
 
             context.out_audio_buffer->append(f);
 
@@ -565,10 +557,9 @@ void FFDecoderThread::_seek()
     context.pict_pts=0;
     context.frame_last_delay=0;
 
-    context.skipped_pkt_video=0;
-    context.skipped_pkt_audio=0;
-
     context.ba_audio.clear();
+    context.out_audio_buffer->clear();
+    context.reset_audio=true;
 
     state=ST_PLAY;
 }
@@ -761,8 +752,9 @@ void FFDecoderThread::run()
 
         } break;
 
+        case ST_IDLE:
         case ST_STOPPED: {
-            msleep(10);
+            msleep(100);
 
         } break;
 

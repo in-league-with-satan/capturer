@@ -90,26 +90,35 @@ void AudioOutputThread::run()
     }
 
     audio_output=new QAudioOutput(QAudioDeviceInfo::defaultOutputDevice(), audio_format);
-    // audio_output->setBufferSize(1024*20);
+     audio_output->setBufferSize(1024*10);
+
 
     audio_output->start(&dev_audio_output);
 
     //
 
-    // int buf_trig_size=audio_output->bufferSize()*2;
-    int buf_trig_size=audio_output->bufferSize();
+    int buf_trig_size=audio_output->bufferSize()*1.5;
+    // int buf_trig_size=audio_output->bufferSize();
+    // int buf_trig_size=4096*2;
+
 
     Frame::ptr frame;
 
     while(true) {
-        if(dev_audio_output.size()<buf_trig_size)
+        if(dev_audio_output.size()<buf_trig_size) {
             frame=frame_buffer->take();
+        }
 
         if(frame) {
-            if(!frame->audio.raw.isEmpty()) {
-                 buf_trig_size=frame->audio.raw.size()*.5;
+            if(frame->reset_counter) {
+                audio_output->reset();
+                dev_audio_output.clear();
+            }
 
-                onInputFrameArrived(frame->audio.raw);
+            if(!frame->audio.raw.isEmpty()) {
+                // buf_trig_size=frame->audio.raw.size()*.5;
+
+                onInputFrameArrived(frame->audio.raw, frame->audio.channels);
 
                 if(audio_output->state()!=QAudio::ActiveState) {
                     audio_output->start(&dev_audio_output);
@@ -125,12 +134,12 @@ void AudioOutputThread::run()
     }
 }
 
-void AudioOutputThread::onInputFrameArrived(QByteArray ba_data)
+void AudioOutputThread::onInputFrameArrived(QByteArray ba_data, int channels)
 {
     // if(!dev_audio_output)
     //     return;
 
-    if(input_channels_size!=2) {
+    if(channels!=2) {
         QByteArray ba_tmp;
 
         mix8channelsTo2(&ba_data, &ba_tmp);

@@ -71,6 +71,11 @@ qint64 AudioIODevice::bytesAvailable() const
     return ba_data.size();
 }
 
+void AudioIODevice::clear()
+{
+    ba_data.clear();
+}
+
 bool AudioIODevice::canReadLine() const
 {
     qWarning() << "AudioIODevice::canReadLine";
@@ -86,8 +91,6 @@ qint64 AudioIODevice::readData(char *data, qint64 maxlen)
     if(maxlen>0) {
         memcpy(data, ba_data.data(), maxlen);
 
-//        ba_data=ba_data.mid(maxlen);
-//        ba_data.remove(0, maxlen);
         ba_data.remove(0, maxlen);
     }
 
@@ -96,13 +99,7 @@ qint64 AudioIODevice::readData(char *data, qint64 maxlen)
 
 qint64 AudioIODevice::writeData(const char *data, qint64 len)
 {
-//    return len;
-//    qInfo() << "AudioIODevice::writeData a" << ba_data.size() << len;
-
     ba_data.append(data, len);
-//    ba_data+=QByteArray(data, len);
-
-//    qInfo() << "AudioIODevice::writeData b" << ba_data.size() << len;
 
     return len;
 }

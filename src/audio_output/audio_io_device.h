@@ -24,16 +24,12 @@ public:
 
     virtual qint64 bytesAvailable() const;
 
-//    qint64 read(char *data, qint64 maxlen);
-//    QByteArray read(qint64 maxlen);
-//    QByteArray readAll();
-//    qint64 readLine(char *data, qint64 maxlen);
-//    QByteArray readLine(qint64 maxlen = 0);
+    void clear();
+
     virtual bool canReadLine() const;
 
 private:
     QByteArray ba_data;
-
 
 protected:
     virtual qint64 readData(char *data, qint64 maxlen);
