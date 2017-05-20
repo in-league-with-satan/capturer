@@ -348,7 +348,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
                 return true;
 
             case Qt::Key_F4:
-                if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
+                if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED && (decklink_thread->gotSignal() || ff_enc->isWorking()))
                     onStartStopRecording();
 
                 return true;
@@ -746,6 +746,7 @@ void MainWindow::onPlayerStateChanged(int state)
     } else {
         emit messenger->signalLost(true);
 
+        out_widget->fillBlack();
     }
 
     if(state==FFDecoderThread::ST_STOPPED) {

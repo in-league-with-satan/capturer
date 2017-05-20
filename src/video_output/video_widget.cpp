@@ -45,6 +45,21 @@ QSize VideoWidget::sizeHint() const
     return surface->surfaceFormat().sizeHint();
 }
 
+void VideoWidget::fillBlack()
+{
+    QImage image(640, 480, QImage::Format_ARGB32);
+
+    image.fill(Qt::black);
+
+    Frame::ptr frame=Frame::make();
+
+    frame->video.decklink_frame.init(image.size(), bmdFormat8BitARGB);
+
+    memcpy(frame->video.raw->data(), image.bits(), frame->video.raw->size());
+
+    frame_buffer->append(frame);
+}
+
 void VideoWidget::paintEvent(QPaintEvent *event)
 {
     QPainter painter(this);

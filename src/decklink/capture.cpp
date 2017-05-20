@@ -175,6 +175,9 @@ bool DeckLinkCapture::isRunning() const
 
 bool DeckLinkCapture::gotSignal() const
 {
+    if(!decklink)
+        return false;
+
     return !signal_lost;
 }
 

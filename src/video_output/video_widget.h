@@ -21,6 +21,8 @@ public:
 
     QSize sizeHint() const;
 
+    void fillBlack();
+
 protected:
     void paintEvent(QPaintEvent *event);
     void resizeEvent(QResizeEvent *event);

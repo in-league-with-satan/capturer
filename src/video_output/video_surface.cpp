@@ -49,7 +49,9 @@ bool VideoSurface::start(const QVideoSurfaceFormat &format)
 
         rect_source=format.viewport();
 
-        QAbstractVideoSurface::start(format);
+        if(!QAbstractVideoSurface::start(format)) {
+            qCritical() << "QAbstractVideoSurface::start err:" << error();
+        }
 
         widget->updateGeometry();
 
@@ -85,12 +87,24 @@ bool VideoSurface::present(const QVideoFrame &frame)
 
 void VideoSurface::present(Frame::ptr frame)
 {
-    QMutexLocker ml(&mutex);
+    mutex.lock();
 
     this->frame=frame;
 
-    if(rect_source.size()!=frame->video.decklink_frame.getSize())
-        rect_source.setSize(frame->video.decklink_frame.getSize());
+    QSize frame_size=frame->video.decklink_frame.getSize();
+
+    if(rect_source.size()!=frame_size) {
+        rect_source.setSize(frame_size);
+
+        mutex.unlock();
+
+        stop();
+        start(QVideoSurfaceFormat(frame_size, QVideoFrame::Format_ARGB32));
+
+        return;
+    }
+
+    mutex.unlock();
 }
 
 QRect VideoSurface::videoRect() const
