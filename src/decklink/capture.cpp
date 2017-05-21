@@ -1,5 +1,4 @@
 #include <QDebug>
-#include <QMutexLocker>
 #include <QDateTime>
 #include <qcoreapplication.h>
 
@@ -123,8 +122,6 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
 
     //
 
-    setTerminationEnabled();
-
     // start(QThread::NormalPriority);
     start(QThread::TimeCriticalPriority);
 }
@@ -133,7 +130,14 @@ DeckLinkCapture::~DeckLinkCapture()
 {
     captureStop();
 
-    terminate();
+    quit();
+
+    while(isRunning()) {
+        msleep(30);
+    }
+
+    if(ext_converter)
+        conv_thread->stopThreads();
 }
 
 void DeckLinkCapture::setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels)

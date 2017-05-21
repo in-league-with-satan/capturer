@@ -17,8 +17,6 @@ FFEncoderThread::FFEncoderThread(QObject *parent)
 
     is_working=false;
 
-    setTerminationEnabled();
-
     start(QThread::NormalPriority);
     // start(QThread::HighPriority);
     // start(QThread::HighestPriority);
@@ -27,9 +25,14 @@ FFEncoderThread::FFEncoderThread(QObject *parent)
 
 FFEncoderThread::~FFEncoderThread()
 {
-    terminate();
+    running=false;
 
-    delete frame_buffer;
+    frame_buffer->setEnabled(true);
+    frame_buffer->append(nullptr);
+
+    while(isRunning()) {
+        msleep(30);
+    }
 }
 
 FrameBuffer *FFEncoderThread::frameBuffer()
@@ -75,9 +78,10 @@ void FFEncoderThread::run()
 
     Frame::ptr frame;
 
-    while(true) {
-        if(frame_buffer->isEmpty())
-            frame_buffer->wait();
+    running=true;
+
+    while(running) {
+        frame_buffer->wait();
 
         frame=frame_buffer->take();
 

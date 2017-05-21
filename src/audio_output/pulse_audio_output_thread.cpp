@@ -44,7 +44,6 @@ PulseAudioOutputThread::PulseAudioOutputThread(QObject *parent) :
 
 PulseAudioOutputThread::~PulseAudioOutputThread()
 {
-    terminate();
 }
 
 void PulseAudioOutputThread::changeChannels(int size)
@@ -73,7 +72,9 @@ void PulseAudioOutputThread::run()
 
     Frame::ptr frame;
 
-    while(true) {
+    running=true;
+
+    while(running) {
         frame_buffer->wait();
 
         frame=frame_buffer->take();

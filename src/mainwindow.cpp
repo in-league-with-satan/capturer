@@ -50,7 +50,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(decklink_thread, SIGNAL(signalLost(bool)), messenger, SIGNAL(signalLost(bool)), Qt::QueuedConnection);
 
-    overlay_view=new OverlayView();
+    overlay_view=new OverlayView(this);
 
     overlay_view->setMessenger(messenger);
 

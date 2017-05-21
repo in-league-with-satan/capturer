@@ -29,6 +29,8 @@ private:
 
     bool is_working;
 
+    std::atomic <bool> running;
+
 protected:
     void run();
 

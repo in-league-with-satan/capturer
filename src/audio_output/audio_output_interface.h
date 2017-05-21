@@ -22,6 +22,8 @@ protected:
     FrameBuffer *frame_buffer;
 
     int input_channels_size;
+
+    std::atomic <bool> running;
 };
 
 #endif // AUDIO_OUTPUT_THREAD_H

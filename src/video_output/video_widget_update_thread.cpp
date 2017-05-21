@@ -16,18 +16,28 @@ VideoWidgetUpdateThread::VideoWidgetUpdateThread(FrameBuffer *frame_buffer, Vide
     , surface(surface)
     , widget(widget)
 {
-    setTerminationEnabled(true);
-
     start();
+}
+
+VideoWidgetUpdateThread::~VideoWidgetUpdateThread()
+{
+    running=false;
+
+    frame_buffer->append(nullptr);
+
+    while(isRunning()) {
+        msleep(30);
+    }
 }
 
 void VideoWidgetUpdateThread::run()
 {
     Frame::ptr frame;
 
-    while(true) {
-        if(frame_buffer->isEmpty())
-            frame_buffer->wait();
+    running=true;
+
+    while(running) {
+        frame_buffer->wait();
 
         frame=frame_buffer->take();
 

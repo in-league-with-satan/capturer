@@ -30,6 +30,8 @@ public:
     explicit DlConvertThreadContainer(int thread_count, QObject *parent=0);
     ~DlConvertThreadContainer();
 
+    void stopThreads();
+
     void addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet, uint8_t counter, bool reset_counter);
 
     void subscribe(FrameBuffer *obj);
@@ -69,6 +71,8 @@ public:
     explicit DlConvertThread(FrameCompletedCallback func_frame_completed, QObject *parent=0);
     ~DlConvertThread();
 
+    void term();
+
     FrameBuffer *frameBuffer();
 
     void addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet, uint8_t frame_counter, bool reset_counter);
@@ -89,6 +93,8 @@ private:
     EventWaiting event;
 
     int audio_channels;
+
+    std::atomic <bool> running;
 
 protected:
     void run();

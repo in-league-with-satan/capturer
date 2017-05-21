@@ -16,8 +16,6 @@ FFDecoderThread::FFDecoderThread(QObject *parent)
 {
     prev_state=state=ST_STOPPED;
 
-    setTerminationEnabled();
-
     start(QThread::NormalPriority);
 }
 
@@ -107,14 +105,14 @@ void FFDecoderThread::term()
 {
      running=false;
 
-     while(isRunning())
-         msleep(1);
+     while(isRunning()) {
+         msleep(30);
+     }
 }
 
 int64_t FFDecoderThread::audioTS()
 {
     return (context.pts_audio - context.start_time_audio)*av_q2d(context.stream_audio->time_base)*1000000000;
-
 }
 
 int64_t FFDecoderThread::videoTS()

@@ -8,8 +8,8 @@
 #include "overlay_view.h"
 
 
-OverlayView::OverlayView() :
-    QQuickWidget()
+OverlayView::OverlayView(QWidget *parent)
+    : QQuickWidget(parent)
 {
     QSurfaceFormat format;
     format.setAlphaBufferSize(8);

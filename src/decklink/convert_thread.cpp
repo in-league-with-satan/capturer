@@ -30,8 +30,6 @@ DlConvertThread::DlConvertThread(FrameCompletedCallback func_frame_completed, QO
 
     audio_channels=8;
 
-    setTerminationEnabled();
-
     start(QThread::NormalPriority);
     // start(QThread::HighPriority);
     // start(QThread::TimeCriticalPriority);
@@ -39,7 +37,19 @@ DlConvertThread::DlConvertThread(FrameCompletedCallback func_frame_completed, QO
 
 DlConvertThread::~DlConvertThread()
 {
-    terminate();
+    term();
+}
+
+void DlConvertThread::term()
+{
+    running=false;
+
+    event.next();
+
+    while(isRunning()) {
+
+        msleep(30);
+    }
 }
 
 void DlConvertThread::addFrame(IDeckLinkVideoFrame *frame,  IDeckLinkAudioInputPacket *audio_packet, uint8_t frame_counter, bool reset_counter)
@@ -63,7 +73,9 @@ void DlConvertThread::run()
     Frame::ptr frame;
     void *d_audio;
 
-    while(true) {
+    running=true;
+
+    while(running) {
         event.wait();
 
         if(frame_video_src) {
@@ -129,6 +141,12 @@ DlConvertThreadContainer::DlConvertThreadContainer(int thread_count, QObject *pa
 
 DlConvertThreadContainer::~DlConvertThreadContainer()
 {
+}
+
+void DlConvertThreadContainer::stopThreads()
+{
+    for(int i=0; i<thread_count; ++i)
+        thread[i]->term();
 }
 
 void DlConvertThreadContainer::addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet, uint8_t counter, bool reset_counter)

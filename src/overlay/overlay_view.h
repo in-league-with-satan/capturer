@@ -11,7 +11,7 @@ class OverlayView : public QQuickWidget
     Q_OBJECT
 
 public:
-    OverlayView();
+    OverlayView(QWidget *parent=0);
     ~OverlayView();
 
     void setMessenger(QmlMessenger *messenger);

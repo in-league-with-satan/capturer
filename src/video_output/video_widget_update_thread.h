@@ -15,6 +15,7 @@ class VideoWidgetUpdateThread : public QThread
 
 public:
     VideoWidgetUpdateThread(FrameBuffer *frame_buffer, VideoSurface *surface, QWidget *widget, QObject *parent=0);
+    ~VideoWidgetUpdateThread();
 
 protected:
     void run();
@@ -23,6 +24,8 @@ private:
     FrameBuffer *frame_buffer;
     VideoSurface *surface;
     QWidget *widget;
+
+    std::atomic <bool> running;
 
 signals:
     void update();

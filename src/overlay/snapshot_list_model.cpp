@@ -1,4 +1,3 @@
-#include <QMutexLocker>
 #include <QDebug>
 #include <QAbstractItemModel>
 #include <QQmlEngine>

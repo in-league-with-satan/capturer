@@ -3,7 +3,6 @@
 
 #include <QAbstractListModel>
 #include <QStringList>
-#include <QMutex>
 
 class SnapshotListModel : public QAbstractListModel
 {

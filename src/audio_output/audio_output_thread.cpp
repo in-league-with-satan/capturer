@@ -16,14 +16,11 @@ AudioOutputThread::AudioOutputThread(QObject *parent) :
 
     frame_buffer->setMaxSize(2);
 
-    setTerminationEnabled();
-
     start(QThread::NormalPriority);
 }
 
 AudioOutputThread::~AudioOutputThread()
 {
-    terminate();
 }
 
 void AudioOutputThread::changeChannels(int size)
@@ -90,7 +87,7 @@ void AudioOutputThread::run()
     }
 
     audio_output=new QAudioOutput(QAudioDeviceInfo::defaultOutputDevice(), audio_format);
-     audio_output->setBufferSize(1024*10);
+    audio_output->setBufferSize(1024*10);
 
 
     audio_output->start(&dev_audio_output);
@@ -104,7 +101,9 @@ void AudioOutputThread::run()
 
     Frame::ptr frame;
 
-    while(true) {
+    running=true;
+
+    while(running) {
         if(dev_audio_output.size()<buf_trig_size) {
             frame=frame_buffer->take();
         }

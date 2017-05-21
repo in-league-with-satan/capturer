@@ -13,13 +13,17 @@ AudioOutputInterface::AudioOutputInterface(QObject *parent) :
     frame_buffer->setMaxSize(2);
 
     input_channels_size=2;
-
-    setTerminationEnabled();
 }
 
 AudioOutputInterface::~AudioOutputInterface()
 {
-    delete frame_buffer;
+    running=false;
+
+    frame_buffer->append(nullptr);
+
+    while(isRunning()) {
+        msleep(30);
+    }
 }
 
 FrameBuffer *AudioOutputInterface::frameBuffer()
