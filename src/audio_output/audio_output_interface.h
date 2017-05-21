@@ -3,6 +3,8 @@
 
 #include <QThread>
 
+#include <atomic>
+
 class FrameBuffer;
 
 class AudioOutputInterface : public QThread

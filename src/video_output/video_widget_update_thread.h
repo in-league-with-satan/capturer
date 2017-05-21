@@ -4,6 +4,8 @@
 #include <QWidget>
 #include <QThread>
 
+#include <atomic>
+
 class VideoSurface;
 class FrameBuffer;
 class VideoWidget;

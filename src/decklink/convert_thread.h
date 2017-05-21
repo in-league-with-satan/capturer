@@ -5,6 +5,8 @@
 #include <QMutex>
 #include <QVector>
 
+#include <atomic>
+
 #include "frame_buffer.h"
 
 #include "event_waiting.h"

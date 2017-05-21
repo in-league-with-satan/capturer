@@ -5,7 +5,7 @@
 #include <QMutex>
 #include <QQueue>
 
-
+#include <atomic>
 
 class QTimer;
 

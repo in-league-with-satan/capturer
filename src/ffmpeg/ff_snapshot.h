@@ -6,6 +6,8 @@
 #include <QMutex>
 #include <QPixmap>
 
+#include <atomic>
+
 class QTimer;
 
 class FFSnapshot : public QThread

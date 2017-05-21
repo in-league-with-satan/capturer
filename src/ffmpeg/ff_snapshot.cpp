@@ -207,7 +207,7 @@ void FFSnapshot::checkQueue()
 
             qInfo().nospace() << "frame: " << i_frame << "/" << shots_count - 1;
 
-            timestamp=av_rescale_q(i_frame*step*AV_TIME_BASE, AV_TIME_BASE_Q, stream_video->time_base);
+            timestamp=av_rescale_q(i_frame*step*AV_TIME_BASE, av_get_time_base_q(), stream_video->time_base);
 
             if(stream_video->start_time!=AV_NOPTS_VALUE)
                 timestamp+=stream_video->start_time;

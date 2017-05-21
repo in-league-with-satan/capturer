@@ -4,6 +4,8 @@
 #include <QThread>
 #include <QSize>
 
+#include <atomic>
+
 extern "C" {
 #include <libavformat/avformat.h>
 }

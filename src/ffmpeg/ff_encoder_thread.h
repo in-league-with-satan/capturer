@@ -3,6 +3,8 @@
 
 #include <QThread>
 
+#include <atomic>
+
 #include "ff_encoder.h"
 
 

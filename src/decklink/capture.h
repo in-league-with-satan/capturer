@@ -5,6 +5,8 @@
 #include <QThread>
 #include <QSize>
 
+#include <atomic>
+
 #include "frame_buffer.h"
 
 #include "device_list.h"
