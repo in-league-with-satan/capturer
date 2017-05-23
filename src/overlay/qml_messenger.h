@@ -2,9 +2,9 @@
 #define QML_MESSENGER_H
 
 #include <QObject>
-#include <QDebug>
 #include <QFileSystemModel>
 
+#include "settings_model.h"
 #include "file_system_model.h"
 #include "snapshot_list_model.h"
 
@@ -12,8 +12,7 @@ class QmlMessenger : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(QStringList modelVideoEncoder READ getModelVideoEncoder WRITE setModelVideoEncoder NOTIFY modelVideoEncoderChanged)
-    Q_PROPERTY(QStringList modelPixelFormat READ getModelPixelFormat WRITE setModelPixelFormat NOTIFY modelPixelFormatChanged)
+    Q_PROPERTY(SettingsModel* settingsModel READ settingsModel NOTIFY settingsModelChanged)
     Q_PROPERTY(FileSystemModel* fileSystemModel READ fileSystemModel NOTIFY fileSystemModelChanged)
 
     Q_PROPERTY(QString rootPath READ getRootPath NOTIFY fileSystemModelChanged)
@@ -22,15 +21,10 @@ public:
     explicit QmlMessenger(QObject *parent=0);
     ~QmlMessenger();
 
-    QStringList getModelVideoEncoder() const;
-    void setModelVideoEncoder(const QStringList &model);
+    Q_INVOKABLE SettingsModel *settingsModel();
+    Q_INVOKABLE FileSystemModel *fileSystemModel();
 
-    QStringList getModelPixelFormat() const;
-    void setModelPixelFormat(const QStringList &model);
-
-    FileSystemModel *fileSystemModel();
-
-    QString getRootPath();
+    Q_INVOKABLE QString getRootPath();
 
     Q_INVOKABLE QString versionThis() const;
     Q_INVOKABLE QString versionLibAVUtil() const;
@@ -48,15 +42,8 @@ private slots:
     void checkFreeSpace();
 
 private:
-    QStringList model_video_encoder;
-    int model_video_encoder_index;
-
-    QStringList model_pixel_format;
-    int model_pixel_format_index;
-
+    SettingsModel *settings_model;
     FileSystemModel *file_system_model;
-
-    int crf;
 
 signals:
     void updateRecStats(QString duration=QString(), QString bitrate=QString(), QString size=QString(),
@@ -95,19 +82,8 @@ signals:
     void modelPixelFormatChanged(const QStringList, QPrivateSignal);
     void pixelFormatIndexSet(const int &index);
 
+    void settingsModelChanged(SettingsModel *model);
     void fileSystemModelChanged(FileSystemModel *model);
-
-    void crfSet(const int &value);
-
-    void halfFpsSet(const bool &value);
-
-    void stopOnDropSet(const bool &value);
-
-    void videoCodecIndexChanged(const int &index);
-    void pixelFormatIndexChanged(const int &index);
-    void crfChanged(const int &value);
-    void halfFpsChanged(const bool &value);
-    void stopOnDropChanged(const bool &value);
 
     void signalLost(const bool &value);
 

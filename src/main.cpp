@@ -3,6 +3,7 @@
 
 #include "decklink_tools.h"
 #include "mainwindow.h"
+#include "settings.h"
 
 #ifdef __linux__
 
@@ -47,15 +48,9 @@ int main(int argc, char *argv[])
 
     FFEncoder::init();
 
+    Settings::createInstance();
+
     MainWindow main_window;
-
-#ifndef _MSC_VER
-#ifndef __OPTIMIZE__
-
-    main_window.show();
-
-#endif
-#endif
 
     return application.exec();
 }
