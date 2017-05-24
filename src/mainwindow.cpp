@@ -236,9 +236,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     QApplication::instance()->installEventFilter(this);
 
+    setMinimumSize(640, 640/(16/9.));
+
     if(qApp->arguments().contains("--windowed")) {
-        out_widget->setMinimumSize(640, 640/(16/9.));
-        out_widget->resize(640, 640/(16/9.));
         show();
 
     } else {
@@ -299,6 +299,15 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 
             case Qt::Key_F7:
                 previewOnOff();
+                return true;
+
+            case Qt::Key_F11:
+                if(isFullScreen())
+                    showNormal();
+
+                else
+                    showFullScreen();
+
                 return true;
 
             case Qt::Key_F12:
