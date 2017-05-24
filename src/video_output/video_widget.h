@@ -3,10 +3,11 @@
 
 #include <QWidget>
 
+#include "frame_buffer.h"
+
 class QAbstractVideoSurface;
 
 class VideoSurface;
-class FrameBuffer;
 class VideoWidgetUpdateThread;
 
 class VideoWidget: public QWidget
@@ -17,7 +18,7 @@ public:
     VideoWidget(QWidget *parent=0);
     ~VideoWidget();
 
-    FrameBuffer *frameBuffer();
+    FrameBuffer::ptr frameBuffer();
 
     QSize sizeHint() const;
 
@@ -30,7 +31,7 @@ protected:
 private:
     VideoSurface *surface;
 
-    FrameBuffer *frame_buffer;
+    FrameBuffer::ptr frame_buffer;
 
     VideoWidgetUpdateThread *update_thread;
 };

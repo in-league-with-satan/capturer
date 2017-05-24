@@ -3,14 +3,12 @@
 #include <QLayout>
 #include <QVideoSurfaceFormat>
 
-#include "frame_buffer.h"
-
 #include "video_surface.h"
 #include "video_widget.h"
 
 #include "video_widget_update_thread.h"
 
-VideoWidgetUpdateThread::VideoWidgetUpdateThread(FrameBuffer *frame_buffer, VideoSurface *surface, QWidget *widget, QObject *parent)
+VideoWidgetUpdateThread::VideoWidgetUpdateThread(FrameBuffer::ptr frame_buffer, VideoSurface *surface, QWidget *widget, QObject *parent)
     : QThread(parent)
     , frame_buffer(frame_buffer)
     , surface(surface)

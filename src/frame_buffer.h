@@ -14,8 +14,14 @@ class FrameBuffer : public QObject
     Q_OBJECT
 
 public:
+    typedef std::shared_ptr<FrameBuffer> ptr;
+
     explicit FrameBuffer(QObject *parent=0);
     ~FrameBuffer();
+
+    static ptr make() {
+        return ptr(new FrameBuffer());
+    }
 
     void append(Frame::ptr frame);
 

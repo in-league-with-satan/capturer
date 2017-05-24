@@ -4,14 +4,14 @@
 #include <QThread>
 #include <QSize>
 
+#include "frame_buffer.h"
+
 class SDL_Window;
 class SDL_Renderer;
 class SDL_Texture;
 
 struct SwsContext;
 struct AVFrame;
-
-class FrameBuffer;
 
 class Sdl2VideoOutpitThread : public QThread
 {
@@ -21,7 +21,7 @@ public:
     explicit Sdl2VideoOutpitThread(QObject *parent=0);
     virtual ~Sdl2VideoOutpitThread();
 
-    FrameBuffer *frameBuffer();
+    FrameBuffer::ptr frameBuffer();
 
 protected:
     void run();
@@ -34,7 +34,7 @@ private slots:
     void checkFrame();
 
 private:
-    FrameBuffer *frame_buffer;
+    FrameBuffer::ptr frame_buffer;
 
     SDL_Window *sdl_window;
     SDL_Renderer *sdl_renderer;

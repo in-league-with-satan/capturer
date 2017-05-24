@@ -36,8 +36,8 @@ public:
 
     void addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet, uint8_t counter, bool reset_counter);
 
-    void subscribe(FrameBuffer *obj);
-    void unsubscribe(FrameBuffer *obj);
+    void subscribe(FrameBuffer::ptr obj);
+    void unsubscribe(FrameBuffer::ptr obj);
 
     void setAudioChannels(int value);
 
@@ -57,7 +57,7 @@ private:
 
     QList <Frame::ptr> queue;
 
-    QList <FrameBuffer*> subscription_list;
+    QList <FrameBuffer::ptr> subscription_list;
 
 signals:
     void frameSkipped();
@@ -74,8 +74,6 @@ public:
     ~DlConvertThread();
 
     void term();
-
-    FrameBuffer *frameBuffer();
 
     void addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet, uint8_t frame_counter, bool reset_counter);
 

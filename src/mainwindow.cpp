@@ -85,7 +85,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     decklink_thread->subscribe(ff_enc->frameBuffer());
 
-    connect(ff_enc->frameBuffer(), SIGNAL(frameSkipped()), SLOT(encoderBufferOverload()), Qt::QueuedConnection);
+    connect(ff_enc->frameBuffer().get(), SIGNAL(frameSkipped()), SLOT(encoderBufferOverload()), Qt::QueuedConnection);
     connect(ff_enc, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
     connect(ff_enc, SIGNAL(stateChanged(bool)), SLOT(encoderStateChanged(bool)), Qt::QueuedConnection);
 
@@ -101,6 +101,14 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ff_dec, SIGNAL(stateChanged(int)), SLOT(playerStateChanged(int)), Qt::QueuedConnection);
     connect(messenger, SIGNAL(playerSetPosition(qint64)), ff_dec, SLOT(seek(qint64)));
     connect(messenger->settingsModel(), SIGNAL(dataChanged(int,int,bool)), SLOT(settingsModelDataChanged(int,int,bool)));
+
+    //
+
+    audio_level=new AudioLevel(this);
+    decklink_thread->subscribe(audio_level->frameBuffer());
+
+    connect(audio_level, SIGNAL(levels(qint16,qint16,qint16,qint16,qint16,qint16,qint16,qint16)),
+            messenger, SIGNAL(audioLevels(qint16,qint16,qint16,qint16,qint16,qint16,qint16,qint16)), Qt::QueuedConnection);
 
     //
 
@@ -214,15 +222,6 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.value=&settings->rec.stop_rec_on_frames_drop;
 
     messenger->settingsModel()->add(set_model_data);
-
-    //
-
-    audio_level=new AudioLevel(this);
-    decklink_thread->subscribe(audio_level->frameBuffer());
-
-    connect(audio_level, SIGNAL(levels(qint16,qint16,qint16,qint16,qint16,qint16,qint16,qint16)),
-            messenger, SIGNAL(audioLevels(qint16,qint16,qint16,qint16,qint16,qint16,qint16,qint16)), Qt::QueuedConnection);
-
 
     //
 

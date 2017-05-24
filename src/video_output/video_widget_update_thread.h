@@ -6,8 +6,10 @@
 
 #include <atomic>
 
+#include "frame_buffer.h"
+
+
 class VideoSurface;
-class FrameBuffer;
 class VideoWidget;
 class VideoWidgetUpdateThread;
 
@@ -16,14 +18,14 @@ class VideoWidgetUpdateThread : public QThread
     Q_OBJECT
 
 public:
-    VideoWidgetUpdateThread(FrameBuffer *frame_buffer, VideoSurface *surface, QWidget *widget, QObject *parent=0);
+    VideoWidgetUpdateThread(FrameBuffer::ptr frame_buffer, VideoSurface *surface, QWidget *widget, QObject *parent=0);
     ~VideoWidgetUpdateThread();
 
 protected:
     void run();
 
 private:
-    FrameBuffer *frame_buffer;
+    FrameBuffer::ptr frame_buffer;
     VideoSurface *surface;
     QWidget *widget;
 

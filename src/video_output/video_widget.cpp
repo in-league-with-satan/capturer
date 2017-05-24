@@ -3,7 +3,6 @@
 #include <QPaintEvent>
 
 #include "video_surface.h"
-#include "frame_buffer.h"
 #include "video_widget_update_thread.h"
 
 #include "video_widget.h"
@@ -14,7 +13,7 @@ VideoWidget::VideoWidget(QWidget *parent)
 {
     setAutoFillBackground(false);
 
-    frame_buffer=new FrameBuffer(this);
+    frame_buffer=FrameBuffer::make();
     frame_buffer->setMaxSize(2);
 
     QPalette palette=this->palette();
@@ -35,7 +34,7 @@ VideoWidget::~VideoWidget()
 {
 }
 
-FrameBuffer *VideoWidget::frameBuffer()
+FrameBuffer::ptr VideoWidget::frameBuffer()
 {
     return frame_buffer;
 }

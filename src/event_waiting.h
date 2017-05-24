@@ -5,6 +5,9 @@
 #include <QMutex>
 #include <QWaitCondition>
 
+#include <mutex>
+#include <condition_variable>
+
 class EventWaiting : public QObject
 {
     Q_OBJECT
@@ -17,8 +20,11 @@ public:
     void next();
 
 private:
-    QMutex mutex;
+     QMutex mutex;
     // QWaitCondition wait_condition;
+
+    // std::mutex mutex;
+    // std::condition_variable condition;
 };
 
 #endif // EVENT_WAITING_H

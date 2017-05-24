@@ -5,7 +5,6 @@ import QtQuick.Window 2.2
 ShowHideRect {
     id: root
 
-    visible: true
     width: parent.width*.96
     height: parent.height*.04
 
@@ -46,10 +45,11 @@ ShowHideRect {
             from: .9;
             to: 1;
             duration: 100
-            running: true
+            running: root.state_visible
 
             onStopped: {
-                scale_animation_back.start();
+                if(root.state_visible)
+                    scale_animation_back.start();
             }
         }
 
@@ -61,7 +61,8 @@ ShowHideRect {
             duration: 100
 
             onStopped: {
-                scale_animation_pause.start();
+                if(root.state_visible)
+                    scale_animation_pause.start();
             }
         }
 
@@ -73,7 +74,8 @@ ShowHideRect {
             duration: 1000
 
             onStopped: {
-                scale_animation_front.start();
+                if(root.state_visible)
+                    scale_animation_front.start();
             }
         }
     }

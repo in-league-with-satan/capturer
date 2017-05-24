@@ -51,7 +51,7 @@ signals:
 
     void formatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format);
 
-    void audioLevels(qint16 l, qint16 r, qint16 c, qint16 lfe, qint16 bl, qint16 br, qint16 sl, qint16 sr);
+    void audioLevels(qint16 l, qint16 r, qint16 c, qint16 lfe, qint16 rl, qint16 rr, qint16 sl, qint16 sr);
 
 
     void freeSpace(QString size);

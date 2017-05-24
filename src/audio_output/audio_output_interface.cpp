@@ -2,14 +2,12 @@
 #include <QAudioOutput>
 #include <qcoreapplication.h>
 
-#include "frame_buffer.h"
-
 #include "audio_output_interface.h"
 
 AudioOutputInterface::AudioOutputInterface(QObject *parent) :
     QThread(parent)
 {
-    frame_buffer=new FrameBuffer(this);
+    frame_buffer=FrameBuffer::make();
     frame_buffer->setMaxSize(2);
 
     input_channels_size=2;
@@ -26,7 +24,7 @@ AudioOutputInterface::~AudioOutputInterface()
     }
 }
 
-FrameBuffer *AudioOutputInterface::frameBuffer()
+FrameBuffer::ptr AudioOutputInterface::frameBuffer()
 {
     return frame_buffer;
 }

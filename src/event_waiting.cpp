@@ -11,18 +11,26 @@ EventWaiting::EventWaiting(QObject *parent)
 
 EventWaiting::~EventWaiting()
 {
-    mutex.tryLock();
-
-    mutex.unlock();
+    next();
 }
 
 void EventWaiting::wait()
 {
     mutex.lock();
 
+    //
+
     // wait_condition.wait(&mutex);
 
     // mutex.unlock();
+
+    //
+
+    // std::unique_lock <std::mutex> ul(mutex);
+
+    // condition.wait(ul);
+
+    // ul.unlock();
 }
 
 void EventWaiting::next()
@@ -31,5 +39,11 @@ void EventWaiting::next()
 
     mutex.unlock();
 
+    //
+
     // wait_condition.wakeAll();
+
+    //
+
+    // condition.notify_all();
 }

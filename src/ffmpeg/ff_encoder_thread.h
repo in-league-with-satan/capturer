@@ -6,9 +6,7 @@
 #include <atomic>
 
 #include "ff_encoder.h"
-
-
-class FrameBuffer;
+#include "frame_buffer.h"
 
 class FFEncoderThread : public QThread
 {
@@ -18,7 +16,7 @@ public:
     FFEncoderThread(QObject *parent=0);
     ~FFEncoderThread();
 
-    FrameBuffer *frameBuffer();
+    FrameBuffer::ptr frameBuffer();
 
     bool isWorking();
 
@@ -27,7 +25,7 @@ public slots:
     void stopCoder();
 
 private:
-    FrameBuffer *frame_buffer;
+    FrameBuffer::ptr frame_buffer;
 
     bool is_working;
 

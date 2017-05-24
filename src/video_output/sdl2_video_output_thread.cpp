@@ -11,7 +11,6 @@ SDL_Event sdl_event;
 #endif
 
 
-#include "frame_buffer.h"
 #include "ff_tools.h"
 
 #include "sdl2_video_output_thread.h"
@@ -19,7 +18,7 @@ SDL_Event sdl_event;
 Sdl2VideoOutpitThread::Sdl2VideoOutpitThread(QObject *parent) :
     QThread(parent)
 {
-    frame_buffer=new FrameBuffer(this);
+    frame_buffer=FrameBuffer::make();
     frame_buffer->setMaxSize(1);
 
     setTerminationEnabled();
@@ -55,7 +54,7 @@ Sdl2VideoOutpitThread::~Sdl2VideoOutpitThread()
     terminate();
 }
 
-FrameBuffer *Sdl2VideoOutpitThread::frameBuffer()
+FrameBuffer::ptr Sdl2VideoOutpitThread::frameBuffer()
 {
     return frame_buffer;
 }

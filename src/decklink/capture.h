@@ -43,8 +43,8 @@ public:
 
     void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels);
 
-    void subscribe(FrameBuffer *obj);
-    void unsubscribe(FrameBuffer *obj);
+    void subscribe(FrameBuffer::ptr obj);
+    void unsubscribe(FrameBuffer::ptr obj);
 
     bool isRunning() const;
 
@@ -83,7 +83,7 @@ private:
 
     IDeckLinkVideoConversion *video_converter;
 
-    QList <FrameBuffer*> subscription_list;
+    QList <FrameBuffer::ptr> subscription_list;
 
     uint8_t frame_counter;
 

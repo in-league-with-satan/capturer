@@ -5,7 +5,7 @@
 
 #include <atomic>
 
-class FrameBuffer;
+#include "frame_buffer.h"
 
 class AudioOutputInterface : public QThread
 {
@@ -15,13 +15,13 @@ public:
     AudioOutputInterface(QObject *parent=0);
     ~AudioOutputInterface();
 
-    FrameBuffer *frameBuffer();
+    FrameBuffer::ptr frameBuffer();
 
 public slots:
     virtual void changeChannels(int size);
 
 protected:
-    FrameBuffer *frame_buffer;
+    FrameBuffer::ptr frame_buffer;
 
     int input_channels_size;
 

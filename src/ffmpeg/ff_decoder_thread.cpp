@@ -2,7 +2,6 @@
 
 #include <assert.h>
 
-#include "frame_buffer.h"
 #include "audio_tools.h"
 #include "ff_tools.h"
 
@@ -26,12 +25,12 @@ FFDecoderThread::~FFDecoderThread()
     term();
 }
 
-void FFDecoderThread::subscribeVideo(FrameBuffer *obj)
+void FFDecoderThread::subscribeVideo(FrameBuffer::ptr obj)
 {
     context.out_video_buffer=obj;
 }
 
-void FFDecoderThread::subscribeAudio(FrameBuffer *obj)
+void FFDecoderThread::subscribeAudio(FrameBuffer::ptr obj)
 {
     context.out_audio_buffer=obj;
 }

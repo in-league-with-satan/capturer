@@ -151,7 +151,7 @@ void DeckLinkCapture::setup(DeckLinkDevice device, DeckLinkFormat format, DeckLi
         conv_thread->setAudioChannels(audio_channels);
 }
 
-void DeckLinkCapture::subscribe(FrameBuffer *obj)
+void DeckLinkCapture::subscribe(FrameBuffer::ptr obj)
 {
     if(ext_converter)
         conv_thread->subscribe(obj);
@@ -160,7 +160,7 @@ void DeckLinkCapture::subscribe(FrameBuffer *obj)
         subscription_list.append(obj);
 }
 
-void DeckLinkCapture::unsubscribe(FrameBuffer *obj)
+void DeckLinkCapture::unsubscribe(FrameBuffer::ptr obj)
 {
     if(ext_converter)
         conv_thread->unsubscribe(obj);
@@ -338,7 +338,7 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
             //
 
-            foreach(FrameBuffer *buf, subscription_list)
+            foreach(FrameBuffer::ptr buf, subscription_list)
                 buf->append(frame);
         }
     }

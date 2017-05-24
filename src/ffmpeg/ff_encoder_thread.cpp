@@ -2,14 +2,13 @@
 #include <qcoreapplication.h>
 
 #include "capture.h"
-#include "frame_buffer.h"
 
 #include "ff_encoder_thread.h"
 
 FFEncoderThread::FFEncoderThread(QObject *parent)
     : QThread(parent)
 {
-    frame_buffer=new FrameBuffer(this);
+    frame_buffer=FrameBuffer::make();
 
     frame_buffer->setMaxSize(120);
 
@@ -35,7 +34,7 @@ FFEncoderThread::~FFEncoderThread()
     }
 }
 
-FrameBuffer *FFEncoderThread::frameBuffer()
+FrameBuffer::ptr FFEncoderThread::frameBuffer()
 {
     return frame_buffer;
 }

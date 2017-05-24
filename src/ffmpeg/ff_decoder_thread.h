@@ -11,6 +11,7 @@ extern "C" {
 }
 
 #include "protect.h"
+#include "frame_buffer.h"
 
 class AVFormatContext;
 class AVCodecContext;
@@ -20,9 +21,6 @@ class SwrContext;
 class AVFrame;
 class AVStream;
 
-class FrameBuffer;
-
-
 class FFDecoderThread : public QThread
 {
     Q_OBJECT
@@ -31,8 +29,8 @@ public:
     FFDecoderThread(QObject *parent=0);
     ~FFDecoderThread();
 
-    void subscribeVideo(FrameBuffer *obj);
-    void subscribeAudio(FrameBuffer *obj);
+    void subscribeVideo(FrameBuffer::ptr obj);
+    void subscribeAudio(FrameBuffer::ptr obj);
 
     enum States {
         ST_IDLE,
@@ -97,8 +95,8 @@ private:
         SwsContext *convert_context_video;
         SwrContext *convert_context_audio;
 
-        FrameBuffer *out_video_buffer;
-        FrameBuffer *out_audio_buffer;
+        FrameBuffer::ptr out_video_buffer;
+        FrameBuffer::ptr out_audio_buffer;
 
         AVFrame *frame_video;
         AVFrame *frame_audio;

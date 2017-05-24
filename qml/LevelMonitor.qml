@@ -59,7 +59,7 @@ Rectangle {
     }
 
     Rectangle {
-        id: line_back_left
+        id: line_rear_left
 
         color: "blue"
 
@@ -71,7 +71,7 @@ Rectangle {
     }
 
     Rectangle {
-        id: line_back_right
+        id: line_rear_right
 
         color: "blue"
 
@@ -206,7 +206,7 @@ Rectangle {
 
         style: Text.Outline
 
-        text: "BL"
+        text: "RL"
     }
 
     Text {
@@ -227,7 +227,7 @@ Rectangle {
 
         style: Text.Outline
 
-        text: "BR"
+        text: "RR"
     }
 
     Text {
@@ -280,8 +280,8 @@ Rectangle {
             line_right.height=r*root.max_height/root.max_value
             line_center.height=c*root.max_height/root.max_value
             line_lfe.height=lfe*root.max_height/root.max_value
-            line_back_left.height=bl*root.max_height/root.max_value
-            line_back_right.height=br*root.max_height/root.max_value
+            line_rear_left.height=rl*root.max_height/root.max_value
+            line_rear_right.height=rr*root.max_height/root.max_value
             line_side_left.height=sl*root.max_height/root.max_value
             line_side_right.height=sr*root.max_height/root.max_value
         }
