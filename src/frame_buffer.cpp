@@ -13,6 +13,7 @@ FrameBuffer::FrameBuffer(QObject *parent)
 
 FrameBuffer::~FrameBuffer()
 {
+    event.next();
 }
 
 void FrameBuffer::append(Frame::ptr frame)

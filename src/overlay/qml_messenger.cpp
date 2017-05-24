@@ -11,11 +11,17 @@
 QmlMessenger::QmlMessenger(QObject *parent)
     : QObject(parent)
 {
+    settings_model=new SettingsModel();
+
+    connect(settings_model, SIGNAL(changed(SettingsModel*)), SIGNAL(settingsModelChanged(SettingsModel*)));
+
+
     file_system_model=new FileSystemModel();
 
     connect(file_system_model, SIGNAL(changed(FileSystemModel*)), SIGNAL(fileSystemModelChanged(FileSystemModel*)));
 
     file_system_model->setRootPath(getRootPath());
+
 
     QTimer *timer=new QTimer();
 
@@ -28,28 +34,9 @@ QmlMessenger::~QmlMessenger()
 {
 }
 
-QStringList QmlMessenger::getModelVideoEncoder() const
+SettingsModel *QmlMessenger::settingsModel()
 {
-    return model_video_encoder;
-}
-
-void QmlMessenger::setModelVideoEncoder(const QStringList &model)
-{
-    model_video_encoder=model;
-
-    emit modelVideoEncoderChanged(model, QPrivateSignal());
-}
-
-QStringList QmlMessenger::getModelPixelFormat() const
-{
-    return model_pixel_format;
-}
-
-void QmlMessenger::setModelPixelFormat(const QStringList &model)
-{
-    model_pixel_format=model;
-
-    emit modelPixelFormatChanged(model, QPrivateSignal());
+    return settings_model;
 }
 
 QString QmlMessenger::versionThis() const
@@ -86,7 +73,6 @@ QString QmlMessenger::versionlibSWResample() const
 {
     return versionlibswresample();
 }
-
 
 FileSystemModel *QmlMessenger::fileSystemModel()
 {
