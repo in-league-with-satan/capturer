@@ -1,4 +1,6 @@
 #include <QDebug>
+#include <QApplication>
+#include <QDesktopWidget>
 
 #include <assert.h>
 
@@ -203,20 +205,27 @@ void FFDecoderThread::_open()
         return;
     }
 
+    QSize target_size=qApp->desktop()->screenGeometry().size();
 
-    if(context.codec_context_video->width!=1920) {
-        double kf=(double)context.codec_context_video->width/(double)context.codec_context_video->height;
+    target_size=target_size.width()<=1920 ? target_size : target_size.scaled(QSize(1920, 1080), Qt::KeepAspectRatio);
 
-        context.target_size=QSize(1920, 1920./kf);
+    int scale_filter=SWS_POINT;
+
+    if(context.codec_context_video->width!=target_size.width()) {
+        context.target_size=QSize(context.codec_context_video->width, context.codec_context_video->height)
+                .scaled(target_size, Qt::KeepAspectRatio);
+
+        scale_filter=SWS_FAST_BILINEAR;
 
     } else
         context.target_size=QSize(context.codec_context_video->width, context.codec_context_video->height);
 
+    qInfo() << "target_size" << context.target_size;
 
     context.convert_context_video=sws_getContext(context.codec_context_video->width, context.codec_context_video->height,
                                                  context.codec_context_video->pix_fmt,
                                                  context.target_size.width(), context.target_size.height(),
-                                                 AV_PIX_FMT_BGRA, SWS_FAST_BILINEAR,
+                                                 AV_PIX_FMT_BGRA, scale_filter,
                                                  nullptr, nullptr, nullptr);
 
     if(!context.convert_context_video) {
