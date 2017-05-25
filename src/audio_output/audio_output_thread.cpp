@@ -4,6 +4,7 @@
 
 #include "frame_buffer.h"
 #include "audio_tools.h"
+#include "ff_tools.h"
 
 #include "audio_output_thread.h"
 
@@ -133,15 +134,29 @@ void AudioOutputThread::run()
     }
 }
 
-void AudioOutputThread::onInputFrameArrived(QByteArray ba_data, int channels)
+void AudioOutputThread::onInputFrameArrived(QByteArray ba_data, int channels, int sample_size)
 {
     // if(!dev_audio_output)
     //     return;
 
-    if(channels!=2) {
+    if(channels!=audio_converter.outChannels()) {
         QByteArray ba_tmp;
 
-        mix8channelsTo2(&ba_data, &ba_tmp);
+        if(!audio_converter.isReady()) {
+            if(!audio_converter.init(av_get_default_channel_layout(channels), 48000, AV_SAMPLE_FMT_S16,
+                                 AV_CH_LAYOUT_STEREO, 48000, AV_SAMPLE_FMT_S16)) {
+
+                qCritical() << "audio_converter.init err";
+
+                running=false;
+
+                return;
+            }
+        }
+
+        // mix8channelsTo2(&ba_data, &ba_tmp);
+
+        audio_converter.convert(&ba_data, &ba_tmp);
 
         ba_data=ba_tmp;
     }

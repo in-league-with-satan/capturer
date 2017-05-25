@@ -273,28 +273,12 @@ void FFDecoderThread::_open()
         return;
     }
 
-    context.convert_context_audio=swr_alloc();
-
-    if(!context.convert_context_audio) {
-        qCritical() << "ffmpeg: swr_alloc err";
-        freeContext();
-        return;
-    }
-
     if(context.codec_context_audio->channel_layout==0)
         context.codec_context_audio->channel_layout=av_get_default_channel_layout(context.codec_context_audio->channels);
 
-    av_opt_set_channel_layout(context.convert_context_audio, "in_channel_layout", context.codec_context_audio->channel_layout, 0);
-    av_opt_set_channel_layout(context.convert_context_audio, "out_channel_layout", AV_CH_LAYOUT_STEREO,  0);
-    av_opt_set_int(context.convert_context_audio,"in_sample_rate", context.codec_context_audio->sample_rate, 0);
-    av_opt_set_int(context.convert_context_audio, "out_sample_rate", 48000, 0);
-    av_opt_set_sample_fmt(context.convert_context_audio, "in_sample_fmt", context.codec_context_audio->sample_fmt, 0);
-    av_opt_set_sample_fmt(context.convert_context_audio, "out_sample_fmt", AV_SAMPLE_FMT_S16, 0);
-
-    err=swr_init(context.convert_context_audio);
-
-    if(err<0) {
-        qCritical() << "ffmpeg: swr_init err" << err;
+    if(!context.audio_converter.init(context.codec_context_audio->channel_layout, context.codec_context_audio->sample_rate, context.codec_context_audio->sample_fmt,
+                                    AV_CH_LAYOUT_STEREO, 48000, AV_SAMPLE_FMT_S16)) {
+        qCritical() << "ffmpeg: audio_converter.init err";
         freeContext();
         return;
     }
@@ -468,36 +452,36 @@ void FFDecoderThread::_play()
                 }
 
                 if(frame_finished) {
-                    uint8_t *out_samples;
-                    int out_num_samples=av_rescale_rnd(swr_get_delay(context.convert_context_audio, context.codec_context_audio->sample_rate)
-                                                       + context.frame_audio->nb_samples, 48000, context.codec_context_audio->sample_rate, AV_ROUND_UP);
-
-                    av_samples_alloc(&out_samples, nullptr, 2, out_num_samples, AV_SAMPLE_FMT_S16, 0);
-
-                    out_num_samples=swr_convert(context.convert_context_audio, &out_samples, out_num_samples,
-                                                (const uint8_t**)&context.frame_audio->extended_data[0], context.frame_audio->nb_samples);
-
-
                     int data_size=av_samples_get_buffer_size(nullptr, context.codec_context_audio->channels,
                                                              context.frame_audio->nb_samples,
                                                              context.codec_context_audio->sample_fmt, alignment);
 
+                    // data_size=av_get_bytes_per_sample((AVSampleFormat)context.codec_context_audio->sample_fmt)*context.codec_context_audio->channels;
 
                     context.audio_buf_size+=data_size;
 
+                    //
 
-                    int64_t ts=av_frame_get_best_effort_timestamp(context.frame_video);
+                    QByteArray ba_src((char*)context.frame_audio->extended_data[0], av_samples_get_buffer_size(nullptr, context.codec_context_audio->channels,
+                                                                                                        context.frame_audio->nb_samples,
+                                                                                                        context.codec_context_audio->sample_fmt, alignment));
+                    QByteArray ba_dst;
+
+                    context.audio_converter.convert(&ba_src, &ba_dst);
+
+                    //
+
+                    int64_t ts=av_frame_get_best_effort_timestamp(context.frame_video); // ????????!
 
                     if(context.ba_audio.isEmpty()) {
                         if(ts!=AV_NOPTS_VALUE)
                             context.pts_audio=ts;
 
-                        context.audio_clock=av_q2d(context.stream_audio->time_base)*context.pts_audio*1000000;
+                        // context.audio_clock=av_q2d(context.stream_audio->time_base)*context.pts_audio*1000000;
+                        context.audio_clock=av_q2d(context.stream_video->time_base)*context.pts_audio*1000000;
                     }
 
-                    context.ba_audio.append(QByteArray((char*)out_samples, av_samples_get_buffer_size(nullptr, 2, out_num_samples, AV_SAMPLE_FMT_S16, 0)));
-
-                    av_freep(&out_samples);
+                    context.ba_audio.append(ba_dst);
                 }
 
                 context.wait_audio=true;
@@ -608,12 +592,6 @@ void FFDecoderThread::freeContext()
         context.convert_context_video=nullptr;
     }
 
-    if(context.convert_context_audio) {
-        swr_free(&context.convert_context_audio);
-
-        context.convert_context_audio=nullptr;
-    }
-
     if(context.frame_video) {
         av_frame_free(&context.frame_video);
 
@@ -631,6 +609,8 @@ void FFDecoderThread::freeContext()
 
         context.frame_rgb=nullptr;
     }
+
+    context.audio_converter.free();
 
     context.ba_audio.clear();
 

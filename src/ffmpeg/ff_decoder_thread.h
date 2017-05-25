@@ -12,6 +12,7 @@ extern "C" {
 
 #include "protect.h"
 #include "frame_buffer.h"
+#include "ff_audio_converter.h"
 
 class AVFormatContext;
 class AVCodecContext;
@@ -71,7 +72,6 @@ private:
             stream_audio=nullptr;
 
             convert_context_video=nullptr;
-            convert_context_audio=nullptr;
 
             out_video_buffer=nullptr;
             out_audio_buffer=nullptr;
@@ -93,7 +93,7 @@ private:
         AVStream *stream_audio;
 
         SwsContext *convert_context_video;
-        SwrContext *convert_context_audio;
+        AudioConverter audio_converter;
 
         FrameBuffer::ptr out_video_buffer;
         FrameBuffer::ptr out_audio_buffer;
