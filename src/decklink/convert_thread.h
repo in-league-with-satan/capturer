@@ -40,6 +40,7 @@ public:
     void unsubscribe(FrameBuffer::ptr obj);
 
     void setAudioChannels(int value);
+    void setSampleSize(int value);
 
     void frameCompleted(Frame::ptr frame);
 
@@ -93,6 +94,7 @@ private:
     EventWaiting event;
 
     int audio_channels;
+    int sample_size;
 
     std::atomic <bool> running;
 

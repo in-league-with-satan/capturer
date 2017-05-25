@@ -41,7 +41,7 @@ public:
     explicit DeckLinkCapture(QObject *parent=0);
     ~DeckLinkCapture();
 
-    void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels);
+    void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size);
 
     void subscribe(FrameBuffer::ptr obj);
     void unsubscribe(FrameBuffer::ptr obj);
@@ -66,6 +66,8 @@ private:
 
     DeckLinkCaptureDelegate *decklink_capture_delegate;
 
+    std::atomic <bool> running;
+
     IDeckLink *decklink;
     IDeckLinkConfiguration *decklink_configuration;
     IDeckLinkDisplayMode *decklink_display_mode;
@@ -75,6 +77,7 @@ private:
     DeckLinkFormat format;
     DeckLinkPixelFormat pixel_format;
     int audio_channels;
+    int audio_sample_size;
 
     int64_t frame_scale;
     int64_t frame_time_prev;

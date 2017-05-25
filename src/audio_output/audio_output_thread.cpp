@@ -118,7 +118,7 @@ void AudioOutputThread::run()
             if(!frame->audio.raw.isEmpty()) {
                 // buf_trig_size=frame->audio.raw.size()*.5;
 
-                onInputFrameArrived(frame->audio.raw, frame->audio.channels);
+                onInputFrameArrived(frame->audio.raw, frame->audio.channels, frame->audio.sample_size);
 
                 if(audio_output->state()!=QAudio::ActiveState) {
                     audio_output->start(&dev_audio_output);
@@ -142,8 +142,8 @@ void AudioOutputThread::onInputFrameArrived(QByteArray ba_data, int channels, in
     if(channels!=audio_converter.outChannels()) {
         QByteArray ba_tmp;
 
-        if(!audio_converter.isReady()) {
-            if(!audio_converter.init(av_get_default_channel_layout(channels), 48000, AV_SAMPLE_FMT_S16,
+        if(!audio_converter.isReady() || (sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32)!=audio_converter.inSampleFormat()) {
+            if(!audio_converter.init(av_get_default_channel_layout(channels), 48000, sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32,
                                  AV_CH_LAYOUT_STEREO, 48000, AV_SAMPLE_FMT_S16)) {
 
                 qCritical() << "audio_converter.init err";

@@ -55,7 +55,7 @@ ShowHideRect {
 
         property int type_combobox: 0
         property int type_checkbox: 1
-        property int type_value: 2
+        property int type_button: 2
 
         model: VisualDataModel {
             id: fs_model
@@ -91,6 +91,10 @@ ShowHideRect {
 
                         messenger.settingsModel.setData(list.currentIndex, list.role_value, checkbox.checked, true)
                     }
+
+                    if(item_type==list.type_button) {
+                        messenger.settingsModel.setData(list.currentIndex, list.role_value, 0, true)
+                    }
                 }
 
                 function valueNext() {
@@ -110,6 +114,10 @@ ShowHideRect {
 
                         messenger.settingsModel.setData(list.currentIndex, list.role_value, checkbox.checked, true)
                     }
+
+                    if(item_type==list.type_button) {
+                        messenger.settingsModel.setData(list.currentIndex, list.role_value, 0, true)
+                    }
                 }
 
                 Text {
@@ -121,7 +129,7 @@ ShowHideRect {
                     font.pixelSize: m_delegate.height*.5
                     verticalAlignment: Text.AlignVCenter
                     clip: true
-                    text: "  " + item_name + ":"
+                    text: item_name=="" ? "" : "  " + item_name + ":"
 
                     // Rectangle {
                     //     anchors.fill: parent
@@ -163,6 +171,35 @@ ShowHideRect {
                                 return m_delegate.item_value
 
                             return false
+                        }
+                    }
+
+                    Button {
+                        id: button
+                        visible: m_delegate.item_type==list.type_button
+                        anchors.fill: parent;
+                        font.pixelSize: m_delegate.height*.5
+                        text: {
+                            if(m_delegate.item_type==list.type_button)
+                                return m_delegate.item_values[0]
+
+                            return ""
+                        }
+
+                        contentItem: Text {
+                            text: button.text
+                            font: button.font
+                            color: "#333435"
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            elide: Text.ElideRight
+                        }
+
+                        background: Rectangle {
+                            color: "#e0e0e0"
+                            // border.color: "black"
+                            // border.width: root.height*.002
+                            radius: root.height*.017
                         }
                     }
                 }

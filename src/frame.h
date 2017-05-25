@@ -34,6 +34,7 @@ struct Frame
     struct DataAudio {
         QByteArray raw;
         int channels;
+        int sample_size;
 
     } audio;
 

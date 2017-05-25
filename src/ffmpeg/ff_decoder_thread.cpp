@@ -497,6 +497,7 @@ void FFDecoderThread::_play()
             Frame::ptr f=Frame::make();
 
             f->audio.channels=2;
+            f->audio.sample_size=16;
             f->audio.raw=context.ba_audio;
 
             context.ba_audio.clear();

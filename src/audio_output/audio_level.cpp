@@ -10,7 +10,8 @@
 #undef max
 #endif
 
-const int16_t max_value=std::numeric_limits<int16_t>::max();
+const double max_value_16=std::numeric_limits<int16_t>::max();
+const double max_value_32=std::numeric_limits<int32_t>::max();
 
 AudioLevel::AudioLevel(QObject *parent) :
     QThread(parent)
@@ -58,16 +59,32 @@ void AudioLevel::run()
         frame=frame_buffer->take();
 
         if(frame) {
-            int16_t *ptr_data=(int16_t*)frame->audio.raw.data();
+            if(frame->audio.sample_size==16) {
+                int16_t *ptr_data=(int16_t*)frame->audio.raw.data();
 
-            for(int pos=0, size=frame->audio.raw.size()/2; pos<size; pos+=8)
-                for(int channel=0; channel<8; ++channel)
-                    level[channel]=std::max(level[channel], ptr_data[pos + channel]);
+                for(int pos=0, size=frame->audio.raw.size()/2; pos<size; pos+=8)
+                    for(int channel=0; channel<8; ++channel)
+                        level[channel]=std::max(level[channel], (int32_t)ptr_data[pos + channel]);
+
+            } else {
+                int32_t *ptr_data=(int32_t*)frame->audio.raw.data();
+
+                for(int pos=0, size=frame->audio.raw.size()/4; pos<size; pos+=8)
+                    for(int channel=0; channel<8; ++channel)
+                        level[channel]=std::max(level[channel], ptr_data[pos + channel]);
+            }
 
             if(last_emit_timer.nsecsElapsed()>=emit_interval) {
-                emit levels(level[0], level[1], level[2], level[3], level[4], level[5], level[6], level[7]);
+                if(frame->audio.sample_size==16) {
+                    emit levels(level[0]/max_value_16, level[1]/max_value_16, level[2]/max_value_16, level[3]/max_value_16,
+                            level[4]/max_value_16, level[5]/max_value_16, level[6]/max_value_16, level[7]/max_value_16);
 
-                memset(level, 0, sizeof(int16_t)*8);
+                } else {
+                    emit levels(level[0]/max_value_32, level[1]/max_value_32, level[2]/max_value_32, level[3]/max_value_32,
+                            level[4]/max_value_32, level[5]/max_value_32, level[6]/max_value_32, level[7]/max_value_32);
+                }
+
+                memset(level, 0, sizeof(int32_t)*8);
 
                 last_emit_timer.restart();
             }

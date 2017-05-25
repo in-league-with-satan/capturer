@@ -24,6 +24,8 @@ public:
 
     struct Device {
         int index;
+        int audio_sample_size;
+        int restart;
 
     } device;
 

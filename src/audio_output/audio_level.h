@@ -25,10 +25,10 @@ private:
 
     std::atomic <bool> running;
 
-    int16_t level[8];
+    int32_t level[8];
 
 signals:
-    void levels(qint16 l, qint16 r, qint16 c, qint16 lfe, qint16 rl, qint16 rr, qint16 sl, qint16 sr);
+    void levels(qreal l, qreal r, qreal c, qreal lfe, qreal rl, qreal rr, qreal sl, qreal sr);
 };
 
 #endif // AUDIO_LEVEL_H

@@ -40,7 +40,8 @@ public:
     struct Type {
         enum {
             combobox,
-            checkbox
+            checkbox,
+            button
         };
     };
 

@@ -105,7 +105,11 @@ static void add_stream_audio(OutputStream *out_stream, AVFormatContext *format_c
     AVCodecContext *c;
 
     // find the encoder
-    *codec=avcodec_find_encoder(AV_CODEC_ID_PCM_S16LE);
+    if(cfg.audio_sample_size==16)
+        *codec=avcodec_find_encoder(AV_CODEC_ID_PCM_S16LE);
+
+    else
+        *codec=avcodec_find_encoder(AV_CODEC_ID_PCM_S32LE);
 
     if(!(*codec)) {
         qCritical() << "could not find encoder for PCM_S16LE";
@@ -775,13 +779,15 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
         ba_audio.insert(0, context->out_stream_audio.ba_audio_prev_part);
 
+        AVSampleFormat sample_format=context->cfg.audio_sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32;
+
         int buffer_size=0;
 
         int default_nb_samples=context->out_stream_audio.frame->nb_samples;
 
         while(true) {
             buffer_size=av_samples_get_buffer_size(nullptr, context->out_stream_audio.frame->channels, context->out_stream_audio.frame->nb_samples,
-                                                   AV_SAMPLE_FMT_S16, 0);
+                                                   sample_format, 0);
 
             if(ba_audio.size()>=buffer_size) {
 
@@ -795,7 +801,7 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
         context->out_stream_audio.ba_audio_prev_part=ba_audio.remove(0, buffer_size);
 
-        int ret=avcodec_fill_audio_frame(context->out_stream_audio.frame, context->out_stream_audio.frame->channels, AV_SAMPLE_FMT_S16,
+        int ret=avcodec_fill_audio_frame(context->out_stream_audio.frame, context->out_stream_audio.frame->channels, sample_format,
                                          (const uint8_t*)ba_audio_tmp.data(), buffer_size, 0);
 
         if(ret<0) {

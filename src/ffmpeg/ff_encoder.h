@@ -74,12 +74,14 @@ public:
     struct Config {
         Config() {
             audio_channels_size=8;
+            audio_sample_size=16;
             audio_dalay=0;
         }
 
         QSize frame_resolution;
         Framerate::T framerate;
         uint8_t audio_channels_size;
+        uint8_t audio_sample_size;
         int audio_dalay;
         uint8_t crf;
         AVPixelFormat pixel_format;

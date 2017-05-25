@@ -58,6 +58,7 @@ private slots:
     void settingsModelDataChanged(int index, int role, bool qml);
 
     void startStopCapture();
+    void captureRestart();
     void captureStart();
     void captureStop();
 

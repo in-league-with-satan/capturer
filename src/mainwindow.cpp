@@ -107,8 +107,8 @@ MainWindow::MainWindow(QWidget *parent)
     audio_level=new AudioLevel(this);
     decklink_thread->subscribe(audio_level->frameBuffer());
 
-    connect(audio_level, SIGNAL(levels(qint16,qint16,qint16,qint16,qint16,qint16,qint16,qint16)),
-            messenger, SIGNAL(audioLevels(qint16,qint16,qint16,qint16,qint16,qint16,qint16,qint16)), Qt::QueuedConnection);
+    connect(audio_level, SIGNAL(levels(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)),
+            messenger, SIGNAL(audioLevels(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)), Qt::QueuedConnection);
 
     //
 
@@ -146,6 +146,34 @@ MainWindow::MainWindow(QWidget *parent)
 
     set_model_data.value=&settings->device.index;
 
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="audio sample size";
+    set_model_data.values << "16 bit" << "32 bit";
+    set_model_data.values_data << 16 << 32;
+
+    set_model_data.value=&settings->device.audio_sample_size;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::button;
+    set_model_data.name.clear();
+    set_model_data.values << "restart device";
+    set_model_data.values_data << 0;
+
+    set_model_data.value=&settings->device.restart;
 
     messenger->settingsModel()->add(set_model_data);
 
@@ -433,9 +461,15 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
         }
     }
 
+
     if(data->value==&settings->rec.pixel_format_current)
         if(role==SettingsModel::Role::value)
             settings->rec.pixel_format[QString::number(settings->rec.encoder)]=settings->rec.pixel_format_current;
+
+
+    if(data->value==&settings->device.restart) {
+        captureRestart();
+    }
 }
 
 void MainWindow::startStopCapture()
@@ -448,24 +482,42 @@ void MainWindow::startStopCapture()
     captureStart();
 }
 
+void MainWindow::captureRestart()
+{
+    if(decklink_thread->isRunning()) {
+        captureStop();
+
+        while(decklink_thread->isRunning()) {
+            qApp->processEvents();
+
+            QThread::msleep(300);
+        }
+    }
+
+    captureStart();
+}
+
 void MainWindow::captureStart()
 {
-    SettingsModel::Data *model_data=messenger->settingsModel()->data_p(&settings->device.index);
+    SettingsModel::Data *model_data_device=messenger->settingsModel()->data_p(&settings->device.index);
+    SettingsModel::Data *model_data_audio=messenger->settingsModel()->data_p(&settings->device.audio_sample_size);
 
-    if(!model_data) {
+    if(!model_data_device || !model_data_audio) {
         qCritical() << "model_data null pointer";
         return;
     }
 
-    if(model_data->values_data.isEmpty()) {
+    if(model_data_device->values_data.isEmpty()) {
         qCritical() << "values_data is empty";
         return;
     }
 
-    decklink_thread->setup(model_data->values_data[settings->device.index].value<DeckLinkDevice>(),
+    decklink_thread->setup(model_data_device->values_data[settings->device.index].value<DeckLinkDevice>(),
             DeckLinkFormat(),
             DeckLinkPixelFormat(),
-            8);
+            8,
+            model_data_audio->values_data[settings->device.audio_sample_size].toInt()
+            );
 
     QMetaObject::invokeMethod(audio_output, "changeChannels", Qt::QueuedConnection, Q_ARG(int, 8));
 
@@ -490,6 +542,8 @@ void MainWindow::startStopRecording()
         cfg.pixel_format=(AVPixelFormat)messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();
         cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
         cfg.crf=settings->rec.crf;
+        cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device.audio_sample_size)->values_data[settings->device.audio_sample_size].toInt();
+
 
         ff_enc->setConfig(cfg);
 

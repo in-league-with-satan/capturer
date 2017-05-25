@@ -7,7 +7,6 @@ Rectangle {
 
     color: "transparent"
 
-    property int max_value: 32768
     property int max_height: height - title_left.height
 
     Rectangle {
@@ -276,14 +275,14 @@ Rectangle {
         target: messenger
 
         onAudioLevels: {
-            line_left.height=l*root.max_height/root.max_value
-            line_right.height=r*root.max_height/root.max_value
-            line_center.height=c*root.max_height/root.max_value
-            line_lfe.height=lfe*root.max_height/root.max_value
-            line_rear_left.height=rl*root.max_height/root.max_value
-            line_rear_right.height=rr*root.max_height/root.max_value
-            line_side_left.height=sl*root.max_height/root.max_value
-            line_side_right.height=sr*root.max_height/root.max_value
+            line_left.height=l*root.max_height
+            line_right.height=r*root.max_height
+            line_center.height=c*root.max_height
+            line_lfe.height=lfe*root.max_height
+            line_rear_left.height=rl*root.max_height
+            line_rear_right.height=rr*root.max_height
+            line_side_left.height=sl*root.max_height
+            line_side_right.height=sr*root.max_height
         }
     }
 }

@@ -1,6 +1,9 @@
 bin
 debug
 release
+*.debug
+*.release
 *Makefile*
 *.stash
 *.user
+*_plugin_import.cpp

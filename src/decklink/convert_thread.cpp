@@ -29,6 +29,7 @@ DlConvertThread::DlConvertThread(FrameCompletedCallback func_frame_completed, QO
     video_converter=CreateVideoConversionInstance();
 
     audio_channels=8;
+    sample_size=16;
 
     start(QThread::NormalPriority);
     // start(QThread::HighPriority);
@@ -93,14 +94,20 @@ void DlConvertThread::run()
 
                 frame_audio_src->GetBytes(&d_audio);
 
-                frame->audio.raw.resize(frame_audio_src->GetSampleFrameCount()*audio_channels*(16/8));
+                frame->audio.raw.resize(frame_audio_src->GetSampleFrameCount()*audio_channels*(sample_size/8));
 
                 memcpy(frame->audio.raw.data(), d_audio, frame->audio.raw.size());
 
-                if(audio_channels==8)
-                    channelsRemap(&frame->audio.raw);
+                if(audio_channels==8) {
+                    if(sample_size==16)
+                        channelsRemap16(&frame->audio.raw);
+
+                    else
+                        channelsRemap32(&frame->audio.raw);
+                }
 
                 frame->audio.channels=audio_channels;
+                frame->audio.sample_size=sample_size;
 
                 //
 
@@ -181,6 +188,15 @@ void DlConvertThreadContainer::setAudioChannels(int value)
         QMutexLocker ml(&thread[i]->mutex);
 
         thread[i]->audio_channels=value;
+    }
+}
+
+void DlConvertThreadContainer::setSampleSize(int value)
+{
+    for(int i=0; i<thread_count; ++i) {
+        QMutexLocker ml(&thread[i]->mutex);
+
+        thread[i]->sample_size=value;
     }
 }
 

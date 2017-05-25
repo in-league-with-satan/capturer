@@ -72,6 +72,7 @@ bool Settings::load()
     main.preview=map_main.value("preview", 1).toInt();
 
     device.index=map_device.value("index", 0).toInt();
+    device.audio_sample_size=map_device.value("audio_sample_size", 0).toInt();
 
     rec.encoder=map_rec.value("encoder", 0).toInt();
     rec.pixel_format=map_rec.value("pixel_format").toMap();
@@ -96,6 +97,7 @@ bool Settings::save()
     map_main.insert("preview", (bool)main.preview);
 
     map_device.insert("index", device.index);
+    map_device.insert("audio_sample_size", device.audio_sample_size);
 
     map_rec.insert("encoder", rec.encoder);
     map_rec.insert("pixel_format", rec.pixel_format);
