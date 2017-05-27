@@ -519,8 +519,6 @@ void MainWindow::captureStart()
             model_data_audio->values_data[settings->device.audio_sample_size].toInt()
             );
 
-    QMetaObject::invokeMethod(audio_output, "changeChannels", Qt::QueuedConnection, Q_ARG(int, 8));
-
     QMetaObject::invokeMethod(decklink_thread, "captureStart", Qt::QueuedConnection);
 }
 
@@ -626,8 +624,6 @@ void MainWindow::playerStateChanged(int state)
 
     } else {
         decklink_thread->captureStop();
-
-        QMetaObject::invokeMethod(audio_output, "changeChannels", Qt::QueuedConnection, Q_ARG(int, 2));
     }
 }
 

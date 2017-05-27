@@ -37,20 +37,11 @@ PulseAudioOutputThread::PulseAudioOutputThread(QObject *parent) :
 
 #endif
 
-    output_channels_size=2;
-
     start(QThread::NormalPriority);
 }
 
 PulseAudioOutputThread::~PulseAudioOutputThread()
 {
-}
-
-void PulseAudioOutputThread::changeChannels(int size)
-{
-    AudioOutputInterface::changeChannels(size);
-
-    // init();
 }
 
 void PulseAudioOutputThread::run()
@@ -80,7 +71,7 @@ void PulseAudioOutputThread::run()
         frame=frame_buffer->take();
 
         if(frame) {
-            onInputFrameArrived(frame->audio.raw);
+            onInputFrameArrived(&frame->audio.raw, frame->audio.channels, frame->audio.sample_size);
 
             frame.reset();
         }
@@ -93,7 +84,7 @@ void PulseAudioOutputThread::run()
 #endif
 }
 
-void PulseAudioOutputThread::onInputFrameArrived(QByteArray ba_data)
+void PulseAudioOutputThread::onInputFrameArrived(QByteArray *ba_data, int channels, int sample_size)
 {
 #ifdef USE_PULSE_AUDIO
 
@@ -101,24 +92,19 @@ void PulseAudioOutputThread::onInputFrameArrived(QByteArray ba_data)
         return;
     }
 
-    if(input_channels_size!=output_channels_size) {
-        QByteArray ba_tmp;
+    QByteArray ba_tmp=convert(ba_data, channels, sample_size);
 
-        if(input_channels_size==8 && output_channels_size==2)
-            mix8channelsTo2(&ba_data, &ba_tmp);
-
-        else if(input_channels_size==8 && output_channels_size==6)
-            mix8channelsTo6(&ba_data, &ba_tmp);
+    if(ba_tmp.isEmpty()) {
+        qCritical() << "onInputFrameArrived conv empty";
+        return;
+    }
 
 #ifdef SAVE_STREAM
 
-        f_src.write(ba_data);
-        f_conv.write(ba_tmp);
+    f_src.write(*ba_data);
+    f_conv.write(ba_tmp);
 
 #endif
-
-        ba_data=ba_tmp;
-    }
 
     int error=0;
 
@@ -128,8 +114,8 @@ void PulseAudioOutputThread::onInputFrameArrived(QByteArray ba_data)
     //     init();
     // }
 
-    if(pa_simple_write(s, ba_data.data(), ba_data.size(), &error)<0) {
-        qCritical() << "pa_simple_write err" << pa_strerror(error) << ba_data.size();
+    if(pa_simple_write(s, ba_tmp.data(), ba_tmp.size(), &error)<0) {
+        qCritical() << "pa_simple_write err" << pa_strerror(error) << ba_tmp.size();
 
         init();
     }
@@ -153,13 +139,13 @@ void PulseAudioOutputThread::init()
 
     pa_channel_map map;
 
-    ss.channels=map.channels=output_channels_size;
+    ss.channels=map.channels=2;
 
-    if(output_channels_size==2) {
+    if(ss.channels==2) {
         map.map[0]=PA_CHANNEL_POSITION_FRONT_LEFT;
         map.map[1]=PA_CHANNEL_POSITION_FRONT_RIGHT;
 
-    } else if(output_channels_size==6) {
+    } else if(ss.channels==6) {
         map.map[0]=PA_CHANNEL_POSITION_FRONT_LEFT;
         map.map[1]=PA_CHANNEL_POSITION_FRONT_RIGHT;
         map.map[2]=PA_CHANNEL_POSITION_FRONT_CENTER;
@@ -190,8 +176,8 @@ void PulseAudioOutputThread::init()
 
     if(!s) {
         qCritical() << "pa_simple_new err:" << pa_strerror(error);
-        exit(1);
-        // return;
+
+        running=false;
     }
 
 #endif

@@ -102,6 +102,7 @@ void Sdl2AudioOutputThread::onInputFrameArrived(QByteArray ba_data)
     }
     */
 
+    /*
     if(input_channels_size!=2) {
         QByteArray ba_tmp;
 
@@ -109,6 +110,7 @@ void Sdl2AudioOutputThread::onInputFrameArrived(QByteArray ba_data)
 
         ba_data=ba_tmp;
     }
+    */
 
     if(ba_out_buffer.size()>ba_data.size()*4) {
 //        qCritical() << "ba_out_buffer overflow";

@@ -238,6 +238,9 @@ ShowHideRect {
             target: messenger
 
             onKeyPressed: {
+                if(!root.state_visible)
+                    return;
+
                 switch(key) {
                 case Qt.Key_Up:
                     list.focusPrev()

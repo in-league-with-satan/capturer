@@ -103,6 +103,7 @@ Rectangle {
         }
 
         onBack: {
+            about.state_visible=false
             menu_header.state_visible=false
             settings.state_visible=false
             file_browser.state_visible=false

@@ -35,15 +35,15 @@ private:
 
     uint64_t in_channels_layout;
     uint64_t in_channels;
+    size_t in_sample_size;
     int64_t in_sample_rate;
     int64_t in_sample_format;
 
     uint64_t out_channels_layout;
     uint64_t out_channels;
+    size_t out_sample_size;
     int64_t out_sample_rate;
     int64_t out_sample_format;
-
-    int in_sample_size;
 };
 
 #endif // FF_AUDIO_CONVERTER_H

@@ -17,13 +17,10 @@ public:
     PulseAudioOutputThread(QObject *parent=0);
     ~PulseAudioOutputThread();
 
-public slots:
-    virtual void changeChannels(int size);
-
 protected:
     virtual void run();
 
-    void onInputFrameArrived(QByteArray ba_data);
+    void onInputFrameArrived(QByteArray *ba_data, int channels, int sample_size);
 
     void init();
 
@@ -31,8 +28,6 @@ protected:
     pa_simple *s;
     pa_sample_spec ss;
 #endif
-
-    int output_channels_size;
 
     QFile f_src;
     QFile f_conv;

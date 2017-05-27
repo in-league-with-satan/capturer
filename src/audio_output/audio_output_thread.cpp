@@ -4,7 +4,6 @@
 
 #include "frame_buffer.h"
 #include "audio_tools.h"
-#include "ff_tools.h"
 
 #include "audio_output_thread.h"
 
@@ -17,60 +16,7 @@ AudioOutputThread::AudioOutputThread(QObject *parent) :
 
     frame_buffer->setMaxSize(2);
 
-    start(QThread::NormalPriority);
-}
 
-AudioOutputThread::~AudioOutputThread()
-{
-}
-
-void AudioOutputThread::changeChannels(int size)
-{
-    AudioOutputInterface::changeChannels(size);
-
-    return;
-
-    QAudioFormat new_audio_format;
-
-    new_audio_format.setSampleRate(48000);
-    new_audio_format.setChannelCount(input_channels_size);
-    new_audio_format.setSampleSize(16);
-    new_audio_format.setCodec("audio/pcm");
-    new_audio_format.setByteOrder(QAudioFormat::LittleEndian);
-    new_audio_format.setSampleType(QAudioFormat::SignedInt);
-
-    if(audio_format==new_audio_format)
-        return;
-
-    audio_format=new_audio_format;
-
-    QAudioDeviceInfo audio_device_info(QAudioDeviceInfo::defaultOutputDevice());
-
-    if(!audio_device_info.isFormatSupported(audio_format))
-        audio_format=audio_device_info.nearestFormat(audio_format);
-
-    qInfo() << audio_format;
-
-    if(input_channels_size!=audio_format.channelCount()) {
-        qWarning() << "input and device channels missmatch" << input_channels_size << audio_format.channelCount();
-    }
-
-    audio_output->stop();
-
-    audio_output->deleteLater();
-
-    audio_output=new QAudioOutput(QAudioDeviceInfo::defaultOutputDevice(), audio_format);
-
-    if(!audio_output) {
-        qCritical() << "audio_output error";
-        return;
-    }
-
-    audio_output->start(&dev_audio_output);
-}
-
-void AudioOutputThread::run()
-{
     audio_format.setSampleRate(48000);
     audio_format.setChannelCount(2);
     audio_format.setSampleSize(16);
@@ -79,6 +25,15 @@ void AudioOutputThread::run()
     audio_format.setSampleType(QAudioFormat::SignedInt);
 
 
+    start(QThread::NormalPriority);
+}
+
+AudioOutputThread::~AudioOutputThread()
+{
+}
+
+void AudioOutputThread::run()
+{
     QAudioDeviceInfo audio_device_info(QAudioDeviceInfo::defaultOutputDevice());
 
     if(!audio_device_info.isFormatSupported(audio_format)) {
@@ -118,7 +73,7 @@ void AudioOutputThread::run()
             if(!frame->audio.raw.isEmpty()) {
                 // buf_trig_size=frame->audio.raw.size()*.5;
 
-                onInputFrameArrived(frame->audio.raw, frame->audio.channels, frame->audio.sample_size);
+                dev_audio_output.write(convert(&frame->audio.raw, frame->audio.channels, frame->audio.sample_size));
 
                 if(audio_output->state()!=QAudio::ActiveState) {
                     audio_output->start(&dev_audio_output);
@@ -132,34 +87,4 @@ void AudioOutputThread::run()
 
         usleep(1);
     }
-}
-
-void AudioOutputThread::onInputFrameArrived(QByteArray ba_data, int channels, int sample_size)
-{
-    // if(!dev_audio_output)
-    //     return;
-
-    if(channels!=audio_converter.outChannels()) {
-        QByteArray ba_tmp;
-
-        if(!audio_converter.isReady() || (sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32)!=audio_converter.inSampleFormat()) {
-            if(!audio_converter.init(av_get_default_channel_layout(channels), 48000, sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32,
-                                 AV_CH_LAYOUT_STEREO, 48000, AV_SAMPLE_FMT_S16)) {
-
-                qCritical() << "audio_converter.init err";
-
-                running=false;
-
-                return;
-            }
-        }
-
-        // mix8channelsTo2(&ba_data, &ba_tmp);
-
-        audio_converter.convert(&ba_data, &ba_tmp);
-
-        ba_data=ba_tmp;
-    }
-
-    dev_audio_output.write(ba_data);
 }

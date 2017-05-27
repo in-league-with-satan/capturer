@@ -7,6 +7,8 @@
 
 #include "frame_buffer.h"
 
+class AudioConverter;
+
 class AudioOutputInterface : public QThread
 {
     Q_OBJECT
@@ -17,15 +19,14 @@ public:
 
     FrameBuffer::ptr frameBuffer();
 
-public slots:
-    virtual void changeChannels(int size);
-
 protected:
+    QByteArray convert(QByteArray *in, const int channels, int sample_size);
+
     FrameBuffer::ptr frame_buffer;
 
-    int input_channels_size;
-
     std::atomic <bool> running;
+
+    AudioConverter *audio_converter;
 };
 
 #endif // AUDIO_OUTPUT_THREAD_H

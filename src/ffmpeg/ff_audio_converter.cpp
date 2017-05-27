@@ -28,13 +28,18 @@ bool AudioConverter::init(uint64_t in_channels_layout, int64_t in_sample_rate, i
 {
     free();
 
+    qInfo() << "AudioConverter::init" << in_channels_layout << in_sample_rate << in_sample_format
+            << out_channels_layout << out_sample_rate << out_sample_format;
+
     this->in_channels_layout=in_channels_layout;
     this->in_channels=av_get_channel_layout_nb_channels(in_channels_layout);
+    this->in_sample_size=av_get_bytes_per_sample((AVSampleFormat)in_sample_format);
     this->in_sample_rate=in_sample_rate;
     this->in_sample_format=in_sample_format;
 
     this->out_channels_layout=out_channels_layout;
     this->out_channels=av_get_channel_layout_nb_channels(out_channels_layout);
+    this->out_sample_size=av_get_bytes_per_sample((AVSampleFormat)out_sample_format);
     this->out_sample_rate=out_sample_rate;
     this->out_sample_format=out_sample_format;
 
@@ -45,44 +50,77 @@ bool AudioConverter::init(uint64_t in_channels_layout, int64_t in_sample_rate, i
         return false;
     }
 
-    av_opt_set_channel_layout(context, "in_channel_layout", in_channels_layout, 0);
-    av_opt_set_channel_layout(context, "out_channel_layout", out_channels_layout, 0);
-    av_opt_set_int(context,"in_sample_rate", in_sample_rate, 0);
-    av_opt_set_int(context, "out_sample_rate", out_sample_rate, 0);
-    av_opt_set_sample_fmt(context, "in_sample_fmt", (AVSampleFormat)in_sample_format, 0);
-    av_opt_set_sample_fmt(context, "out_sample_fmt", (AVSampleFormat)out_sample_format, 0);
+    int ret;
 
-    int err=swr_init(context);
+    ret=av_opt_set_channel_layout(context, "in_channel_layout", in_channels_layout, 0);
 
-    if(err<0) {
-        qCritical() << "AudioConverter: swr_init err" << ffErrorString(err) ;
-        free();
-        return false;
-    }
+    if(ret<0)
+        goto err;
 
-    in_sample_size=av_get_bytes_per_sample((AVSampleFormat)in_sample_format)*in_channels;
+    ret=av_opt_set_channel_layout(context, "out_channel_layout", out_channels_layout, 0);
+
+    if(ret<0)
+        goto err;
+
+    ret=av_opt_set_int(context,"in_sample_rate", in_sample_rate, 0);
+
+    if(ret<0)
+        goto err;
+
+    ret=av_opt_set_int(context, "out_sample_rate", out_sample_rate, 0);
+
+    if(ret<0)
+        goto err;
+
+    ret=av_opt_set_sample_fmt(context, "in_sample_fmt", (AVSampleFormat)in_sample_format, 0);
+
+    if(ret<0)
+        goto err;
+
+    ret=av_opt_set_sample_fmt(context, "out_sample_fmt", (AVSampleFormat)out_sample_format, 0);
+
+    if(ret<0)
+        goto err;
+
+    ret=swr_init(context);
+
+    if(ret<0)
+        goto err;
 
     return true;
+
+err:
+
+    qCritical() << "AudioConverter: err" << ffErrorString(ret);
+
+    free();
+
+    return false;
 }
 
 bool AudioConverter::convert(QByteArray *src, QByteArray *dst)
 {
-    if(!context)
+    if(!context) {
+        qCritical() << "AudioConverter::convert: context null pointer";
         return false;
+    }
 
-    int nb_samples=src->size()/in_sample_size;
+    int64_t in_count=src->size()/(in_sample_size*in_channels);
 
-    int out_num_samples=av_rescale_rnd(swr_get_delay(context, in_sample_rate) + nb_samples,
-                                       out_sample_rate, in_sample_rate, AV_ROUND_UP);
+    int64_t out_count=av_rescale_rnd(swr_get_delay(context, in_sample_rate) + in_count,
+                                     out_sample_rate, in_sample_rate, AV_ROUND_UP);
 
-    dst->resize(av_samples_get_buffer_size(nullptr, out_channels,
-                                           out_num_samples, (AVSampleFormat)out_sample_format, alignment));
+    dst->resize(out_count*out_channels*out_sample_size);
+
 
     char *ptr_src=src->data();
     char *ptr_dst=dst->data();
 
-    out_num_samples=swr_convert(context, (uint8_t**)&ptr_dst, out_num_samples,
-                                (const uint8_t**)&ptr_src, nb_samples);
+    int out_count_res=swr_convert(context, (uint8_t**)&ptr_dst, out_count,
+                                  (const uint8_t**)&ptr_src, in_count);
+
+    if(out_count_res<out_count)
+        dst->resize(out_count_res*out_channels*out_sample_size);
 
     return true;
 }
@@ -97,15 +135,15 @@ void AudioConverter::free()
 
     in_channels_layout=0;
     in_channels=0;
+    in_sample_size=0;
     in_sample_rate=0;
     in_sample_format=0;
 
     out_channels_layout=0;
     out_channels=0;
+    out_sample_size=0;
     out_sample_rate=0;
     out_sample_format=0;
-
-    in_sample_size=0;
 }
 
 uint64_t AudioConverter::inChannelsLayout() const
