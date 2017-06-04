@@ -1,0 +1,11 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/main_win.qml</file>
+        <file>qml/main_android.qml</file>
+        <file>qml/Button2.qml</file>
+        <file>qml/SetupForm.qml</file>
+        <file>qml/BaseControl.qml</file>
+        <file>qml/AdditionalControl.qml</file>
+        <file>qtquickcontrols2.conf</file>
+    </qresource>
+</RCC>
