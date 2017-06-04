@@ -139,12 +139,19 @@ contains(DEFINES, USE_SDL2) {
 }
 
 INCLUDEPATH += \
+    shared
+
+HEADERS += \
+    shared/*.h
+
+INCLUDEPATH += \
     src \
     src/decklink \
     src/ffmpeg \
     src/audio_output \
     src/video_output \
-    src/overlay
+    src/overlay \
+    src/network
 
 SOURCES += \
     src/*.cpp \
@@ -152,7 +159,8 @@ SOURCES += \
     src/ffmpeg/*.cpp \
     src/audio_output/*.cpp \
     src/video_output/*.cpp \
-    src/overlay/*.cpp
+    src/overlay/*.cpp \
+    src/network/*.cpp
 
 HEADERS += \
     src/*.h \
@@ -160,9 +168,12 @@ HEADERS += \
     src/ffmpeg/*.h \
     src/audio_output/*.h \
     src/video_output/*.h \
-    src/overlay/*.h
+    src/overlay/*.h \
+    src/network/*.h
 
 RESOURCES += \
     qml.qrc \
     images.qrc
 
+OTHER_FILES += \
+    qml/*.qml

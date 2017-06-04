@@ -14,6 +14,7 @@ class Sdl2VideoOutpitThread;
 class AudioLevel;
 class QmlMessenger;
 class OverlayView;
+class Server;
 
 class QMessageBox;
 
@@ -42,6 +43,8 @@ private:
 
     QMessageBox *mb_rec_stopped;
 
+    Server *server;
+
     QSize current_frame_size;
     int64_t current_frame_duration;
     int64_t current_frame_scale;
@@ -53,6 +56,8 @@ protected:
     virtual void closeEvent(QCloseEvent *);
 
 private slots:
+    void keyPressed(int code);
+
     void formatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format);
 
     void settingsModelDataChanged(int index, int role, bool qml);

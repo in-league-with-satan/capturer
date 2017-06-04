@@ -25,6 +25,8 @@
 #include "audio_level.h"
 #include "qml_messenger.h"
 #include "overlay_view.h"
+#include "server.h"
+#include "data_types.h"
 
 #include "mainwindow.h"
 
@@ -110,9 +112,16 @@ MainWindow::MainWindow(QWidget *parent)
     connect(audio_level, SIGNAL(levels(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)),
             messenger, SIGNAL(audioLevels(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)), Qt::QueuedConnection);
 
+
     //
 
     settings->load();
+
+    //
+
+    server=new Server(13666, this);
+
+    connect(server, SIGNAL(keyPressed(int)), SLOT(keyPressed(int)), Qt::QueuedConnection);
 
     //
 
@@ -294,47 +303,31 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 
             switch(key) {
             case Qt::Key_F2:
-                if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
-                    messenger->showFileBrowser();
-
+                keyPressed(KeyCodeC::FileBrowser);
                 return true;
 
             case Qt::Key_F1:
-                messenger->showHideAbout();
+                keyPressed(KeyCodeC::About);
                 return true;
 
             case Qt::Key_F4:
-                if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED && (decklink_thread->gotSignal() || ff_enc->isWorking()))
-                    startStopRecording();
-
+                keyPressed(KeyCodeC::Rec);
                 return true;
 
             case Qt::Key_F5:
-                if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
-                    messenger->showHideInfo();
-
-                else
-                    messenger->showHidePlayerState();
-
+                keyPressed(KeyCodeC::Info);
                 return true;
 
             case Qt::Key_F6:
-                if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
-                    messenger->showHideDetailedRecState();
-
+                keyPressed(KeyCodeC::RecState);
                 return true;
 
             case Qt::Key_F7:
-                previewOnOff();
+                keyPressed(KeyCodeC::Preview);
                 return true;
 
             case Qt::Key_F11:
-                if(isFullScreen())
-                    showNormal();
-
-                else
-                    showFullScreen();
-
+                keyPressed(KeyCodeC::FullScreen);
                 return true;
 
             case Qt::Key_F12:
@@ -343,72 +336,36 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 
             case Qt::Key_Menu:
             case Qt::Key_Space:
-                // qInfo() << "show_menu";
-                if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
-                    emit messenger->showMenu();
-
-                else {
-                    if(ff_dec->currentState()==FFDecoderThread::ST_PLAY)
-                        ff_dec->pause();
-
-                    else
-                        ff_dec->play();
-                }
-
+                keyPressed(KeyCodeC::Menu);
                 return true;
 
             case Qt::Key_HomePage:
             case Qt::Key_Back:
             case Qt::Key_Backspace:
             case Qt::Key_Delete:
-                if(ff_dec->currentState()!=FFDecoderThread::ST_STOPPED)
-                    ff_dec->stop();
-
-                else
-                    emit messenger->back();
-
+                keyPressed(KeyCodeC::Back);
                 return true;
 
             case Qt::Key_Return:
-                emit messenger->keyPressed(Qt::Key_Right);
-
+                keyPressed(KeyCodeC::Enter);
                 return true;
 
             case Qt::Key_Up:
+                keyPressed(KeyCodeC::Up);
+                return true;
+
             case Qt::Key_Down:
+                keyPressed(KeyCodeC::Down);
+                return true;
+
             case Qt::Key_Left:
+                keyPressed(KeyCodeC::Left);
+                return true;
+
             case Qt::Key_Right:
-                if(ff_dec->currentState()!=FFDecoderThread::ST_STOPPED) {
-                    int64_t pos=0;
-
-                    if(Qt::Key_Left==key) {
-                        pos=ff_dec->currentPos() - 30*1000;
-
-                        if(pos<0)
-                            pos=0;
-
-                        ff_dec->seek(pos);
-
-                        return true;
-                    }
-
-                    if(Qt::Key_Right==key) {
-                        pos=ff_dec->currentPos() + 30*1000;
-
-                        if(pos<ff_dec->currentDuration()) {
-                            ff_dec->seek(pos);
-
-                            return true;
-                        }
-                    }
-                }
-
-                emit messenger->keyPressed((Qt::Key)key);
-
+                keyPressed(KeyCodeC::Right);
                 return true;
             }
-
-            return true;
         }
     }
 
@@ -420,6 +377,122 @@ void MainWindow::closeEvent(QCloseEvent *)
     out_widget->close();
 
     overlay_view->close();
+}
+
+void MainWindow::keyPressed(int code)
+{
+    switch(code) {
+    case KeyCodeC::FileBrowser:
+        if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
+            messenger->showFileBrowser();
+
+        break;
+
+    case KeyCodeC::About:
+        messenger->showHideAbout();
+        break;
+
+    case KeyCodeC::Rec:
+        startStopRecording();
+
+        break;
+
+    case KeyCodeC::Info:
+        if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
+            messenger->showHideInfo();
+
+        else
+            messenger->showHidePlayerState();
+
+        break;
+
+    case KeyCodeC::RecState:
+        if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
+            messenger->showHideDetailedRecState();
+
+        break;
+
+    case KeyCodeC::Preview:
+        previewOnOff();
+        break;
+
+    case KeyCodeC::FullScreen:
+        if(isFullScreen())
+            showNormal();
+
+        else
+            showFullScreen();
+
+        break;
+
+    case KeyCodeC::Exit:
+        QApplication::exit(0);
+        break;
+
+    case KeyCodeC::Menu:
+        // qInfo() << "show_menu";
+        if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
+            emit messenger->showMenu();
+
+        else {
+            if(ff_dec->currentState()==FFDecoderThread::ST_PLAY)
+                ff_dec->pause();
+
+            else
+                ff_dec->play();
+        }
+
+        break;
+
+    case KeyCodeC::Back:
+        if(ff_dec->currentState()!=FFDecoderThread::ST_STOPPED)
+            ff_dec->stop();
+
+        else
+            emit messenger->back();
+
+        break;
+
+    case KeyCodeC::Enter:
+        emit messenger->keyPressed(Qt::Key_Right);
+
+        break;
+
+    case KeyCodeC::Left:
+    case KeyCodeC::Right:
+        if(ff_dec->currentState()!=FFDecoderThread::ST_STOPPED) {
+            int64_t pos=0;
+
+            if(KeyCodeC::Left==code) {
+                pos=ff_dec->currentPos() - 30*1000;
+
+                if(pos<0)
+                    pos=0;
+
+                ff_dec->seek(pos);
+            }
+
+            if(KeyCodeC::Right==code) {
+                pos=ff_dec->currentPos() + 30*1000;
+
+                if(pos<ff_dec->currentDuration()) {
+                    ff_dec->seek(pos);
+                }
+            }
+        }
+
+        emit messenger->keyPressed(KeyCodeC::Left==code ? Qt::Key_Left : Qt::Key_Right);
+
+        break;
+
+    case KeyCodeC::Up:
+        emit messenger->keyPressed(Qt::Key_Up);
+        break;
+
+    case KeyCodeC::Down:
+        emit messenger->keyPressed(Qt::Key_Down);
+        break;
+    }
 }
 
 void MainWindow::formatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format)
@@ -533,6 +606,9 @@ void MainWindow::startStopRecording()
         ff_enc->stopCoder();
 
     } else {
+        if(ff_dec->currentState()!=FFDecoderThread::ST_STOPPED || !decklink_thread->gotSignal())
+            return;
+
         FFEncoder::Config cfg;
 
         cfg.framerate=FFEncoder::calcFps(current_frame_duration, current_frame_scale, settings->rec.half_fps);
