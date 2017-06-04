@@ -83,7 +83,7 @@ ShowHideRect {
 
                 Text {
                     id: t_file_name
-                    width: (fs_delegate.width - icon.width)*.75
+                    width: (fs_delegate.width - icon.width)*.7
                     height: base_height
                     anchors.left: icon.right
                     font.pixelSize: fs_delegate.font_size
@@ -101,7 +101,7 @@ ShowHideRect {
 
                 Text {
                     id: t_file_size
-                    width: (fs_delegate.width - icon.width)*.25 - icon.width
+                    width: (fs_delegate.width - icon.width*4)*.3
                     height: base_height
                     anchors.left: t_file_name.right
                     horizontalAlignment: Text.AlignRight
