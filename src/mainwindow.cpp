@@ -680,6 +680,8 @@ void MainWindow::encoderStateChanged(bool state)
 {
     if(!state)
         messenger->setRecStarted(false);
+
+    server->sendRecState(state);
 }
 
 void MainWindow::playerStateChanged(int state)
@@ -713,4 +715,7 @@ void MainWindow::updateStats(FFEncoder::Stats s)
                               QString("%1 bytes").arg(QLocale().toString((qulonglong)s.streams_size)),
                               QString("buf state: %1/%2").arg(buffer_size.first).arg(buffer_size.second),
                               QString("frames dropped: %1").arg(dropped_frames_counter));
+
+    server->sendRecStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.streams_size));
+    // QMetaObject::invokeMethod(server, "sendRecStats", Qt::QueuedConnection, Q_ARG(NRecStats, NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.streams_size)));
 }

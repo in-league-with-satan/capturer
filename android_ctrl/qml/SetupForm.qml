@@ -66,7 +66,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
         anchors.margins: root.height*.1
-        pixelSize: font_size
+        font_pixel_size: font_size
 
         text: "apply"
 

@@ -50,9 +50,9 @@ ShowHideRect {
         style: Text.Outline
         color: "white"
         text: {
-            var date=new Date(null);
+            var date=new Date(null)
             date.setMilliseconds(root.position)
-            return date.toISOString().substr(11, 8);
+            return date.toISOString().substr(11, 8)
         }
     }
 
@@ -65,9 +65,9 @@ ShowHideRect {
         style: Text.Outline
         color: "white"
         text: {
-            var date=new Date(null);
+            var date=new Date(null)
             date.setMilliseconds(root.duration)
-            return date.toISOString().substr(11, 8);
+            return date.toISOString().substr(11, 8)
         }
     }
 

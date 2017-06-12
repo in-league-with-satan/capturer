@@ -41,41 +41,41 @@ ShowHideRect {
 
         ScaleAnimator {
             id: scale_animation_front
-            target: circle;
-            from: .9;
-            to: 1;
+            target: circle
+            from: .9
+            to: 1
             duration: 100
             running: root.state_visible
 
             onStopped: {
                 if(root.state_visible)
-                    scale_animation_back.start();
+                    scale_animation_back.start()
             }
         }
 
         ScaleAnimator {
             id: scale_animation_back
-            target: circle;
-            from: 1;
-            to: .9;
+            target: circle
+            from: 1
+            to: .9
             duration: 100
 
             onStopped: {
                 if(root.state_visible)
-                    scale_animation_pause.start();
+                    scale_animation_pause.start()
             }
         }
 
         ScaleAnimator {
             id: scale_animation_pause
-            target: circle;
-            from: circle.scale;
-            to: circle.scale;
+            target: circle
+            from: circle.scale
+            to: circle.scale
             duration: 1000
 
             onStopped: {
                 if(root.state_visible)
-                    scale_animation_front.start();
+                    scale_animation_front.start()
             }
         }
     }
@@ -85,7 +85,7 @@ ShowHideRect {
 
         onUpdateRecStats: {
             if(!hide_text)
-                text_output.text=duration + "    " + size + "    " + bitrate + "    " + buffer_state + "    " + dropped_frames_counter;
+                text_output.text=duration + "    " + size + "    " + bitrate + "    " + buffer_state + "    " + dropped_frames_counter
         }
 
         onShowHideDetailedRecState: {

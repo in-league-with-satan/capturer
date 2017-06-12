@@ -6,6 +6,7 @@
         <file>qml/SetupForm.qml</file>
         <file>qml/BaseControl.qml</file>
         <file>qml/AdditionalControl.qml</file>
+        <file>qml/ButtonRec.qml</file>
         <file>qtquickcontrols2.conf</file>
     </qresource>
 </RCC>

@@ -3,6 +3,8 @@ debug
 release
 *.debug
 *.release
+*.Debug
+*.Release
 *Makefile*
 *.stash
 *.user

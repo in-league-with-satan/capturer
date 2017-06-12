@@ -44,8 +44,9 @@ void Client::commandKey(int key_code)
     if(protocol_ok)
         cmd.enqueue(qMakePair(Command::KeyPressed, key_code));
 
-    else
+    else {
         qInfo() << "!protocol_ok";
+    }
 }
 
 void Client::dropConnection()
@@ -73,7 +74,11 @@ void Client::run()
 
     while(running) {
         if(socket->state()!=QTcpSocket::ConnectedState && socket->state()!=QTcpSocket::ConnectingState) {
-            protocol_ok=false;
+            if(protocol_ok) {
+                protocol_ok=false;
+
+                emit recordIsRunning(false);
+            }
 
             {
                 QMutexLocker ml(&mutex);

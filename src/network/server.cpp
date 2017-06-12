@@ -48,4 +48,7 @@ void Server::newConnection(qintptr socket_descriptor)
 
     connect(ch, SIGNAL(finished()), ch, SLOT(deleteLater()));
     connect(ch, SIGNAL(keyPressed(int)), SIGNAL(keyPressed(int)), Qt::QueuedConnection);
+
+    connect(this, SIGNAL(sendRecState(bool)), ch, SLOT(sendRecState(bool)));
+    connect(this, SIGNAL(sendRecStats(NRecStats)), ch, SLOT(sendRecStats(NRecStats)));
 }

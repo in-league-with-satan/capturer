@@ -5,13 +5,13 @@ import QtQuick.Controls.Styles 1.4
 Button {
     clip: true
 
-    property real pixelSize: height*.6
+    property real font_pixel_size: height*.6
 
     style: ButtonStyle {
         label: Text {
             verticalAlignment: Text.AlignVCenter
             horizontalAlignment: Text.AlignHCenter
-            font.pixelSize: pixelSize
+            font.pixelSize: font_pixel_size
             text: control.text
         }
     }

@@ -3,6 +3,8 @@
 
 #include <QObject>
 
+#include "data_types.h"
+
 class Client;
 class Settings;
 class Vibro;
@@ -25,12 +27,15 @@ public:
 public slots:
 
 private slots:
+    void recStats(NRecStats stats);
 
 private:
     Client *client;
     Vibro *vibro;
 
 signals:
+    void updateRecStats(QString duration, QString size, QString bitrate);
+    void recStateChanged(bool state);
 };
 
 #endif // QML_MESSENGER_H

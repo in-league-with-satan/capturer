@@ -2,6 +2,7 @@
 #include <QProcess>
 
 #include "decklink_tools.h"
+#include "data_types.h"
 #include "mainwindow.h"
 #include "settings.h"
 
@@ -45,6 +46,7 @@ int main(int argc, char *argv[])
     qRegisterMetaType<int64_t>("int64_t");
     qRegisterMetaType<size_t>("size_t");
     qRegisterMetaType<qintptr>("qintptr");
+    qRegisterMetaType<NRecStats>("NRecStats");
 
     FFEncoder::init();
 

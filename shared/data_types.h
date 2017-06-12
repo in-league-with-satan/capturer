@@ -60,6 +60,12 @@ struct NRecStats {
     double avg_bitrate;
     size_t size;
 
+    NRecStats(QTime time=QTime(), double avg_bitrate=0., size_t size=0) {
+        this->time=time;
+        this->avg_bitrate=avg_bitrate;
+        this->size=size;
+    }
+
     QVariantMap toExt() {
         QVariantMap map_root;
 

@@ -52,7 +52,6 @@ private:
 signals:
     void recordIsRunning(bool state);
     void recStats(NRecStats stats);
-
 };
 
 #endif // CLIENT_H

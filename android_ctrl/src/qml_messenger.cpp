@@ -12,11 +12,16 @@ QmlMessenger::QmlMessenger(QObject *parent)
 {
     KeyCodeC::declareQML();
 
+    qRegisterMetaType<NRecStats>("NRecStats");
+
     settings->createInstance()->load();
 
     vibro=new Vibro(this);
 
     client=new Client(this);
+
+    connect(client, SIGNAL(recStats(NRecStats)), SLOT(recStats(NRecStats)), Qt::QueuedConnection);
+    connect(client, SIGNAL(recordIsRunning(bool)), SIGNAL(recStateChanged(bool)), Qt::QueuedConnection);
 
     if(!settings->host().isEmpty())
         client->connectToHost(settings->host(), settings->port());
@@ -60,4 +65,12 @@ void QmlMessenger::keyPressed(int code)
     // qInfo() << "keyPressed" << code;
 
     vibro->vibrate(30);
+}
+
+void QmlMessenger::recStats(NRecStats stats)
+{
+    emit updateRecStats(stats.time.toString("HH:mm:ss"),
+                        QString("%1 bytes").arg(QLocale().toString((qulonglong)stats.size)),
+                        QString("%1 Mbits/s (%2 MB/s)").arg(QLocale().toString((stats.avg_bitrate)/1000./1000., 'f', 2))
+                        .arg(QLocale().toString((stats.avg_bitrate)/8/1024./1024., 'f', 2)));
 }

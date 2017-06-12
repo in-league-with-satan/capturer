@@ -5,6 +5,8 @@
 #include <QMutex>
 #include <QTcpServer>
 
+#include "data_types.h"
+
 class TcpServer : public QTcpServer
 {
     Q_OBJECT
@@ -29,8 +31,6 @@ public:
     Server(quint16 port=0, QObject *parent=0);
     ~Server();
 
-public slots:
-
 private slots:
     void newConnection(qintptr socket_descriptor);
 
@@ -44,6 +44,9 @@ private:
 
 signals:
     void keyPressed(int code);
+
+    void sendRecState(bool state);
+    void sendRecStats(NRecStats stats);
 
 };
 

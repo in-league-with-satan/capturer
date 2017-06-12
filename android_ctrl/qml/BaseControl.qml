@@ -7,8 +7,7 @@ import FuckTheSystem 0.0
 Item {
     id: root
 
-    property real font_size: height*.04
-
+    property real font_size: height*.032
     property real side_size: height*.1
     property real margins: side_size*.1
 
@@ -24,46 +23,50 @@ Item {
     //        text: "about"
     //    }
 
-    Button {
+    Button2 {
         id: b_info
         width: navigation_block.width - margins*4
         height: side_size
         anchors.bottom: b_rec_state.top
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.margins: margins
+        font_pixel_size: font_size
         text: "info"
         onClicked: messenger.keyPressed(KeyCode.Info)
     }
 
-    Button {
+    Button2 {
         id: b_rec_state
         width: navigation_block.width - margins*4
         height: side_size
         anchors.bottom: b_menu.top
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.margins: margins
+        font_pixel_size: font_size
         text: "rec state"
         onClicked: messenger.keyPressed(KeyCode.RecState)
     }
 
-    Button {
+    Button2 {
         id: b_menu
         width: navigation_block.width - margins*4
         height: side_size
         anchors.bottom: navigation_block.top
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.margins: margins
+        font_pixel_size: font_size
         text: "menu"
         onClicked: messenger.keyPressed(KeyCode.Menu)
     }
 
-    Button {
+    Button2 {
         id: b_back
         width: navigation_block.width - margins*4
         height: side_size
         anchors.top: navigation_block.bottom
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.margins: margins
+        font_pixel_size: font_size
         text: "back"
         onClicked: messenger.keyPressed(KeyCode.Back)
     }
@@ -77,57 +80,62 @@ Item {
         // color: "green"
         color: "transparent"
 
-        Button {
+        Button2 {
             id: b_left
             width: side_size
             height: side_size
             anchors.top: b_up.bottom
             anchors.right: b_up.left
             anchors.margins: margins
+            font_pixel_size: font_size
             text: "<"
             onClicked: messenger.keyPressed(KeyCode.Left)
         }
 
-        Button {
+        Button2 {
             id: b_right
             width: side_size
             height: side_size
             anchors.top: b_up.bottom
             anchors.left: b_up.right
             anchors.margins: margins
+            font_pixel_size: font_size
             text: ">"
             onClicked: messenger.keyPressed(KeyCode.Right)
         }
 
-        Button {
+        Button2 {
             id: b_up
             width: side_size
             height: side_size
             anchors.top: parent.top
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.margins: margins
+            font_pixel_size: font_size
             text: "^"
             onClicked: messenger.keyPressed(KeyCode.Up)
         }
 
-        Button {
+        Button2 {
             id: b_down
             width: side_size
             height: side_size
             anchors.top: b_enter.bottom
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.margins: margins
+            font_pixel_size: font_size
             text: "v"
             onClicked: messenger.keyPressed(KeyCode.Down)
         }
 
-        Button {
+        Button2 {
             id: b_enter
             width: side_size
             height: side_size
             anchors.top: b_up.bottom
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.margins: margins
+            font_pixel_size: font_size
             text: "enter"
             onClicked: messenger.keyPressed(KeyCode.Enter)
         }

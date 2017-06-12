@@ -21,10 +21,14 @@ void ClientHandler::disconnected()
 
 void ClientHandler::read()
 {
-    if(socket->bytesAvailable()<8)
-        return;
-
     timer->stop();
+
+    write();
+
+    if(socket->bytesAvailable()<8) {
+        timer->start();
+        return;
+    }
 
     QDataStream stream(socket);
 
@@ -76,6 +80,48 @@ void ClientHandler::read()
     timer->start();
 }
 
+void ClientHandler::write()
+{
+    QVariantMap map;
+
+    while(true) {
+        {
+            QMutexLocker ml(&mutex_queue);
+
+            if(queue_send.isEmpty())
+                return;
+
+            map=queue_send.dequeue();
+        }
+
+        sendData(map);
+    }
+}
+
+void ClientHandler::sendRecState(bool state)
+{
+    QVariantMap vm;
+
+    vm.insert("msg", Message::RecStateChanged);
+    vm.insert("data", state);
+
+    QMutexLocker ml(&mutex_queue);
+
+    queue_send.enqueue(vm);
+}
+
+void ClientHandler::sendRecStats(NRecStats stats)
+{
+    QVariantMap vm;
+
+    vm.insert("msg", Message::RecStats);
+    vm.insert("data", stats.toExt());
+
+    QMutexLocker ml(&mutex_queue);
+
+    queue_send.enqueue(vm);
+}
+
 void ClientHandler::run()
 {
     socket=new QTcpSocket();
@@ -88,6 +134,7 @@ void ClientHandler::run()
     connect(socket, SIGNAL(readyRead()), SLOT(read()), Qt::DirectConnection);
     connect(socket, SIGNAL(disconnected()), SLOT(disconnected()), Qt::DirectConnection);
     connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), SLOT(disconnected()), Qt::DirectConnection);
+    connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), SLOT(disconnected()), Qt::DirectConnection);
 
     if(!socket->setSocketDescriptor(socket_descriptor)) {
         qCritical() << socket->errorString();
@@ -96,8 +143,8 @@ void ClientHandler::run()
 
     timer=new QTimer();
     timer->moveToThread(this);
-    timer->setInterval(1000);
-    connect(timer, SIGNAL(timeout()), SLOT(read()));
+    timer->setInterval(250);
+    connect(timer, SIGNAL(timeout()), SLOT(read()), Qt::DirectConnection);
     timer->start();
 
     exec();
