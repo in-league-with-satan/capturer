@@ -3,6 +3,7 @@
 #include <QKeyEvent>
 #include <QTimer>
 #include <QStorageInfo>
+#include <QNetworkInterface>
 
 #include "ff_tools.h"
 
@@ -72,6 +73,17 @@ QString QmlMessenger::versionlibSWScale() const
 QString QmlMessenger::versionlibSWResample() const
 {
     return versionlibswresample();
+}
+
+QString QmlMessenger::networkAddresses() const
+{
+    QString res;
+
+    foreach(const QHostAddress &address, QNetworkInterface::allAddresses())
+        if(address.protocol()==QAbstractSocket::IPv4Protocol && !address.isLoopback())
+            res+="\t" + address.toString() + "\n";
+
+    return res;
 }
 
 FileSystemModel *QmlMessenger::fileSystemModel()

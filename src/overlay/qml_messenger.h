@@ -33,6 +33,7 @@ public:
     Q_INVOKABLE QString versionlibAVFilter() const;
     Q_INVOKABLE QString versionlibSWScale() const;
     Q_INVOKABLE QString versionlibSWResample() const;
+    Q_INVOKABLE QString networkAddresses() const;
 
 public slots:
     void keyEvent(const Qt::Key &key);
