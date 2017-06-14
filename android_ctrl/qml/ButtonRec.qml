@@ -182,13 +182,13 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton
-
-        drag.axis: Drag.XAxis
-        drag.target: parent
+        property int prev_pos_x: 0
 
         onPressed: {
             if(rec_running)
                 return
+
+            prev_pos_x=mouse.x
 
             fake_rect.border_size=Qt.binding(function() { return root.width*.02 })
         }
@@ -198,6 +198,11 @@ Rectangle {
                 return
 
             fake_rect.border_size=Qt.binding(function() { return root.width*.08 })
+        }
+
+        onPositionChanged: {
+            if(Math.abs(prev_pos_x - mouse.x)>10)
+                onReleased(mouse)
         }
 
         onDoubleClicked: {
