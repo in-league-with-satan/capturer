@@ -16,6 +16,7 @@ Rectangle {
         anm_color_lighter.start()
         scale_animation_pause.start()
         anm_text_show.start()
+        fake_rect.border_size=Qt.binding(function() { return root.width*.08 })
         rec_running=true
     }
 
@@ -109,7 +110,7 @@ Rectangle {
         anchors.fill: parent
 
         property alias color: fake_background.color
-        property int border_size : parent.width*.024
+        property int border_size : root.width*.08
 
         RectangularGlow {
             id: glow_effect
@@ -181,6 +182,23 @@ Rectangle {
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.LeftButton
+
+        drag.axis: Drag.XAxis
+        drag.target: parent
+
+        onPressed: {
+            if(rec_running)
+                return
+
+            fake_rect.border_size=Qt.binding(function() { return root.width*.02 })
+        }
+
+        onReleased: {
+            if(rec_running)
+                return
+
+            fake_rect.border_size=Qt.binding(function() { return root.width*.08 })
+        }
 
         onDoubleClicked: {
             clickEvent()
