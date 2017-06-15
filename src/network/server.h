@@ -44,10 +44,12 @@ private:
 
 signals:
     void keyPressed(int code);
+    void playerSeek(qint64 pos);
 
     void sendRecState(bool state);
     void sendRecStats(NRecStats stats);
-
+    void sendPlayerDuration(qint64 value);
+    void sendPlayerPosition(qint64 value);
 };
 
 #endif // SERVER_H

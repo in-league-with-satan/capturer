@@ -20,6 +20,7 @@ public slots:
     void connectToHost(const QString &host, quint16 port);
     void command(int cmd_code);
     void commandKey(int key_code);
+    void commandPlayerSeek(qint64 pos);
 
 private slots:
 
@@ -35,6 +36,8 @@ private:
     void checkProtocol(QVariantMap *vm);
     void recStateChanged(QVariantMap *vm);
     void recStats(QVariantMap *vm);
+    void playerDuration(QVariantMap *vm);
+    void playerPosition(QVariantMap *vm);
 
     QTcpSocket *socket;
 
@@ -50,8 +53,10 @@ private:
     bool protocol_ok;
 
 signals:
-    void recordIsRunning(bool state);
-    void recStats(NRecStats stats);
+    void recordIsRunning(bool value);
+    void recStats(NRecStats value);
+    void playerDuration(qint64 value);
+    void playerPosition(qint64 value);
 };
 
 #endif // CLIENT_H

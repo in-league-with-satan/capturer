@@ -11,18 +11,6 @@ Item {
     property real side_size: height*.1
     property real margins: side_size*.1
 
-
-    //    Button {
-    //        id: b_about
-    //        width: navigation_block.width
-    //        height: side_size
-    //        //        anchors.top: b_up.bottom
-    //        //        anchors.left: b_up.right
-    //        anchors.horizontalCenter: parent.horizontalCenter
-    //        anchors.margins: margins
-    //        text: "about"
-    //    }
-
     Button2 {
         id: b_info
         width: navigation_block.width - margins*4
@@ -39,12 +27,24 @@ Item {
         id: b_rec_state
         width: navigation_block.width - margins*4
         height: side_size
-        anchors.bottom: b_menu.top
+        anchors.bottom: b_file_browser.top
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.margins: margins
         font_pixel_size: font_size
         text: "rec state"
         onClicked: messenger.keyPressed(KeyCode.RecState)
+    }
+
+    Button2 {
+        id: b_file_browser
+        width: navigation_block.width - margins*4
+        height: side_size
+        anchors.bottom: b_menu.top
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.margins: margins
+        font_pixel_size: font_size
+        text: "file browser"
+        onClicked: messenger.keyPressed(KeyCode.FileBrowser)
     }
 
     Button2 {
@@ -74,7 +74,7 @@ Item {
     Rectangle {
         id: navigation_block
         anchors.horizontalCenter: parent.horizontalCenter
-        y: parent.height*.42
+        y: parent.height*.47
         width: side_size*3 + margins*4
         height: side_size*3 + margins*4
         // color: "green"

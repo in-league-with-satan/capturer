@@ -71,6 +71,10 @@ void ClientHandler::read()
         cmdKeyPressed(&map);
         break;
 
+    case Command::PlayerSeek:
+        cmdPlayerSeek(&map);
+        break;
+
     default:
         break;
     }
@@ -98,24 +102,48 @@ void ClientHandler::write()
     }
 }
 
-void ClientHandler::sendRecState(bool state)
+void ClientHandler::sendRecState(bool value)
 {
     QVariantMap vm;
 
     vm.insert("msg", Message::RecStateChanged);
-    vm.insert("data", state);
+    vm.insert("data", value);
 
     QMutexLocker ml(&mutex_queue);
 
     queue_send.enqueue(vm);
 }
 
-void ClientHandler::sendRecStats(NRecStats stats)
+void ClientHandler::sendRecStats(NRecStats value)
 {
     QVariantMap vm;
 
     vm.insert("msg", Message::RecStats);
-    vm.insert("data", stats.toExt());
+    vm.insert("data", value.toExt());
+
+    QMutexLocker ml(&mutex_queue);
+
+    queue_send.enqueue(vm);
+}
+
+void ClientHandler::sendPlayerDuration(qint64 value)
+{
+    QVariantMap vm;
+
+    vm.insert("msg", Message::PlayerDurationChanged);
+    vm.insert("data", value);
+
+    QMutexLocker ml(&mutex_queue);
+
+    queue_send.enqueue(vm);
+}
+
+void ClientHandler::sendPlayerPosition(qint64 value)
+{
+    QVariantMap vm;
+
+    vm.insert("msg", Message::PlayerPositionChanged);
+    vm.insert("data", value);
 
     QMutexLocker ml(&mutex_queue);
 
@@ -181,7 +209,13 @@ void ClientHandler::cmdKeyPressed(QVariantMap *vm)
     if(!vm->contains("data"))
         return;
 
-    int key_code=vm->value("data").toInt();
+    emit keyPressed(vm->value("data").toInt());
+}
 
-    emit keyPressed(key_code);
+void ClientHandler::cmdPlayerSeek(QVariantMap *vm)
+{
+    if(!vm->contains("data"))
+        return;
+
+    emit playerSeek(vm->value("data").toLongLong());
 }

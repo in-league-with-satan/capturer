@@ -122,6 +122,9 @@ MainWindow::MainWindow(QWidget *parent)
     server=new Server(13666, this);
 
     connect(server, SIGNAL(keyPressed(int)), SLOT(keyPressed(int)), Qt::QueuedConnection);
+    connect(server, SIGNAL(playerSeek(qint64)), ff_dec, SLOT(seek(qint64)), Qt::QueuedConnection);
+    connect(ff_dec, SIGNAL(durationChanged(qint64)), server, SIGNAL(sendPlayerDuration(qint64)), Qt::QueuedConnection);
+    connect(ff_dec, SIGNAL(positionChanged(qint64)), server, SIGNAL(sendPlayerPosition(qint64)), Qt::QueuedConnection);
 
     //
 
@@ -380,7 +383,7 @@ void MainWindow::closeEvent(QCloseEvent *)
 }
 
 void MainWindow::keyPressed(int code)
-{
+{qInfo() << code;
     switch(code) {
     case KeyCodeC::FileBrowser:
         if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
@@ -497,8 +500,10 @@ void MainWindow::keyPressed(int code)
 
 void MainWindow::formatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format)
 {
-    current_frame_size=QSize(width, height);
+    Q_UNUSED(progressive_frame)
+    Q_UNUSED(pixel_format)
 
+    current_frame_size=QSize(width, height);
     current_frame_duration=frame_duration;
     current_frame_scale=frame_scale;
 }

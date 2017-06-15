@@ -49,6 +49,18 @@ void Client::commandKey(int key_code)
     }
 }
 
+void Client::commandPlayerSeek(qint64 pos)
+{
+    QMutexLocker ml(&mutex);
+
+    if(protocol_ok)
+        cmd.enqueue(qMakePair(Command::PlayerSeek, pos));
+
+    else {
+        qInfo() << "!protocol_ok";
+    }
+}
+
 void Client::dropConnection()
 {
     socket->disconnectFromHost();
@@ -192,6 +204,14 @@ void Client::read()
         recStats(&vm);
         break;
 
+    case Message::PlayerDurationChanged:
+        playerDuration(&vm);
+        break;
+
+    case Message::PlayerPositionChanged:
+        playerPosition(&vm);
+        break;
+
     default:
         break;
     }
@@ -213,4 +233,14 @@ void Client::recStateChanged(QVariantMap *vm)
 void Client::recStats(QVariantMap *vm)
 {
     emit recStats(NRecStats().fromExt(vm->value("data").toMap()));
+}
+
+void Client::playerDuration(QVariantMap *vm)
+{
+    emit playerDuration(vm->value("data").toLongLong());
+}
+
+void Client::playerPosition(QVariantMap *vm)
+{
+    emit playerPosition(vm->value("data").toLongLong());
 }

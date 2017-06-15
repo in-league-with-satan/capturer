@@ -64,6 +64,13 @@ ApplicationWindow {
                 anchors.fill: parent
             }
         }
+
+        Item {
+            Player {
+                id: player
+                anchors.fill: parent
+            }
+        }
     }
 
     PageIndicator {

@@ -23,6 +23,7 @@ public:
     Q_INVOKABLE QString connectRoutingKey() const;
 
     Q_INVOKABLE void keyPressed(int code);
+    Q_INVOKABLE void playerSeek(qint64 pos);
 
 public slots:
 
@@ -36,6 +37,8 @@ private:
 signals:
     void updateRecStats(QString duration, QString size, QString bitrate);
     void recStateChanged(bool state);
+    void playerDurationChanged(qint64 value);
+    void playerPositionChanged(qint64 value);
 };
 
 #endif // QML_MESSENGER_H

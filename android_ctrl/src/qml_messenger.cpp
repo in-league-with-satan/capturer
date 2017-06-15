@@ -22,6 +22,8 @@ QmlMessenger::QmlMessenger(QObject *parent)
 
     connect(client, SIGNAL(recStats(NRecStats)), SLOT(recStats(NRecStats)), Qt::QueuedConnection);
     connect(client, SIGNAL(recordIsRunning(bool)), SIGNAL(recStateChanged(bool)), Qt::QueuedConnection);
+    connect(client, SIGNAL(playerDuration(qint64)), SIGNAL(playerDurationChanged(qint64)), Qt::QueuedConnection);
+    connect(client, SIGNAL(playerPosition(qint64)), SIGNAL(playerPositionChanged(qint64)), Qt::QueuedConnection);
 
     if(!settings->host().isEmpty())
         client->connectToHost(settings->host(), settings->port());
@@ -63,6 +65,13 @@ void QmlMessenger::keyPressed(int code)
 {
     client->commandKey(code);
     // qInfo() << "keyPressed" << code;
+
+    vibro->vibrate(30);
+}
+
+void QmlMessenger::playerSeek(qint64 pos)
+{
+    client->commandPlayerSeek(pos);
 
     vibro->vibrate(30);
 }

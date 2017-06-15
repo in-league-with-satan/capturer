@@ -14,7 +14,8 @@ const int READ_TIMEOUT=5000;
 struct Command {
     enum {
         GetProtocolVersion,
-        KeyPressed
+        KeyPressed,
+        PlayerSeek
     };
 };
 
@@ -23,6 +24,8 @@ struct Message {
         ProtocolVersion,
         RecStateChanged,
         RecStats,
+        PlayerDurationChanged,
+        PlayerPositionChanged
     };
 };
 

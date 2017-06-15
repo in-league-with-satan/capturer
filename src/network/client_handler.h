@@ -24,8 +24,10 @@ private slots:
     void read();
     void write();
 
-    void sendRecState(bool state);
-    void sendRecStats(NRecStats stats);
+    void sendRecState(bool value);
+    void sendRecStats(NRecStats value);
+    void sendPlayerDuration(qint64 value);
+    void sendPlayerPosition(qint64 value);
 
 protected:
     void run();
@@ -35,6 +37,7 @@ protected:
 private:
     void cmdProtocolVersion(QVariantMap *vm);
     void cmdKeyPressed(QVariantMap *vm);
+    void cmdPlayerSeek(QVariantMap *vm);
 
     QTimer *timer;
 
@@ -49,6 +52,7 @@ private:
 signals:
     void recStartStop();
     void keyPressed(int code);
+    void playerSeek(qint64 pos);
 };
 
 #endif // CLIENT_HANDLER_H

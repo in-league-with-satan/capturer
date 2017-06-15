@@ -7,6 +7,8 @@
         <file>qml/BaseControl.qml</file>
         <file>qml/AdditionalControl.qml</file>
         <file>qml/ButtonRec.qml</file>
+        <file>qml/Player.qml</file>
+        <file>qml/PlayerState.qml</file>
         <file>qtquickcontrols2.conf</file>
     </qresource>
 </RCC>
