@@ -138,6 +138,10 @@ contains(DEFINES, USE_SDL2) {
     LIBS += -lSDL2main -lSDL2
 }
 
+
+include(externals/3rdparty/http_server.pri)
+
+
 INCLUDEPATH += \
     shared
 

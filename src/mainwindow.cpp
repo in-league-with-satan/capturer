@@ -25,7 +25,7 @@
 #include "audio_level.h"
 #include "qml_messenger.h"
 #include "overlay_view.h"
-#include "server.h"
+#include "http_server.h"
 #include "data_types.h"
 
 #include "mainwindow.h"
@@ -119,12 +119,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    server=new Server(13666, this);
-
-    connect(server, SIGNAL(keyPressed(int)), SLOT(keyPressed(int)), Qt::QueuedConnection);
-    connect(server, SIGNAL(playerSeek(qint64)), ff_dec, SLOT(seek(qint64)), Qt::QueuedConnection);
-    connect(ff_dec, SIGNAL(durationChanged(qint64)), server, SIGNAL(sendPlayerDuration(qint64)), Qt::QueuedConnection);
-    connect(ff_dec, SIGNAL(positionChanged(qint64)), server, SIGNAL(sendPlayerPosition(qint64)), Qt::QueuedConnection);
+    http_server=new HttpServer(settings->http_server.enabled ? settings->http_server.port : 0, this);
+    connect(http_server, SIGNAL(keyPressed(int)), SLOT(keyPressed(int)));
+    connect(http_server, SIGNAL(playerSeek(qint64)), ff_dec, SLOT(seek(qint64)));
+    connect(ff_dec, SIGNAL(durationChanged(qint64)), http_server, SLOT(setPlayerDuration(qint64)), Qt::QueuedConnection);
+    connect(ff_dec, SIGNAL(positionChanged(qint64)), http_server, SLOT(setPlayerPosition(qint64)), Qt::QueuedConnection);
 
     //
 
@@ -383,7 +382,7 @@ void MainWindow::closeEvent(QCloseEvent *)
 }
 
 void MainWindow::keyPressed(int code)
-{qInfo() << code;
+{
     switch(code) {
     case KeyCodeC::FileBrowser:
         if(ff_dec->currentState()==FFDecoderThread::ST_STOPPED)
@@ -686,7 +685,7 @@ void MainWindow::encoderStateChanged(bool state)
     if(!state)
         messenger->setRecStarted(false);
 
-    server->sendRecState(state);
+    http_server->setRecState(state);
 }
 
 void MainWindow::playerStateChanged(int state)
@@ -721,6 +720,5 @@ void MainWindow::updateStats(FFEncoder::Stats s)
                               QString("buf state: %1/%2").arg(buffer_size.first).arg(buffer_size.second),
                               QString("frames dropped: %1").arg(dropped_frames_counter));
 
-    server->sendRecStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.streams_size));
-    // QMetaObject::invokeMethod(server, "sendRecStats", Qt::QueuedConnection, Q_ARG(NRecStats, NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.streams_size)));
+    http_server->setRecStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.streams_size));
 }

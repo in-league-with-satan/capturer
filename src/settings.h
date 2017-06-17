@@ -39,6 +39,12 @@ public:
 
     } rec;
 
+    struct HttpServer {
+        quint16 port;
+        bool enabled;
+
+    } http_server;
+
 private:
     Settings(QObject *parent=0);
 

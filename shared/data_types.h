@@ -63,6 +63,10 @@ struct NRecStats {
     double avg_bitrate;
     quint64 size;
 
+    bool isNull() const {
+        return time.isNull();
+    }
+
     NRecStats(QTime time=QTime(), double avg_bitrate=0., quint64 size=0) {
         this->time=time;
         this->avg_bitrate=avg_bitrate;
@@ -85,6 +89,65 @@ struct NRecStats {
         size=map_root.value("size").toULongLong();
 
         return *this;
+    }
+
+    inline bool operator !=(const NRecStats &other) const {
+        return time!=other.time || avg_bitrate!=other.avg_bitrate || size!=other.size;
+    }
+};
+
+struct PlayerState {
+    PlayerState() {
+        duration=0;
+        position=0;
+    }
+
+    QVariantMap toExt() {
+        QVariantMap map_root;
+
+        map_root.insert("duration", duration);
+        map_root.insert("position", position);
+
+        return map_root;
+    }
+
+    PlayerState &fromExt(const QVariantMap &map_root) {
+        duration=map_root.value("duration").toLongLong();
+        position=map_root.value("position").toLongLong();
+
+        return *this;
+    }
+
+    inline bool operator !=(const PlayerState &other) const {
+        return duration!=other.duration || position!=other.position;
+    }
+
+    qint64 duration;
+    qint64 position;
+};
+
+struct Status {
+    NRecStats rec_stats;
+    PlayerState player_state;
+
+    QVariantMap toExt() {
+        QVariantMap map_root;
+
+        map_root.insert("rec_stats", rec_stats.toExt());
+        map_root.insert("player_state", player_state.toExt());
+
+        return map_root;
+    }
+
+    Status &fromExt(const QVariantMap &map_root) {
+        rec_stats.fromExt(map_root.value("rec_stats").toMap());
+        player_state.fromExt(map_root.value("player_state").toMap());
+
+        return *this;
+    }
+
+    inline bool operator !=(const Status &other) const {
+        return rec_stats!=other.rec_stats || player_state!=other.player_state;
     }
 };
 
