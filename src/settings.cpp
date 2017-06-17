@@ -46,12 +46,12 @@ bool Settings::load()
 {
     QFile f(filename());
 
-    if(!f.open(QFile::ReadOnly))
-        return false;
+    QByteArray ba;
 
-    QByteArray ba=f.readAll();
-
-    f.close();
+    if(f.open(QFile::ReadOnly)) {
+        ba=f.readAll();
+        f.close();
+    }
 
     QCryptographicHash hash(QCryptographicHash::Md5);
 
