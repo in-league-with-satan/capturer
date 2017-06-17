@@ -67,7 +67,7 @@ bool Settings::load()
     QVariantMap map_main=map_root.value("main").toMap();
     QVariantMap map_device=map_root.value("device").toMap();
     QVariantMap map_rec=map_root.value("rec").toMap();
-
+    QVariantMap map_http_server=map_root.value("http_server").toMap();
 
     main.preview=map_main.value("preview", 1).toInt();
 
@@ -80,6 +80,12 @@ bool Settings::load()
     rec.half_fps=map_rec.value("half_fps", 0).toInt();
     rec.stop_rec_on_frames_drop=map_rec.value("stop_rec_on_frames_drop", 0).toInt();
 
+#ifdef LIB_QHTTP
+    http_server.enabled=map_http_server.value("enabled", true).toBool();
+#else
+    http_server.enabled=map_http_server.value("enabled", false).toBool();
+#endif
+    http_server.port=map_http_server.value("port", 8080).toUInt();
 
     rec.pixel_format_current=rec.pixel_format.value(QString::number(rec.encoder), 0).toInt();
 
@@ -92,6 +98,7 @@ bool Settings::save()
     QVariantMap map_main;
     QVariantMap map_device;
     QVariantMap map_rec;
+    QVariantMap map_http_server;
 
 
     map_main.insert("preview", (bool)main.preview);
@@ -104,6 +111,13 @@ bool Settings::save()
     map_rec.insert("crf", rec.crf);
     map_rec.insert("half_fps", (bool)rec.half_fps);
     map_rec.insert("stop_rec_on_frames_drop", (bool)rec.stop_rec_on_frames_drop);
+
+#ifdef LIB_QHTTP
+    map_http_server.insert("enabled", http_server.enabled);
+    map_http_server.insert("port", http_server.port);
+
+    map_root.insert("http_server", map_http_server);
+#endif
 
     map_root.insert("main", map_main);
     map_root.insert("device", map_device);

@@ -1,6 +1,6 @@
 #include <QDebug>
 
-#include "client.h"
+#include "http_client.h"
 #include "vibro.h"
 #include "settings.h"
 
@@ -18,12 +18,12 @@ QmlMessenger::QmlMessenger(QObject *parent)
 
     vibro=new Vibro(this);
 
-    client=new Client(this);
+    client=new HttpClient(this);
 
-    connect(client, SIGNAL(recStats(NRecStats)), SLOT(recStats(NRecStats)), Qt::QueuedConnection);
-    connect(client, SIGNAL(recordIsRunning(bool)), SIGNAL(recStateChanged(bool)), Qt::QueuedConnection);
-    connect(client, SIGNAL(playerDuration(qint64)), SIGNAL(playerDurationChanged(qint64)), Qt::QueuedConnection);
-    connect(client, SIGNAL(playerPosition(qint64)), SIGNAL(playerPositionChanged(qint64)), Qt::QueuedConnection);
+    connect(client, SIGNAL(recStats(NRecStats)), SLOT(recStats(NRecStats)));
+    connect(client, SIGNAL(recordIsRunning(bool)), SIGNAL(recStateChanged(bool)));
+    connect(client, SIGNAL(playerDuration(qint64)), SIGNAL(playerDurationChanged(qint64)));
+    connect(client, SIGNAL(playerPosition(qint64)), SIGNAL(playerPositionChanged(qint64)));
 
     if(!settings->host().isEmpty())
         client->connectToHost(settings->host(), settings->port());

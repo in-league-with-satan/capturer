@@ -15,6 +15,7 @@ class AudioLevel;
 class QmlMessenger;
 class OverlayView;
 class Server;
+class HttpServer;
 
 class QMessageBox;
 
@@ -43,7 +44,7 @@ private:
 
     QMessageBox *mb_rec_stopped;
 
-    Server *server;
+    HttpServer *http_server;
 
     QSize current_frame_size;
     int64_t current_frame_duration;

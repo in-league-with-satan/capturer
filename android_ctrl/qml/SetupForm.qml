@@ -13,7 +13,7 @@ Item {
 
     GridLayout {
         id: grid_layout
-        rows: 3
+        rows: 2
         flow: GridLayout.TopToBottom
 
         width: parent.width*.8
@@ -32,10 +32,12 @@ Item {
             text: "port:"
         }
 
+        /*
         Label {
             font.pixelSize: font_size
             text: "routing key:"
         }
+        */
 
         TextField {
             id: tf_host
@@ -51,12 +53,14 @@ Item {
             text: messenger.connectAddrPort();
         }
 
+        /*
         TextField {
             id: tf_routing_key
             font.pixelSize: font_size
             Layout.fillWidth: true
             text: messenger.connectRoutingKey();
         }
+        */
     }
 
     Button2 {

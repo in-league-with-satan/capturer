@@ -5,7 +5,7 @@
 
 #include "data_types.h"
 
-class Client;
+class HttpClient;
 class Settings;
 class Vibro;
 
@@ -31,7 +31,7 @@ private slots:
     void recStats(NRecStats stats);
 
 private:
-    Client *client;
+    HttpClient *client;
     Vibro *vibro;
 
 signals:

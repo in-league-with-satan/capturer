@@ -75,8 +75,8 @@ bool Settings::load()
     QVariantMap map_main=map_root.value("main").toMap();
 
     main.host=map_main.value("host", "localhost").toString();
-    main.port=map_main.value("port", 13666).toInt();
-    main.routing_key=map_main.value("routing_key").toString();
+    main.port=map_main.value("port", 8080).toInt();
+    // main.routing_key=map_main.value("routing_key").toString();
 
     return true;
 }
@@ -90,7 +90,7 @@ bool Settings::save()
 
     map_main.insert("host", main.host);
     map_main.insert("port", main.port);
-    map_main.insert("routing_key", main.routing_key);
+    // map_main.insert("routing_key", main.routing_key);
 
     map_root.insert("main", map_main);
 
