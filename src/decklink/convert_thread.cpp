@@ -96,7 +96,7 @@ void DlConvertThread::run()
 
                 frame->audio.raw.resize(frame_audio_src->GetSampleFrameCount()*audio_channels*(sample_size/8));
 
-                memcpy(frame->audio.raw.data(), d_audio, frame->audio.raw.size());
+                memcpy((void*)frame->audio.raw.constData(), d_audio, frame->audio.raw.size());
 
                 if(audio_channels==8) {
                     if(sample_size==16)

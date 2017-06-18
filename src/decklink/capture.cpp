@@ -335,7 +335,7 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
             frame->audio.raw.resize(audio_packet->GetSampleFrameCount()*audio_channels*(audio_sample_size/8));
 
-            memcpy(frame->audio.raw.data(), d_audio, frame->audio.raw.size());
+            memcpy((void*)frame->audio.raw.constData(), d_audio, frame->audio.raw.size());
 
             if(audio_channels==8)
                 channelsRemap16(&frame->audio.raw);
