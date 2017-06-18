@@ -28,14 +28,14 @@ do
 
     if [ "${i}" == "--x265" ]; then
         v_enc="libx265"
-        preset="medium -x265-params profile=main10:level=6.2:strong-intra-smoothing=0"
+        preset="medium -x265-params level=6.2:strong-intra-smoothing=0"
         crf=17
     fi
 
     if [ "${i}" == "--x265rgb" ]; then
         v_enc="libx265"
         pix_fmt="-pix_fmt rgb24"
-        preset="medium -x265-params profile=main10:level=6.2:strong-intra-smoothing=0"
+        preset="medium -x265-params level=6.2:strong-intra-smoothing=0"
         crf=17
     fi
 
