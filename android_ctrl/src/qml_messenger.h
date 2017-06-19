@@ -8,6 +8,7 @@
 class HttpClient;
 class Settings;
 class Vibro;
+class KeepScreenOn;
 
 class QmlMessenger : public QObject
 {
@@ -33,6 +34,7 @@ private slots:
 private:
     HttpClient *client;
     Vibro *vibro;
+    KeepScreenOn *keep_screen_on;
 
 signals:
     void updateRecStats(QString duration, QString size, QString bitrate);

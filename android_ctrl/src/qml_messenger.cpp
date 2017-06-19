@@ -3,6 +3,7 @@
 #include "http_client.h"
 #include "vibro.h"
 #include "settings.h"
+#include "keep_screen_on.h"
 
 #include "qml_messenger.h"
 
@@ -17,6 +18,12 @@ QmlMessenger::QmlMessenger(QObject *parent)
     settings->createInstance()->load();
 
     vibro=new Vibro(this);
+
+
+    keep_screen_on=new KeepScreenOn(this);
+
+    keep_screen_on->setEnabled(true);
+
 
     client=new HttpClient(this);
 

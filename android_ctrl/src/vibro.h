@@ -15,9 +15,7 @@ class Vibro : public QObject
     Q_OBJECT
 
 public:
-    explicit Vibro(QObject *parent = 0);
-
-signals:
+    explicit Vibro(QObject *parent=0);
 
 public slots:
     void vibrate(int milliseconds);
