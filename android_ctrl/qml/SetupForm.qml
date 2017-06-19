@@ -75,7 +75,7 @@ Item {
         text: "apply"
 
         onClicked: {
-            messenger.setConnectParams(tf_host.text, tf_port.text, tf_routing_key.text)
+            messenger.setConnectParams(tf_host.text, tf_port.text, "")
             root.back()
         }
     }
