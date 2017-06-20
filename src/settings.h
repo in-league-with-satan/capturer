@@ -30,8 +30,10 @@ public:
     } device;
 
     struct Rec {
-        int pixel_format_current;
         QVariantMap pixel_format;
+        QVariantMap preset;
+        int pixel_format_current;
+        int preset_current;
         int crf;
         int encoder;
         int half_fps;

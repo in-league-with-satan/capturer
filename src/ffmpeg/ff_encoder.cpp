@@ -333,7 +333,8 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
     c->pix_fmt=cfg.pixel_format;
 
     if(cfg.video_encoder==FFEncoder::VideoEncoder::libx264 || cfg.video_encoder==FFEncoder::VideoEncoder::libx264rgb) {
-        av_opt_set(c->priv_data, "preset", "ultrafast", 0);
+        // av_opt_set(c->priv_data, "preset", "ultrafast", 0);
+        av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
         // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
         av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().data(), 0);
 
@@ -347,7 +348,8 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
             c->global_quality=cfg.crf;
 
             // av_opt_set(c->priv_data, "preset", "fast", 0); // HP
-            av_opt_set(c->priv_data, "preset", "slow", 0); // HQ
+            // av_opt_set(c->priv_data, "preset", "slow", 0); // HQ
+            av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
         }
 
         // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
@@ -357,7 +359,8 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
         c->global_quality=cfg.crf;
 
         // av_opt_set(c->priv_data, "preset", "fast", 0); // HP
-        av_opt_set(c->priv_data, "preset", "slow", 0); // HQ
+        // av_opt_set(c->priv_data, "preset", "slow", 0); // HQ
+        av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
         // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
     }
@@ -640,6 +643,46 @@ FFEncoder::Framerate::T FFEncoder::calcFps(int64_t frame_duration, int64_t frame
     }
 
     return Framerate::full_30;
+}
+
+QString FFEncoder::presetVisualNameToParamName(const QString &str)
+{
+    if(str=="high quality")
+        return "hq";
+
+    if(str=="high performance")
+        return "hp";
+
+    if(str=="bluray disk")
+        return "bd";
+
+    if(str=="low latency")
+        return "ll";
+
+    if(str=="low latency high quality")
+        return "llhq";
+
+    if(str=="low latency high performance")
+        return "llhp";
+
+    return str;
+}
+
+QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
+{
+    switch(encoder) {
+    case VideoEncoder::libx264:
+    case VideoEncoder::libx264rgb:
+    case VideoEncoder::libx264_10bit:
+        return QStringList() << "ultrafast" << "superfast" << "veryfast" << "faster" << "fast" << "medium" << "slow";
+
+    case VideoEncoder::nvenc_h264:
+    case VideoEncoder::nvenc_hevc:
+        return QStringList() << "high quality" << "high performance" << "bluray disk" << "low latency" << "low latency high quality" << "low latency high performance"
+                             << "slow" << "medium" << "fast" << "default";
+    }
+
+    return QStringList() << "fast";
 }
 
 bool FFEncoder::setConfig(FFEncoder::Config cfg)

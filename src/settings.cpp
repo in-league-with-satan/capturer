@@ -76,6 +76,7 @@ bool Settings::load()
 
     rec.encoder=map_rec.value("encoder", 0).toInt();
     rec.pixel_format=map_rec.value("pixel_format").toMap();
+    rec.preset=map_rec.value("preset").toMap();
     rec.crf=map_rec.value("crf", 0).toInt();
     rec.half_fps=map_rec.value("half_fps", 0).toInt();
     rec.stop_rec_on_frames_drop=map_rec.value("stop_rec_on_frames_drop", 0).toInt();
@@ -88,6 +89,7 @@ bool Settings::load()
     http_server.port=map_http_server.value("port", 8080).toUInt();
 
     rec.pixel_format_current=rec.pixel_format.value(QString::number(rec.encoder), 0).toInt();
+    rec.preset_current=rec.preset.value(QString::number(rec.encoder), 0).toInt();
 
     return true;
 }
@@ -108,6 +110,7 @@ bool Settings::save()
 
     map_rec.insert("encoder", rec.encoder);
     map_rec.insert("pixel_format", rec.pixel_format);
+    map_rec.insert("preset", rec.preset);
     map_rec.insert("crf", rec.crf);
     map_rec.insert("half_fps", (bool)rec.half_fps);
     map_rec.insert("stop_rec_on_frames_drop", (bool)rec.stop_rec_on_frames_drop);

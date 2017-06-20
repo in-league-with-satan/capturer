@@ -68,7 +68,7 @@ public:
 
         static uint64_t fromString(QString format);
 
-        static QList <T> compatiblePixelFormats(VideoEncoder::T encoder);
+        static QList <FFEncoder::PixelFormat::T> compatiblePixelFormats(VideoEncoder::T encoder);
     };
 
     struct Config {
@@ -86,6 +86,7 @@ public:
         uint8_t crf;
         AVPixelFormat pixel_format;
         VideoEncoder::T video_encoder;
+        QString preset;
     };
 
     struct Stats {
@@ -96,6 +97,8 @@ public:
     };
 
     static Framerate::T calcFps(int64_t frame_duration, int64_t frame_scale, bool half_fps);
+    static QString presetVisualNameToParamName(const QString &str);
+    static QStringList compatiblePresets(VideoEncoder::T encoder);
 
 public slots:
     bool setConfig(FFEncoder::Config cfg);

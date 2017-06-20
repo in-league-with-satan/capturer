@@ -214,6 +214,26 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.group="rec";
+    set_model_data.name="preset";
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)set_model_data.values_data.value(settings->rec.encoder, 0).toInt());
+
+    foreach(const QString preset, presets) {
+        set_model_data.values << preset;
+        set_model_data.values_data << FFEncoder::presetVisualNameToParamName(preset);
+    }
+
+    set_model_data.value=&settings->rec.preset_current;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
     set_model_data.name="pixel format";
     set_model_data.value=&settings->rec.pixel_format_current;
 
@@ -536,12 +556,38 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
                 break;
             }
         }
+
+        // preset
+        list_values.clear();
+        list_values_data.clear();
+
+        QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)data->values_data.value(settings->rec.encoder, 0).toInt());
+
+        foreach(const QString preset, presets) {
+            list_values << preset;
+            list_values_data << FFEncoder::presetVisualNameToParamName(preset);
+        }
+
+        for(int i=0; i<model->rowCount(); ++i) {
+            if(model->data_p(i)->value==&settings->rec.preset_current) {
+                model->setData(i, SettingsModel::Role::values_data, list_values_data);
+                model->setData(i, SettingsModel::Role::values, list_values);
+                model->setData(i, SettingsModel::Role::value, settings->rec.preset.value(QString::number(settings->rec.encoder), 0));
+
+                break;
+            }
+        }
     }
 
 
     if(data->value==&settings->rec.pixel_format_current)
         if(role==SettingsModel::Role::value)
             settings->rec.pixel_format[QString::number(settings->rec.encoder)]=settings->rec.pixel_format_current;
+
+
+    if(data->value==&settings->rec.preset_current)
+        if(role==SettingsModel::Role::value)
+            settings->rec.preset[QString::number(settings->rec.encoder)]=settings->rec.preset_current;
 
 
     if(data->value==&settings->device.restart) {
@@ -618,6 +664,7 @@ void MainWindow::startStopRecording()
         cfg.framerate=FFEncoder::calcFps(current_frame_duration, current_frame_scale, settings->rec.half_fps);
         cfg.frame_resolution=current_frame_size;
         cfg.pixel_format=(AVPixelFormat)messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();
+        cfg.preset=messenger->settingsModel()->data_p(&settings->rec.preset_current)->values_data[settings->rec.preset_current].toString();
         cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
         cfg.crf=settings->rec.crf;
         cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device.audio_sample_size)->values_data[settings->device.audio_sample_size].toInt();
