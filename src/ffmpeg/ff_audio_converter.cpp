@@ -113,8 +113,8 @@ bool AudioConverter::convert(QByteArray *src, QByteArray *dst)
     dst->resize(out_count*out_channels*out_sample_size);
 
 
-    char *ptr_src=src->data();
-    char *ptr_dst=dst->data();
+    char *ptr_src=(char*)src->constData();
+    char *ptr_dst=(char*)dst->constData();
 
     int out_count_res=swr_convert(context, (uint8_t**)&ptr_dst, out_count,
                                   (const uint8_t**)&ptr_src, in_count);

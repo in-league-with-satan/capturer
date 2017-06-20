@@ -336,7 +336,7 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
         // av_opt_set(c->priv_data, "preset", "ultrafast", 0);
         av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
         // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
-        av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().data(), 0);
+        av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().constData(), 0);
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::nvenc_h264) {
         c->bit_rate=0;
@@ -711,7 +711,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
 
     // allocate the output media context
-    // avformat_alloc_output_context2(&context->av_format_context, nullptr, nullptr, context->filename.toLatin1().data());
+    // avformat_alloc_output_context2(&context->av_format_context, nullptr, nullptr, context->filename.toLatin1().constData());
     avformat_alloc_output_context2(&context->av_format_context, nullptr, "matroska", nullptr);
 
     if(!context->av_format_context) {
@@ -743,7 +743,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
 
     // open the output file
-    ret=avio_open(&context->av_format_context->pb, context->filename.toLatin1().data(), AVIO_FLAG_WRITE);
+    ret=avio_open(&context->av_format_context->pb, context->filename.toLatin1().constData(), AVIO_FLAG_WRITE);
 
     if(ret<0) {
         qCritical() << "could not open" << context->filename << ffErrorString(ret);
@@ -804,7 +804,7 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
         if(!context->skip_frame) {
             uint8_t *ptr_orig=context->out_stream_video.frame->data[0];
 
-            context->out_stream_video.frame->data[0]=(uint8_t*)frame->video.raw->data();
+            context->out_stream_video.frame->data[0]=(uint8_t*)frame->video.raw->constData();
 
             sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
 
@@ -845,7 +845,7 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
         context->out_stream_audio.ba_audio_prev_part=ba_audio.remove(0, buffer_size);
 
         int ret=avcodec_fill_audio_frame(context->out_stream_audio.frame, context->out_stream_audio.frame->channels, sample_format,
-                                         (const uint8_t*)ba_audio_tmp.data(), buffer_size, 0);
+                                         (const uint8_t*)ba_audio_tmp.constData(), buffer_size, 0);
 
         if(ret<0) {
             qCritical() << "could not setup audio frame";

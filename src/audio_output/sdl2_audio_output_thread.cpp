@@ -25,7 +25,7 @@ void callbackSdlAudio(void *userdata, uint8_t *stream, int len)
 
     obj->ba_out_buffer.remove(0, len);
 
-    memcpy(stream, ba_tmp.data(), len);
+    memcpy(stream, ba_tmp.constData(), len);
 }
 
 Sdl2AudioOutputThread::Sdl2AudioOutputThread(QObject *parent) :

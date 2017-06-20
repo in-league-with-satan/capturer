@@ -4,7 +4,7 @@
 
 void channelsRemap16(QByteArray *ba_data)
 {
-    int16_t *ptr_data=(int16_t*)ba_data->data();
+    int16_t *ptr_data=(int16_t*)ba_data->constData();
 
     int16_t tmp;
 
@@ -28,7 +28,7 @@ void channelsRemap16(QByteArray *ba_data)
 
 void channelsRemap32(QByteArray *ba_data)
 {
-    int32_t *ptr_data=(int32_t*)ba_data->data();
+    int32_t *ptr_data=(int32_t*)ba_data->constData();
 
     int32_t tmp;
 
@@ -54,14 +54,14 @@ void mix8channelsTo2(QByteArray *ba_src, QByteArray *ba_dst)
 {
     ba_dst->resize(ba_src->size()/8*2);
 
-    // uint32_t *ptr_data_src=(uint32_t*)ba_src->data();
-    // uint32_t *ptr_data_dst=(uint32_t*)ba_dst->data();
+    // uint32_t *ptr_data_src=(uint32_t*)ba_src->constData();
+    // uint32_t *ptr_data_dst=(uint32_t*)ba_dst->constData();
 
     // for(int pos_src=0, pos_dst=0, size=ba_src->size()/4; pos_src<size; pos_src+=4)
     //     ptr_data_dst[pos_dst++]=ptr_data_src[pos_src];
 
-    int16_t *ptr_data_src=(int16_t*)ba_src->data();
-    int16_t *ptr_data_dst=(int16_t*)ba_dst->data();
+    int16_t *ptr_data_src=(int16_t*)ba_src->constData();
+    int16_t *ptr_data_dst=(int16_t*)ba_dst->constData();
 
     for(int pos_src=0, pos_dst=0, size=ba_src->size()/2; pos_src<size; pos_src+=8, pos_dst+=2) {
         //                                  fr l,r                               fr c                         side l,r                        rear l,r
@@ -75,8 +75,8 @@ void mix8channelsTo6(QByteArray *ba_src, QByteArray *ba_dst)
     ba_dst->resize(ba_src->size()/8*6);
     ba_dst->fill(0);
 
-    int16_t *ptr_data_src=(int16_t*)ba_src->data();
-    int16_t *ptr_data_dst=(int16_t*)ba_dst->data();
+    int16_t *ptr_data_src=(int16_t*)ba_src->constData();
+    int16_t *ptr_data_dst=(int16_t*)ba_dst->constData();
 
     for(int pos_src=0, pos_dst=0, size=ba_src->size()/2; pos_src<size; pos_src+=8, pos_dst+=6) {
         // ptr_data_dst[pos_dst + 0]=ptr_data_src[pos_src + 0];    // front left;

@@ -156,7 +156,7 @@ void VideoSurface::paint(QPainter *painter, bool smooth_transform)
     }
 
     painter->drawImage(rect_target,
-                       QImage((uchar*)frame_tmp->video.raw->data(),
+                       QImage((uchar*)frame_tmp->video.raw->constData(),
                               frame_tmp->video.decklink_frame.getSize().width(),
                               frame_tmp->video.decklink_frame.getSize().height(),
                               image_format),
