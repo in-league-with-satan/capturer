@@ -220,7 +220,7 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.values.clear();
     set_model_data.values_data.clear();
 
-    QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)set_model_data.values_data.value(settings->rec.encoder, 0).toInt());
+    QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt());
 
     foreach(const QString preset, presets) {
         set_model_data.values << preset;
@@ -238,7 +238,7 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.value=&settings->rec.pixel_format_current;
 
     QList <FFEncoder::PixelFormat::T> fmts=
-            FFEncoder::PixelFormat::compatiblePixelFormats((FFEncoder::VideoEncoder::T)set_model_data.values_data.value(settings->rec.encoder, 0).toInt());
+            FFEncoder::PixelFormat::compatiblePixelFormats((FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt());
 
     set_model_data.values.clear();
     set_model_data.values_data.clear();
