@@ -62,15 +62,21 @@ struct NRecStats {
     QTime time;
     double avg_bitrate;
     quint64 size;
+    quint32 dropped_frames_counter;
+    quint16 frame_buffer_size;
+    quint16 frame_buffer_used;
 
     bool isNull() const {
         return time.isNull();
     }
 
-    NRecStats(QTime time=QTime(), double avg_bitrate=0., quint64 size=0) {
+    NRecStats(QTime time=QTime(), double avg_bitrate=0., quint64 size=0, quint32 dropped_frames_counter=0, quint16 frame_buffer_size=0, quint16 frame_buffer_used=0) {
         this->time=time;
         this->avg_bitrate=avg_bitrate;
         this->size=size;
+        this->dropped_frames_counter=dropped_frames_counter;
+        this->frame_buffer_size=frame_buffer_size;
+        this->frame_buffer_used=frame_buffer_used;
     }
 
     QVariantMap toExt() {
@@ -79,6 +85,9 @@ struct NRecStats {
         map_root.insert("time", time);
         map_root.insert("avg_bitrate", avg_bitrate);
         map_root.insert("size", size);
+        map_root.insert("dropped_frames_counter", dropped_frames_counter);
+        map_root.insert("frame_buffer_size", frame_buffer_size);
+        map_root.insert("frame_buffer_used", frame_buffer_used);
 
         return map_root;
     }
@@ -87,12 +96,16 @@ struct NRecStats {
         time=map_root.value("time").toTime();
         avg_bitrate=map_root.value("avg_bitrate").toDouble();
         size=map_root.value("size").toULongLong();
+        dropped_frames_counter=map_root.value("dropped_frames_counter").toUInt();
+        frame_buffer_size=map_root.value("frame_buffer_size").toUInt();
+        frame_buffer_used=map_root.value("frame_buffer_used").toUInt();
 
         return *this;
     }
 
     inline bool operator !=(const NRecStats &other) const {
-        return time!=other.time || avg_bitrate!=other.avg_bitrate || size!=other.size;
+        return time!=other.time || avg_bitrate!=other.avg_bitrate || size!=other.size || dropped_frames_counter!=other.dropped_frames_counter
+                || frame_buffer_used!=other.frame_buffer_used || frame_buffer_size!=other.frame_buffer_size;
     }
 };
 

@@ -88,5 +88,6 @@ void QmlMessenger::recStats(NRecStats stats)
     emit updateRecStats(stats.time.toString("HH:mm:ss"),
                         QString("%1 bytes").arg(QLocale().toString((qulonglong)stats.size)),
                         QString("%1 Mbits/s (%2 MB/s)").arg(QLocale().toString((stats.avg_bitrate)/1000./1000., 'f', 2))
-                        .arg(QLocale().toString((stats.avg_bitrate)/8/1024./1024., 'f', 2)));
+                        .arg(QLocale().toString((stats.avg_bitrate)/8/1024./1024., 'f', 2)),
+                        QString::number(stats.dropped_frames_counter), QString("%1/%2").arg(stats.frame_buffer_used).arg(stats.frame_buffer_size));
 }

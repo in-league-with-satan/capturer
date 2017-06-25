@@ -37,7 +37,7 @@ private:
     KeepScreenOn *keep_screen_on;
 
 signals:
-    void updateRecStats(QString duration, QString size, QString bitrate);
+    void updateRecStats(QString duration, QString size, QString bitrate, QString frames_dropped, QString frame_buffer_state);
     void recStateChanged(bool state);
     void playerDurationChanged(qint64 value);
     void playerPositionChanged(qint64 value);

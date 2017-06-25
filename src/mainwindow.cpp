@@ -767,5 +767,5 @@ void MainWindow::updateStats(FFEncoder::Stats s)
                               QString("buf state: %1/%2").arg(buffer_size.first).arg(buffer_size.second),
                               QString("frames dropped: %1").arg(dropped_frames_counter));
 
-    http_server->setRecStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.streams_size));
+    http_server->setRecStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.streams_size, dropped_frames_counter, buffer_size.second, buffer_size.first));
 }
