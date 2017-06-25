@@ -97,7 +97,7 @@ ApplicationWindow {
         target: messenger
 
         onUpdateRecStats: {
-            button_rec.setText("duration: " + duration + "\n" + "size: " + size + "\n" + "bitrate: " + bitrate)
+            button_rec.setText("duration: " + duration + "\n" + "size: " + size + "\n" + "bitrate: " + bitrate + "\n" + "buffer state: " + frame_buffer_state + "\n" + "frames dropped: " + frames_dropped)
         }
 
         onRecStateChanged: {
