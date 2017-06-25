@@ -207,7 +207,7 @@ void Sdl2VideoOutpitThread::drawFrame(QByteArray *ba_frame)
 
 //    byteArrayToAvFrame(ba_frame, av_frame);
 
-    av_frame->data[0]=(uint8_t*)ba_frame->data();
+    av_frame->data[0]=(uint8_t*)ba_frame->constData();
 
 
     if(sdl_rect.w!=in_frame_size.width() || sdl_rect.h!=in_frame_size.height()) {
@@ -263,7 +263,7 @@ void Sdl2VideoOutpitThread::drawFrameQImage(QByteArray *ba_frame)
     //
 
     if(sdl_rect.w!=in_frame_size.width() || sdl_rect.h!=in_frame_size.height()) {
-        QImage img_src=QImage((uchar*)ba_frame->data(), in_frame_size.width(), in_frame_size.height(), QImage::Format_ARGB32);
+        QImage img_src=QImage((uchar*)ba_frame->constData(), in_frame_size.width(), in_frame_size.height(), QImage::Format_ARGB32);
 
         QImage img_scaled=img_src.scaled(sdl_rect.w, sdl_rect.h);
 
@@ -273,7 +273,7 @@ void Sdl2VideoOutpitThread::drawFrameQImage(QByteArray *ba_frame)
         ret=SDL_UpdateTexture(sdl_texture, &sdl_rect, img_scaled.bits(), img_scaled.width()*4);
 
     } else {
-        ret=SDL_UpdateTexture(sdl_texture, &sdl_rect, ba_frame->data(), in_frame_size.width()*4);
+        ret=SDL_UpdateTexture(sdl_texture, &sdl_rect, ba_frame->constData(), in_frame_size.width()*4);
 
     }
 

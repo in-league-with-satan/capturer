@@ -137,7 +137,7 @@ void FFDecoderThread::_open()
     qInfo() << "filename" << filename;
 
     int err=
-            avformat_open_input(&context.format_context, QString(filename).toLatin1().data(), nullptr, nullptr);
+            avformat_open_input(&context.format_context, QString(filename).toLatin1().constData(), nullptr, nullptr);
 
     if(err<0) {
         qCritical() << "ffmpeg: Unable to open input file" << filename;
@@ -430,7 +430,7 @@ void FFDecoderThread::_play()
                 assert(data_size==f->video.raw->size());
 
 
-                av_image_copy_to_buffer((uint8_t*)f->video.raw->data(), data_size, context.frame_rgb->data, context.frame_rgb->linesize,
+                av_image_copy_to_buffer((uint8_t*)f->video.raw->constData(), data_size, context.frame_rgb->data, context.frame_rgb->linesize,
                                         AV_PIX_FMT_BGRA, context.frame_rgb->width, context.frame_rgb->height, alignment);
 
 

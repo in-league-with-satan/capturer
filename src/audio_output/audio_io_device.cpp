@@ -89,7 +89,7 @@ qint64 AudioIODevice::readData(char *data, qint64 maxlen)
         maxlen=ba_data.size();
 
     if(maxlen>0) {
-        memcpy(data, ba_data.data(), maxlen);
+        memcpy(data, ba_data.constData(), maxlen);
 
         ba_data.remove(0, maxlen);
     }

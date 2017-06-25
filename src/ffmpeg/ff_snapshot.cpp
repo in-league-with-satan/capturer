@@ -89,7 +89,7 @@ void FFSnapshot::checkQueue()
 
         int64_t timestamp;
 
-        ret=avformat_open_input(&format_context, filename.toUtf8().data(), nullptr, nullptr);
+        ret=avformat_open_input(&format_context, filename.toUtf8().constData(), nullptr, nullptr);
 
         if(ret<0) {
             qCritical() << "ffmpeg: Unable to open input file" << ffErrorString(ret);
@@ -264,7 +264,7 @@ void FFSnapshot::checkQueue()
 
                                 ba_frame.resize(data_size);
 
-                                av_image_copy_to_buffer((uint8_t*)ba_frame.data(), data_size, frame_rgb->data, frame_rgb->linesize, AV_PIX_FMT_BGRA, frame_rgb->width, frame_rgb->height, 32);
+                                av_image_copy_to_buffer((uint8_t*)ba_frame.constData(), data_size, frame_rgb->data, frame_rgb->linesize, AV_PIX_FMT_BGRA, frame_rgb->width, frame_rgb->height, 32);
                             }
                         }
                     }
@@ -272,7 +272,7 @@ void FFSnapshot::checkQueue()
                     av_packet_unref(&packet);
 
                     if(!ba_frame.isEmpty()) {
-                        QImage img((uchar*)ba_frame.data(),
+                        QImage img((uchar*)ba_frame.constData(),
                                    frame_rgb->width,
                                    frame_rgb->height,
                                    QImage::Format_ARGB32);

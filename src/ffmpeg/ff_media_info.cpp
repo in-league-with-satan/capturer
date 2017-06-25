@@ -19,7 +19,7 @@ FFMediaInfo::Info FFMediaInfo::getInfo(QString filename)
 
     AVFormatContext *format_context=nullptr;
 
-    err=avformat_open_input(&format_context, filename.toUtf8().data(), nullptr, nullptr);
+    err=avformat_open_input(&format_context, filename.toUtf8().constData(), nullptr, nullptr);
 
     if(err!=0) {
         qCritical() << "FFMediaInfo: Unable to open input file" << err << filename;

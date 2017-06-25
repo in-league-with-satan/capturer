@@ -114,7 +114,7 @@ void PulseAudioOutputThread::onInputFrameArrived(QByteArray *ba_data, int channe
     //     init();
     // }
 
-    if(pa_simple_write(s, ba_tmp.data(), ba_tmp.size(), &error)<0) {
+    if(pa_simple_write(s, ba_tmp.constData(), ba_tmp.size(), &error)<0) {
         qCritical() << "pa_simple_write err" << pa_strerror(error) << ba_tmp.size();
 
         init();

@@ -54,7 +54,7 @@ void VideoWidget::fillBlack()
 
     frame->video.decklink_frame.init(image.size(), bmdFormat8BitARGB);
 
-    memcpy(frame->video.raw->data(), image.bits(), frame->video.raw->size());
+    memcpy((char*)frame->video.raw->constData(), image.bits(), frame->video.raw->size());
 
     frame_buffer->append(frame);
 }

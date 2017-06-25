@@ -65,7 +65,7 @@ void DeckLinkVideoFrame::init(QSize size, BMDPixelFormat pixel_format, BMDFrameF
 
     ba_buffer.resize(frameSize(size, pixel_format));
 
-    buffer=(void*)ba_buffer.data();
+    buffer=(void*)ba_buffer.constData();
 }
 
 long DeckLinkVideoFrame::GetWidth()
