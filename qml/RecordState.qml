@@ -8,35 +8,33 @@ ShowHideRect {
     width: parent.width*.96
     height: parent.height*.04
 
-    property bool hide_text: false
-
     // color: "blue"
     color: "transparent"
 
-    Text {
-        id: text_output
-
+    ShowHideRect {
+        id: rect_text_output
+        state_visible: true
         anchors.left: circle.right
         anchors.leftMargin: parent.height*.5
         anchors.verticalCenter: parent.verticalCenter
 
-        color: "white"
-
-        font.pixelSize: parent.height*.8
-        font.bold: true
-
-        style: Text.Outline
-
-        text: ""
+        Text {
+            id: text_output
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            color: "white"
+            font.pixelSize: root.height*.8
+            font.bold: true
+            style: Text.Outline
+            text: ""
+        }
     }
 
     Rectangle {
         id: circle
-
         width: parent.height
         height: parent.height
         color: "red"
-
         radius: width*.5
 
         ScaleAnimator {
@@ -84,18 +82,18 @@ ShowHideRect {
         target: messenger
 
         onUpdateRecStats: {
-            if(!hide_text)
-                text_output.text=duration + "    " + size + "    " + bitrate + "    " + buffer_state + "    " + dropped_frames_counter
+            text_output.text=duration + "    " + size + "    " + bitrate + "    " + buffer_state + "    " + dropped_frames_counter
         }
 
         onShowHideDetailedRecState: {
-            hide_text=!hide_text
-
-            if(hide_text)
-                text_output.text=""
+            rect_text_output.state_visible=!rect_text_output.state_visible
         }
 
-        onRecStarted: root.state_visible=true
+        onRecStarted: {
+            root.state_visible=true
+            rect_text_output.state_visible=true
+        }
+
         onRecStopped: root.state_visible=false
     }
 }
