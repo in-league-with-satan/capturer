@@ -44,6 +44,8 @@ private:
 
     Status last_status;
 
+    int get_interval;
+
 signals:
     void recordIsRunning(bool value);
     void recStats(NRecStats value);

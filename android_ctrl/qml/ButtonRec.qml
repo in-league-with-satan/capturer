@@ -14,7 +14,7 @@ Rectangle {
     function recStarted() {
         anm_show_glow.start()
         anm_color_lighter.start()
-        scale_animation_pause.start()
+        // scale_animation_pause.start()
         anm_text_show.start()
         fake_rect.border_size=Qt.binding(function() { return root.width*.08 })
         rec_running=true
@@ -185,8 +185,8 @@ Rectangle {
         property int prev_pos_x: 0
 
         onPressed: {
-            if(rec_running)
-                return
+            // if(rec_running)
+            //     return
 
             prev_pos_x=mouse.x
 
@@ -194,8 +194,8 @@ Rectangle {
         }
 
         onReleased: {
-            if(rec_running)
-                return
+            // if(rec_running)
+            //     return
 
             fake_rect.border_size=Qt.binding(function() { return root.width*.08 })
         }

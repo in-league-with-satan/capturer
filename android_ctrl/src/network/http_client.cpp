@@ -7,12 +7,15 @@
 
 #include "http_client.h"
 
-const int get_interval=100;
+const int get_interval_online=100;
+const int get_interval_offline=1000;
 
 
 HttpClient::HttpClient(QObject *parent)
     : QObject(parent)
 {
+    get_interval=get_interval_online;
+
     last_reply_time=0;
 
     base_url.setScheme("http");
@@ -22,7 +25,7 @@ HttpClient::HttpClient(QObject *parent)
     connect(network_access_manager, SIGNAL(finished(QNetworkReply*)), SLOT(replyFinished(QNetworkReply*)));
 
     timer=new QTimer();
-    timer->setInterval(get_interval);
+    timer->setInterval(get_interval_online);
 
     connect(timer, SIGNAL(timeout()), SLOT(voidGet()));
 }
@@ -73,37 +76,46 @@ void HttpClient::replyFinished(QNetworkReply *reply)
 {
     if(reply->error()!=QNetworkReply::NoError) {
         // qCritical() << reply->error() << reply->errorString();
-    }
 
-    last_reply_time=QDateTime::currentMSecsSinceEpoch();
+        get_interval=get_interval_offline;
 
-    QVariantMap map=
-        QJsonDocument::fromJson(reply->readAll()).toVariant().toMap();
+        emit recordIsRunning(false);
 
-    if(!map.isEmpty()) {
-        Status status;
+    } else {
+        last_reply_time=QDateTime::currentMSecsSinceEpoch();
 
-        status.fromExt(map);
+        if(get_interval!=get_interval_online)
+            get_interval=get_interval_online;
 
-        if(status!=last_status) {
-            if(status.rec_stats!=last_status.rec_stats) {
-                if(status.rec_stats.isNull()) {
-                    emit recordIsRunning(false);
 
-                } else {
-                    emit recStats(status.rec_stats);
+        QVariantMap map=
+                QJsonDocument::fromJson(reply->readAll()).toVariant().toMap();
+
+        if(!map.isEmpty()) {
+            Status status;
+
+            status.fromExt(map);
+
+            if(status!=last_status) {
+                if(status.rec_stats!=last_status.rec_stats) {
+                    if(status.rec_stats.isNull()) {
+                        emit recordIsRunning(false);
+
+                    } else {
+                        emit recStats(status.rec_stats);
+                    }
                 }
-            }
 
-            if(status.player_state.duration!=last_status.player_state.duration) {
-                emit playerDuration(status.player_state.duration);
-            }
+                if(status.player_state.duration!=last_status.player_state.duration) {
+                    emit playerDuration(status.player_state.duration);
+                }
 
-            if(status.player_state.position!=last_status.player_state.position) {
-                emit playerPosition(status.player_state.position);
-            }
+                if(status.player_state.position!=last_status.player_state.position) {
+                    emit playerPosition(status.player_state.position);
+                }
 
-            last_status=status;
+                last_status=status;
+            }
         }
     }
 
