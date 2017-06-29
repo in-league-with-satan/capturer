@@ -18,7 +18,7 @@ HttpClient::HttpClient(QObject *parent)
 
     last_reply_time=0;
 
-    base_url.setScheme("http");
+    base_url.setScheme(QStringLiteral("http"));
 
     network_access_manager=new QNetworkAccessManager(this);
 
@@ -52,7 +52,7 @@ void HttpClient::commandKey(int key_code)
 
     QUrlQuery query;
 
-    query.addQueryItem("key_code", QString::number(key_code));
+    query.addQueryItem(QStringLiteral("key_code"), QString::number(key_code));
 
     url.setQuery(query);
 
@@ -65,7 +65,7 @@ void HttpClient::commandPlayerSeek(qint64 pos)
 
     QUrlQuery query;
 
-    query.addQueryItem("player_seek", QString::number(pos));
+    query.addQueryItem(QStringLiteral("player_seek"), QString::number(pos));
 
     url.setQuery(query);
 

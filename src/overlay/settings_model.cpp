@@ -120,14 +120,16 @@ SettingsModel::Data *SettingsModel::data_p(int *value)
 
 QHash <int, QByteArray> SettingsModel::roleNames() const
 {
-    QHash <int, QByteArray> roles;
+    static QHash <int, QByteArray> roles;
 
-    roles[Role::type]="type";
-    roles[Role::group]="group";
-    roles[Role::values]="values";
-    roles[Role::values_data]="values_data";
-    roles[Role::value]="value";
-    roles[Role::name]="name";
+    if(roles.isEmpty()) {
+        roles[Role::type]=QByteArrayLiteral("type");
+        roles[Role::group]=QByteArrayLiteral("group");
+        roles[Role::values]=QByteArrayLiteral("values");
+        roles[Role::values_data]=QByteArrayLiteral("values_data");
+        roles[Role::value]=QByteArrayLiteral("value");
+        roles[Role::name]=QByteArrayLiteral("name");
+    }
 
     return roles;
 }

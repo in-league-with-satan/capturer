@@ -59,7 +59,7 @@ QString BMDPixelFormatToString(uint32_t format)
                 "10BitRGBX";
     }
 
-    return format_names.value(format, "unknown");
+    return format_names.value(format, QStringLiteral("unknown"));
 }
 
 int supportedInputFormats(IDeckLink *decklink, DeckLinkFormats *formats);

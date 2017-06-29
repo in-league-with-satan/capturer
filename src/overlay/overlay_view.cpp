@@ -33,7 +33,7 @@ OverlayView::~OverlayView()
 
 void OverlayView::setMessenger(QmlMessenger *messenger)
 {
-    rootContext()->setContextProperty("messenger", messenger);
+    rootContext()->setContextProperty(QStringLiteral("messenger"), messenger);
 }
 
 void OverlayView::addImageProvider(const QString &id, QQmlImageProviderBase *image_provider)

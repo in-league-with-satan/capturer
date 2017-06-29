@@ -128,33 +128,32 @@ QString FFMediaInfo::getInfoString(QString filename)
 
     QString str;
 
-    str+=QString("duration: %1\n").arg(info.duration>24*60*60*1000 ? QString("%1 hours").arg((int)(info.duration/1000./60./60.)) : QTime(0, 0, 0).addMSecs(info.duration).toString());
-    str+=QString("bitrate: %1\n").arg(info.bitrate);
+    str+=QString(QLatin1String("duration: %1\n")).arg(info.duration>24*60*60*1000 ? QString("%1 hours").arg((int)(info.duration/1000./60./60.)) : QTime(0, 0, 0).addMSecs(info.duration).toString());
+    str+=QString(QLatin1String("bitrate: %1\n")).arg(info.bitrate);
 
     for(int track_index=0; track_index<info.track.size(); ++track_index) {
         FFMediaInfo::TrackInfo track=info.track[track_index];
 
         if(track.type==FFMediaInfo::Type::audio) {
-            str+=QString("audio track: %1 %2 %3hz")
+            str+=QString(QLatin1String("audio track: %1 %2 %3hz"))
                     .arg(track.codec_name)
                     .arg(track.channel_layout)
                     .arg(track.sample_rate)
                     ;
 
         } else {
-            str+=QString("video track: %1 %2x%3 %4fps")
+            str+=QString(QLatin1String("video track: %1 %2x%3 %4fps"))
                     .arg(track.codec_name)
-                    .arg(track.resolution.width())
-                    .arg(track.resolution.height())
+                    .arg(track.resolution.width(), track.resolution.height())
                     .arg(track.fps)
                     ;
         }
 
         if(!track.language.isEmpty())
-            str+=QString(" (%1)").arg(track.language);
+            str+=QString(QLatin1String(" (%1)")).arg(track.language);
 
         if(track_index<info.track.size() - 1)
-            str+=QString("\n");
+            str+=QString(QLatin1String("\n"));
     }
 
     return str;

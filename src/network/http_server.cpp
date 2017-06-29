@@ -37,12 +37,12 @@ HttpServer::HttpServer(quint16 port, QObject *parent)
 
             // qInfo() << "query" << req->url() << url.queryItems();
 
-            if(url.hasQueryItem("key_code")) {
-                emit keyPressed(url.queryItemValue("key_code").toInt());
+            if(url.hasQueryItem(QStringLiteral("key_code"))) {
+                emit keyPressed(url.queryItemValue(QStringLiteral("key_code")).toInt());
             }
 
-            if(url.hasQueryItem("player_seek")) {
-                emit playerSeek(url.queryItemValue("player_seek").toLongLong());
+            if(url.hasQueryItem(QStringLiteral("player_seek"))) {
+                emit playerSeek(url.queryItemValue(QStringLiteral("player_seek")).toLongLong());
             }
 
             if(QDateTime::currentMSecsSinceEpoch() - last_buf_update>=100) {

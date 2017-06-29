@@ -62,7 +62,7 @@ bool AudioConverter::init(uint64_t in_channels_layout, int64_t in_sample_rate, i
     if(ret<0)
         goto err;
 
-    ret=av_opt_set_int(context,"in_sample_rate", in_sample_rate, 0);
+    ret=av_opt_set_int(context, "in_sample_rate", in_sample_rate, 0);
 
     if(ret<0)
         goto err;

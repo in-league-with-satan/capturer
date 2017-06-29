@@ -97,9 +97,9 @@ QString FileSystemModel::fileSize(const QModelIndex &index) const
             index.data(QFileSystemModel::FilePathRole).toString();
 
     if(filepath.isEmpty())
-        return QString("0 MB");
+        return QStringLiteral("0 MB");
 
-    return QString("%1 MB").arg(QLocale().toString(QFileInfo(filepath).size()/1024/1024));
+    return QString(QLatin1String("%1 MB")).arg(QLocale().toString(QFileInfo(filepath).size()/1024/1024));
 }
 
 QString FileSystemModel::ext(const QModelIndex &index) const
@@ -213,10 +213,10 @@ bool FileSystemModel::lessThan(const QModelIndex &left, const QModelIndex &right
         const QFileInfo right_file_info=model->fileInfo(right);
 
         // if DotAndDot move in the beginning
-        if(sourceModel()->data(left).toString()=="..")
+        if(sourceModel()->data(left).toString()==QStringLiteral(".."))
             return asc;
 
-        if(sourceModel()->data(right).toString()=="..")
+        if(sourceModel()->data(right).toString()==QStringLiteral(".."))
             return !asc;
 
         // move dirs upper

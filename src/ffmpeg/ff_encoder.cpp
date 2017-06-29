@@ -647,23 +647,23 @@ FFEncoder::Framerate::T FFEncoder::calcFps(int64_t frame_duration, int64_t frame
 
 QString FFEncoder::presetVisualNameToParamName(const QString &str)
 {
-    if(str=="high quality")
-        return "hq";
+    if(str==QLatin1String("high quality"))
+        return QLatin1String("hq");
 
-    if(str=="high performance")
-        return "hp";
+    if(str==QLatin1String("high performance"))
+        return QLatin1String("hp");
 
-    if(str=="bluray disk")
-        return "bd";
+    if(str==QLatin1String("bluray disk"))
+        return QLatin1String("bd");
 
-    if(str=="low latency")
-        return "ll";
+    if(str==QLatin1String("low latency"))
+        return QLatin1String("ll");
 
-    if(str=="low latency high quality")
-        return "llhq";
+    if(str==QLatin1String("low latency high quality"))
+        return QLatin1String("llhq");
 
-    if(str=="low latency high performance")
-        return "llhp";
+    if(str==QLatin1String("low latency high performance"))
+        return QLatin1String("llhp");
 
     return str;
 }
@@ -674,15 +674,17 @@ QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
     case VideoEncoder::libx264:
     case VideoEncoder::libx264rgb:
     case VideoEncoder::libx264_10bit:
-        return QStringList() << "ultrafast" << "superfast" << "veryfast" << "faster" << "fast" << "medium" << "slow";
+        return QStringList() << QLatin1String("ultrafast") << QLatin1String("superfast") << QLatin1String("veryfast") << QLatin1String("faster")
+                             << QLatin1String("fast") << QLatin1String("medium") << QLatin1String("slow");
 
     case VideoEncoder::nvenc_h264:
     case VideoEncoder::nvenc_hevc:
-        return QStringList() << "high quality" << "high performance" << "bluray disk" << "low latency" << "low latency high quality" << "low latency high performance"
-                             << "slow" << "medium" << "fast" << "default";
+        return QStringList() << QLatin1String("high quality") << QLatin1String("high performance") << QLatin1String("bluray disk") << QLatin1String("low latency")
+                             << QLatin1String("low latency high quality") << QLatin1String("low latency high performance")
+                             << QLatin1String("slow") << QLatin1String("medium") << QLatin1String("fast") << QLatin1String("default");
     }
 
-    return QStringList() << "fast";
+    return QStringList() << QLatin1String("fast");
 }
 
 bool FFEncoder::setConfig(FFEncoder::Config cfg)
@@ -703,9 +705,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             dir.mkdir(dir.dirName());
     }
 
-    context->filename=QString("%1/videos/%2.mkv")
-            .arg(QApplication::applicationDirPath())
-            .arg(QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss"));
+    context->filename=QString(QLatin1String("%1/videos/%2.mkv"))
+            .arg(QApplication::applicationDirPath(), QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss"));
 
     // context->filename="/dev/null";
 
@@ -929,39 +930,39 @@ QString FFEncoder::PixelFormat::toString(uint64_t format)
 {
     switch(format) {
     case RGB24:
-        return QString("rgb24");
+        return QLatin1String("rgb24");
 
     case YUV420P:
-        return QString("yuv420p");
+        return QLatin1String("yuv420p");
 
     case YUV444P:
-        return QString("yuv444p");
+        return QLatin1String("yuv444p");
 
     case YUV420P10:
-        return QString("yuv420p10");
+        return QLatin1String("yuv420p10");
 
     case YUV444P10:
-        return QString("yuv444p10");
+        return QLatin1String("yuv444p10");
     }
 
-    return QString("unknown");
+    return QLatin1String("unknown");
 }
 
 uint64_t FFEncoder::PixelFormat::fromString(QString format)
 {
-    if(format=="rgb24")
+    if(format==QLatin1String("rgb24"))
         return RGB24;
 
-    else if(format=="yuv420p")
+    else if(format==QLatin1String("yuv420p"))
         return YUV420P;
 
-    else if(format=="yuv444p")
+    else if(format==QLatin1String("yuv444p"))
         return YUV444P;
 
-    else if(format=="yuv420p10")
+    else if(format==QLatin1String("yuv420p10"))
         return YUV420P10;
 
-    else if(format=="yuv444p10")
+    else if(format==QLatin1String("yuv444p10"))
         return YUV444P10;
 
     return 0;

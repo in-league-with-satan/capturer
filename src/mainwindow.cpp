@@ -761,11 +761,11 @@ void MainWindow::updateStats(FFEncoder::Stats s)
     const QPair <int, int> buffer_size=ff_enc->frameBuffer()->size();
 
     messenger->updateRecStats(s.time.toString("HH:mm:ss"),
-                              QString("%1 Mbits/s (%2 MB/s)").arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/1000./1000., 'f', 2))
-                              .arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/8/1024./1024., 'f', 2)),
-                              QString("%1 bytes").arg(QLocale().toString((qulonglong)s.streams_size)),
-                              QString("buf state: %1/%2").arg(buffer_size.first).arg(buffer_size.second),
-                              QString("frames dropped: %1").arg(dropped_frames_counter));
+                              QString(QLatin1String("%1 Mbits/s (%2 MB/s)")).arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/1000./1000., 'f', 2),
+                              QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/8/1024./1024., 'f', 2)),
+                              QString(QLatin1String("%1 bytes")).arg(QLocale().toString((qulonglong)s.streams_size)),
+                              QString(QLatin1String("buf state: %1/%2")).arg(buffer_size.first, buffer_size.second),
+                              QString(QLatin1String("frames dropped: %1")).arg(dropped_frames_counter));
 
     http_server->setRecStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.streams_size, dropped_frames_counter, buffer_size.second, buffer_size.first));
 }

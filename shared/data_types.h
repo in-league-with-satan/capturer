@@ -82,23 +82,23 @@ struct NRecStats {
     QVariantMap toExt() {
         QVariantMap map_root;
 
-        map_root.insert("time", time);
-        map_root.insert("avg_bitrate", avg_bitrate);
-        map_root.insert("size", size);
-        map_root.insert("dropped_frames_counter", dropped_frames_counter);
-        map_root.insert("frame_buffer_size", frame_buffer_size);
-        map_root.insert("frame_buffer_used", frame_buffer_used);
+        map_root.insert(QStringLiteral("time"), time);
+        map_root.insert(QStringLiteral("avg_bitrate"), avg_bitrate);
+        map_root.insert(QStringLiteral("size"), size);
+        map_root.insert(QStringLiteral("dropped_frames_counter"), dropped_frames_counter);
+        map_root.insert(QStringLiteral("frame_buffer_size"), frame_buffer_size);
+        map_root.insert(QStringLiteral("frame_buffer_used"), frame_buffer_used);
 
         return map_root;
     }
 
     NRecStats &fromExt(const QVariantMap &map_root) {
-        time=map_root.value("time").toTime();
-        avg_bitrate=map_root.value("avg_bitrate").toDouble();
-        size=map_root.value("size").toULongLong();
-        dropped_frames_counter=map_root.value("dropped_frames_counter").toUInt();
-        frame_buffer_size=map_root.value("frame_buffer_size").toUInt();
-        frame_buffer_used=map_root.value("frame_buffer_used").toUInt();
+        time=map_root.value(QStringLiteral("time")).toTime();
+        avg_bitrate=map_root.value(QStringLiteral("avg_bitrate")).toDouble();
+        size=map_root.value(QStringLiteral("size")).toULongLong();
+        dropped_frames_counter=map_root.value(QStringLiteral("dropped_frames_counter")).toUInt();
+        frame_buffer_size=map_root.value(QStringLiteral("frame_buffer_size")).toUInt();
+        frame_buffer_used=map_root.value(QStringLiteral("frame_buffer_used")).toUInt();
 
         return *this;
     }
@@ -118,15 +118,15 @@ struct PlayerState {
     QVariantMap toExt() {
         QVariantMap map_root;
 
-        map_root.insert("duration", duration);
-        map_root.insert("position", position);
+        map_root.insert(QStringLiteral("duration"), duration);
+        map_root.insert(QStringLiteral("position"), position);
 
         return map_root;
     }
 
     PlayerState &fromExt(const QVariantMap &map_root) {
-        duration=map_root.value("duration").toLongLong();
-        position=map_root.value("position").toLongLong();
+        duration=map_root.value(QStringLiteral("duration")).toLongLong();
+        position=map_root.value(QStringLiteral("position")).toLongLong();
 
         return *this;
     }
@@ -146,15 +146,15 @@ struct Status {
     QVariantMap toExt() {
         QVariantMap map_root;
 
-        map_root.insert("rec_stats", rec_stats.toExt());
-        map_root.insert("player_state", player_state.toExt());
+        map_root.insert(QStringLiteral("rec_stats"), rec_stats.toExt());
+        map_root.insert(QStringLiteral("player_state"), player_state.toExt());
 
         return map_root;
     }
 
     Status &fromExt(const QVariantMap &map_root) {
-        rec_stats.fromExt(map_root.value("rec_stats").toMap());
-        player_state.fromExt(map_root.value("player_state").toMap());
+        rec_stats.fromExt(map_root.value(QStringLiteral("rec_stats")).toMap());
+        player_state.fromExt(map_root.value(QStringLiteral("player_state")).toMap());
 
         return *this;
     }

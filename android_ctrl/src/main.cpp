@@ -19,11 +19,11 @@ int main(int argc, char *argv[])
 
 #if defined(Q_OS_ANDROID)
 
-    engine.load(QUrl(QLatin1String("qrc:/qml/main_android.qml")));
+    engine.load(QUrl(QStringLiteral("qrc:/qml/main_android.qml")));
 
 #else
 
-    engine.load(QUrl(QLatin1String("qrc:/qml/main_win.qml")));
+    engine.load(QUrl(QStringLiteral("qrc:/qml/main_win.qml")));
 
 #endif
 

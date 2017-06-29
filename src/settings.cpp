@@ -64,29 +64,29 @@ bool Settings::load()
 
     //
 
-    QVariantMap map_main=map_root.value("main").toMap();
-    QVariantMap map_device=map_root.value("device").toMap();
-    QVariantMap map_rec=map_root.value("rec").toMap();
-    QVariantMap map_http_server=map_root.value("http_server").toMap();
+    QVariantMap map_main=map_root.value(QStringLiteral("main")).toMap();
+    QVariantMap map_device=map_root.value(QStringLiteral("device")).toMap();
+    QVariantMap map_rec=map_root.value(QStringLiteral("rec")).toMap();
+    QVariantMap map_http_server=map_root.value(QStringLiteral("http_server")).toMap();
 
-    main.preview=map_main.value("preview", 1).toInt();
+    main.preview=map_main.value(QStringLiteral("preview"), 1).toInt();
 
-    device.index=map_device.value("index", 0).toInt();
-    device.audio_sample_size=map_device.value("audio_sample_size", 0).toInt();
+    device.index=map_device.value(QStringLiteral("index"), 0).toInt();
+    device.audio_sample_size=map_device.value(QStringLiteral("audio_sample_size"), 0).toInt();
 
-    rec.encoder=map_rec.value("encoder", 0).toInt();
-    rec.pixel_format=map_rec.value("pixel_format").toMap();
-    rec.preset=map_rec.value("preset").toMap();
-    rec.crf=map_rec.value("crf", 0).toInt();
-    rec.half_fps=map_rec.value("half_fps", 0).toInt();
-    rec.stop_rec_on_frames_drop=map_rec.value("stop_rec_on_frames_drop", 0).toInt();
+    rec.encoder=map_rec.value(QStringLiteral("encoder"), 0).toInt();
+    rec.pixel_format=map_rec.value(QStringLiteral("pixel_format")).toMap();
+    rec.preset=map_rec.value(QStringLiteral("preset")).toMap();
+    rec.crf=map_rec.value(QStringLiteral("crf"), 0).toInt();
+    rec.half_fps=map_rec.value(QStringLiteral("half_fps"), 0).toInt();
+    rec.stop_rec_on_frames_drop=map_rec.value(QStringLiteral("stop_rec_on_frames_drop"), 0).toInt();
 
 #ifdef LIB_QHTTP
-    http_server.enabled=map_http_server.value("enabled", true).toBool();
+    http_server.enabled=map_http_server.value(QStringLiteral("enabled"), true).toBool();
 #else
-    http_server.enabled=map_http_server.value("enabled", false).toBool();
+    http_server.enabled=map_http_server.value(QStringLiteral("enabled"), false).toBool();
 #endif
-    http_server.port=map_http_server.value("port", 8080).toUInt();
+    http_server.port=map_http_server.value(QStringLiteral("port"), 8080).toUInt();
 
     rec.pixel_format_current=rec.pixel_format.value(QString::number(rec.encoder), 0).toInt();
     rec.preset_current=rec.preset.value(QString::number(rec.encoder), 0).toInt();
@@ -103,28 +103,28 @@ bool Settings::save()
     QVariantMap map_http_server;
 
 
-    map_main.insert("preview", (bool)main.preview);
+    map_main.insert(QStringLiteral("preview"), (bool)main.preview);
 
-    map_device.insert("index", device.index);
-    map_device.insert("audio_sample_size", device.audio_sample_size);
+    map_device.insert(QStringLiteral("index"), device.index);
+    map_device.insert(QStringLiteral("audio_sample_size"), device.audio_sample_size);
 
-    map_rec.insert("encoder", rec.encoder);
-    map_rec.insert("pixel_format", rec.pixel_format);
-    map_rec.insert("preset", rec.preset);
-    map_rec.insert("crf", rec.crf);
-    map_rec.insert("half_fps", (bool)rec.half_fps);
-    map_rec.insert("stop_rec_on_frames_drop", (bool)rec.stop_rec_on_frames_drop);
+    map_rec.insert(QStringLiteral("encoder"), rec.encoder);
+    map_rec.insert(QStringLiteral("pixel_format"), rec.pixel_format);
+    map_rec.insert(QStringLiteral("preset"), rec.preset);
+    map_rec.insert(QStringLiteral("crf"), rec.crf);
+    map_rec.insert(QStringLiteral("half_fps"), (bool)rec.half_fps);
+    map_rec.insert(QStringLiteral("stop_rec_on_frames_drop"), (bool)rec.stop_rec_on_frames_drop);
 
 #ifdef LIB_QHTTP
-    map_http_server.insert("enabled", http_server.enabled);
-    map_http_server.insert("port", http_server.port);
+    map_http_server.insert(QStringLiteral("enabled"), http_server.enabled);
+    map_http_server.insert(QStringLiteral("port"), http_server.port);
 
-    map_root.insert("http_server", map_http_server);
+    map_root.insert(QStringLiteral("http_server"), map_http_server);
 #endif
 
-    map_root.insert("main", map_main);
-    map_root.insert("device", map_device);
-    map_root.insert("rec", map_rec);
+    map_root.insert(QStringLiteral("main"), map_main);
+    map_root.insert(QStringLiteral("device"), map_device);
+    map_root.insert(QStringLiteral("rec"), map_rec);
 
     QByteArray ba=QJsonDocument::fromVariant(map_root).toJson();
 

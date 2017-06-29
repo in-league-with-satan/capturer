@@ -72,11 +72,11 @@ bool Settings::load()
 
     //
 
-    QVariantMap map_main=map_root.value("main").toMap();
+    QVariantMap map_main=map_root.value(QStringLiteral("main")).toMap();
 
-    main.host=map_main.value("host", "localhost").toString();
-    main.port=map_main.value("port", 8080).toInt();
-    // main.routing_key=map_main.value("routing_key").toString();
+    main.host=map_main.value(QStringLiteral("host"), QStringLiteral("localhost")).toString();
+    main.port=map_main.value(QStringLiteral("port"), 8080).toInt();
+    // main.routing_key=map_main.value(QStringLiteral("routing_key")).toString();
 
     return true;
 }
@@ -88,11 +88,11 @@ bool Settings::save()
     QVariantMap map_root;
     QVariantMap map_main;
 
-    map_main.insert("host", main.host);
-    map_main.insert("port", main.port);
-    // map_main.insert("routing_key", main.routing_key);
+    map_main.insert(QStringLiteral("host"), main.host);
+    map_main.insert(QStringLiteral("port"), main.port);
+    // map_main.insert(QStringLiteral("routing_key"), main.routing_key);
 
-    map_root.insert("main", map_main);
+    map_root.insert(QStringLiteral("main"), map_main);
 
     QByteArray ba=QJsonDocument::fromVariant(map_root).toJson();
 
