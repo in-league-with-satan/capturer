@@ -34,6 +34,7 @@ private:
     FrameBuffer::ptr frame_buffer;
 
     VideoWidgetUpdateThread *update_thread;
+
 };
 
 #endif // VIDEO_WIDGET_H

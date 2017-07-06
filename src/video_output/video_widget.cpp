@@ -2,6 +2,8 @@
 #include <QPainter>
 #include <QPaintEvent>
 
+#include "settings.h"
+
 #include "video_surface.h"
 #include "video_widget_update_thread.h"
 
@@ -78,7 +80,7 @@ void VideoWidget::paintEvent(QPaintEvent *event)
                 painter.fillRect(rect, brush);
         }
 
-        surface->paint(&painter, false);
+        surface->paint(&painter, settings->main.smooth_transform);
 
     } else {
         painter.fillRect(event->rect(), palette().background());

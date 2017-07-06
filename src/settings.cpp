@@ -70,6 +70,7 @@ bool Settings::load()
     QVariantMap map_http_server=map_root.value(QStringLiteral("http_server")).toMap();
 
     main.preview=map_main.value(QStringLiteral("preview"), 1).toInt();
+    main.smooth_transform=map_main.value(QStringLiteral("smooth_transform"), 0).toInt();
 
     device.index=map_device.value(QStringLiteral("index"), 0).toInt();
     device.audio_sample_size=map_device.value(QStringLiteral("audio_sample_size"), 0).toInt();
@@ -104,6 +105,7 @@ bool Settings::save()
 
 
     map_main.insert(QStringLiteral("preview"), (bool)main.preview);
+    map_main.insert(QStringLiteral("smooth_transform"), (bool)main.smooth_transform);
 
     map_device.insert(QStringLiteral("index"), device.index);
     map_device.insert(QStringLiteral("audio_sample_size"), device.audio_sample_size);

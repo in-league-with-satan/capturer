@@ -49,6 +49,7 @@ public:
         FileBrowser,
         Rec,
         RecState,
+        SmoothTransform,
         Exit
     };
     Q_ENUM(KeyCode)

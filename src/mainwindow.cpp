@@ -324,12 +324,16 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
             int key=e->key();
 
             switch(key) {
+            case Qt::Key_F1:
+                keyPressed(KeyCodeC::About);
+                return true;
+
             case Qt::Key_F2:
                 keyPressed(KeyCodeC::FileBrowser);
                 return true;
 
-            case Qt::Key_F1:
-                keyPressed(KeyCodeC::About);
+            case Qt::Key_F3:
+                keyPressed(KeyCodeC::SmoothTransform);
                 return true;
 
             case Qt::Key_F4:
@@ -436,6 +440,10 @@ void MainWindow::keyPressed(int code)
 
     case KeyCodeC::Preview:
         previewOnOff();
+        break;
+
+    case KeyCodeC::SmoothTransform:
+        settings->main.smooth_transform=!settings->main.smooth_transform;
         break;
 
     case KeyCodeC::FullScreen:
@@ -760,11 +768,11 @@ void MainWindow::updateStats(FFEncoder::Stats s)
 {
     const QPair <int, int> buffer_size=ff_enc->frameBuffer()->size();
 
-    messenger->updateRecStats(s.time.toString("HH:mm:ss"),
+    messenger->updateRecStats(s.time.toString(QStringLiteral("HH:mm:ss")),
                               QString(QLatin1String("%1 Mbits/s (%2 MB/s)")).arg(QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/1000./1000., 'f', 2),
                               QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/8/1024./1024., 'f', 2)),
                               QString(QLatin1String("%1 bytes")).arg(QLocale().toString((qulonglong)s.streams_size)),
-                              QString(QLatin1String("buf state: %1/%2")).arg(buffer_size.first, buffer_size.second),
+                              QString(QLatin1String("buf state: %1/%2")).arg(buffer_size.first).arg(buffer_size.second),
                               QString(QLatin1String("frames dropped: %1")).arg(dropped_frames_counter));
 
     http_server->setRecStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.streams_size, dropped_frames_counter, buffer_size.second, buffer_size.first));

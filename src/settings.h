@@ -19,6 +19,7 @@ public:
 
     struct Main {
         int preview;
+        int smooth_transform;
 
     } main;
 
