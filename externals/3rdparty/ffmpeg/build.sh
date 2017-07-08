@@ -104,6 +104,7 @@ fi
 make clean
 export CFLAGS="$str_opt"
 cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX="$PATH_BASE" -DENABLE_SHARED:bool=off ../../source
+sed -i 's/static char\* strtok_r/char* strtok_r/g' ../../source/common/param.cpp
 make -j$cpu_count
 make install
 
@@ -184,7 +185,7 @@ make install
 
 cd $PATH_BUILD
 if [ ! -e speex-1.2.0.tar.gz ]; then
-    wget http://downloads.us.xiph.org/releases/speex/speex-1.2.0.tar.gz
+    wget http://downloads.xiph.org/releases/speex/speex-1.2.0.tar.gz
 fi
 if [ ! -e speex-1.2.0 ]; then
     tar xzvf speex-1.2.0.tar.gz
@@ -215,6 +216,7 @@ cd $PATH_BUILD
 if [ ! -e ffmpeg ]; then
   git clone git://source.ffmpeg.org/ffmpeg
 #  git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git
+  cd ffmpeg
 else
   cd ffmpeg
   git reset --hard
