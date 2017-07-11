@@ -222,7 +222,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt());
 
-    foreach(const QString preset, presets) {
+    foreach(const QString &preset, presets) {
         set_model_data.values << preset;
         set_model_data.values_data << FFEncoder::presetVisualNameToParamName(preset);
     }
@@ -571,7 +571,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
         QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)data->values_data.value(settings->rec.encoder, 0).toInt());
 
-        foreach(const QString preset, presets) {
+        foreach(const QString &preset, presets) {
             list_values << preset;
             list_values_data << FFEncoder::presetVisualNameToParamName(preset);
         }

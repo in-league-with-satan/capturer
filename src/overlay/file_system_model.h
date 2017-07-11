@@ -40,6 +40,8 @@ public:
 
     Q_INVOKABLE SnapshotListModel *snapshotListModel(const QModelIndex &index);
 
+    QVariant data(const QModelIndex &index, int role=Qt::DisplayRole) const;
+
     enum Roles {
         MediaInfoRole=QFileSystemModel::FilePermissions + 1
     };
@@ -49,6 +51,7 @@ public slots:
 
 private slots:
     void srcRowsInserted(const QModelIndex &parent, int first, int last);
+    void srcRowsRemoved(const QModelIndex &parent, int first, int last);
     void addMediaInfo(QString key, QString info);
     void addSnapshot(QString key, QImage image);
 

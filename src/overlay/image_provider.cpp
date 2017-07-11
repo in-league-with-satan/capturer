@@ -1,3 +1,4 @@
+#include <QDebug>
 #include "image_provider.h"
 
 ImageProvider::ImageProvider()
@@ -10,7 +11,7 @@ QImage ImageProvider::requestImage(const QString &id, QSize *size, const QSize &
     if(image.contains(id)) {
         QImage img=image.value(id);
 
-        *size=img.size();
+        (*size)=img.size();
 
         return img;
     }
@@ -21,5 +22,13 @@ QImage ImageProvider::requestImage(const QString &id, QSize *size, const QSize &
 void ImageProvider::addImage(const QString &id, const QImage &img)
 {
     image[id]=img;
+}
+
+void ImageProvider::removeImages(const QString &id)
+{
+    foreach(const QString &key, image.keys()) {
+        if(key.startsWith(id))
+            image.remove(key);
+    }
 }
 

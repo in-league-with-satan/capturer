@@ -3,12 +3,90 @@
 #include <QImage>
 #include <QBuffer>
 #include <QTimer>
+#include <QElapsedTimer>
 #include <QMutexLocker>
 
+#include "database.h"
 #include "ff_tools.h"
 
 #include "ff_snapshot.h"
 
+QByteArray imgToJpegByteArray(const QImage &img, int jpeg_quality=85)
+{
+    QByteArray ba;
+
+    if(img.isNull())
+        return ba;
+
+    QBuffer buffer(&ba);
+
+    buffer.open(QIODevice::WriteOnly);
+
+    img.save(&buffer, "JPG", jpeg_quality);
+
+    buffer.close();
+
+    return ba;
+}
+
+QImage imgFromJpegByteArray(QByteArray &data)
+{
+    QBuffer buffer(&data);
+
+    buffer.open(QIODevice::ReadWrite);
+
+    QImage img;
+
+    img.load(&buffer, "JPG");
+
+    return img;
+}
+
+QByteArray imageListToByteArray(const QList <QImage> &images)
+{
+    QByteArray ba;
+
+    QBuffer buffer(&ba);
+    buffer.open(QIODevice::ReadWrite);
+
+    QDataStream stream(&buffer);
+
+    foreach(const QImage &img, images) {
+        QByteArray ba_tmp=imgToJpegByteArray(img);
+
+        stream << (qint32)ba_tmp.size();
+        buffer.write(ba_tmp);
+    }
+
+    buffer.close();
+
+    return ba;
+}
+
+QList <QImage> imageListFromByteArray(QByteArray &ba)
+{
+    QBuffer buffer(&ba);
+    buffer.open(QIODevice::ReadWrite);
+
+    QDataStream stream(&buffer);
+
+    qint32 size;
+    QList <QImage> list;
+    QByteArray ba_tmp;
+
+    while(true) {
+        if(buffer.atEnd())
+            break;
+
+        stream >> size;
+
+        ba_tmp=buffer.read(size);
+
+        list.append(imgFromJpegByteArray(ba_tmp));
+    }
+
+    return list;
+}
 
 FFSnapshot::FFSnapshot(QObject *paretn)
     : QThread(paretn)
@@ -27,6 +105,13 @@ void FFSnapshot::enqueue(const QString &filename)
     queue.enqueue(filename);
 }
 
+void FFSnapshot::enqueueRemove(const QString &filename)
+{
+    QMutexLocker ml(&mutex_queue);
+
+    queue_remove.enqueue(filename);
+}
+
 void FFSnapshot::pause(bool state)
 {
     on_pause=state;
@@ -34,6 +119,9 @@ void FFSnapshot::pause(bool state)
 
 void FFSnapshot::run()
 {
+    database=new Database();
+    database->moveToThread(this);
+
     timer=new QTimer();
     timer->moveToThread(this);
     timer->setInterval(100);
@@ -42,6 +130,8 @@ void FFSnapshot::run()
     timer->start();
 
     exec();
+
+    delete database;
 }
 
 void FFSnapshot::checkQueue()
@@ -57,6 +147,10 @@ void FFSnapshot::checkQueue()
         {
             QMutexLocker ml(&mutex_queue);
 
+            while(!queue_remove.isEmpty()) {
+                database->removeSnapshot(queue_remove.dequeue());
+            }
+
             if(queue.isEmpty()) {
                 timer->start();
                 return;
@@ -66,6 +160,31 @@ void FFSnapshot::checkQueue()
         }
 
         qInfo() << "FFSnapshot:" << filename;
+
+        QList <QImage> images;
+
+        {
+            QByteArray ba_images;
+
+            database->snapshot(filename, &ba_images);
+
+            if(!ba_images.isEmpty()) {
+                QElapsedTimer t;
+                t.start();
+
+                images=imageListFromByteArray(ba_images);
+
+                foreach(const QImage &img, images) {
+                    emit ready(filename, img.convertToFormat(QImage::Format_RGB16));
+                }
+
+                QApplication::processEvents();
+
+                qInfo().noquote() << QStringLiteral("snapshots from db time:") << t.elapsed() << QStringLiteral("ms");
+
+                continue;
+            }
+        }
 
         int ret;
 
@@ -272,14 +391,14 @@ void FFSnapshot::checkQueue()
                     av_packet_unref(&packet);
 
                     if(!ba_frame.isEmpty()) {
-                        QImage img((uchar*)ba_frame.constData(),
-                                   frame_rgb->width,
-                                   frame_rgb->height,
-                                   QImage::Format_ARGB32);
+                        QImage img=QImage((uchar*)ba_frame.constData(),
+                                          frame_rgb->width,
+                                          frame_rgb->height,
+                                          QImage::Format_ARGB32).scaledToWidth(640, Qt::SmoothTransformation);
 
-                        // emit ready(filename, img.scaledToWidth(384, Qt::SmoothTransformation));
-                        // emit ready(filename, img.scaledToWidth(384, Qt::SmoothTransformation).convertToFormat(QImage::Format_Indexed8));
-                        emit ready(filename, img.scaledToWidth(640, Qt::SmoothTransformation).convertToFormat(QImage::Format_RGB16));
+                        images.append(img);
+
+                        emit ready(filename, img.convertToFormat(QImage::Format_RGB16));
 
                         QApplication::processEvents();
 
@@ -296,6 +415,12 @@ void FFSnapshot::checkQueue()
 
                 QApplication::processEvents();
             }
+        }
+
+        if(!images.isEmpty()) {
+            QByteArray ba_images=imageListToByteArray(images);
+
+            database->addSnapshot(filename, ba_images);
         }
 
 end:
