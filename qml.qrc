@@ -11,5 +11,6 @@
         <file>qml/FileBrowser.qml</file>
         <file>qml/ShowHideRect.qml</file>
         <file>qml/PlayerState.qml</file>
+        <file>qml/ErrorMessage.qml</file>
     </qresource>
 </RCC>

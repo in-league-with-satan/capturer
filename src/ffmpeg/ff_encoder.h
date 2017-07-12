@@ -100,6 +100,9 @@ public:
     static QString presetVisualNameToParamName(const QString &str);
     static QStringList compatiblePresets(VideoEncoder::T encoder);
 
+    QString lastErrorString() const;
+
+
 public slots:
     bool setConfig(FFEncoder::Config cfg);
 
@@ -115,9 +118,12 @@ private:
 
     QSize last_frame_size;
 
+    QString last_error_string;
+
 signals:
     void stats(FFEncoder::Stats s);
     void stateChanged(bool state);
+    void errorString(QString err_string);
 };
 
 Q_DECLARE_METATYPE(FFEncoder::Config)

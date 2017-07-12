@@ -4,12 +4,14 @@ import QtQuick.Window 2.2
 
 Rectangle {
     id: root
-
     visible: true
-
     color: "transparent"
 
-    NoSignal {}
+    ErrorMessage {
+        width: parent.width*.8
+        height: parent.height*.8
+        anchors.centerIn: parent
+    }
 
     About {
         id: about
