@@ -36,6 +36,11 @@ void KeepScreenOn::setEnabled(bool enabled)
             else
                 window.callMethod<void>("clearFlags", "(I)V", FLAG_KEEP_SCREEN_ON);
         }
+
+        QAndroidJniEnvironment env;
+
+        if(env->ExceptionCheck())
+            env->ExceptionClear();
     }
 
 #endif
