@@ -102,7 +102,7 @@ void HttpClient::replyFinished(QNetworkReply *reply)
                         emit recordIsRunning(false);
 
                     } else {
-                        emit recStats(status.rec_stats);
+                        emit recStats(status.rec_stats, status.free_space);
                     }
                 }
 

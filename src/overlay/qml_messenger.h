@@ -55,7 +55,8 @@ signals:
     void audioLevels(qreal l, qreal r, qreal c, qreal lfe, qreal rl, qreal rr, qreal sl, qreal sr);
 
 
-    void freeSpace(QString size);
+    void freeSpaceStr(QString size);
+    void freeSpace(qint64 size);
 
     void recStarted();
     void recStopped();

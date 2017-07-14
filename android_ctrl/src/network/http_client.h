@@ -48,7 +48,7 @@ private:
 
 signals:
     void recordIsRunning(bool value);
-    void recStats(NRecStats value);
+    void recStats(NRecStats value, qint64 free_space);
     void playerDuration(qint64 value);
     void playerPosition(qint64 value);
 };
