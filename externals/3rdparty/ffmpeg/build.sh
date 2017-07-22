@@ -111,7 +111,7 @@ make install
 
 cd $PATH_BUILD
 if [ ! -e fdk-aac ]; then
-  git clone --depth 1 git://git.code.sf.net/p/opencore-amr/fdk-aac
+  git clone git://git.code.sf.net/p/opencore-amr/fdk-aac
   cd fdk-aac
 else
   cd fdk-aac
@@ -199,7 +199,7 @@ make install
 
 cd $PATH_BUILD
 if [ ! -e libvpx ]; then
-  git clone --depth 1 https://chromium.googlesource.com/webm/libvpx.git
+  git clone https://chromium.googlesource.com/webm/libvpx.git
   cd libvpx
 else
   cd libvpx
@@ -215,7 +215,6 @@ make install
 cd $PATH_BUILD
 if [ ! -e ffmpeg ]; then
   git clone git://source.ffmpeg.org/ffmpeg
-#  git clone --depth 1 https://git.ffmpeg.org/ffmpeg.git
   cd ffmpeg
 else
   cd ffmpeg
