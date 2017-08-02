@@ -15,14 +15,15 @@ OverlayView::OverlayView(QWidget *parent)
     format.setAlphaBufferSize(8);
     format.setStencilBufferSize(8);
     format.setRenderableType(QSurfaceFormat::OpenGL);
+    format.setSwapBehavior(QSurfaceFormat::DefaultSwapBehavior);
     format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
 
     // setFormat(format);
 
-    setAttribute(Qt::WA_TranslucentBackground, true);
-    setAttribute(Qt::WA_AlwaysStackOnTop, true);
+    // setAttribute(Qt::WA_TranslucentBackground, true);
+    // setAttribute(Qt::WA_AlwaysStackOnTop, true);
 
-    setClearColor(Qt::transparent);
+    setClearColor(Qt::black);
 
     setResizeMode(QQuickWidget::SizeRootObjectToView);
 }
