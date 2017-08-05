@@ -17,6 +17,7 @@ class QuickVideoSource : public QThread
 
 public:
     explicit QuickVideoSource(QObject *parent=0);
+    explicit QuickVideoSource(bool thread, QObject *parent=0);
     ~QuickVideoSource();
 
     FrameBuffer::ptr frameBuffer();
@@ -25,7 +26,8 @@ public:
     void setVideoSurface(QAbstractVideoSurface *s);
 
 protected:
-    void run();
+    virtual void run();
+    virtual void timerEvent(QTimerEvent*);
 
 private:
     void closeSurface();

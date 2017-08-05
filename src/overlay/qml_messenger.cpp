@@ -12,7 +12,7 @@
 QmlMessenger::QmlMessenger(QObject *parent)
     : QObject(parent)
 {
-    video_source_main=new QuickVideoSource(this);
+    video_source_main=new QuickVideoSource(false, this);
 
     settings_model=new SettingsModel();
 
