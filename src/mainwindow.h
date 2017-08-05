@@ -52,9 +52,14 @@ private:
 
     uint32_t dropped_frames_counter;
 
+    QPoint pos_mouse_press;
+
 protected:
     virtual bool eventFilter(QObject *object, QEvent *event);
     virtual void closeEvent(QCloseEvent *);
+
+    virtual void mousePressEvent(QMouseEvent *event);
+    virtual void mouseMoveEvent(QMouseEvent *event);
 
 private slots:
     void keyPressed(int code);

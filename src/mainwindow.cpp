@@ -406,6 +406,18 @@ void MainWindow::closeEvent(QCloseEvent *)
     overlay_view->close();
 }
 
+void MainWindow::mousePressEvent(QMouseEvent *event)
+{
+    if(event->button()==Qt::LeftButton)
+        pos_mouse_press=event->globalPos() - frameGeometry().topLeft();
+}
+
+void MainWindow::mouseMoveEvent(QMouseEvent *event)
+{
+    if(event->buttons()&Qt::LeftButton)
+        move(event->globalPos() - pos_mouse_press);
+}
+
 void MainWindow::keyPressed(int code)
 {
     switch(code) {
