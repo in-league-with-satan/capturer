@@ -6,7 +6,8 @@ QT += \
     multimediawidgets\
     qml \
     quick \
-    quickwidgets
+    quickwidgets \
+    sql
 
 
 TARGET = capturer

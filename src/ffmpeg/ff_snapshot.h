@@ -9,6 +9,7 @@
 #include <atomic>
 
 class QTimer;
+class Database;
 
 class FFSnapshot : public QThread
 {
@@ -35,9 +36,12 @@ private:
     int shots_per_10_min;
 
     QQueue <QString> queue;
+
     QMutex mutex_queue;
 
     std::atomic <bool> on_pause;
+
+    Database *database;
 
 signals:
     void ready(QString key, QImage image);

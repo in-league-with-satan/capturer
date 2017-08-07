@@ -51,3 +51,11 @@ void SnapshotListModel::add(const QString &id)
     endInsertRows();
 }
 
+void SnapshotListModel::clear()
+{
+    beginRemoveRows(QModelIndex(), 0, id_list.size());
+
+    id_list.clear();
+
+    endRemoveRows();
+}

@@ -62,7 +62,7 @@ void SettingsModel::setData(const int &index, int role, QVariant data, bool qml)
     if(index<0 || index>=d.size())
         return;
 
-//    qInfo() << "SettingsModel::setData" << index << role << data;
+    // qInfo() << "SettingsModel::setData" << index << role << data;
 
     switch(role) {
     case Role::type:

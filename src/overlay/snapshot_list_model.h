@@ -16,6 +16,7 @@ public:
     virtual QHash <int, QByteArray> roleNames() const;
 
     void add(const QString &id);
+    void clear();
 
 private:
     QStringList id_list;
