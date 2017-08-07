@@ -1,5 +1,6 @@
 import QtQuick 2.7
 import QtQuick.Window 2.2
+import QtMultimedia 5.8
 
 
 Rectangle {
@@ -7,7 +8,12 @@ Rectangle {
 
     visible: true
 
-    color: "transparent"
+    color: "black"
+
+    VideoOutput {
+        anchors.fill: parent;
+        source: messenger.videoSourceMain()
+    }
 
     NoSignal {}
 

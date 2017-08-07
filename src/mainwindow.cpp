@@ -20,8 +20,6 @@
 #include "device_list.h"
 #include "capture.h"
 #include "audio_output.h"
-#include "video_widget.h"
-#include "sdl2_video_output_thread.h"
 #include "audio_level.h"
 #include "qml_messenger.h"
 #include "overlay_view.h"
@@ -53,6 +51,7 @@ MainWindow::MainWindow(QWidget *parent)
     qmlRegisterType<SettingsModel>("FuckTheSystem", 0, 0, "SettingsModel");
     qmlRegisterType<FileSystemModel>("FuckTheSystem", 0, 0, "FileSystemModel");
     qmlRegisterType<SnapshotListModel>("FuckTheSystem", 0, 0, "SnapshotListModel");
+    qmlRegisterType<QuickVideoSource>("FuckTheSystem", 0, 0, "QuickVideoSource");
 
     messenger=new QmlMessenger();
 
@@ -69,17 +68,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     overlay_view->addImageProvider("fs_image_provider", (QQmlImageProviderBase*)messenger->fileSystemModel()->imageProvider());
 
+    decklink_thread->subscribe(messenger->videoSourceMain()->frameBuffer());
+
     //
 
     audio_output=newAudioOutput(this);
 
     decklink_thread->subscribe(audio_output->frameBuffer());
-
-    //
-
-    out_widget=new VideoWidget();
-
-    decklink_thread->subscribe(out_widget->frameBuffer());
 
     //
 
@@ -94,8 +89,10 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     ff_dec=new FFDecoderThread(this);
-    ff_dec->subscribeVideo(out_widget->frameBuffer());
+
+    ff_dec->subscribeVideo(messenger->videoSourceMain()->frameBuffer());
     ff_dec->subscribeAudio(audio_output->frameBuffer());
+
 
     connect(messenger->fileSystemModel(), SIGNAL(playMedia(QString)), ff_dec, SLOT(open(QString)), Qt::QueuedConnection);
     connect(ff_dec, SIGNAL(durationChanged(qint64)), messenger, SIGNAL(playerDurationChanged(qint64)), Qt::QueuedConnection);
@@ -285,13 +282,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    QVBoxLayout *la_container=new QVBoxLayout();
-    la_container->addWidget(overlay_view);
-    la_container->setMargin(0);
-
-    out_widget->setLayout(la_container);
-
-    setCentralWidget(out_widget);
+    setCentralWidget(overlay_view);
 
     QApplication::instance()->installEventFilter(this);
 
@@ -401,9 +392,6 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 
 void MainWindow::closeEvent(QCloseEvent *)
 {
-    out_widget->close();
-
-    overlay_view->close();
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event)
@@ -745,7 +733,7 @@ void MainWindow::previewOnOff()
 {
     settings->main.preview=!settings->main.preview;
 
-    out_widget->frameBuffer()->setEnabled(settings->main.preview);
+    messenger->videoSourceMain()->frameBuffer()->setEnabled(settings->main.preview);
 }
 
 void MainWindow::encoderStateChanged(bool state)
@@ -763,8 +751,6 @@ void MainWindow::playerStateChanged(int state)
 
     } else {
         emit messenger->signalLost(true);
-
-        out_widget->fillBlack();
     }
 
     if(state==FFDecoderThread::ST_STOPPED) {

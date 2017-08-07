@@ -7,6 +7,7 @@
 #include "settings_model.h"
 #include "file_system_model.h"
 #include "snapshot_list_model.h"
+#include "quick_video_source.h"
 
 class QmlMessenger : public QObject
 {
@@ -35,6 +36,8 @@ public:
     Q_INVOKABLE QString versionlibSWResample() const;
     Q_INVOKABLE QString networkAddresses() const;
 
+    Q_INVOKABLE QuickVideoSource *videoSourceMain();
+
 public slots:
     void keyEvent(const Qt::Key &key);
     void setRecStarted(bool value);
@@ -45,6 +48,8 @@ private slots:
 private:
     SettingsModel *settings_model;
     FileSystemModel *file_system_model;
+
+    QuickVideoSource *video_source_main;
 
 signals:
     void updateRecStats(QString duration=QString(), QString bitrate=QString(), QString size=QString(),

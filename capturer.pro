@@ -154,7 +154,6 @@ INCLUDEPATH += \
     src/decklink \
     src/ffmpeg \
     src/audio_output \
-    src/video_output \
     src/overlay \
     src/network
 
@@ -163,7 +162,6 @@ SOURCES += \
     src/decklink/*.cpp \
     src/ffmpeg/*.cpp \
     src/audio_output/*.cpp \
-    src/video_output/*.cpp \
     src/overlay/*.cpp \
     src/network/*.cpp
 
@@ -172,7 +170,6 @@ HEADERS += \
     src/decklink/*.h \
     src/ffmpeg/*.h \
     src/audio_output/*.h \
-    src/video_output/*.h \
     src/overlay/*.h \
     src/network/*.h
 
