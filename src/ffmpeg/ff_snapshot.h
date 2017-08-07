@@ -20,7 +20,6 @@ public:
 
 public slots:
     void enqueue(const QString &filename);
-    void enqueueRemove(const QString &filename);
 
     void pause(bool state);
 
@@ -37,7 +36,7 @@ private:
     int shots_per_10_min;
 
     QQueue <QString> queue;
-    QQueue <QString> queue_remove;
+
     QMutex mutex_queue;
 
     std::atomic <bool> on_pause;

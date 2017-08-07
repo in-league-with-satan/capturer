@@ -105,13 +105,6 @@ void FFSnapshot::enqueue(const QString &filename)
     queue.enqueue(filename);
 }
 
-void FFSnapshot::enqueueRemove(const QString &filename)
-{
-    QMutexLocker ml(&mutex_queue);
-
-    queue_remove.enqueue(filename);
-}
-
 void FFSnapshot::pause(bool state)
 {
     on_pause=state;
@@ -147,10 +140,6 @@ void FFSnapshot::checkQueue()
         {
             QMutexLocker ml(&mutex_queue);
 
-            while(!queue_remove.isEmpty()) {
-                database->removeSnapshot(queue_remove.dequeue());
-            }
-
             if(queue.isEmpty()) {
                 timer->start();
                 return;
@@ -159,7 +148,7 @@ void FFSnapshot::checkQueue()
             filename=queue.dequeue();
         }
 
-        qInfo() << "FFSnapshot:" << filename;
+        // qInfo() << "FFSnapshot:" << filename;
 
         QList <QImage> images;
 
@@ -180,7 +169,7 @@ void FFSnapshot::checkQueue()
 
                 QApplication::processEvents();
 
-                qInfo().noquote() << QStringLiteral("snapshots from db time:") << t.elapsed() << QStringLiteral("ms");
+                // qInfo().noquote() << QStringLiteral("snapshots from db time:") << t.elapsed() << QStringLiteral("ms");
 
                 continue;
             }

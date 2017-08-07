@@ -70,6 +70,22 @@ QString FileSystemModel::path(const QModelIndex &index) const
 
 QModelIndex FileSystemModel::index(const QString &path) const
 {
+    image_provider->clear();
+
+    for(int i=0; i<file_snapshot_list_model.size(); ++i) {
+        file_snapshot_list_model.values()[i]->clear();
+    }
+
+    //
+
+    QFileInfo fi(path);
+
+    if(fi.isDir()) {
+        foreach(QString value, QDir(path).entryList(QDir::Files)) {
+            snapshot->enqueue(path + "/" + value);
+        }
+    }
+
     return mapFromSource(model->index(path));
 }
 
@@ -151,10 +167,11 @@ void FileSystemModel::srcRowsInserted(const QModelIndex &parent, int first, int 
         if(!filter_ext.contains(file_info.suffix(), Qt::CaseInsensitive))
             continue;
 
+        snapshot->enqueue(file_info.filePath());
+
         if(file_media_info.contains(file_info.filePath()))
             continue;
 
-        snapshot->enqueue(file_info.filePath());
         media_info->enqueue(file_info.filePath());
     }
 }
@@ -175,8 +192,6 @@ void FileSystemModel::srcRowsRemoved(const QModelIndex &parent, int first, int l
         file_media_info.remove(file_info.filePath());
 
         image_provider->removeImages(file_info.filePath());
-
-        snapshot->enqueueRemove(file_info.filePath());
 
         if(file_snapshot_list_model.contains(file_info.filePath())) {
             file_snapshot_list_model[file_info.filePath()]->deleteLater();

@@ -14,6 +14,7 @@ public:
     bool addSnapshot(QString key, const QByteArray &data);
     bool snapshot(QString key, QByteArray *data);
     bool removeSnapshot(QString key);
+    void dropOldSnapshots();
 
 private:
     void tableInit();

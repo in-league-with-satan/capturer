@@ -32,3 +32,7 @@ void ImageProvider::removeImages(const QString &id)
     }
 }
 
+void ImageProvider::clear()
+{
+    image.clear();
+}
