@@ -155,16 +155,9 @@ static void add_stream_audio(OutputStream *out_stream, AVFormatContext *format_c
 
     c->channels=av_get_channel_layout_nb_channels(c->channel_layout);
 
-#ifndef _MSC_VER
 
-    out_stream->av_stream->time_base=(AVRational){ 1, c->sample_rate };
+    out_stream->av_stream->time_base={ 1, c->sample_rate };
 
-#else
-
-    out_stream->av_stream->time_base.num=1;
-    out_stream->av_stream->time_base.den=c->sample_rate;
-
-#endif
 
     // some formats want stream headers to be separate
     if(format_context->oformat->flags & AVFMT_GLOBALHEADER)
@@ -229,101 +222,48 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
     // of which frame timestamps are represented. For fixed-fps content,
     // timebase should be 1/framerate and timestamp increments should be
     // identical to 1
-#ifndef _MSC_VER
+
     switch(cfg.framerate) {
     case FFEncoder::Framerate::full_23:
-        out_stream->av_stream->time_base=(AVRational){ 1001, 24000 };
+        out_stream->av_stream->time_base={ 1001, 24000 };
         break;
 
     case FFEncoder::Framerate::full_24:
-        out_stream->av_stream->time_base=(AVRational){ 1000, 24000 };
+        out_stream->av_stream->time_base={ 1000, 24000 };
         break;
 
     case FFEncoder::Framerate::full_25:
     case FFEncoder::Framerate::half_50:
-        out_stream->av_stream->time_base=(AVRational){ 1000, 25000 };
+        out_stream->av_stream->time_base={ 1000, 25000 };
         break;
 
     case FFEncoder::Framerate::full_29:
     case FFEncoder::Framerate::half_59:
-        out_stream->av_stream->time_base=(AVRational){ 1001, 30000 };
+        out_stream->av_stream->time_base={ 1001, 30000 };
         break;
 
     case FFEncoder::Framerate::full_30:
     case FFEncoder::Framerate::half_60:
-        out_stream->av_stream->time_base=(AVRational){ 1000, 30000 };
+        out_stream->av_stream->time_base={ 1000, 30000 };
         break;
 
     case FFEncoder::Framerate::full_50:
-        out_stream->av_stream->time_base=(AVRational){ 1000, 50000 };
+        out_stream->av_stream->time_base={ 1000, 50000 };
         break;
 
     case FFEncoder::Framerate::full_59:
-        out_stream->av_stream->time_base=(AVRational){ 1001, 60000 };
+        out_stream->av_stream->time_base={ 1001, 60000 };
         break;
 
     case FFEncoder::Framerate::full_60:
-        out_stream->av_stream->time_base=(AVRational){ 1000, 60000 };
+        out_stream->av_stream->time_base={ 1000, 60000 };
         break;
 
     default:
-        out_stream->av_stream->time_base=(AVRational){ 1000, 30000 };
+        out_stream->av_stream->time_base={ 1000, 30000 };
         break;
     }
 
-#else
-
-    switch(cfg.framerate) {
-    case FFEncoder::Framerate::full_23:
-        out_stream->av_stream->time_base.num=1001;
-        out_stream->av_stream->time_base.den=24000;
-        break;
-
-    case FFEncoder::Framerate::full_24:
-            out_stream->av_stream->time_base.num=1000;
-            out_stream->av_stream->time_base.den=24000;
-            break;
-
-        case FFEncoder::Framerate::full_25:
-        case FFEncoder::Framerate::half_50:
-            out_stream->av_stream->time_base.num=1000;
-            out_stream->av_stream->time_base.den=25000;
-            break;
-
-        case FFEncoder::Framerate::full_29:
-        case FFEncoder::Framerate::half_59:
-            out_stream->av_stream->time_base.num=1001;
-            out_stream->av_stream->time_base.den=30000;
-            break;
-
-        case FFEncoder::Framerate::full_30:
-        case FFEncoder::Framerate::half_60:
-            out_stream->av_stream->time_base.num=1000;
-            out_stream->av_stream->time_base.den=30000;
-            break;
-
-        case FFEncoder::Framerate::full_50:
-            out_stream->av_stream->time_base.num=1000;
-            out_stream->av_stream->time_base.den=50000;
-            break;
-
-        case FFEncoder::Framerate::full_59:
-            out_stream->av_stream->time_base.num=1001;
-            out_stream->av_stream->time_base.den=60000;
-            break;
-
-        case FFEncoder::Framerate::full_60:
-            out_stream->av_stream->time_base.num=1000;
-            out_stream->av_stream->time_base.den=60000;
-            break;
-
-        default:
-            out_stream->av_stream->time_base.num=1000;
-            out_stream->av_stream->time_base.den=30000;
-            break;
-        }
-
-#endif
 
 
     c->time_base=out_stream->av_stream->time_base;
