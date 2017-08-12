@@ -282,6 +282,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="split odd/even frames";
+    set_model_data.value=&settings->rec.split_odd_even_frames;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
     setCentralWidget(overlay_view);
 
     QApplication::instance()->installEventFilter(this);
@@ -677,7 +685,7 @@ void MainWindow::startStopRecording()
         cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
         cfg.crf=settings->rec.crf;
         cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device.audio_sample_size)->values_data[settings->device.audio_sample_size].toInt();
-
+        cfg.split_odd_even_frames=settings->rec.split_odd_even_frames;
 
         ff_enc->setConfig(cfg);
 

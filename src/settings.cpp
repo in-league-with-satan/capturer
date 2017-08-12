@@ -81,6 +81,8 @@ bool Settings::load()
     rec.crf=map_rec.value(QStringLiteral("crf"), 0).toInt();
     rec.half_fps=map_rec.value(QStringLiteral("half_fps"), 0).toInt();
     rec.stop_rec_on_frames_drop=map_rec.value(QStringLiteral("stop_rec_on_frames_drop"), 0).toInt();
+    rec.split_odd_even_frames=map_rec.value(QStringLiteral("split_odd_even_frames"), 0).toInt();
+
 
 #ifdef LIB_QHTTP
     http_server.enabled=map_http_server.value(QStringLiteral("enabled"), true).toBool();
@@ -116,6 +118,7 @@ bool Settings::save()
     map_rec.insert(QStringLiteral("crf"), rec.crf);
     map_rec.insert(QStringLiteral("half_fps"), (bool)rec.half_fps);
     map_rec.insert(QStringLiteral("stop_rec_on_frames_drop"), (bool)rec.stop_rec_on_frames_drop);
+    map_rec.insert(QStringLiteral("split_odd_even_frames"), (bool)rec.split_odd_even_frames);
 
 #ifdef LIB_QHTTP
     map_http_server.insert(QStringLiteral("enabled"), http_server.enabled);

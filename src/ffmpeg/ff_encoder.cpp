@@ -19,8 +19,8 @@ class OutputStream
 {
 public:
     OutputStream() {
-        av_stream=nullptr;
-        av_codec_context=nullptr;
+        stream=nullptr;
+        codec_context=nullptr;
 
         next_pts=0;
 
@@ -30,8 +30,8 @@ public:
         convert_context=nullptr;
     }
 
-    AVStream *av_stream;
-    AVCodecContext *av_codec_context;
+    AVStream *stream;
+    AVCodecContext *codec_context;
 
     // pts of the next frame
     int64_t next_pts;
@@ -50,13 +50,11 @@ class FFMpegContext
 {
 public:
     FFMpegContext() {
-        av_output_format=nullptr;
-        av_format_context=nullptr;
+        format_context=nullptr;
 
-        av_codec_audio=nullptr;
-        av_codec_video=nullptr;
-
-        opt=nullptr;
+        codec_video_a=nullptr;
+        codec_video_b=nullptr;
+        codec_audio=nullptr;
 
         skip_frame=false;
 
@@ -64,7 +62,7 @@ public:
     }
 
     bool canAcceptFrame() {
-        if(av_format_context)
+        if(format_context)
             return true;
 
         return false;
@@ -72,22 +70,22 @@ public:
 
     QString filename;
 
-    OutputStream out_stream_video;
+    OutputStream out_stream_video_a;
+    OutputStream out_stream_video_b;
     OutputStream out_stream_audio;
 
-    AVOutputFormat *av_output_format;
-    AVFormatContext *av_format_context;
+    AVFormatContext *format_context;
 
-    AVCodec *av_codec_audio;
-    AVCodec *av_codec_video;
-
-    AVDictionary *opt;
+    AVCodec *codec_video_a;
+    AVCodec *codec_video_b;
+    AVCodec *codec_audio;
 
     FFEncoder::Config cfg;
 
     bool skip_frame;
 
     qint64 last_stats_update_time;
+    size_t frame_counter;
 };
 
 static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AVStream *st, AVPacket *pkt)
@@ -116,14 +114,14 @@ static void add_stream_audio(OutputStream *out_stream, AVFormatContext *format_c
         exit(1);
     }
 
-    out_stream->av_stream=avformat_new_stream(format_context, nullptr);
+    out_stream->stream=avformat_new_stream(format_context, nullptr);
 
-    if(!out_stream->av_stream) {
+    if(!out_stream->stream) {
         qCritical() << "could not allocate stream";
         exit(1);
     }
 
-    out_stream->av_stream->id=format_context->nb_streams - 1;
+    out_stream->stream->id=format_context->nb_streams - 1;
 
     c=avcodec_alloc_context3(*codec);
 
@@ -132,7 +130,7 @@ static void add_stream_audio(OutputStream *out_stream, AVFormatContext *format_c
         exit(1);
     }
 
-    out_stream->av_codec_context=c;
+    out_stream->codec_context=c;
 
     c->sample_fmt=(*codec)->sample_fmts ? (*codec)->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
 
@@ -156,7 +154,7 @@ static void add_stream_audio(OutputStream *out_stream, AVFormatContext *format_c
     c->channels=av_get_channel_layout_nb_channels(c->channel_layout);
 
 
-    out_stream->av_stream->time_base={ 1, c->sample_rate };
+    out_stream->stream->time_base={ 1, c->sample_rate };
 
 
     // some formats want stream headers to be separate
@@ -166,8 +164,6 @@ static void add_stream_audio(OutputStream *out_stream, AVFormatContext *format_c
 
 static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_context, AVCodec **codec, const FFEncoder::Config &cfg)
 {
-    AVCodecContext *c;
-
     switch(cfg.video_encoder) {
     case FFEncoder::VideoEncoder::libx264:
     case FFEncoder::VideoEncoder::libx264_10bit:
@@ -195,133 +191,177 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
         exit(1);
     }
 
-    out_stream->av_stream=avformat_new_stream(format_context, nullptr);
+    out_stream->stream=avformat_new_stream(format_context, nullptr);
 
-    if(!out_stream->av_stream) {
+    if(!out_stream->stream) {
         qCritical() << "could not allocate stream";
         exit(1);
     }
 
-    out_stream->av_stream->id=format_context->nb_streams - 1;
+    out_stream->stream->id=format_context->nb_streams - 1;
 
-    c=avcodec_alloc_context3(*codec);
+    out_stream->codec_context=avcodec_alloc_context3(*codec);
 
-    if(!c) {
+    if(!out_stream->codec_context) {
         qCritical() << "could not alloc an encoding context";
         exit(1);
     }
 
-    out_stream->av_codec_context=c;
+    out_stream->codec_context->codec_id=(*codec)->id;
 
-    c->codec_id=(*codec)->id;
-
-    c->width=cfg.frame_resolution.width();
-    c->height=cfg.frame_resolution.height();
+    out_stream->codec_context->width=cfg.frame_resolution.width();
+    out_stream->codec_context->height=cfg.frame_resolution.height();
 
     // timebase: This is the fundamental unit of time (in seconds) in terms
     // of which frame timestamps are represented. For fixed-fps content,
     // timebase should be 1/framerate and timestamp increments should be
     // identical to 1
 
-    switch(cfg.framerate) {
-    case FFEncoder::Framerate::full_23:
-        out_stream->av_stream->time_base={ 1001, 24000 };
-        break;
+    if(cfg.split_odd_even_frames) {
+        switch(cfg.framerate) {
+        case FFEncoder::Framerate::full_23:
+            out_stream->stream->time_base= { 1001, 12000 };
+            break;
 
-    case FFEncoder::Framerate::full_24:
-        out_stream->av_stream->time_base={ 1000, 24000 };
-        break;
+        case FFEncoder::Framerate::full_24:
+            out_stream->stream->time_base={ 1000, 12000 };
+            break;
 
-    case FFEncoder::Framerate::full_25:
-    case FFEncoder::Framerate::half_50:
-        out_stream->av_stream->time_base={ 1000, 25000 };
-        break;
+        case FFEncoder::Framerate::full_25:
+        case FFEncoder::Framerate::half_50:
+            out_stream->stream->time_base={ 1000, 12500 };
+            break;
 
-    case FFEncoder::Framerate::full_29:
-    case FFEncoder::Framerate::half_59:
-        out_stream->av_stream->time_base={ 1001, 30000 };
-        break;
+        case FFEncoder::Framerate::full_29:
+        case FFEncoder::Framerate::half_59:
+            out_stream->stream->time_base={ 1001, 15000 };
+            break;
 
-    case FFEncoder::Framerate::full_30:
-    case FFEncoder::Framerate::half_60:
-        out_stream->av_stream->time_base={ 1000, 30000 };
-        break;
+        case FFEncoder::Framerate::full_30:
+        case FFEncoder::Framerate::half_60:
+            out_stream->stream->time_base={ 1000, 15000 };
+            break;
 
-    case FFEncoder::Framerate::full_50:
-        out_stream->av_stream->time_base={ 1000, 50000 };
-        break;
+        case FFEncoder::Framerate::full_50:
+            out_stream->stream->time_base={ 1000, 25000 };
+            break;
 
-    case FFEncoder::Framerate::full_59:
-        out_stream->av_stream->time_base={ 1001, 60000 };
-        break;
+        case FFEncoder::Framerate::full_59:
+            out_stream->stream->time_base={ 1001, 30000 };
+            break;
 
-    case FFEncoder::Framerate::full_60:
-        out_stream->av_stream->time_base={ 1000, 60000 };
-        break;
+        case FFEncoder::Framerate::full_60:
+            out_stream->stream->time_base={ 1000, 30000 };
+            break;
 
-    default:
-        out_stream->av_stream->time_base={ 1000, 30000 };
-        break;
+        default:
+            out_stream->stream->time_base={ 1000, 15000 };
+            break;
+        }
+
+    } else {
+        switch(cfg.framerate) {
+        case FFEncoder::Framerate::full_23:
+            out_stream->stream->time_base= { 1001, 24000 };
+            break;
+
+        case FFEncoder::Framerate::full_24:
+            out_stream->stream->time_base={ 1000, 24000 };
+            break;
+
+        case FFEncoder::Framerate::full_25:
+        case FFEncoder::Framerate::half_50:
+            out_stream->stream->time_base={ 1000, 25000 };
+            break;
+
+        case FFEncoder::Framerate::full_29:
+        case FFEncoder::Framerate::half_59:
+            out_stream->stream->time_base={ 1001, 30000 };
+            break;
+
+        case FFEncoder::Framerate::full_30:
+        case FFEncoder::Framerate::half_60:
+            out_stream->stream->time_base={ 1000, 30000 };
+            break;
+
+        case FFEncoder::Framerate::full_50:
+            out_stream->stream->time_base={ 1000, 50000 };
+            break;
+
+        case FFEncoder::Framerate::full_59:
+            out_stream->stream->time_base={ 1001, 60000 };
+            break;
+
+        case FFEncoder::Framerate::full_60:
+            out_stream->stream->time_base={ 1000, 60000 };
+            break;
+
+        default:
+            out_stream->stream->time_base={ 1000, 30000 };
+            break;
+        }
     }
 
 
+    out_stream->codec_context->framerate=
+            out_stream->stream->time_base;
 
-    c->time_base=out_stream->av_stream->time_base;
+    out_stream->codec_context->time_base=out_stream->stream->time_base;
 
-    c->gop_size=12; // emit one intra frame every twelve frames at most
+    out_stream->codec_context->gop_size=12; // emit one intra frame every twelve frames at most
 
-    c->pix_fmt=cfg.pixel_format;
+    out_stream->codec_context->pix_fmt=cfg.pixel_format;
 
     if(cfg.video_encoder==FFEncoder::VideoEncoder::libx264 || cfg.video_encoder==FFEncoder::VideoEncoder::libx264rgb) {
         // av_opt_set(c->priv_data, "preset", "ultrafast", 0);
-        av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+        av_opt_set(out_stream->codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
         // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
-        av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().constData(), 0);
+        av_opt_set(out_stream->codec_context->priv_data, "crf", QString::number(cfg.crf).toLatin1().constData(), 0);
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::nvenc_h264) {
-        c->bit_rate=0;
+        out_stream->codec_context->bit_rate=0;
 
         if(cfg.crf==0) {
-            av_opt_set(c->priv_data, "preset", "lossless", 0);
+            av_opt_set(out_stream->codec_context->priv_data, "preset", "lossless", 0);
 
         } else {
-            c->global_quality=cfg.crf;
+            out_stream->codec_context->global_quality=cfg.crf;
 
             // av_opt_set(c->priv_data, "preset", "fast", 0); // HP
             // av_opt_set(c->priv_data, "preset", "slow", 0); // HQ
-            av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+            av_opt_set(out_stream->codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
         }
 
         // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::nvenc_hevc) {
-        c->bit_rate=0;
-        c->global_quality=cfg.crf;
+        out_stream->codec_context->bit_rate=0;
+        out_stream->codec_context->global_quality=cfg.crf;
 
         // av_opt_set(c->priv_data, "preset", "fast", 0); // HP
         // av_opt_set(c->priv_data, "preset", "slow", 0); // HQ
-        av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+        av_opt_set(out_stream->codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
         // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
     }
 
     // c->thread_count=8;
 
-    if(c->codec_id==AV_CODEC_ID_MPEG2VIDEO) {
+    if(out_stream->codec_context->codec_id==AV_CODEC_ID_MPEG2VIDEO) {
         // just for testing, we also add B-frames
-        c->max_b_frames=2;
+        out_stream->codec_context->max_b_frames=2;
     }
 
-    if(c->codec_id==AV_CODEC_ID_MPEG1VIDEO) {
+    if(out_stream->codec_context->codec_id==AV_CODEC_ID_MPEG1VIDEO) {
         // needed to avoid using macroblocks in which some coeffs overflow.
         // this does not happen with normal video, it just happens here as
         // the motion of the chroma plane does not match the luma plane
-        c->mb_decision=2;
+        out_stream->codec_context->mb_decision=2;
     }
 
     // some formats want stream headers to be separate
     if(format_context->oformat->flags & AVFMT_GLOBALHEADER)
-        c->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
+        out_stream->codec_context->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
 }
 
 // audio output
@@ -364,7 +404,7 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
 
     AVDictionary *opt=nullptr;
 
-    c=ost->av_codec_context;
+    c=ost->codec_context;
 
     // open it
     av_dict_copy(&opt, opt_arg, 0);
@@ -384,7 +424,7 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
     ost->frame=alloc_audio_frame(c->sample_fmt, c->channel_layout, c->sample_rate, nb_samples);
 
     // copy the stream parameters to the muxer
-    ret=avcodec_parameters_from_context(ost->av_stream->codecpar, c);
+    ret=avcodec_parameters_from_context(ost->stream->codecpar, c);
 
     if(ret<0) {
         qCritical() << "could not copy the stream parameters";
@@ -398,7 +438,7 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
 
     AVPacket *pkt=av_packet_alloc();
 
-    ret=avcodec_send_frame(ost->av_codec_context, ost->frame);
+    ret=avcodec_send_frame(ost->codec_context, ost->frame);
 
     if(ret<0) {
         qCritical() << "error encoding audio frame" << ffErrorString(ret);
@@ -406,12 +446,12 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
     }
 
     while(!ret) {
-        ret=avcodec_receive_packet(ost->av_codec_context, pkt);
+        ret=avcodec_receive_packet(ost->codec_context, pkt);
 
         if(!ret) {
             ost->size_total+=pkt->size;
 
-            write_frame(oc, &ost->av_codec_context->time_base, ost->av_stream, pkt);
+            write_frame(oc, &ost->codec_context->time_base, ost->stream, pkt);
         }
     }
 
@@ -426,7 +466,7 @@ void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictio
 
     int ret;
 
-    AVCodecContext *c=ost->av_codec_context;
+    AVCodecContext *c=ost->codec_context;
     AVDictionary *opt=nullptr;
 
     av_dict_copy(&opt, opt_arg, 0);
@@ -458,7 +498,7 @@ void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictio
     }
 
     // copy the stream parameters to the muxer
-    ret=avcodec_parameters_from_context(ost->av_stream->codecpar, c);
+    ret=avcodec_parameters_from_context(ost->stream->codecpar, c);
 
     if(ret<0) {
         qCritical() << "could not copy the stream parameters";
@@ -472,7 +512,7 @@ static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
 
     AVPacket *pkt=av_packet_alloc();
 
-    ret=avcodec_send_frame(ost->av_codec_context, ost->frame_converted);
+    ret=avcodec_send_frame(ost->codec_context, ost->frame_converted);
 
     if(ret<0) {
         qCritical() << "error encoding video frame:" << ffErrorString(ret);
@@ -480,12 +520,12 @@ static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
     }
 
     while(!ret) {
-        ret=avcodec_receive_packet(ost->av_codec_context, pkt);
+        ret=avcodec_receive_packet(ost->codec_context, pkt);
 
         if(!ret) {
             ost->size_total+=pkt->size;
 
-            write_frame(oc, &ost->av_codec_context->time_base, ost->av_stream, pkt);
+            write_frame(oc, &ost->codec_context->time_base, ost->stream, pkt);
         }
     }
 
@@ -494,15 +534,19 @@ static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
     return 0;
 }
 
-static void close_stream(AVFormatContext *oc, OutputStream *ost)
+static void close_stream(OutputStream *ost)
 {
-    Q_UNUSED(oc)
+    if(ost->codec_context)
+        avcodec_free_context(&ost->codec_context);
 
-    avcodec_free_context(&ost->av_codec_context);
-    av_frame_free(&ost->frame);
-    av_frame_free(&ost->frame_converted);
+    if(ost->frame)
+        av_frame_free(&ost->frame);
 
-    sws_freeContext(ost->convert_context);
+    if(ost->frame_converted)
+        av_frame_free(&ost->frame_converted);
+
+    if(ost->codec_context)
+        sws_freeContext(ost->convert_context);
 }
 
 // ------------------------------
@@ -585,6 +629,46 @@ FFEncoder::Framerate::T FFEncoder::calcFps(int64_t frame_duration, int64_t frame
     return Framerate::full_30;
 }
 
+int FFEncoder::calcFrameDuration(FFEncoder::Framerate::T framerate)
+{
+    switch(framerate) {
+    case FFEncoder::Framerate::full_23:
+        return 1001;
+
+    case FFEncoder::Framerate::full_24:
+        return 1000;
+
+    case FFEncoder::Framerate::full_25:
+        return 1000;
+
+    case FFEncoder::Framerate::full_29:
+        return 1001;
+
+    case FFEncoder::Framerate::full_30:
+        return 1000;
+
+    case FFEncoder::Framerate::half_50:
+        return 1000;
+
+    case FFEncoder::Framerate::half_59:
+        return 1001;
+
+    case FFEncoder::Framerate::half_60:
+        return 1000;
+
+    case FFEncoder::Framerate::full_50:
+        return 1000;
+
+    case FFEncoder::Framerate::full_59:
+        return 1001;
+
+    case FFEncoder::Framerate::full_60:
+        return 1000;
+    }
+
+    return 1000;
+}
+
 QString FFEncoder::presetVisualNameToParamName(const QString &str)
 {
     if(str==QLatin1String("high quality"))
@@ -653,38 +737,59 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
     // allocate the output media context
     // avformat_alloc_output_context2(&context->av_format_context, nullptr, nullptr, context->filename.toLatin1().constData());
-    avformat_alloc_output_context2(&context->av_format_context, nullptr, "matroska", nullptr);
+    avformat_alloc_output_context2(&context->format_context, nullptr, "matroska", nullptr);
 
-    if(!context->av_format_context) {
+    if(!context->format_context) {
         qCritical() << "could not deduce output format";
         return false;
     }
 
-    context->av_output_format=context->av_format_context->oformat;
 
     // add the audio and video streams using the default format codecs
     // and initialize the codecs.
-    add_stream_video(&context->out_stream_video, context->av_format_context, &context->av_codec_video, cfg);
-    add_stream_audio(&context->out_stream_audio, context->av_format_context, &context->av_codec_audio, cfg);
+    add_stream_video(&context->out_stream_video_a, context->format_context, &context->codec_video_a, cfg);
+
+    if(cfg.split_odd_even_frames) {
+        add_stream_video(&context->out_stream_video_b, context->format_context, &context->codec_video_b, cfg);
+    }
+
+    add_stream_audio(&context->out_stream_audio, context->format_context, &context->codec_audio, cfg);
+
 
     // now that all the parameters are set, we can open the audio and
     // video codecs and allocate the necessary encode buffers
-    open_video(context->av_format_context, context->av_codec_video, &context->out_stream_video, context->opt, cfg);
+    open_video(context->format_context, context->codec_video_a, &context->out_stream_video_a, nullptr, cfg);
 
-    open_audio(context->av_format_context, context->av_codec_audio, &context->out_stream_audio, context->opt);
+    if(cfg.split_odd_even_frames) {
+        open_video(context->format_context, context->codec_video_b, &context->out_stream_video_b, nullptr, cfg);
+
+        av_dict_set(&context->out_stream_video_a.stream->metadata, "title", "odd", 0);
+        av_dict_set(&context->out_stream_video_b.stream->metadata, "title", "even", 0);
+    }
+
+    open_audio(context->format_context, context->codec_audio, &context->out_stream_audio, nullptr);
 
 
-    context->out_stream_video.convert_context=sws_getContext(cfg.frame_resolution.width(), cfg.frame_resolution.height(),
-                                                             AV_PIX_FMT_BGRA,
-                                                             cfg.frame_resolution.width(), cfg.frame_resolution.height(),
-                                                             cfg.pixel_format,
-                                                             SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
 
-    av_dump_format(context->av_format_context, 0, "", 1);
+    context->out_stream_video_a.convert_context=sws_getContext(cfg.frame_resolution.width(), cfg.frame_resolution.height(),
+                                                               AV_PIX_FMT_BGRA,
+                                                               cfg.frame_resolution.width(), cfg.frame_resolution.height(),
+                                                               cfg.pixel_format,
+                                                               SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
+
+
+    context->out_stream_video_b.convert_context=sws_getContext(cfg.frame_resolution.width(), cfg.frame_resolution.height(),
+                                                               AV_PIX_FMT_BGRA,
+                                                               cfg.frame_resolution.width(), cfg.frame_resolution.height(),
+                                                               cfg.pixel_format,
+                                                               SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
+
+
+    av_dump_format(context->format_context, 0, "", 1);
 
 
     // open the output file
-    ret=avio_open(&context->av_format_context->pb, context->filename.toLatin1().constData(), AVIO_FLAG_WRITE);
+    ret=avio_open(&context->format_context->pb, context->filename.toLatin1().constData(), AVIO_FLAG_WRITE);
 
     if(ret<0) {
         qCritical() << "could not open" << context->filename << ffErrorString(ret);
@@ -692,8 +797,10 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     }
 
 
+    // av_dict_set(&context->format_context->metadata, "title", "hello world", 0);
+
     // write the stream header, if any
-    ret=avformat_write_header(context->av_format_context, &context->opt);
+    ret=avformat_write_header(context->format_context, nullptr);
 
     if(ret<0) {
         qCritical() << "error occurred when opening output file:" << ffErrorString(ret);
@@ -704,18 +811,21 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     context->cfg=cfg;
 
     context->skip_frame=false;
+    context->frame_counter=0;
 
     context->out_stream_audio.next_pts=0;
-
-    context->out_stream_video.next_pts=0;
-
     context->out_stream_audio.size_total=0;
+    context->out_stream_video_a.next_pts=0;
+    context->out_stream_video_a.size_total=0;
 
-    context->out_stream_video.size_total=0;
+    if(cfg.split_odd_even_frames) {
+        context->out_stream_video_b.next_pts=0;
+        context->out_stream_video_b.size_total=0;
+    }
 
 
     if(cfg.audio_dalay!=0)
-        context->out_stream_audio.next_pts=cfg.audio_dalay/1000.*context->out_stream_audio.av_codec_context->sample_rate;
+        context->out_stream_audio.next_pts=cfg.audio_dalay/1000.*context->out_stream_audio.codec_context->sample_rate;
 
 
     emit stateChanged(true);
@@ -743,17 +853,49 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
         }
 
         if(!context->skip_frame) {
-            uint8_t *ptr_orig=context->out_stream_video.frame->data[0];
+            if(context->cfg.split_odd_even_frames) {
+                if(size_t(context->frame_counter + 1)%size_t(2)) {
+                    uint8_t *ptr_orig=context->out_stream_video_a.frame->data[0];
 
-            context->out_stream_video.frame->data[0]=(uint8_t*)frame->video.raw->constData();
+                    context->out_stream_video_a.frame->data[0]=(uint8_t*)frame->video.raw->constData();
 
-            sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
+                    sws_scale(context->out_stream_video_a.convert_context, context->out_stream_video_a.frame->data, context->out_stream_video_a.frame->linesize, 0, context->out_stream_video_a.frame->height, context->out_stream_video_a.frame_converted->data, context->out_stream_video_a.frame_converted->linesize);
 
-            context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
+                    context->out_stream_video_a.frame_converted->pts=context->out_stream_video_a.next_pts++;
 
-            write_video_frame(context->av_format_context, &context->out_stream_video);
+                    write_video_frame(context->format_context, &context->out_stream_video_a);
 
-            context->out_stream_video.frame->data[0]=ptr_orig;
+                    context->out_stream_video_a.frame->data[0]=ptr_orig;
+
+                } else {
+                    uint8_t *ptr_orig=context->out_stream_video_b.frame->data[0];
+
+                    context->out_stream_video_b.frame->data[0]=(uint8_t*)frame->video.raw->constData();
+
+                    sws_scale(context->out_stream_video_b.convert_context, context->out_stream_video_b.frame->data, context->out_stream_video_b.frame->linesize, 0, context->out_stream_video_b.frame->height, context->out_stream_video_b.frame_converted->data, context->out_stream_video_b.frame_converted->linesize);
+
+                    context->out_stream_video_b.frame_converted->pts=context->out_stream_video_b.next_pts++;
+
+                    write_video_frame(context->format_context, &context->out_stream_video_b);
+
+                    context->out_stream_video_b.frame->data[0]=ptr_orig;
+                }
+
+            } else {
+                uint8_t *ptr_orig=context->out_stream_video_a.frame->data[0];
+
+                context->out_stream_video_a.frame->data[0]=(uint8_t*)frame->video.raw->constData();
+
+                sws_scale(context->out_stream_video_a.convert_context, context->out_stream_video_a.frame->data, context->out_stream_video_a.frame->linesize, 0, context->out_stream_video_a.frame->height, context->out_stream_video_a.frame_converted->data, context->out_stream_video_a.frame_converted->linesize);
+
+                context->out_stream_video_a.frame_converted->pts=context->out_stream_video_a.next_pts++;
+
+                write_video_frame(context->format_context, &context->out_stream_video_a);
+
+                context->out_stream_video_a.frame->data[0]=ptr_orig;
+            }
+
+            context->frame_counter++;
         }
     }
 
@@ -797,7 +939,7 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
         context->out_stream_audio.next_pts+=context->out_stream_audio.frame->nb_samples;
 
-        write_audio_frame(context->av_format_context, &context->out_stream_audio);
+        write_audio_frame(context->format_context, &context->out_stream_audio);
 
         context->out_stream_audio.frame->nb_samples=default_nb_samples;
     }
@@ -816,21 +958,22 @@ bool FFEncoder::stopCoder()
     if(!context->canAcceptFrame())
         return false;
 
-    av_write_trailer(context->av_format_context);
+    av_write_trailer(context->format_context);
 
     // close each codec.
 
-    close_stream(context->av_format_context, &context->out_stream_video);
+    close_stream(&context->out_stream_video_a);
+    close_stream(&context->out_stream_video_b);
 
-    close_stream(context->av_format_context, &context->out_stream_audio);
+    close_stream(&context->out_stream_audio);
 
     // close the output file.
-    avio_closep(&context->av_format_context->pb);
+    avio_closep(&context->format_context->pb);
 
     // free the stream
-    avformat_free_context(context->av_format_context);
+    avformat_free_context(context->format_context);
 
-    context->av_format_context=nullptr;
+    context->format_context=nullptr;
 
 
     emit stateChanged(false);
@@ -840,13 +983,13 @@ bool FFEncoder::stopCoder()
 
 void FFEncoder::calcStats()
 {
-    double cf_a=av_stream_get_end_pts(context->out_stream_audio.av_stream) * av_q2d(context->out_stream_audio.av_stream->time_base);
+    double cf_a=av_stream_get_end_pts(context->out_stream_audio.stream) * av_q2d(context->out_stream_audio.stream->time_base);
 
     if(cf_a<.01)
         cf_a=.01;
 
 
-    double cf_v=av_stream_get_end_pts(context->out_stream_video.av_stream) * av_q2d(context->out_stream_video.av_stream->time_base);
+    double cf_v=av_stream_get_end_pts(context->out_stream_video_a.stream) * av_q2d(context->out_stream_video_a.stream->time_base);
 
     if(cf_v<.01)
         cf_v=.01;
@@ -855,11 +998,11 @@ void FFEncoder::calcStats()
     Stats s;
 
     s.avg_bitrate_audio=(double)(context->out_stream_audio.size_total*8)/cf_a;
-    s.avg_bitrate_video=(double)(context->out_stream_video.size_total*8)/cf_v;
+    s.avg_bitrate_video=(double)(context->out_stream_video_a.size_total*8)/cf_v;
 
-    s.time=QTime(0, 0).addMSecs((double)context->out_stream_audio.frame->pts/(double)context->out_stream_audio.av_codec_context->sample_rate*1000);
+    s.time=QTime(0, 0).addMSecs((double)context->out_stream_audio.frame->pts/(double)context->out_stream_audio.codec_context->sample_rate*1000);
 
-    s.streams_size=context->out_stream_audio.size_total + context->out_stream_video.size_total;
+    s.streams_size=context->out_stream_audio.size_total + context->out_stream_video_a.size_total;
 
     emit stats(s);
 }

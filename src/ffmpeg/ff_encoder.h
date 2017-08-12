@@ -76,6 +76,7 @@ public:
             audio_channels_size=8;
             audio_sample_size=16;
             audio_dalay=0;
+            split_odd_even_frames=true;
         }
 
         QSize frame_resolution;
@@ -87,6 +88,7 @@ public:
         AVPixelFormat pixel_format;
         VideoEncoder::T video_encoder;
         QString preset;
+        bool split_odd_even_frames;
     };
 
     struct Stats {
@@ -97,6 +99,7 @@ public:
     };
 
     static Framerate::T calcFps(int64_t frame_duration, int64_t frame_scale, bool half_fps);
+    static int calcFrameDuration(Framerate::T framerate);
     static QString presetVisualNameToParamName(const QString &str);
     static QStringList compatiblePresets(VideoEncoder::T encoder);
 
@@ -111,6 +114,7 @@ private:
     void calcStats();
 
     FFMpegContext *context;
+
     FF::FormatConverter *converter;
 
     QSize last_frame_size;
