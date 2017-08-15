@@ -545,7 +545,7 @@ static void close_stream(OutputStream *ost)
     if(ost->frame_converted)
         av_frame_free(&ost->frame_converted);
 
-    if(ost->codec_context)
+    if(ost->convert_context)
         sws_freeContext(ost->convert_context);
 }
 
@@ -1002,7 +1002,19 @@ void FFEncoder::calcStats()
 
     s.time=QTime(0, 0).addMSecs((double)context->out_stream_audio.frame->pts/(double)context->out_stream_audio.codec_context->sample_rate*1000);
 
-    s.streams_size=context->out_stream_audio.size_total + context->out_stream_video_a.size_total;
+    if(!context->cfg.split_odd_even_frames) {
+        s.streams_size=context->out_stream_audio.size_total + context->out_stream_video_a.size_total;
+
+    } else {
+        cf_v=av_stream_get_end_pts(context->out_stream_video_b.stream) * av_q2d(context->out_stream_video_b.stream->time_base);
+
+        if(cf_v<.01)
+            cf_v=.01;
+
+        s.avg_bitrate_video+=(double)(context->out_stream_video_b.size_total*8)/cf_v;
+
+        s.streams_size=context->out_stream_audio.size_total + context->out_stream_video_a.size_total + context->out_stream_video_b.size_total;
+    }
 
     emit stats(s);
 }
