@@ -31,6 +31,11 @@ public:
 
     struct Framerate {
         enum T {
+            full_11,
+            full_12,
+            full_12_5,
+            full_14,
+            full_15,
             full_23,
             full_24,
             full_25,
@@ -51,20 +56,29 @@ public:
             libx264_10bit,
             libx264rgb,
             nvenc_h264,
-            nvenc_hevc
+            nvenc_hevc,
+            ffvhuff
+            // magicyuv
         };
+
+        static QString toString(uint32_t enc);
+
     };
 
     struct PixelFormat {
         enum T {
             RGB24=AV_PIX_FMT_RGB24,
             YUV420P=AV_PIX_FMT_YUV420P,
+            YUV422P=AV_PIX_FMT_YUV422P,
             YUV444P=AV_PIX_FMT_YUV444P,
             YUV420P10=AV_PIX_FMT_YUV420P10,
-            YUV444P10=AV_PIX_FMT_YUV444P10
+            // YUV422P10=AV_PIX_FMT_YUV422P10,
+            V210=AV_PIX_FMT_YUV422P10LE,
+            YUV444P10=AV_PIX_FMT_YUV444P10,
+            R210=AV_PIX_FMT_RGB48LE
         };
 
-        static QString toString(uint64_t format);
+        static QString toString(uint32_t format);
 
         static uint64_t fromString(QString format);
 

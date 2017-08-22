@@ -25,6 +25,8 @@ public:
     QAbstractVideoSurface *videoSurface() const;
     void setVideoSurface(QAbstractVideoSurface *s);
 
+    void setHalfFps(bool value);
+
 protected:
     virtual void run();
     virtual void timerEvent(QTimerEvent*);
@@ -42,6 +44,7 @@ private:
     QVideoFrame last_frame;
 
     std::atomic <bool> running;
+    std::atomic <bool> half_fps;
 };
 
 #endif // QUICK_VIDEO_SOURCE_H

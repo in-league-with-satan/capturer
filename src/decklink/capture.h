@@ -11,6 +11,9 @@
 
 #include "device_list.h"
 
+#include "decklink_audio_input_packet.h"
+
+
 class DeckLinkCaptureDelegate;
 class DlConvertThreadContainer;
 
@@ -50,6 +53,8 @@ public:
 
     bool gotSignal() const;
 
+    void setHalfFps(bool value);
+
 protected:
     void run();
 
@@ -66,12 +71,13 @@ private:
 
     DeckLinkCaptureDelegate *decklink_capture_delegate;
 
-    std::atomic <bool> running;
 
     IDeckLink *decklink;
     IDeckLinkConfiguration *decklink_configuration;
     IDeckLinkDisplayMode *decklink_display_mode;
     IDeckLinkInput *decklink_input;
+
+    DeckLinkAudioInputPacket *audio_input_packet;
 
     DeckLinkDevice device;
     DeckLinkFormat format;
@@ -90,7 +96,10 @@ private:
 
     uint8_t frame_counter;
 
+    std::atomic <bool> running;
+    std::atomic <bool> half_fps;
     std::atomic <bool> signal_lost;
+    std::atomic <bool> skip_frame;
 
 signals:
     void signalLost(const bool &value);

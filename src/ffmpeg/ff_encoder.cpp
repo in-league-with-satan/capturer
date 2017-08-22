@@ -186,6 +186,10 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
         *codec=avcodec_find_encoder_by_name("hevc_nvenc");
         break;
 
+    case FFEncoder::VideoEncoder::ffvhuff:
+        *codec=avcodec_find_encoder_by_name("ffvhuff");
+        break;
+
     default:
         break;
     }
@@ -224,6 +228,23 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
     // identical to 1
 
     switch(cfg.framerate) {
+
+    case FFEncoder::Framerate::full_11:
+        out_stream->av_stream->time_base={ 1001, 12000 };
+        break;
+
+    case FFEncoder::Framerate::full_12:
+        out_stream->av_stream->time_base={ 1000, 12000 };
+        break;
+
+    case FFEncoder::Framerate::full_14:
+        out_stream->av_stream->time_base={ 1001, 15000 };
+        break;
+
+    case FFEncoder::Framerate::full_15:
+        out_stream->av_stream->time_base={ 1000, 15000 };
+        break;
+
     case FFEncoder::Framerate::full_23:
         out_stream->av_stream->time_base={ 1001, 24000 };
         break;
@@ -303,9 +324,16 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
         av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
         // av_opt_set(c->priv_data, "tune", "zerolatency", 0);
+
+    } else if(cfg.video_encoder==FFEncoder::VideoEncoder::ffvhuff) {
+        c->thread_count=QThread::idealThreadCount() - 1;
+
+        if(c->thread_count<=0)
+            c->thread_count=1;
     }
 
     // c->thread_count=8;
+
 
     if(c->codec_id==AV_CODEC_ID_MPEG2VIDEO) {
         // just for testing, we also add B-frames
@@ -547,6 +575,15 @@ FFEncoder::Framerate::T FFEncoder::calcFps(int64_t frame_duration, int64_t frame
 {
     if(half_fps) {
         switch(frame_scale) {
+        case 12000:
+            return frame_duration==1000 ? Framerate::full_12 : Framerate::full_12;
+
+        case 12500:
+            return Framerate::full_12_5;
+
+        case 15000:
+            return frame_duration==1000 ? Framerate::full_15 : Framerate::full_14;
+
         case 24000:
             return frame_duration==1000 ? Framerate::full_24 : Framerate::full_23;
 
@@ -565,6 +602,15 @@ FFEncoder::Framerate::T FFEncoder::calcFps(int64_t frame_duration, int64_t frame
 
     } else {
         switch(frame_scale) {
+        case 12000:
+            return frame_duration==1000 ? Framerate::full_12 : Framerate::full_11;
+
+        case 12500:
+            return Framerate::full_12_5;
+
+        case 15000:
+            return frame_duration==1000 ? Framerate::full_15 : Framerate::full_14;
+
         case 24000:
             return frame_duration==1000 ? Framerate::full_24 : Framerate::full_23;
 
@@ -624,7 +670,7 @@ QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
                              << QLatin1String("slow") << QLatin1String("medium") << QLatin1String("fast") << QLatin1String("default");
     }
 
-    return QStringList() << QLatin1String("fast");
+    return QStringList() << QLatin1String("--");
 }
 
 bool FFEncoder::setConfig(FFEncoder::Config cfg)
@@ -678,7 +724,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
                                                              AV_PIX_FMT_BGRA,
                                                              cfg.frame_resolution.width(), cfg.frame_resolution.height(),
                                                              cfg.pixel_format,
-                                                             SWS_FAST_BILINEAR, nullptr, nullptr, nullptr);
+                                                             /*SWS_FAST_BILINEAR*/ 0, nullptr, nullptr, nullptr);
 
     av_dump_format(context->av_format_context, 0, "", 1);
 
@@ -866,7 +912,7 @@ void FFEncoder::calcStats()
 
 //
 
-QString FFEncoder::PixelFormat::toString(uint64_t format)
+QString FFEncoder::PixelFormat::toString(uint32_t format)
 {
     switch(format) {
     case RGB24:
@@ -875,14 +921,27 @@ QString FFEncoder::PixelFormat::toString(uint64_t format)
     case YUV420P:
         return QLatin1String("yuv420p");
 
+    case YUV422P:
+        return QLatin1String("yuv422p");
+
     case YUV444P:
         return QLatin1String("yuv444p");
 
     case YUV420P10:
         return QLatin1String("yuv420p10");
 
+    // case YUV422P10:
+    //     return QLatin1String("yuv422p10");
+
     case YUV444P10:
         return QLatin1String("yuv444p10");
+
+    case V210:
+        return QLatin1String("yuv422p10le (v210)");
+
+    case R210:
+        return QLatin1String("r210");
+
     }
 
     return QLatin1String("unknown");
@@ -896,14 +955,26 @@ uint64_t FFEncoder::PixelFormat::fromString(QString format)
     else if(format==QLatin1String("yuv420p"))
         return YUV420P;
 
+    else if(format==QLatin1String("yuv422p"))
+        return YUV422P;
+
     else if(format==QLatin1String("yuv444p"))
         return YUV444P;
 
     else if(format==QLatin1String("yuv420p10"))
         return YUV420P10;
 
+    // else if(format==QLatin1String("yuv422p10"))
+    //     return YUV422P10;
+
     else if(format==QLatin1String("yuv444p10"))
         return YUV444P10;
+
+    else if(format==QLatin1String("yuv422p10le (v210)"))
+        return V210;
+
+    else if(format==QLatin1String("r210"))
+        return R210;
 
     return 0;
 }
@@ -912,7 +983,7 @@ QList <FFEncoder::PixelFormat::T> FFEncoder::PixelFormat::compatiblePixelFormats
 {
     switch(encoder) {
     case VideoEncoder::libx264:
-        return QList<T>() << YUV420P << YUV444P;
+        return QList<T>() << YUV420P << YUV422P << YUV444P;
 
     case VideoEncoder::libx264_10bit:
         return QList<T>() << YUV420P10 << YUV444P10;
@@ -925,7 +996,37 @@ QList <FFEncoder::PixelFormat::T> FFEncoder::PixelFormat::compatiblePixelFormats
 
     case VideoEncoder::nvenc_hevc:
         return QList<T>() << YUV420P;
+
+    case VideoEncoder::ffvhuff:
+        return QList<T>() << RGB24 << YUV420P << YUV422P << YUV444P << YUV420P10 /*<< YUV422P10*/ << YUV444P10 << V210;
+
     }
 
     return QList<T>() << RGB24 << YUV420P << YUV444P << YUV420P10 << YUV444P10;
 }
+
+QString FFEncoder::VideoEncoder::toString(uint32_t enc)
+{
+    switch(enc) {
+    case libx264:
+        return QLatin1String("libx264");
+
+    case libx264_10bit:
+        return QLatin1String("libx264_10bit");
+
+    case libx264rgb:
+        return QLatin1String("libx264rgb");
+
+    case nvenc_h264:
+        return QLatin1String("nvenc_h264");
+
+    case nvenc_hevc:
+        return QLatin1String("nvenc_hevc");
+
+    case ffvhuff:
+        return QLatin1String("ffvhuff");
+    }
+
+    return QLatin1String("");
+}
+

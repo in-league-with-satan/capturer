@@ -31,7 +31,9 @@ DlConvertThread::DlConvertThread(FrameCompletedCallback func_frame_completed, QO
     audio_channels=8;
     sample_size=16;
 
-    start(QThread::NormalPriority);
+    start(QThread::LowPriority);
+
+    // start(QThread::NormalPriority);
     // start(QThread::HighPriority);
     // start(QThread::TimeCriticalPriority);
 }

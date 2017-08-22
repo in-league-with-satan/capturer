@@ -27,6 +27,7 @@ public:
         int index;
         int audio_sample_size;
         int restart;
+        int half_fps;
 
     } device;
 

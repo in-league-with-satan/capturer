@@ -177,6 +177,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="half-fps";
+    set_model_data.value=&settings->device.half_fps;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
     set_model_data.type=SettingsModel::Type::button;
     set_model_data.name.clear();
     set_model_data.values << "restart device";
@@ -195,15 +203,18 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.group="rec";
     set_model_data.name="video encoder";
 
-    if(FFEncoder::isLib_x264_10bit()) {
-        set_model_data.values << QStringList() << "libx264_10bit" << "nvenc_h264" << "nvenc_hevc";
+    if(FFEncoder::isLib_x264_10bit())
         set_model_data.values_data << FFEncoder::VideoEncoder::libx264_10bit << FFEncoder::VideoEncoder::nvenc_h264 << FFEncoder::VideoEncoder::nvenc_hevc;
 
-    } else {
-        set_model_data.values << QStringList() << "libx264" << "libx264rgb" << "nvenc_h264" << "nvenc_hevc";
-        set_model_data.values_data << FFEncoder::VideoEncoder::libx264 << FFEncoder::VideoEncoder::libx264rgb << FFEncoder::VideoEncoder::nvenc_h264 << FFEncoder::VideoEncoder::nvenc_hevc;
+    else
+        set_model_data.values_data << FFEncoder::VideoEncoder::libx264 << FFEncoder::VideoEncoder::libx264rgb
+                                   << FFEncoder::VideoEncoder::nvenc_h264 << FFEncoder::VideoEncoder::nvenc_hevc
+                                   << FFEncoder::VideoEncoder::ffvhuff;
 
-    }
+
+    foreach(QVariant v, set_model_data.values_data)
+        set_model_data.values << FFEncoder::VideoEncoder::toString(v.toInt());
+
 
     set_model_data.value=&settings->rec.encoder;
 
@@ -650,6 +661,8 @@ void MainWindow::captureStart()
             8,
             model_data_audio->values_data[settings->device.audio_sample_size].toInt()
             );
+
+    decklink_thread->setHalfFps(settings->device.half_fps);
 
     QMetaObject::invokeMethod(decklink_thread, "captureStart", Qt::QueuedConnection);
 }

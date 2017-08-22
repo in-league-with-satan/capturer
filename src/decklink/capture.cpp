@@ -104,11 +104,15 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
     decklink_input=nullptr;
     decklink_configuration=nullptr;
 
+    audio_input_packet=nullptr;
+
     device.index=0;
     format.index=0;
     pixel_format.fmt=bmdFormat10BitRGB;
 
     running=false;
+
+    half_fps=false;
 
     //
 
@@ -185,6 +189,11 @@ bool DeckLinkCapture::gotSignal() const
         return false;
 
     return !signal_lost;
+}
+
+void DeckLinkCapture::setHalfFps(bool value)
+{
+    half_fps=value;
 }
 
 void DeckLinkCapture::run()
@@ -272,7 +281,7 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
     mode->GetFrameRate(&frame_duration, &frame_scale);
 
     emit formatChanged(mode->GetWidth(), mode->GetHeight(),
-                       frame_duration, frame_scale,
+                       frame_duration, half_fps ? frame_scale*.5 : frame_scale,
                        (mode->GetFieldDominance()==bmdProgressiveFrame || mode->GetFieldDominance()==bmdProgressiveSegmentedFrame),
                        BMDPixelFormatToString(pixel_format));
 
@@ -322,7 +331,26 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
         //
 
         if(ext_converter) {
-            conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet, frame_counter++, frame_time==0);
+            if(half_fps) {
+                if(!audio_input_packet)
+                    audio_input_packet=new DeckLinkAudioInputPacket(audio_channels, audio_sample_size);
+
+                void *d_audio;
+
+                audio_packet->GetBytes(&d_audio);
+
+                audio_input_packet->append(QByteArray((char*)d_audio, audio_packet->GetSampleFrameCount()*audio_channels*(audio_sample_size/8)));
+
+                skip_frame=!skip_frame;
+
+                if(skip_frame)
+                    return;
+
+                conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_input_packet, frame_counter++, frame_time==0);
+                audio_input_packet=nullptr;
+
+            } else
+                conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet, frame_counter++, frame_time==0);
 
         } else {
             Frame::ptr frame=Frame::make();

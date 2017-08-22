@@ -16,7 +16,9 @@ FFEncoderThread::FFEncoderThread(QObject *parent)
 
     is_working=false;
 
-    start(QThread::NormalPriority);
+    start(QThread::LowestPriority);
+
+    // start(QThread::NormalPriority);
     // start(QThread::HighPriority);
     // start(QThread::HighestPriority);
     // start(QThread::TimeCriticalPriority);

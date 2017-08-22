@@ -9,6 +9,7 @@
 QuickVideoSource::QuickVideoSource(QObject *parent)
     : QThread(parent)
     , surface(nullptr)
+    , half_fps(false)
 {
     frame_buffer=FrameBuffer::make();
     frame_buffer->setMaxSize(1);
@@ -19,14 +20,16 @@ QuickVideoSource::QuickVideoSource(QObject *parent)
 QuickVideoSource::QuickVideoSource(bool thread, QObject *parent)
     : QThread(parent)
     , surface(nullptr)
+    , half_fps(false)
 {
     frame_buffer=FrameBuffer::make();
     frame_buffer->setMaxSize(1);
 
-    if(thread)
-        start(QThread::NormalPriority);
+    if(thread) {
+        start(QThread::LowPriority);
+        // start(QThread::NormalPriority);
 
-    else
+    } else
         startTimer(1);
 }
 
@@ -60,9 +63,16 @@ void QuickVideoSource::setVideoSurface(QAbstractVideoSurface *s)
     surface=s;
 }
 
+void QuickVideoSource::setHalfFps(bool value)
+{
+    half_fps=value;
+}
+
 void QuickVideoSource::run()
 {
     Frame::ptr frame;
+
+    bool skip_frame=false;
 
     running=true;
 
@@ -76,6 +86,15 @@ void QuickVideoSource::run()
 
         if(!surface)
             continue;
+
+        skip_frame=!skip_frame;
+
+        if(half_fps) {
+            if(skip_frame) {
+                frame.reset();
+                continue;
+            }
+        }
 
         if(frame->video.decklink_frame.getSize()!=format.frameSize() || QVideoFrame::Format_ARGB32!=format.pixelFormat()) {
             closeSurface();
@@ -155,4 +174,3 @@ void QuickVideoSource::closeSurface()
     if(surface && surface->isActive() )
         surface->stop();
 }
-

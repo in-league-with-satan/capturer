@@ -74,6 +74,7 @@ bool Settings::load()
 
     device.index=map_device.value(QStringLiteral("index"), 0).toInt();
     device.audio_sample_size=map_device.value(QStringLiteral("audio_sample_size"), 0).toInt();
+    device.half_fps=map_device.value(QStringLiteral("half_fps"), 0).toInt();
 
     rec.encoder=map_rec.value(QStringLiteral("encoder"), 0).toInt();
     rec.pixel_format=map_rec.value(QStringLiteral("pixel_format")).toMap();
@@ -109,6 +110,7 @@ bool Settings::save()
 
     map_device.insert(QStringLiteral("index"), device.index);
     map_device.insert(QStringLiteral("audio_sample_size"), device.audio_sample_size);
+    map_device.insert(QStringLiteral("half_fps"), device.half_fps);
 
     map_rec.insert(QStringLiteral("encoder"), rec.encoder);
     map_rec.insert(QStringLiteral("pixel_format"), rec.pixel_format);
