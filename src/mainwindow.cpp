@@ -78,11 +78,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    ff_enc=new FFEncoderThread(this);
+    // ff_enc=new FFEncoderThread(this);
+    ff_enc=new FFEncoderThreadManager(this);
 
     decklink_thread->subscribe(ff_enc->frameBuffer());
 
-    connect(ff_enc->frameBuffer().get(), SIGNAL(frameSkipped()), SLOT(encoderBufferOverload()), Qt::QueuedConnection);
+    // connect(ff_enc->frameBuffer().get(), SIGNAL(frameSkipped()), SLOT(encoderBufferOverload()), Qt::QueuedConnection);
     connect(ff_enc, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
     connect(ff_enc, SIGNAL(stateChanged(bool)), SLOT(encoderStateChanged(bool)), Qt::QueuedConnection);
 

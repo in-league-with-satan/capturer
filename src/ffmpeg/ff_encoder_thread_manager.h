@@ -1,5 +1,5 @@
-#ifndef FF_ENCODER_THREAD_H
-#define FF_ENCODER_THREAD_H
+#ifndef FF_ENCODER_THREAD_MANAGER_H
+#define FF_ENCODER_THREAD_MANAGER_H
 
 #include <QThread>
 
@@ -7,35 +7,35 @@
 
 #include "ff_encoder.h"
 #include "frame_buffer.h"
+#include "ff_encoder_thread.h"
 
-class FFEncoderThread : public QThread
+class FFEncoderThreadManager : public QThread
 {
     Q_OBJECT
 
 public:
-    FFEncoderThread(bool is_odd=false, QObject *parent=0);
-    ~FFEncoderThread();
+    FFEncoderThreadManager(QObject *parent=0);
+    ~FFEncoderThreadManager();
 
     FrameBuffer::ptr frameBuffer();
 
     bool isWorking();
-
-
 
 public slots:
     void setConfig(FFEncoder::Config cfg);
     void stopCoder();
 
 private:
-    FrameBuffer::ptr frame_buffer;
+    FFEncoderThread *enc_a;
+    FFEncoderThread *enc_b;
 
-    std::atomic <bool> is_working;
-    bool is_odd;
+    FrameBuffer::ptr frame_buffer;
 
     std::atomic <bool> running;
 
-
 protected:
+    void timerEvent(QTimerEvent *event);
+
     void run();
 
 signals:
@@ -46,4 +46,4 @@ signals:
     void stateChanged(bool state);
 };
 
-#endif // FF_ENCODER_THREAD_H
+#endif // FF_ENCODER_THREAD_MANAGER_H

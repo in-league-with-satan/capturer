@@ -103,6 +103,8 @@ public:
     static QString presetVisualNameToParamName(const QString &str);
     static QStringList compatiblePresets(VideoEncoder::T encoder);
 
+    void setIsOdd(bool value);
+
 public slots:
     bool setConfig(FFEncoder::Config cfg);
 

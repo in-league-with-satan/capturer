@@ -263,11 +263,14 @@ void OddEvenConverterThread::run()
     av_opt_set(out_codec_context_video->priv_data, "crf", QString::number(config.crf).toLatin1().data(), 0);
 
     if(config.video_encoder==VideoEncoder::nvenc_h264) {
+        av_opt_set(out_codec_context_video->priv_data, "preset", "hq", 0);
+
         if(config.crf==0)
             av_opt_set(out_codec_context_video->priv_data, "preset", "lossless", 0);
 
-        else
-            out_codec_context_video->global_quality=config.crf;
+        else {
+            av_opt_set(out_codec_context_video->priv_data, "qp", QString::number(config.crf).toLatin1().data(), 0);
+        }
     }
 
     if(out_codec_context_video->codec_id==AV_CODEC_ID_MPEG2VIDEO) {
@@ -545,6 +548,7 @@ void OddEvenConverterThread::run()
 
 
                     std::cout << str.toLatin1().data() << "\r";
+                    std::cout.flush();
                 }
 
                 odd_turn=!odd_turn;

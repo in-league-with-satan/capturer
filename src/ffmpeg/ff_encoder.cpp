@@ -58,6 +58,8 @@ public:
 
         skip_frame=false;
 
+        is_odd=false;
+
         last_stats_update_time=0;
     }
 
@@ -86,6 +88,8 @@ public:
 
     qint64 last_stats_update_time;
     size_t frame_counter;
+
+    bool is_odd;
 };
 
 static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AVStream *st, AVPacket *pkt)
@@ -711,6 +715,11 @@ QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
     return QStringList() << QLatin1String("fast");
 }
 
+void FFEncoder::setIsOdd(bool value)
+{
+    context->is_odd=value;
+}
+
 bool FFEncoder::setConfig(FFEncoder::Config cfg)
 {
     int ret;
@@ -729,8 +738,19 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             dir.mkdir(dir.dirName());
     }
 
-    context->filename=QString(QLatin1String("%1/videos/%2.mkv"))
-            .arg(QApplication::applicationDirPath(), QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss"));
+    if(cfg.split_odd_even_frames) {
+        if(context->is_odd)
+            context->filename=QString(QLatin1String("%1/videos/%2_odd.mkv"))
+                    .arg(QApplication::applicationDirPath(), QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss"));
+
+        else
+            context->filename=QString(QLatin1String("%1/videos/%2_even.mkv"))
+                    .arg(QApplication::applicationDirPath(), QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss"));
+
+    } else
+        context->filename=QString(QLatin1String("%1/videos/%2.mkv"))
+                .arg(QApplication::applicationDirPath(), QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss"));
+
 
     // context->filename="/dev/null";
 
@@ -749,9 +769,9 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     // and initialize the codecs.
     add_stream_video(&context->out_stream_video_a, context->format_context, &context->codec_video_a, cfg);
 
-    if(cfg.split_odd_even_frames) {
-        add_stream_video(&context->out_stream_video_b, context->format_context, &context->codec_video_b, cfg);
-    }
+    // if(cfg.split_odd_even_frames) {
+    //     add_stream_video(&context->out_stream_video_b, context->format_context, &context->codec_video_b, cfg);
+    // }
 
     add_stream_audio(&context->out_stream_audio, context->format_context, &context->codec_audio, cfg);
 
@@ -760,12 +780,12 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     // video codecs and allocate the necessary encode buffers
     open_video(context->format_context, context->codec_video_a, &context->out_stream_video_a, nullptr, cfg);
 
-    if(cfg.split_odd_even_frames) {
-        open_video(context->format_context, context->codec_video_b, &context->out_stream_video_b, nullptr, cfg);
+    // if(cfg.split_odd_even_frames) {
+    //     open_video(context->format_context, context->codec_video_b, &context->out_stream_video_b, nullptr, cfg);
 
-        av_dict_set(&context->out_stream_video_a.stream->metadata, "title", "odd", 0);
-        av_dict_set(&context->out_stream_video_b.stream->metadata, "title", "even", 0);
-    }
+    //     av_dict_set(&context->out_stream_video_a.stream->metadata, "title", "odd", 0);
+    //     av_dict_set(&context->out_stream_video_b.stream->metadata, "title", "even", 0);
+    // }
 
     open_audio(context->format_context, context->codec_audio, &context->out_stream_audio, nullptr);
 
@@ -818,10 +838,10 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     context->out_stream_video_a.next_pts=0;
     context->out_stream_video_a.size_total=0;
 
-    if(cfg.split_odd_even_frames) {
-        context->out_stream_video_b.next_pts=0;
-        context->out_stream_video_b.size_total=0;
-    }
+    // if(cfg.split_odd_even_frames) {
+    //     context->out_stream_video_b.next_pts=0;
+    //     context->out_stream_video_b.size_total=0;
+    // }
 
 
     if(cfg.audio_dalay!=0)
@@ -854,6 +874,22 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
         if(!context->skip_frame) {
             if(context->cfg.split_odd_even_frames) {
+                if((size_t(context->frame_counter + 1)%size_t(2)==0 && context->is_odd)
+                        || (size_t(context->frame_counter + 1)%size_t(2)!=0 && !context->is_odd)) {
+                    uint8_t *ptr_orig=context->out_stream_video_a.frame->data[0];
+
+                    context->out_stream_video_a.frame->data[0]=(uint8_t*)frame->video.raw->constData();
+
+                    sws_scale(context->out_stream_video_a.convert_context, context->out_stream_video_a.frame->data, context->out_stream_video_a.frame->linesize, 0, context->out_stream_video_a.frame->height, context->out_stream_video_a.frame_converted->data, context->out_stream_video_a.frame_converted->linesize);
+
+                    context->out_stream_video_a.frame_converted->pts=context->out_stream_video_a.next_pts++;
+
+                    write_video_frame(context->format_context, &context->out_stream_video_a);
+
+                    context->out_stream_video_a.frame->data[0]=ptr_orig;
+                }
+
+/*
                 if(size_t(context->frame_counter + 1)%size_t(2)) {
                     uint8_t *ptr_orig=context->out_stream_video_a.frame->data[0];
 
@@ -880,7 +916,7 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
                     context->out_stream_video_b.frame->data[0]=ptr_orig;
                 }
-
+*/
             } else {
                 uint8_t *ptr_orig=context->out_stream_video_a.frame->data[0];
 
@@ -1002,19 +1038,19 @@ void FFEncoder::calcStats()
 
     s.time=QTime(0, 0).addMSecs((double)context->out_stream_audio.frame->pts/(double)context->out_stream_audio.codec_context->sample_rate*1000);
 
-    if(!context->cfg.split_odd_even_frames) {
+//    if(!context->cfg.split_odd_even_frames) {
         s.streams_size=context->out_stream_audio.size_total + context->out_stream_video_a.size_total;
 
-    } else {
-        cf_v=av_stream_get_end_pts(context->out_stream_video_b.stream) * av_q2d(context->out_stream_video_b.stream->time_base);
+//    } else {
+//        cf_v=av_stream_get_end_pts(context->out_stream_video_b.stream) * av_q2d(context->out_stream_video_b.stream->time_base);
 
-        if(cf_v<.01)
-            cf_v=.01;
+//        if(cf_v<.01)
+//            cf_v=.01;
 
-        s.avg_bitrate_video+=(double)(context->out_stream_video_b.size_total*8)/cf_v;
+//        s.avg_bitrate_video+=(double)(context->out_stream_video_b.size_total*8)/cf_v;
 
-        s.streams_size=context->out_stream_audio.size_total + context->out_stream_video_a.size_total + context->out_stream_video_b.size_total;
-    }
+//        s.streams_size=context->out_stream_audio.size_total + context->out_stream_video_a.size_total + context->out_stream_video_b.size_total;
+//    }
 
     emit stats(s);
 }

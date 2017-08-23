@@ -5,8 +5,9 @@
 
 #include "ff_encoder_thread.h"
 
-FFEncoderThread::FFEncoderThread(QObject *parent)
+FFEncoderThread::FFEncoderThread(bool is_odd, QObject *parent)
     : QThread(parent)
+    , is_odd(is_odd)
 {
     frame_buffer=FrameBuffer::make();
 
@@ -69,6 +70,8 @@ void FFEncoderThread::run()
     FFEncoder *ffmpeg=new FFEncoder();
 
     ffmpeg->moveToThread(this);
+
+    ffmpeg->setIsOdd(is_odd);
 
     connect(this, SIGNAL(sigSetConfig(FFEncoder::Config)), ffmpeg, SLOT(setConfig(FFEncoder::Config)), Qt::QueuedConnection);
     connect(this, SIGNAL(sigStopCoder()), ffmpeg, SLOT(stopCoder()), Qt::QueuedConnection);

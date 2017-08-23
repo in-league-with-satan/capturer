@@ -6,6 +6,7 @@
 
 #include "ff_encoder_thread.h"
 #include "ff_decoder_thread.h"
+#include "ff_encoder_thread_manager.h"
 
 class DeckLinkCapture;
 class AudioOutputInterface;
@@ -28,7 +29,8 @@ public:
 private:
     DeckLinkCapture *decklink_thread;
 
-    FFEncoderThread *ff_enc;
+    // FFEncoderThread *ff_enc;
+    FFEncoderThreadManager *ff_enc;
     FFDecoderThread *ff_dec;
 
     QmlMessenger *messenger;
