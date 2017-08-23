@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QProcess>
+#include <QVariantMap>
 
 class QComboBox;
 class QCheckBox;
@@ -28,7 +29,11 @@ private:
     void save();
 
     QComboBox *cb_device;
-    QComboBox *cb_mode;
+    QComboBox *cb_input_format;
+
+    QComboBox *cb_encoder;
+    QComboBox *cb_preset;
+    QComboBox *cb_pixel_format;
 
     QLineEdit *le_quality;
 
@@ -40,10 +45,18 @@ private:
 
     QCheckBox *cb_restart_rec_on_drop_frames;
 
+    QCheckBox *cb_half_fps;
+
     QProcess proc;
+
+    QVariantMap map_pixel_format;
+    QVariantMap map_preset;
 
 private slots:
     void onDeviceChanged(const QString &device);
+    void onEncoderChanged(int index);
+    void onPresetChanged(int index);
+    void onPixelFormatChanged(int index);
 
     void startStop();
     void readProcStdOutput();
