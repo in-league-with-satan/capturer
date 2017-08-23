@@ -92,6 +92,9 @@ MainWindow::MainWindow(QWidget *parent)
     b_start_stop=new QPushButton("start");
     connect(b_start_stop, SIGNAL(clicked(bool)), SLOT(startStop()));
 
+    QPushButton *b_export_cmd=new QPushButton("export cmd");
+    connect(b_export_cmd, SIGNAL(clicked(bool)), SLOT(exportCmd()));
+
     QLabel *l_device=new QLabel("device:");
     QLabel *l_input_format=new QLabel("input format:");
     QLabel *l_encoder=new QLabel("encoder:");
@@ -140,6 +143,7 @@ MainWindow::MainWindow(QWidget *parent)
     la_main->addWidget(cb_restart_rec_on_drop_frames);
     la_main->addWidget(cb_half_fps);
     la_main->addWidget(b_start_stop);
+    la_main->addWidget(b_export_cmd);
     la_main->addWidget(l_status);
     la_main->addWidget(te_out);
 
@@ -247,7 +251,7 @@ void MainWindow::stopProc()
     while(proc.state()==QProcess::Running) {
         proc.write("q");
         proc.waitForFinished(300);
-        QApplication::processEvents();
+        qApp->processEvents();
     }
 }
 
@@ -391,17 +395,35 @@ void MainWindow::onPixelFormatChanged(int index)
     map_pixel_format.insert(QString::number(cb_encoder->currentIndex()), index);
 }
 
-void MainWindow::startStop()
+void MainWindow::exportCmd()
 {
-    if(!cb_device->count())
+    QFile f;
+
+    f.setFileName(qApp->applicationDirPath() + "/" + qApp->applicationName() + ".sh");
+
+    if(!f.open(QFile::ReadWrite | QFile::Text | QFile::Truncate))
         return;
 
-    if(proc.state()==QProcess::Running) {
-        stopProc();
-        return;
-    }
 
-    QString args=QString("ffmpeg -rtbufsize 2000M -format_code %2 -channels 8 -f decklink -i \"%1\"  -acodec pcm_s16le -af pan=7.1|c0=c0|c1=c1|c2=c3|c3=c2|c4=c6|c5=c7|c6=c4|c7=c5")
+    QString args=buildArgs();
+
+    QTextStream ts(&f);
+
+    ts << "#!/bin/bash";
+    ts << "\n";
+    ts << "\n";
+    ts << "DATE=`date +%Y-%m-%d_%H-%M-%S`";
+    ts << "\n";
+    ts << "\n";
+    ts << "./" << args << " " << "videos/$DATE.mkv";
+    ts << "\n";
+
+    f.close();
+}
+
+QString MainWindow::buildArgs()
+{
+    QString args=QString("ffmpeg -rtbufsize 2000M -format_code %2 -channels 8 -f decklink -i \"%1\" -acodec pcm_s16le -af pan=7.1|c0=c0|c1=c1|c2=c3|c3=c2|c4=c6|c5=c7|c6=c4|c7=c5")
             .arg(cb_device->currentText())
             .arg(cb_input_format->currentText().split(" ").value(0, "null"));
 
@@ -412,13 +434,13 @@ void MainWindow::startStop()
 
 
     if(cb_half_fps->isChecked()) {
-       foreach(QString str, cb_input_format->currentText().split(" ")) {
-           if(str.contains("/")) {
-               QStringList sl=str.split("/");
-               args+=QString(" -r %1/%2").arg(sl[0].toInt()*.5).arg(sl[1]);
-               break;
-           }
-       }
+        foreach(QString str, cb_input_format->currentText().split(" ")) {
+            if(str.contains("/")) {
+                QStringList sl=str.split("/");
+                args+=QString(" -r %1/%2").arg(sl[0].toInt()*.5).arg(sl[1]);
+                break;
+            }
+        }
     }
 
 
@@ -432,7 +454,27 @@ void MainWindow::startStop()
             args+=QString(" -preset %1 -qp %2 -threads 0")
                     .arg(presetVisualNameToParamName(cb_preset->currentText()))
                     .arg(quality);
-\
+    }
+
+    return args;
+}
+
+void MainWindow::startStop()
+{
+    if(!cb_device->count())
+        return;
+
+    if(proc.state()==QProcess::Running) {
+        stopProc();
+        return;
+    }
+
+
+    QString args=buildArgs();
+
+
+    if(cb_encoder->currentIndex()!=enc_ffvhuff) {
+        int quality=le_quality->text().toInt();
 
         args+=QString(" %1/videos/%2_q%3.mkv")
                 .arg(qApp->applicationDirPath())
@@ -440,7 +482,6 @@ void MainWindow::startStop()
                 .arg(quality);
 
     } else {
-
         args+=QString(" %1/videos/%2.mkv")
                 .arg(qApp->applicationDirPath())
                 .arg(QDateTime::currentDateTimeUtc().toString("yyyy-MM-dd_hh-mm-ss"));

@@ -28,6 +28,8 @@ private:
     void load();
     void save();
 
+    QString buildArgs();
+
     QComboBox *cb_device;
     QComboBox *cb_input_format;
 
@@ -57,6 +59,8 @@ private slots:
     void onEncoderChanged(int index);
     void onPresetChanged(int index);
     void onPixelFormatChanged(int index);
+
+    void exportCmd();
 
     void startStop();
     void readProcStdOutput();
