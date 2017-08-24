@@ -355,6 +355,10 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
                 keyPressed(KeyCodeC::Preview);
                 return true;
 
+            case Qt::Key_F8:
+                keyPressed(KeyCodeC::PreviewFastYuv);
+                return true;
+
             case Qt::Key_F11:
                 keyPressed(KeyCodeC::FullScreen);
                 return true;
@@ -452,6 +456,10 @@ void MainWindow::keyPressed(int code)
 
     case KeyCodeC::Preview:
         previewOnOff();
+        break;
+
+    case KeyCodeC::PreviewFastYuv:
+        messenger->videoSourceMain()->setFastYuv(!messenger->videoSourceMain()->fastYuv());
         break;
 
     case KeyCodeC::SmoothTransform:
@@ -689,6 +697,7 @@ void MainWindow::startStopRecording()
         cfg.preset=messenger->settingsModel()->data_p(&settings->rec.preset_current)->values_data[settings->rec.preset_current].toString();
         cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
         cfg.crf=settings->rec.crf;
+        cfg.rgb_source=decklink_thread->rgbSource();
         cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device.audio_sample_size)->values_data[settings->device.audio_sample_size].toInt();
 
 

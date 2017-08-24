@@ -70,6 +70,7 @@ public:
             RGB24=AV_PIX_FMT_RGB24,
             YUV420P=AV_PIX_FMT_YUV420P,
             YUV422P=AV_PIX_FMT_YUV422P,
+            UYVY422=AV_PIX_FMT_UYVY422,
             YUV444P=AV_PIX_FMT_YUV444P,
             YUV420P10=AV_PIX_FMT_YUV420P10,
             // YUV422P10=AV_PIX_FMT_YUV422P10,
@@ -90,6 +91,7 @@ public:
             audio_channels_size=8;
             audio_sample_size=16;
             audio_dalay=0;
+            rgb_source=true;
         }
 
         QSize frame_resolution;
@@ -101,6 +103,7 @@ public:
         AVPixelFormat pixel_format;
         VideoEncoder::T video_encoder;
         QString preset;
+        bool rgb_source;
     };
 
     struct Stats {

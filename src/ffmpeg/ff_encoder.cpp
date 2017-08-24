@@ -38,6 +38,8 @@ public:
 
     QByteArray ba_audio_prev_part;
 
+    AVPixelFormat frame_fmt;
+
     AVFrame *frame;
     AVFrame *frame_converted;
 
@@ -470,7 +472,8 @@ void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictio
     }
 
     // allocate and init a re-usable frame
-    ost->frame=alloc_frame(AV_PIX_FMT_BGRA, c->width, c->height);
+
+    ost->frame=alloc_frame(ost->frame_fmt, c->width, c->height);
 
     if(!ost->frame) {
         qCritical() << "could not allocate video frame";
@@ -677,7 +680,15 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 {
     int ret;
 
-    if(!converter->setup(AV_PIX_FMT_BGRA, cfg.frame_resolution, cfg.pixel_format, cfg.frame_resolution)) {
+
+    if(cfg.rgb_source)
+        context->out_stream_video.frame_fmt=AV_PIX_FMT_BGRA;
+
+    else
+        context->out_stream_video.frame_fmt=AV_PIX_FMT_UYVY422;
+
+
+    if(!converter->setup(context->out_stream_video.frame_fmt, cfg.frame_resolution, cfg.pixel_format, cfg.frame_resolution, false)) {
         qCritical() << "err init format converter" << cfg.frame_resolution;
         return false;
     }
@@ -708,6 +719,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
     context->av_output_format=context->av_format_context->oformat;
 
+
     // add the audio and video streams using the default format codecs
     // and initialize the codecs.
     add_stream_video(&context->out_stream_video, context->av_format_context, &context->av_codec_video, cfg);
@@ -721,7 +733,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
 
     context->out_stream_video.convert_context=sws_getContext(cfg.frame_resolution.width(), cfg.frame_resolution.height(),
-                                                             AV_PIX_FMT_BGRA,
+                                                             context->out_stream_video.frame_fmt,
                                                              cfg.frame_resolution.width(), cfg.frame_resolution.height(),
                                                              cfg.pixel_format,
                                                              /*SWS_FAST_BILINEAR*/ 0, nullptr, nullptr, nullptr);
@@ -791,7 +803,7 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
         if(!context->skip_frame) {
             uint8_t *ptr_orig=context->out_stream_video.frame->data[0];
 
-            context->out_stream_video.frame->data[0]=(uint8_t*)frame->video.raw->constData();
+            context->out_stream_video.frame->data[0]=(uint8_t*)frame->video.ptr_data;
 
             sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
 
@@ -805,7 +817,7 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
     // audio
     {
-        QByteArray ba_audio=frame->audio.raw;
+        QByteArray ba_audio=QByteArray(frame->audio.ptr_data, frame->audio.data_size);
 
         ba_audio.insert(0, context->out_stream_audio.ba_audio_prev_part);
 
@@ -924,6 +936,9 @@ QString FFEncoder::PixelFormat::toString(uint32_t format)
     case YUV422P:
         return QLatin1String("yuv422p");
 
+    case UYVY422:
+        return QLatin1String("uyvy422p");
+
     case YUV444P:
         return QLatin1String("yuv444p");
 
@@ -957,6 +972,9 @@ uint64_t FFEncoder::PixelFormat::fromString(QString format)
 
     else if(format==QLatin1String("yuv422p"))
         return YUV422P;
+
+    else if(format==QLatin1String("uyvy422p"))
+        return UYVY422;
 
     else if(format==QLatin1String("yuv444p"))
         return YUV444P;

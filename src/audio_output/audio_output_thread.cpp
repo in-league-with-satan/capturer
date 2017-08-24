@@ -70,10 +70,10 @@ void AudioOutputThread::run()
                 dev_audio_output.clear();
             }
 
-            if(!frame->audio.raw.isEmpty()) {
+            if(frame->audio.data_size) {
                 // buf_trig_size=frame->audio.raw.size()*.5;
 
-                dev_audio_output.write(convert(&frame->audio.raw, frame->audio.channels, frame->audio.sample_size));
+                dev_audio_output.write(convert(frame->audio.ptr_data, frame->audio.data_size, frame->audio.channels, frame->audio.sample_size));
 
                 if(audio_output->state()!=QAudio::ActiveState) {
                     audio_output->start(&dev_audio_output);

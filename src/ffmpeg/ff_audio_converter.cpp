@@ -98,14 +98,14 @@ err:
     return false;
 }
 
-bool AudioConverter::convert(QByteArray *src, QByteArray *dst)
+bool AudioConverter::convert(void *src, size_t size, QByteArray *dst)
 {
     if(!context) {
         qCritical() << "AudioConverter::convert: context null pointer";
         return false;
     }
 
-    int64_t in_count=src->size()/(in_sample_size*in_channels);
+    int64_t in_count=size/(in_sample_size*in_channels);
 
     int64_t out_count=av_rescale_rnd(swr_get_delay(context, in_sample_rate) + in_count,
                                      out_sample_rate, in_sample_rate, AV_ROUND_UP);
@@ -113,16 +113,20 @@ bool AudioConverter::convert(QByteArray *src, QByteArray *dst)
     dst->resize(out_count*out_channels*out_sample_size);
 
 
-    char *ptr_src=(char*)src->constData();
     char *ptr_dst=(char*)dst->constData();
 
     int out_count_res=swr_convert(context, (uint8_t**)&ptr_dst, out_count,
-                                  (const uint8_t**)&ptr_src, in_count);
+                                  (const uint8_t**)&src, in_count);
 
     if(out_count_res<out_count)
         dst->resize(out_count_res*out_channels*out_sample_size);
 
     return true;
+}
+
+bool AudioConverter::convert(QByteArray *src, QByteArray *dst)
+{
+    return convert((void*)src->constData(), src->size(), dst);
 }
 
 void AudioConverter::free()

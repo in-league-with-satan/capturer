@@ -88,25 +88,25 @@ void DlConvertThread::run()
 
                 frame=Frame::make();
 
-                frame->video.decklink_frame.init(QSize(frame_video_src->GetWidth(), frame_video_src->GetHeight()), bmdFormat8BitBGRA);
+//                frame->video.decklink_frame.init(QSize(frame_video_src->GetWidth(), frame_video_src->GetHeight()), bmdFormat8BitBGRA);
 
-                video_converter->ConvertFrame(frame_video_src, &frame->video.decklink_frame);
+//                video_converter->ConvertFrame(frame_video_src, &frame->video.decklink_frame);
 
-                //
+//                //
 
-                frame_audio_src->GetBytes(&d_audio);
+//                frame_audio_src->GetBytes(&d_audio);
 
-                frame->audio.raw.resize(frame_audio_src->GetSampleFrameCount()*audio_channels*(sample_size/8));
+//                frame->audio.raw.resize(frame_audio_src->GetSampleFrameCount()*audio_channels*(sample_size/8));
 
-                memcpy((void*)frame->audio.raw.constData(), d_audio, frame->audio.raw.size());
+//                memcpy((void*)frame->audio.raw.constData(), d_audio, frame->audio.raw.size());
 
-                if(audio_channels==8) {
-                    if(sample_size==16)
-                        channelsRemap16(&frame->audio.raw);
+//                if(audio_channels==8) {
+//                    if(sample_size==16)
+//                        channelsRemap16(&frame->audio.raw);
 
-                    else
-                        channelsRemap32(&frame->audio.raw);
-                }
+//                    else
+//                        channelsRemap32(&frame->audio.raw);
+//                }
 
                 frame->audio.channels=audio_channels;
                 frame->audio.sample_size=sample_size;

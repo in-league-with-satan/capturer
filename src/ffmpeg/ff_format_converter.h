@@ -20,6 +20,7 @@ public:
 
     struct Filter {
         enum T {
+            cNull=0,
             cSWS_FAST_BILINEAR=1,
             cSWS_BILINEAR=2,
             cSWS_BICUBIC=4,
@@ -34,7 +35,7 @@ public:
         };
     };
 
-    bool setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, bool use_internal_frames=true, Filter::T filter=Filter::cSWS_FAST_BILINEAR);
+    bool setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, bool use_internal_frames=true, Filter::T filter=Filter::cNull);
 
     void convert(QByteArray *src, QByteArray *dst);
 

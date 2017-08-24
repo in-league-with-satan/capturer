@@ -8,6 +8,10 @@
 #include <atomic>
 
 #include "frame_buffer.h"
+#include "ff_format_converter.h"
+
+
+class AVFrame;
 
 class QuickVideoSource : public QThread
 {
@@ -27,6 +31,9 @@ public:
 
     void setHalfFps(bool value);
 
+    bool fastYuv() const;
+    void setFastYuv(bool value);
+
 protected:
     virtual void run();
     virtual void timerEvent(QTimerEvent*);
@@ -45,6 +52,12 @@ private:
 
     std::atomic <bool> running;
     std::atomic <bool> half_fps;
+    std::atomic <bool> fast_yuv;
+
+    AVFrame *yuv_src;
+    AVFrame *yuv_dst;
+
+    FF::FormatConverter format_converter;
 };
 
 #endif // QUICK_VIDEO_SOURCE_H

@@ -53,6 +53,8 @@ public:
 
     bool gotSignal() const;
 
+    bool rgbSource() const;
+
     void setHalfFps(bool value);
 
 protected:
@@ -88,18 +90,20 @@ private:
     int64_t frame_scale;
     int64_t frame_time_prev;
 
-    DlConvertThreadContainer *conv_thread;
+    // DlConvertThreadContainer *conv_thread;
 
-    IDeckLinkVideoConversion *video_converter;
+    // IDeckLinkVideoConversion *video_converter;
 
     QList <FrameBuffer::ptr> subscription_list;
 
     uint8_t frame_counter;
 
     std::atomic <bool> running;
+    std::atomic <bool> running_thread;
     std::atomic <bool> half_fps;
     std::atomic <bool> signal_lost;
     std::atomic <bool> skip_frame;
+    std::atomic <bool> rgb_source;
 
 signals:
     void signalLost(const bool &value);

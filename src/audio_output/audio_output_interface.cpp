@@ -37,10 +37,10 @@ FrameBuffer::ptr AudioOutputInterface::frameBuffer()
     return frame_buffer;
 }
 
-QByteArray AudioOutputInterface::convert(QByteArray *in, const int channels, int sample_size)
+QByteArray AudioOutputInterface::convert(void *data, size_t size, const int channels, int sample_size)
 {
     if(channels==2 && sample_size==16)
-        return *in;
+        return QByteArray((char*)data, size);
 
     if((uint64_t)channels!=audio_converter->inChannels() || (sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32)!=audio_converter->inSampleFormat()) {
         if(!audio_converter->init(av_get_default_channel_layout(channels), 48000, sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32,
@@ -55,7 +55,7 @@ QByteArray AudioOutputInterface::convert(QByteArray *in, const int channels, int
 
     QByteArray ba_res;
 
-    audio_converter->convert(in, &ba_res);
+    audio_converter->convert(data, size, &ba_res);
 
     return ba_res;
 }

@@ -23,7 +23,7 @@
 #include "capture.h"
 
 //const bool ext_converter=false;
-const bool ext_converter=true;
+//const bool ext_converter=true;
 
 class DeckLinkCaptureDelegate : public IDeckLinkInputCallback
 {
@@ -111,20 +111,23 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
     pixel_format.fmt=bmdFormat10BitRGB;
 
     running=false;
+    running_thread=false;
+
+    rgb_source=true;
 
     half_fps=false;
 
     //
 
-    video_converter=nullptr;
+    //video_converter=nullptr;
 
-    if(ext_converter) {
-        conv_thread=new DlConvertThreadContainer(4, this);
+    // if(ext_converter) {
+    //     conv_thread=new DlConvertThreadContainer(4, this);
 
-        connect(conv_thread, SIGNAL(frameSkipped()), this, SIGNAL(frameSkipped()));
+    //     connect(conv_thread, SIGNAL(frameSkipped()), this, SIGNAL(frameSkipped()));
 
-    } else
-        video_converter=CreateVideoConversionInstance();
+    // } else
+    //     video_converter=CreateVideoConversionInstance();
 
     //
 
@@ -134,16 +137,19 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
 
 DeckLinkCapture::~DeckLinkCapture()
 {
+    subscription_list.clear();
+
     captureStop();
 
     quit();
 
-    while(isRunning()) {
+    while(running_thread) {
         msleep(30);
     }
 
-    if(ext_converter)
-        conv_thread->stopThreads();
+
+    // if(ext_converter)
+    //     conv_thread->stopThreads();
 }
 
 void DeckLinkCapture::setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size)
@@ -154,27 +160,28 @@ void DeckLinkCapture::setup(DeckLinkDevice device, DeckLinkFormat format, DeckLi
     this->audio_channels=audio_channels;
     this->audio_sample_size=audio_sample_size;
 
-    if(ext_converter) {
-        conv_thread->setAudioChannels(audio_channels);
-        conv_thread->setSampleSize(audio_sample_size);
-    }
+    // if(ext_converter) {
+    //     conv_thread->setAudioChannels(audio_channels);
+    //     conv_thread->setSampleSize(audio_sample_size);
+    // }
 }
 
 void DeckLinkCapture::subscribe(FrameBuffer::ptr obj)
 {
-    if(ext_converter)
-        conv_thread->subscribe(obj);
+    // if(ext_converter)
+    //     conv_thread->subscribe(obj);
 
-    else if(!subscription_list.contains(obj))
+    // else
+    if(!subscription_list.contains(obj))
         subscription_list.append(obj);
 }
 
 void DeckLinkCapture::unsubscribe(FrameBuffer::ptr obj)
 {
-    if(ext_converter)
-        conv_thread->unsubscribe(obj);
+    // if(ext_converter)
+    //     conv_thread->unsubscribe(obj);
 
-    else
+    // else
         subscription_list.removeAll(obj);
 }
 
@@ -189,6 +196,11 @@ bool DeckLinkCapture::gotSignal() const
         return false;
 
     return !signal_lost;
+}
+
+bool DeckLinkCapture::rgbSource() const
+{
+    return rgb_source;
 }
 
 void DeckLinkCapture::setHalfFps(bool value)
@@ -223,11 +235,15 @@ void DeckLinkCapture::run()
 
     qInfo() << "DeckLinkCapture thread started";
 
+    running_thread=true;
+
     exec();
 
     decklink_capture_delegate->Release();
 
-    deleteLater();
+    running_thread=false;
+
+    qInfo() << "DeckLinkCapture thread stopped";
 }
 
 void DeckLinkCapture::captureStart()
@@ -260,8 +276,15 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
 
     BMDPixelFormat pixel_format=bmdFormat10BitYUV;
 
-    if(format_flags & bmdDetectedVideoInputRGB444)
-        pixel_format=bmdFormat10BitRGB;
+    pixel_format=bmdFormat8BitYUV;
+
+    rgb_source=false;
+
+    if(format_flags&bmdDetectedVideoInputRGB444) {
+        rgb_source=true;
+        pixel_format=bmdFormat8BitBGRA;
+        // pixel_format=bmdFormat10BitRGB;
+    }
 
     if(decklink_input) {
         decklink_input->StopStreams();
@@ -283,7 +306,7 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
     emit formatChanged(mode->GetWidth(), mode->GetHeight(),
                        frame_duration, half_fps ? frame_scale*.5 : frame_scale,
                        (mode->GetFieldDominance()==bmdProgressiveFrame || mode->GetFieldDominance()==bmdProgressiveSegmentedFrame),
-                       BMDPixelFormatToString(pixel_format));
+                       rgb_source ? "RGB" : "YUV");
 
     qInfo().noquote() << "InputFormatChanged:"
                       << QString("%1x%2@%3%4 %5")
@@ -291,7 +314,7 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
                          .arg(mode->GetHeight())
                          .arg(frame_scale/frame_duration)
                          .arg(mode->GetFieldDominance()==bmdProgressiveFrame || mode->GetFieldDominance()==bmdProgressiveSegmentedFrame ? "p" : "i")
-                         .arg(BMDPixelFormatToString(pixel_format));
+                         .arg(rgb_source ? "RGB" : "YUV");
 }
 
 void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet)
@@ -330,49 +353,23 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
         //
 
-        if(ext_converter) {
-            if(half_fps) {
-                if(!audio_input_packet)
-                    audio_input_packet=new DeckLinkAudioInputPacket(audio_channels, audio_sample_size);
+        Frame::ptr frame=Frame::make();
 
-                void *d_audio;
+        frame->setData(video_frame, audio_packet, audio_channels, audio_sample_size);
 
-                audio_packet->GetBytes(&d_audio);
 
-                audio_input_packet->append(QByteArray((char*)d_audio, audio_packet->GetSampleFrameCount()*audio_channels*(audio_sample_size/8)));
+        if(audio_channels==8) {
+            if(audio_sample_size==16)
+                channelsRemap16(frame->audio.ptr_data, frame->audio.data_size);
 
-                skip_frame=!skip_frame;
-
-                if(skip_frame)
-                    return;
-
-                conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_input_packet, frame_counter++, frame_time==0);
-                audio_input_packet=nullptr;
-
-            } else
-                conv_thread->addFrame((IDeckLinkVideoInputFrame*)video_frame, audio_packet, frame_counter++, frame_time==0);
-
-        } else {
-            Frame::ptr frame=Frame::make();
-
-            frame->video.decklink_frame.init(QSize(video_frame->GetWidth(), video_frame->GetHeight()), bmdFormat8BitBGRA);
-
-            void *d_audio;
-
-            audio_packet->GetBytes(&d_audio);
-
-            frame->audio.raw.resize(audio_packet->GetSampleFrameCount()*audio_channels*(audio_sample_size/8));
-
-            memcpy((void*)frame->audio.raw.constData(), d_audio, frame->audio.raw.size());
-
-            if(audio_channels==8)
-                channelsRemap16(&frame->audio.raw);
-
-            //
-
-            foreach(FrameBuffer::ptr buf, subscription_list)
-                buf->append(frame);
+            else
+                channelsRemap32(frame->audio.ptr_data, frame->audio.data_size);
         }
+
+        //
+
+        foreach(FrameBuffer::ptr buf, subscription_list)
+            buf->append(frame);
     }
 }
 

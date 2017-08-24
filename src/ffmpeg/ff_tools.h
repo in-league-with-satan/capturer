@@ -21,7 +21,7 @@ extern "C" {
 const int alignment=32;
 
 QString ffErrorString(int code);
-AVFrame *alloc_frame(AVPixelFormat pix_fmt, int width, int height);
+AVFrame *alloc_frame(AVPixelFormat pix_fmt, int width, int height, bool alloc_buffer=true);
 AVPixelFormat correctPixelFormat(AVPixelFormat fmt);
 
 static QString versionlibavutil()

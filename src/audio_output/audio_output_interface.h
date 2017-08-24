@@ -20,7 +20,7 @@ public:
     FrameBuffer::ptr frameBuffer();
 
 protected:
-    QByteArray convert(QByteArray *in, const int channels, int sample_size);
+    QByteArray convert(void *data, size_t size, const int channels, int sample_size);
 
     FrameBuffer::ptr frame_buffer;
 

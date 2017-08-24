@@ -3,6 +3,8 @@
 
 #include <QtQml/qqml.h>
 
+#include "ff_tools.h"
+
 #include "quick_video_source.h"
 
 
@@ -10,6 +12,9 @@ QuickVideoSource::QuickVideoSource(QObject *parent)
     : QThread(parent)
     , surface(nullptr)
     , half_fps(false)
+    , fast_yuv(false)
+    , yuv_src(nullptr)
+    , yuv_dst(nullptr)
 {
     frame_buffer=FrameBuffer::make();
     frame_buffer->setMaxSize(1);
@@ -21,6 +26,9 @@ QuickVideoSource::QuickVideoSource(bool thread, QObject *parent)
     : QThread(parent)
     , surface(nullptr)
     , half_fps(false)
+    , fast_yuv(false)
+    , yuv_src(nullptr)
+    , yuv_dst(nullptr)
 {
     frame_buffer=FrameBuffer::make();
     frame_buffer->setMaxSize(1);
@@ -44,6 +52,12 @@ QuickVideoSource::~QuickVideoSource()
     while(isRunning()) {
         msleep(30);
     }
+
+    if(yuv_src)
+        av_frame_free(&yuv_src);
+
+    if(yuv_dst)
+        av_frame_free(&yuv_dst);
 }
 
 FrameBuffer::ptr QuickVideoSource::frameBuffer()
@@ -68,6 +82,16 @@ void QuickVideoSource::setHalfFps(bool value)
     half_fps=value;
 }
 
+bool QuickVideoSource::fastYuv() const
+{
+    return fast_yuv;
+}
+
+void QuickVideoSource::setFastYuv(bool value)
+{
+    fast_yuv=value;
+}
+
 void QuickVideoSource::run()
 {
     Frame::ptr frame;
@@ -80,6 +104,7 @@ void QuickVideoSource::run()
         frame_buffer->wait();
 
         frame=frame_buffer->take();
+
 
         if(!frame)
             continue;
@@ -96,28 +121,61 @@ void QuickVideoSource::run()
             }
         }
 
-        if(frame->video.decklink_frame.getSize()!=format.frameSize() || QVideoFrame::Format_ARGB32!=format.pixelFormat()) {
-            closeSurface();
+        if(frame->video.rgb) {
+            if(frame->video.size!=format.frameSize() || QVideoFrame::Format_ARGB32!=format.pixelFormat()) {
+                closeSurface();
 
-            format=
-                    QVideoSurfaceFormat(frame->video.decklink_frame.getSize(),
-                                        QVideoFrame::Format_ARGB32);
+                format=QVideoSurfaceFormat(frame->video.size, QVideoFrame::Format_ARGB32);
 
-            if(!surface->start(format)) {
-                qCritical() << "surface->start error" << surface->error();
-                format=QVideoSurfaceFormat();
-                continue;
+                if(!surface->start(format)) {
+                    qCritical() << "surface->start error" << surface->error();
+                    format=QVideoSurfaceFormat();
+                    continue;
+                }
+            }
+
+            last_frame=QVideoFrame(frame->video.data_size, frame->video.size,
+                                   DeckLinkVideoFrame::rowSize(frame->video.size.width(), frame->video_frame->GetPixelFormat()),
+                                   QVideoFrame::Format_ARGB32);
+
+            if(last_frame.map(QAbstractVideoBuffer::WriteOnly)) {
+                memcpy(last_frame.bits(), frame->video.ptr_data, frame->video.data_size);
+                last_frame.unmap();
+
+            } else {
+                qCritical() << "err frame.map write";
+            }
+
+        } else {
+            QVideoFrame::PixelFormat fmt=QVideoFrame::Format_UYVY;
+
+            if(frame->video.size!=format.frameSize() || fmt!=format.pixelFormat()) {
+                closeSurface();
+
+                format=QVideoSurfaceFormat(frame->video.size, fmt);
+
+                if(!surface->start(format)) {
+                    qCritical() << "surface->start error" << surface->error();
+                    format=QVideoSurfaceFormat();
+                    continue;
+                }
+            }
+
+            last_frame=QVideoFrame(frame->video.data_size, frame->video.size,
+                                   DeckLinkVideoFrame::rowSize(frame->video.size.width(), frame->video_frame->GetPixelFormat()),
+                                   fmt);
+
+            if(last_frame.map(QAbstractVideoBuffer::WriteOnly)) {
+                if(fast_yuv)
+                    memcpy(last_frame.bits(), frame->video.ptr_data, frame->video.data_size);
+
+                last_frame.unmap();
+
+            } else {
+                qCritical() << "err frame.map write";
             }
         }
 
-        last_image=QImage((uchar*)frame->video.raw->constData(),
-                          frame->video.decklink_frame.getSize().width(),
-                          frame->video.decklink_frame.getSize().height(),
-                          frame->video.decklink_frame.GetRowBytes(),
-                          QImage::Format_ARGB32);
-
-
-        last_frame=QVideoFrame(last_image);
 
         last_frame.map(QAbstractVideoBuffer::ReadOnly);
 
@@ -140,33 +198,105 @@ void QuickVideoSource::timerEvent(QTimerEvent*)
     if(!frame)
         return;
 
-    if(frame->video.decklink_frame.getSize()!=format.frameSize() || QVideoFrame::Format_ARGB32!=format.pixelFormat()) {
-        closeSurface();
+    if(frame->video.rgb) {
+        if(frame->video.size!=format.frameSize() || QVideoFrame::Format_ARGB32!=format.pixelFormat()) {
+            closeSurface();
 
-        format=
-                QVideoSurfaceFormat(frame->video.decklink_frame.getSize(),
-                                    QVideoFrame::Format_ARGB32);
+            format=QVideoSurfaceFormat(frame->video.size, QVideoFrame::Format_ARGB32);
 
-        if(!surface->start(format)) {
-            qCritical() << "surface->start error" << surface->error();
-            format=QVideoSurfaceFormat();
-            return;
+            if(!surface->start(format)) {
+                qCritical() << "surface->start error" << surface->error();
+                format=QVideoSurfaceFormat();
+                return;
+            }
+        }
+
+        last_frame=QVideoFrame(frame->video.data_size, frame->video.size,
+                               DeckLinkVideoFrame::rowSize(frame->video.size.width(), frame->video_frame->GetPixelFormat()),
+                               QVideoFrame::Format_ARGB32);
+
+        if(last_frame.map(QAbstractVideoBuffer::WriteOnly)) {
+            memcpy(last_frame.bits(), frame->video.ptr_data, frame->video.data_size);
+            last_frame.unmap();
+
+        } else {
+            qCritical() << "err frame.map write";
+        }
+
+    } else {
+        QVideoFrame::PixelFormat fmt=QVideoFrame::Format_UYVY;
+
+        if(!fast_yuv)
+            fmt=QVideoFrame::Format_YUV420P;
+
+        if(frame->video.size!=format.frameSize() || fmt!=format.pixelFormat()) {
+            closeSurface();
+
+            format=QVideoSurfaceFormat(frame->video.size, fmt);
+
+            if(!surface->start(format)) {
+                qCritical() << "surface->start error" << surface->error();
+                format=QVideoSurfaceFormat();
+                return;
+            }
+
+            //
+
+            if(yuv_src)
+                av_frame_free(&yuv_src);
+
+            if(yuv_dst)
+                av_frame_free(&yuv_dst);
+
+
+            yuv_src=alloc_frame(AV_PIX_FMT_UYVY422, frame->video.size.width(), frame->video.size.height(), false);
+            yuv_dst=alloc_frame(AV_PIX_FMT_YUV420P, frame->video.size.width(), frame->video.size.height(), true);
+
+            yuv_src->linesize[0]=DeckLinkVideoFrame::rowSize(frame->video.size.width(), frame->video_frame->GetPixelFormat());
+
+            format_converter.setup((AVPixelFormat)yuv_src->format, frame->video.size, (AVPixelFormat)yuv_dst->format, frame->video.size, false);
+        }
+
+        if(fast_yuv) {
+            last_frame=QVideoFrame(frame->video.data_size, frame->video.size,
+                                   DeckLinkVideoFrame::rowSize(frame->video.size.width(), frame->video_frame->GetPixelFormat()), fmt);
+
+            if(last_frame.map(QAbstractVideoBuffer::WriteOnly)) {
+                memcpy(last_frame.bits(), frame->video.ptr_data, frame->video.data_size);
+
+                last_frame.unmap();
+
+            } else {
+                qCritical() << "err frame.map write";
+            }
+
+        } else {
+            const int buf_size=av_image_get_buffer_size((AVPixelFormat)yuv_dst->format, yuv_dst->width, yuv_dst->height, 32);
+
+            last_frame=QVideoFrame(buf_size, frame->video.size, yuv_dst->linesize[0], fmt);
+
+            if(last_frame.map(QAbstractVideoBuffer::WriteOnly)) {
+                yuv_src->data[0]=(uint8_t*)frame->video.ptr_data;
+
+                format_converter.convert(yuv_src, yuv_dst);
+
+                av_image_copy_to_buffer(last_frame.bits(), buf_size, yuv_dst->data, yuv_dst->linesize, (AVPixelFormat)yuv_dst->format, yuv_dst->width, yuv_dst->height, 32);
+
+                last_frame.unmap();
+
+            } else {
+                qCritical() << "err frame.map write";
+            }
         }
     }
-
-    last_image=QImage((uchar*)frame->video.raw->constData(),
-                      frame->video.decklink_frame.getSize().width(),
-                      frame->video.decklink_frame.getSize().height(),
-                      frame->video.decklink_frame.GetRowBytes(),
-                      QImage::Format_ARGB32);
-
-    last_frame=QVideoFrame(last_image);
 
     last_frame.map(QAbstractVideoBuffer::ReadOnly);
 
     surface->present(last_frame);
 
     last_frame.unmap();
+
+    frame.reset();
 }
 
 void QuickVideoSource::closeSurface()
