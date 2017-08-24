@@ -31,11 +31,13 @@ HRESULT DeckLinkAudioInputPacket::GetBytes(void **buffer)
     return S_OK;
 }
 
-HRESULT DeckLinkAudioInputPacket::GetPacketTime(BMDTimeValue *packetTime, BMDTimeScale timeScale)
+HRESULT DeckLinkAudioInputPacket::GetPacketTime(BMDTimeValue *packet_time, BMDTimeScale time_scale)
 {
-    Q_UNUSED(timeScale)
+    Q_UNUSED(time_scale)
 
-    *packetTime=0;
+    *packet_time=0;
+
+    return S_OK;
 }
 
 HRESULT DeckLinkAudioInputPacket::QueryInterface(REFIID iid, LPVOID *ppv)
