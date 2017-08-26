@@ -268,7 +268,7 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.name="constant rate factor / quality";
     set_model_data.value=&settings->rec.crf;
 
-    for(int i=0; i<=24; ++i)
+    for(int i=0; i<=42; ++i)
         set_model_data.values.append(QString::number(i));
 
     messenger->settingsModel()->add(set_model_data);
