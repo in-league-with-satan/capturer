@@ -12,6 +12,7 @@
 
 #include "ff_tools.h"
 #include "ff_format_converter.h"
+#include "decklink_frame_converter.h"
 
 #include "ff_encoder.h"
 
@@ -547,7 +548,8 @@ FFEncoder::FFEncoder(QObject *parent) :
 {
     context=new FFMpegContext();
 
-    converter=new FF::FormatConverter();
+    format_converter_ff=new FFFormatConverter();
+    format_converter_dl=new DecklinkFrameConverter();
 }
 
 FFEncoder::~FFEncoder()
@@ -556,7 +558,8 @@ FFEncoder::~FFEncoder()
 
     delete context;
 
-    delete converter;
+    delete format_converter_ff;
+    delete format_converter_dl;
 }
 
 void FFEncoder::init()
@@ -692,11 +695,15 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
         context->out_stream_video.frame_fmt=AV_PIX_FMT_UYVY422;
 
 
-    if(!converter->setup(context->out_stream_video.frame_fmt, cfg.frame_resolution, cfg.pixel_format, cfg.frame_resolution, false)) {
+    if(!format_converter_ff->setup(context->out_stream_video.frame_fmt, cfg.frame_resolution, cfg.pixel_format, cfg.frame_resolution, false)) {
         qCritical() << "err init format converter" << cfg.frame_resolution;
         return false;
     }
 
+
+    if(cfg.rgb_source && cfg.rgb_10bit) {
+        format_converter_dl->init(bmdFormat10BitRGB, cfg.frame_resolution, bmdFormat8BitBGRA, cfg.frame_resolution);
+    }
 
 
     {
@@ -807,7 +814,14 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
         if(!context->skip_frame) {
             uint8_t *ptr_orig=context->out_stream_video.frame->data[0];
 
-            context->out_stream_video.frame->data[0]=(uint8_t*)frame->video.ptr_data;
+            if(frame->video.rgb && frame->video.rgb_10bit) {
+                format_converter_dl->convert(frame->video.ptr_data, context->out_stream_video.frame->data[0]);
+
+            } else {
+                context->out_stream_video.frame->data[0]=(uint8_t*)frame->video.ptr_data;
+
+            }
+
 
             sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
 

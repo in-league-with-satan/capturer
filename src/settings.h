@@ -28,6 +28,7 @@ public:
         int audio_sample_size;
         int restart;
         int half_fps;
+        int rgb_10bit;
 
     } device;
 
