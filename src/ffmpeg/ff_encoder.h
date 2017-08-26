@@ -12,10 +12,9 @@ extern "C" {
 }
 
 class FFMpegContext;
+class FFFormatConverter;
+class DecklinkFrameConverter;
 
-namespace FF {
-    class FormatConverter;
-}
 
 class FFEncoder : public QObject
 {
@@ -92,6 +91,7 @@ public:
             audio_sample_size=16;
             audio_dalay=0;
             rgb_source=true;
+            rgb_10bit=false;
         }
 
         QSize frame_resolution;
@@ -104,6 +104,7 @@ public:
         VideoEncoder::T video_encoder;
         QString preset;
         bool rgb_source;
+        bool rgb_10bit;
     };
 
     struct Stats {
@@ -128,7 +129,8 @@ private:
     void calcStats();
 
     FFMpegContext *context;
-    FF::FormatConverter *converter;
+    FFFormatConverter *format_converter_ff;
+    DecklinkFrameConverter *format_converter_dl;
 
     QSize last_frame_size;
 

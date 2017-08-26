@@ -177,6 +177,20 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="rgb depth";
+    set_model_data.values << "8 bit" << "10 bit";
+    set_model_data.values_data << 0 << 1;
+
+    set_model_data.value=&settings->device.rgb_10bit;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    //
+
     set_model_data.type=SettingsModel::Type::checkbox;
     set_model_data.name="half-fps";
     set_model_data.value=&settings->device.half_fps;
@@ -663,11 +677,13 @@ void MainWindow::captureStart()
         return;
     }
 
+
     decklink_thread->setup(model_data_device->values_data[settings->device.index].value<DeckLinkDevice>(),
             DeckLinkFormat(),
             DeckLinkPixelFormat(),
             8,
-            model_data_audio->values_data[settings->device.audio_sample_size].toInt()
+            model_data_audio->values_data[settings->device.audio_sample_size].toInt(),
+            settings->device.rgb_10bit
             );
 
     decklink_thread->setHalfFps(settings->device.half_fps);
@@ -698,6 +714,7 @@ void MainWindow::startStopRecording()
         cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
         cfg.crf=settings->rec.crf;
         cfg.rgb_source=decklink_thread->rgbSource();
+        cfg.rgb_10bit=decklink_thread->rgb10Bit();
         cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device.audio_sample_size)->values_data[settings->device.audio_sample_size].toInt();
 
 

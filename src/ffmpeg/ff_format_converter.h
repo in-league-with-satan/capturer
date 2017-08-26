@@ -4,19 +4,16 @@
 #include <QByteArray>
 #include <QImage>
 
-class AVFrame;
-
 #include "libavutil/pixfmt.h"
 
-namespace FF {
+class AVFrame;
+class SwsContext;
 
-class Context;
-
-class FormatConverter
+class FFFormatConverter
 {
 public:
-    FormatConverter();
-    ~FormatConverter();
+    FFFormatConverter();
+    ~FFFormatConverter();
 
     struct Filter {
         enum T {
@@ -42,6 +39,8 @@ public:
     void convert(AVFrame *src, AVFrame *dst);
 
 private:
+    void free();
+
     AVPixelFormat format_src;
     AVPixelFormat format_dst;
 
@@ -52,11 +51,9 @@ private:
 
     bool use_internal_frames;
 
-
-    Context *context;
-
+    SwsContext *convert_context;
+    AVFrame *av_frame_src;
+    AVFrame *av_frame_dst;
 };
-
-}
 
 #endif // FF_FORMAT_CONVERTER_H

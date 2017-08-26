@@ -8,10 +8,12 @@
 #include <atomic>
 
 #include "frame_buffer.h"
-#include "ff_format_converter.h"
-
 
 class AVFrame;
+
+class FFFormatConverter;
+
+class DecklinkFrameConverter;
 
 class QuickVideoSource : public QThread
 {
@@ -57,7 +59,8 @@ private:
     AVFrame *yuv_src;
     AVFrame *yuv_dst;
 
-    FF::FormatConverter format_converter;
+    FFFormatConverter *format_converter_ff;
+    DecklinkFrameConverter *format_converter_dl;
 };
 
 #endif // QUICK_VIDEO_SOURCE_H

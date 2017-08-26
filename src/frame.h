@@ -38,6 +38,7 @@ struct Frame
         this->video_frame=video_frame;
 
         video.rgb=video_frame->GetPixelFormat()!=bmdFormat8BitYUV;
+        video.rgb_10bit=video_frame->GetPixelFormat()==bmdFormat10BitRGB;
         video.size=QSize(video_frame->GetWidth(), video_frame->GetHeight());
         video.data_size=DeckLinkVideoFrame::frameSize(video.size, video_frame->GetPixelFormat());
 
@@ -56,20 +57,18 @@ struct Frame
 
     struct DataVideo {
         DataVideo() {
-//            raw=decklink_frame.getBuffer();
-//            rgb=true;
             ptr_data=nullptr;
             data_size=0;
+            rgb=true;
+            rgb_10bit=false;
         }
-
-//        DeckLinkVideoFrame decklink_frame;
-//        QByteArray *raw;
 
         char *ptr_data;
         size_t data_size;
         QSize size;
 
         bool rgb;
+        bool rgb_10bit;
 
     } video;
 
@@ -77,9 +76,9 @@ struct Frame
         DataAudio() {
             ptr_data=nullptr;
             data_size=0;
+            channels=0;
+            sample_size=0;
         }
-
-//        QByteArray raw;
 
         char *ptr_data;
         size_t data_size;

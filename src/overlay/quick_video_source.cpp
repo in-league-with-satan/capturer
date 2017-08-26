@@ -1,12 +1,13 @@
 #include <QDebug>
 #include <QApplication>
+//#include <QtQml/qqml.h>
 
-#include <QtQml/qqml.h>
-
+// #include "libavutil/bswap.h"
 #include "ff_tools.h"
+#include "ff_format_converter.h"
+#include "decklink_frame_converter.h"
 
 #include "quick_video_source.h"
-
 
 QuickVideoSource::QuickVideoSource(QObject *parent)
     : QThread(parent)
@@ -29,6 +30,8 @@ QuickVideoSource::QuickVideoSource(bool thread, QObject *parent)
     , fast_yuv(false)
     , yuv_src(nullptr)
     , yuv_dst(nullptr)
+    , format_converter_ff(new FFFormatConverter())
+    , format_converter_dl(new DecklinkFrameConverter())
 {
     frame_buffer=FrameBuffer::make();
     frame_buffer->setMaxSize(1);
@@ -58,6 +61,9 @@ QuickVideoSource::~QuickVideoSource()
 
     if(yuv_dst)
         av_frame_free(&yuv_dst);
+
+    delete format_converter_ff;
+    delete format_converter_dl;
 }
 
 FrameBuffer::ptr QuickVideoSource::frameBuffer()
@@ -209,14 +215,23 @@ void QuickVideoSource::timerEvent(QTimerEvent*)
                 format=QVideoSurfaceFormat();
                 return;
             }
+
+            format_converter_dl->init(bmdFormat10BitRGB, frame->video.size, bmdFormat8BitBGRA, frame->video.size);
         }
 
-        last_frame=QVideoFrame(frame->video.data_size, frame->video.size,
-                               DeckLinkVideoFrame::rowSize(frame->video.size.width(), frame->video_frame->GetPixelFormat()),
+        last_frame=QVideoFrame(DeckLinkVideoFrame::frameSize(frame->video.size, bmdFormat8BitBGRA),
+                               frame->video.size,
+                               DeckLinkVideoFrame::rowSize(frame->video.size.width(), bmdFormat8BitBGRA),
                                QVideoFrame::Format_ARGB32);
 
         if(last_frame.map(QAbstractVideoBuffer::WriteOnly)) {
-            memcpy(last_frame.bits(), frame->video.ptr_data, frame->video.data_size);
+
+            if(frame->video.rgb_10bit)
+                format_converter_dl->convert(frame->video.ptr_data, last_frame.bits());
+
+            else
+                memcpy(last_frame.bits(), frame->video.ptr_data, frame->video.data_size);
+
             last_frame.unmap();
 
         } else {
@@ -254,7 +269,7 @@ void QuickVideoSource::timerEvent(QTimerEvent*)
 
             yuv_src->linesize[0]=DeckLinkVideoFrame::rowSize(frame->video.size.width(), frame->video_frame->GetPixelFormat());
 
-            format_converter.setup((AVPixelFormat)yuv_src->format, frame->video.size, (AVPixelFormat)yuv_dst->format, frame->video.size, false);
+            format_converter_ff->setup((AVPixelFormat)yuv_src->format, frame->video.size, (AVPixelFormat)yuv_dst->format, frame->video.size, false);
         }
 
         if(fast_yuv) {
@@ -278,7 +293,7 @@ void QuickVideoSource::timerEvent(QTimerEvent*)
             if(last_frame.map(QAbstractVideoBuffer::WriteOnly)) {
                 yuv_src->data[0]=(uint8_t*)frame->video.ptr_data;
 
-                format_converter.convert(yuv_src, yuv_dst);
+                format_converter_ff->convert(yuv_src, yuv_dst);
 
                 av_image_copy_to_buffer(last_frame.bits(), buf_size, yuv_dst->data, yuv_dst->linesize, (AVPixelFormat)yuv_dst->format, yuv_dst->width, yuv_dst->height, 32);
 

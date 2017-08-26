@@ -152,13 +152,14 @@ DeckLinkCapture::~DeckLinkCapture()
     //     conv_thread->stopThreads();
 }
 
-void DeckLinkCapture::setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size)
+void DeckLinkCapture::setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size, bool rgb_10bit)
 {
     this->device=device;
     this->format=format;
     this->pixel_format=pixel_format;
     this->audio_channels=audio_channels;
     this->audio_sample_size=audio_sample_size;
+    this->rgb_10bit=rgb_10bit;
 
     // if(ext_converter) {
     //     conv_thread->setAudioChannels(audio_channels);
@@ -201,6 +202,11 @@ bool DeckLinkCapture::gotSignal() const
 bool DeckLinkCapture::rgbSource() const
 {
     return rgb_source;
+}
+
+bool DeckLinkCapture::rgb10Bit() const
+{
+    return rgb_10bit;
 }
 
 void DeckLinkCapture::setHalfFps(bool value)
@@ -282,8 +288,12 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
 
     if(format_flags&bmdDetectedVideoInputRGB444) {
         rgb_source=true;
-        pixel_format=bmdFormat8BitBGRA;
-        // pixel_format=bmdFormat10BitRGB;
+
+        if(rgb_10bit)
+            pixel_format=bmdFormat10BitRGB;
+
+        else
+            pixel_format=bmdFormat8BitBGRA;
     }
 
     if(decklink_input) {
@@ -306,7 +316,8 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
     emit formatChanged(mode->GetWidth(), mode->GetHeight(),
                        frame_duration, half_fps ? frame_scale*.5 : frame_scale,
                        (mode->GetFieldDominance()==bmdProgressiveFrame || mode->GetFieldDominance()==bmdProgressiveSegmentedFrame),
-                       rgb_source ? "RGB" : "YUV");
+                       BMDPixelFormatToString(pixel_format) // rgb_source ? "RGB" : "YUV"
+                       );
 
     qInfo().noquote() << "InputFormatChanged:"
                       << QString("%1x%2@%3%4 %5")
