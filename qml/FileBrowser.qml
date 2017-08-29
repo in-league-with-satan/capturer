@@ -20,7 +20,7 @@ ShowHideRect {
         cacheBuffer: height*4
 
         highlight: Rectangle {
-            color: "lightsteelblue";
+            color: "lightsteelblue"
             // radius: 5
         }
 
@@ -170,19 +170,19 @@ ShowHideRect {
 
         function focusPrev() {
             if(!root.state_visible)
-                return;
+                return
 
-            list.currentIndex--;
+            list.currentIndex--
 
             if(list.currentIndex<0)
-                list.currentIndex=list.model.count - 1;
+                list.currentIndex=list.model.count - 1
         }
 
         function focusNext() {
             if(!root.state_visible)
-                return;
+                return
 
-            list.currentIndex++;
+            list.currentIndex++
 
             if(list.currentIndex>=list.model.count)
                 list.currentIndex=0
@@ -190,7 +190,7 @@ ShowHideRect {
 
         function back() {
             if(!root.state_visible)
-                return;
+                return
 
             var path=messenger.fileSystemModel.path(list.model.modelIndex(0))
 
@@ -202,7 +202,7 @@ ShowHideRect {
 
         function enter() {
             if(!root.state_visible)
-                return;
+                return
 
             var path=messenger.fileSystemModel.path(list.model.modelIndex(list.currentIndex))
 
@@ -211,10 +211,14 @@ ShowHideRect {
                 fs_model.rootIndex=messenger.fileSystemModel.index(path)
 
             } else {
-                messenger.fileSystemModel.playMedia(path);
+                messenger.fileSystemModel.playMedia(path)
 
                 root.state_visible=false
             }
+        }
+
+        onVisibleChanged: {
+            messenger.fileBrowserVisibleState(visible)
         }
 
         Connections {

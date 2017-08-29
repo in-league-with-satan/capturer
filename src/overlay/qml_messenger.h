@@ -25,6 +25,8 @@ public:
     Q_INVOKABLE SettingsModel *settingsModel();
     Q_INVOKABLE FileSystemModel *fileSystemModel();
 
+    Q_INVOKABLE void fileBrowserVisibleState(bool visible);
+
     Q_INVOKABLE QString getRootPath();
 
     Q_INVOKABLE QString versionThis() const;
@@ -97,7 +99,6 @@ signals:
     void playerDurationChanged(const qint64 &duration);
     void playerPositionChanged(const qint64 &position);
     void playerSetPosition(const qint64 &position);
-
 };
 
 #endif // QML_MESSENGER_H

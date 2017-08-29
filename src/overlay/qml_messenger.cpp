@@ -98,6 +98,11 @@ FileSystemModel *QmlMessenger::fileSystemModel()
     return file_system_model;
 }
 
+void QmlMessenger::fileBrowserVisibleState(bool visible)
+{
+    file_system_model->fileBrowserVisibleState(visible);
+}
+
 QString QmlMessenger::getRootPath()
 {
     return qApp->applicationDirPath() + "/videos";

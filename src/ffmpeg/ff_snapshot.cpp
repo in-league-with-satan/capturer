@@ -93,7 +93,8 @@ FFSnapshot::FFSnapshot(QObject *paretn)
 {
     accurate_seek=false;
     shots_per_10_min=4;
-    on_pause=false;
+    on_pause=true;
+    viewer_visible=false;
 
     start();
 }
@@ -103,11 +104,22 @@ void FFSnapshot::enqueue(const QString &filename)
     QMutexLocker ml(&mutex_queue);
 
     queue.enqueue(filename);
+
+    if(viewer_visible)
+        on_pause=false;
 }
 
 void FFSnapshot::pause(bool state)
 {
     on_pause=state;
+}
+
+void FFSnapshot::viewerVisible(bool value)
+{
+    viewer_visible=value;
+
+    if(viewer_visible)
+        on_pause=false;
 }
 
 void FFSnapshot::run()
@@ -141,6 +153,7 @@ void FFSnapshot::checkQueue()
             QMutexLocker ml(&mutex_queue);
 
             if(queue.isEmpty()) {
+                on_pause=true;
                 timer->start();
                 return;
             }

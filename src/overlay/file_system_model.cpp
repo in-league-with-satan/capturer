@@ -229,7 +229,12 @@ void FileSystemModel::addSnapshot(QString key, QImage image)
 void FileSystemModel::disableSnapshots(bool value)
 {
     media_info->pause(value);
-    snapshot->pause(value);
+    // snapshot->pause(value);
+}
+
+void FileSystemModel::fileBrowserVisibleState(bool visible)
+{
+    snapshot->viewerVisible(visible);
 }
 
 bool FileSystemModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const

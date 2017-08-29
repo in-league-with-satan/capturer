@@ -48,6 +48,7 @@ public:
 
 public slots:
     void disableSnapshots(bool value);
+    void fileBrowserVisibleState(bool visible);
 
 private slots:
     void srcRowsInserted(const QModelIndex &parent, int first, int last);

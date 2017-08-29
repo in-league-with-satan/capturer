@@ -22,6 +22,7 @@ public slots:
     void enqueue(const QString &filename);
 
     void pause(bool state);
+    void viewerVisible(bool value);
 
 protected:
     void run();
@@ -40,6 +41,7 @@ private:
     QMutex mutex_queue;
 
     std::atomic <bool> on_pause;
+    std::atomic <bool> viewer_visible;
 
     Database *database;
 
