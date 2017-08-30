@@ -7,6 +7,7 @@
 #include "settings_model.h"
 #include "file_system_model.h"
 #include "snapshot_list_model.h"
+#include "quick_video_source.h"
 
 class QmlMessenger : public QObject
 {
@@ -24,6 +25,8 @@ public:
     Q_INVOKABLE SettingsModel *settingsModel();
     Q_INVOKABLE FileSystemModel *fileSystemModel();
 
+    Q_INVOKABLE void fileBrowserVisibleState(bool visible);
+
     Q_INVOKABLE QString getRootPath();
 
     Q_INVOKABLE QString versionThis() const;
@@ -34,6 +37,8 @@ public:
     Q_INVOKABLE QString versionlibSWScale() const;
     Q_INVOKABLE QString versionlibSWResample() const;
     Q_INVOKABLE QString networkAddresses() const;
+
+    Q_INVOKABLE QuickVideoSource *videoSourceMain();
 
 public slots:
     void keyEvent(const Qt::Key &key);
@@ -46,6 +51,8 @@ private:
     SettingsModel *settings_model;
     FileSystemModel *file_system_model;
 
+    QuickVideoSource *video_source_main;
+
 signals:
     void updateRecStats(QString duration=QString(), QString bitrate=QString(), QString size=QString(),
                         QString buffer_state=QString(), QString dropped_frames_counter=QString());
@@ -55,7 +62,8 @@ signals:
     void audioLevels(qreal l, qreal r, qreal c, qreal lfe, qreal rl, qreal rr, qreal sl, qreal sr);
 
 
-    void freeSpace(QString size);
+    void freeSpaceStr(QString size);
+    void freeSpace(qint64 size);
 
     void recStarted();
     void recStopped();
@@ -91,7 +99,6 @@ signals:
     void playerDurationChanged(const qint64 &duration);
     void playerPositionChanged(const qint64 &position);
     void playerSetPosition(const qint64 &position);
-
     void errorString(QString error_string);
 };
 

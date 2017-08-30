@@ -29,7 +29,7 @@ public:
 public slots:
 
 private slots:
-    void recStats(NRecStats stats);
+    void recStats(NRecStats stats, qint64 free_space);
 
 private:
     HttpClient *client;
@@ -37,7 +37,7 @@ private:
     KeepScreenOn *keep_screen_on;
 
 signals:
-    void updateRecStats(QString duration, QString size, QString bitrate, QString frames_dropped, QString frame_buffer_state);
+    void updateRecStats(QString duration, QString size, QString free_space, QString bitrate, QString frames_dropped, QString frame_buffer_state);
     void recStateChanged(bool state);
     void playerDurationChanged(qint64 value);
     void playerPositionChanged(qint64 value);

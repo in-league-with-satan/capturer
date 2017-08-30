@@ -3,6 +3,9 @@
 
 #include <QByteArray>
 
+void channelsRemap16(void *data, size_t size);
+void channelsRemap32(void *data, size_t size);
+
 void channelsRemap16(QByteArray *ba_data);
 void channelsRemap32(QByteArray *ba_data);
 

@@ -27,6 +27,8 @@ public:
         int index;
         int audio_sample_size;
         int restart;
+        int half_fps;
+        int rgb_10bit;
 
     } device;
 
@@ -39,6 +41,8 @@ public:
         int encoder;
         int half_fps;
         int stop_rec_on_frames_drop;
+        int downscale;
+        int scale_filter;
 
     } rec;
 

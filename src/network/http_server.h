@@ -20,6 +20,7 @@ public slots:
     void setRecStats(const NRecStats &value);
     void setPlayerDuration(const qint64 &value);
     void setPlayerPosition(const qint64 &value);
+    void setFreeSpace(const qint64 &value);
 
 private:
     QByteArray ba_buffer;

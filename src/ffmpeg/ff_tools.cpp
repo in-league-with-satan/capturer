@@ -23,7 +23,7 @@ QString ffErrorString(int code)
     return QString(buf);
 }
 
-AVFrame *alloc_frame(AVPixelFormat pix_fmt, int width, int height)
+AVFrame *alloc_frame(AVPixelFormat pix_fmt, int width, int height, bool alloc_buffer)
 {
     AVFrame *av_frame;
     int ret;
@@ -38,11 +38,13 @@ AVFrame *alloc_frame(AVPixelFormat pix_fmt, int width, int height)
     av_frame->height=height;
 
     // allocate the buffers for the frame data
-    ret=av_frame_get_buffer(av_frame, alignment);
+    if(alloc_buffer) {
+        ret=av_frame_get_buffer(av_frame, alignment);
 
-    if(ret<0) {
-        qCritical() << "Could not allocate frame data";
-        return nullptr;
+        if(ret<0) {
+            qCritical() << "Could not allocate frame data";
+            return nullptr;
+        }
     }
 
     return av_frame;

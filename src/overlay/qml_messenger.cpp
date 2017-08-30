@@ -12,6 +12,8 @@
 QmlMessenger::QmlMessenger(QObject *parent)
     : QObject(parent)
 {
+    video_source_main=new QuickVideoSource(false, this);
+
     settings_model=new SettingsModel();
 
     connect(settings_model, SIGNAL(changed(SettingsModel*)), SIGNAL(settingsModelChanged(SettingsModel*)));
@@ -86,9 +88,19 @@ QString QmlMessenger::networkAddresses() const
     return res;
 }
 
+QuickVideoSource *QmlMessenger::videoSourceMain()
+{
+    return video_source_main;
+}
+
 FileSystemModel *QmlMessenger::fileSystemModel()
 {
     return file_system_model;
+}
+
+void QmlMessenger::fileBrowserVisibleState(bool visible)
+{
+    file_system_model->fileBrowserVisibleState(visible);
 }
 
 QString QmlMessenger::getRootPath()
@@ -118,5 +130,6 @@ void QmlMessenger::checkFreeSpace()
 {
     QStorageInfo info=QStorageInfo(QApplication::applicationDirPath() + "/videos");
 
-    emit freeSpace(QString("%1 MB").arg(QLocale().toString(info.bytesAvailable()/1024/1024)));
+    emit freeSpace(info.bytesAvailable());
+    emit freeSpaceStr(QString("%1 MB").arg(QLocale().toString(info.bytesAvailable()/1024/1024)));
 }

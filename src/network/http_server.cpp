@@ -83,3 +83,8 @@ void HttpServer::setPlayerPosition(const qint64 &value)
 {
     status.player_state.position=value;
 }
+
+void HttpServer::setFreeSpace(const qint64 &value)
+{
+    status.free_space=value;
+}

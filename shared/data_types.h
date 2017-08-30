@@ -45,6 +45,7 @@ public:
         About,
         Info,
         Preview,
+        PreviewFastYuv,
         FullScreen,
         FileBrowser,
         Rec,
@@ -143,12 +144,18 @@ struct PlayerState {
 struct Status {
     NRecStats rec_stats;
     PlayerState player_state;
+    qint64 free_space;
+
+    Status() {
+        free_space=0;
+    }
 
     QVariantMap toExt() {
         QVariantMap map_root;
 
         map_root.insert(QStringLiteral("rec_stats"), rec_stats.toExt());
         map_root.insert(QStringLiteral("player_state"), player_state.toExt());
+        map_root.insert(QStringLiteral("free_space"), free_space);
 
         return map_root;
     }
@@ -156,12 +163,13 @@ struct Status {
     Status &fromExt(const QVariantMap &map_root) {
         rec_stats.fromExt(map_root.value(QStringLiteral("rec_stats")).toMap());
         player_state.fromExt(map_root.value(QStringLiteral("player_state")).toMap());
+        free_space=map_root.value(QStringLiteral("free_space"), 0).toULongLong();
 
         return *this;
     }
 
     inline bool operator !=(const Status &other) const {
-        return rec_stats!=other.rec_stats || player_state!=other.player_state;
+        return rec_stats!=other.rec_stats || player_state!=other.player_state || free_space!=other.free_space;
     }
 };
 

@@ -39,7 +39,8 @@ Rectangle {
         color: "white"
         width: root.parent.width
         anchors.horizontalCenter: root.horizontalCenter
-        y: -root.height*.72
+        anchors.bottom: root.top
+        anchors.margins: width*.07
         horizontalAlignment: Text.AlignHCenter
         font.pixelSize: font_size
         font.bold: true

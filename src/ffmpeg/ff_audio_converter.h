@@ -16,6 +16,7 @@ public:
     bool init(uint64_t in_channels_layout, int64_t in_sample_rate, int64_t in_sample_format,
               uint64_t out_channels_layout, int64_t out_sample_rate, int64_t out_sample_format);
 
+    bool convert(void *src, size_t size, QByteArray *dst);
     bool convert(QByteArray *src, QByteArray *dst);
 
     void free();

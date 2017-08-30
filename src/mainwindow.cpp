@@ -20,8 +20,6 @@
 #include "device_list.h"
 #include "capture.h"
 #include "audio_output.h"
-#include "video_widget.h"
-#include "sdl2_video_output_thread.h"
 #include "audio_level.h"
 #include "qml_messenger.h"
 #include "overlay_view.h"
@@ -53,6 +51,7 @@ MainWindow::MainWindow(QWidget *parent)
     qmlRegisterType<SettingsModel>("FuckTheSystem", 0, 0, "SettingsModel");
     qmlRegisterType<FileSystemModel>("FuckTheSystem", 0, 0, "FileSystemModel");
     qmlRegisterType<SnapshotListModel>("FuckTheSystem", 0, 0, "SnapshotListModel");
+    qmlRegisterType<QuickVideoSource>("FuckTheSystem", 0, 0, "QuickVideoSource");
 
     messenger=new QmlMessenger();
 
@@ -69,17 +68,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     overlay_view->addImageProvider("fs_image_provider", (QQmlImageProviderBase*)messenger->fileSystemModel()->imageProvider());
 
+    decklink_thread->subscribe(messenger->videoSourceMain()->frameBuffer());
+
     //
 
     audio_output=newAudioOutput(this);
 
     decklink_thread->subscribe(audio_output->frameBuffer());
-
-    //
-
-    out_widget=new VideoWidget();
-
-    decklink_thread->subscribe(out_widget->frameBuffer());
 
     //
 
@@ -95,8 +90,10 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     ff_dec=new FFDecoderThread(this);
-    ff_dec->subscribeVideo(out_widget->frameBuffer());
+
+    ff_dec->subscribeVideo(messenger->videoSourceMain()->frameBuffer());
     ff_dec->subscribeAudio(audio_output->frameBuffer());
+
 
     connect(messenger->fileSystemModel(), SIGNAL(playMedia(QString)), ff_dec, SLOT(open(QString)), Qt::QueuedConnection);
     connect(ff_dec, SIGNAL(durationChanged(qint64)), messenger, SIGNAL(playerDurationChanged(qint64)), Qt::QueuedConnection);
@@ -125,6 +122,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(http_server, SIGNAL(playerSeek(qint64)), ff_dec, SLOT(seek(qint64)));
     connect(ff_dec, SIGNAL(durationChanged(qint64)), http_server, SLOT(setPlayerDuration(qint64)), Qt::QueuedConnection);
     connect(ff_dec, SIGNAL(positionChanged(qint64)), http_server, SLOT(setPlayerPosition(qint64)), Qt::QueuedConnection);
+    connect(messenger, SIGNAL(freeSpace(qint64)), http_server, SLOT(setFreeSpace(qint64)), Qt::QueuedConnection);
 
     //
 
@@ -180,6 +178,28 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="rgb depth";
+    set_model_data.values << "8 bit" << "10 bit";
+    set_model_data.values_data << 0 << 1;
+
+    set_model_data.value=&settings->device.rgb_10bit;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="half-fps";
+    set_model_data.value=&settings->device.half_fps;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
     set_model_data.type=SettingsModel::Type::button;
     set_model_data.name.clear();
     set_model_data.values << "restart device";
@@ -198,15 +218,18 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.group="rec";
     set_model_data.name="video encoder";
 
-    if(FFEncoder::isLib_x264_10bit()) {
-        set_model_data.values << QStringList() << "libx264_10bit" << "nvenc_h264" << "nvenc_hevc";
+    if(FFEncoder::isLib_x264_10bit())
         set_model_data.values_data << FFEncoder::VideoEncoder::libx264_10bit << FFEncoder::VideoEncoder::nvenc_h264 << FFEncoder::VideoEncoder::nvenc_hevc;
 
-    } else {
-        set_model_data.values << QStringList() << "libx264" << "libx264rgb" << "nvenc_h264" << "nvenc_hevc";
-        set_model_data.values_data << FFEncoder::VideoEncoder::libx264 << FFEncoder::VideoEncoder::libx264rgb << FFEncoder::VideoEncoder::nvenc_h264 << FFEncoder::VideoEncoder::nvenc_hevc;
+    else
+        set_model_data.values_data << FFEncoder::VideoEncoder::libx264 << FFEncoder::VideoEncoder::libx264rgb
+                                   << FFEncoder::VideoEncoder::nvenc_h264 << FFEncoder::VideoEncoder::nvenc_hevc
+                                   << FFEncoder::VideoEncoder::ffvhuff;
 
-    }
+
+    foreach(QVariant v, set_model_data.values_data)
+        set_model_data.values << FFEncoder::VideoEncoder::toString(v.toInt());
+
 
     set_model_data.value=&settings->rec.encoder;
 
@@ -223,7 +246,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt());
 
-    foreach(const QString preset, presets) {
+    foreach(const QString &preset, presets) {
         set_model_data.values << preset;
         set_model_data.values_data << FFEncoder::presetVisualNameToParamName(preset);
     }
@@ -260,8 +283,36 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.name="constant rate factor / quality";
     set_model_data.value=&settings->rec.crf;
 
-    for(int i=0; i<=24; ++i)
+    for(int i=0; i<=42; ++i)
         set_model_data.values.append(QString::number(i));
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="downscale";
+    set_model_data.value=&settings->rec.downscale;
+
+    for(int i=0; i<=FFEncoder::DownScale::to1440; i++)
+        set_model_data.values << FFEncoder::DownScale::toString(i);
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    qInfo() << "downscale" <<  settings->rec.downscale << "scale_filter" << settings->rec.scale_filter;
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="scale filter";
+    set_model_data.value=&settings->rec.scale_filter;
+
+    for(int i=0; i<=FFEncoder::ScaleFilter::Spline; i++)
+        set_model_data.values << FFEncoder::ScaleFilter::toString(i);
 
     messenger->settingsModel()->add(set_model_data);
 
@@ -285,13 +336,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    QVBoxLayout *la_container=new QVBoxLayout();
-    la_container->addWidget(overlay_view);
-    la_container->setMargin(0);
-
-    out_widget->setLayout(la_container);
-
-    setCentralWidget(out_widget);
+    setCentralWidget(overlay_view);
 
     QApplication::instance()->installEventFilter(this);
 
@@ -353,6 +398,10 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
                 keyPressed(KeyCodeC::Preview);
                 return true;
 
+            case Qt::Key_F8:
+                keyPressed(KeyCodeC::PreviewFastYuv);
+                return true;
+
             case Qt::Key_F11:
                 keyPressed(KeyCodeC::FullScreen);
                 return true;
@@ -401,9 +450,18 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 
 void MainWindow::closeEvent(QCloseEvent *)
 {
-    out_widget->close();
+}
 
-    overlay_view->close();
+void MainWindow::mousePressEvent(QMouseEvent *event)
+{
+    if(event->button()==Qt::LeftButton)
+        pos_mouse_press=event->globalPos() - frameGeometry().topLeft();
+}
+
+void MainWindow::mouseMoveEvent(QMouseEvent *event)
+{
+    if(event->buttons()&Qt::LeftButton)
+        move(event->globalPos() - pos_mouse_press);
 }
 
 void MainWindow::keyPressed(int code)
@@ -441,6 +499,10 @@ void MainWindow::keyPressed(int code)
 
     case KeyCodeC::Preview:
         previewOnOff();
+        break;
+
+    case KeyCodeC::PreviewFastYuv:
+        messenger->videoSourceMain()->setFastYuv(!messenger->videoSourceMain()->fastYuv());
         break;
 
     case KeyCodeC::SmoothTransform:
@@ -572,7 +634,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
         QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)data->values_data.value(settings->rec.encoder, 0).toInt());
 
-        foreach(const QString preset, presets) {
+        foreach(const QString &preset, presets) {
             list_values << preset;
             list_values_data << FFEncoder::presetVisualNameToParamName(preset);
         }
@@ -644,12 +706,16 @@ void MainWindow::captureStart()
         return;
     }
 
+
     decklink_thread->setup(model_data_device->values_data[settings->device.index].value<DeckLinkDevice>(),
             DeckLinkFormat(),
             DeckLinkPixelFormat(),
             8,
-            model_data_audio->values_data[settings->device.audio_sample_size].toInt()
+            model_data_audio->values_data[settings->device.audio_sample_size].toInt(),
+            settings->device.rgb_10bit
             );
+
+    decklink_thread->setHalfFps(settings->device.half_fps);
 
     QMetaObject::invokeMethod(decklink_thread, "captureStart", Qt::QueuedConnection);
 }
@@ -671,13 +737,16 @@ void MainWindow::startStopRecording()
         FFEncoder::Config cfg;
 
         cfg.framerate=FFEncoder::calcFps(current_frame_duration, current_frame_scale, settings->rec.half_fps);
-        cfg.frame_resolution=current_frame_size;
+        cfg.frame_resolution_src=current_frame_size;
         cfg.pixel_format=(AVPixelFormat)messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();
         cfg.preset=messenger->settingsModel()->data_p(&settings->rec.preset_current)->values_data[settings->rec.preset_current].toString();
         cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
         cfg.crf=settings->rec.crf;
+        cfg.rgb_source=decklink_thread->rgbSource();
+        cfg.rgb_10bit=decklink_thread->rgb10Bit();
         cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device.audio_sample_size)->values_data[settings->device.audio_sample_size].toInt();
-
+        cfg.downscale=settings->rec.downscale;
+        cfg.scale_filter=settings->rec.scale_filter;
 
         ff_enc->setConfig(cfg);
 
@@ -733,7 +802,7 @@ void MainWindow::previewOnOff()
 {
     settings->main.preview=!settings->main.preview;
 
-    out_widget->frameBuffer()->setEnabled(settings->main.preview);
+    messenger->videoSourceMain()->frameBuffer()->setEnabled(settings->main.preview);
 }
 
 void MainWindow::encoderStateChanged(bool state)
@@ -751,8 +820,6 @@ void MainWindow::playerStateChanged(int state)
 
     } else {
         emit messenger->signalLost(true);
-
-        out_widget->fillBlack();
     }
 
     if(state==FFDecoderThread::ST_STOPPED) {

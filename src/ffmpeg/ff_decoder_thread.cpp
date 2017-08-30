@@ -422,16 +422,16 @@ void FFDecoderThread::_play()
 
             if(!context.wait_video) {
                 Frame::ptr f=Frame::make();
+// fix me !!!
+//                f->video.decklink_frame.init(QSize(context.frame_rgb->width, context.frame_rgb->height), bmdFormat8BitBGRA);
 
-                f->video.decklink_frame.init(QSize(context.frame_rgb->width, context.frame_rgb->height), bmdFormat8BitBGRA);
+//                int data_size=av_image_get_buffer_size(AV_PIX_FMT_BGRA, context.frame_rgb->width, context.frame_rgb->height, alignment);
 
-                int data_size=av_image_get_buffer_size(AV_PIX_FMT_BGRA, context.frame_rgb->width, context.frame_rgb->height, alignment);
-
-                assert(data_size==f->video.raw->size());
+//                assert(data_size==f->video.raw->size());
 
 
-                av_image_copy_to_buffer((uint8_t*)f->video.raw->constData(), data_size, context.frame_rgb->data, context.frame_rgb->linesize,
-                                        AV_PIX_FMT_BGRA, context.frame_rgb->width, context.frame_rgb->height, alignment);
+//                av_image_copy_to_buffer((uint8_t*)f->video.raw->constData(), data_size, context.frame_rgb->data, context.frame_rgb->linesize,
+//                                        AV_PIX_FMT_BGRA, context.frame_rgb->width, context.frame_rgb->height, alignment);
 
 
                 context.last_video_out_time=av_gettime();
@@ -529,23 +529,24 @@ void FFDecoderThread::_play()
         }
 
         if(context.out_audio_buffer->isEmpty() && context.ba_audio.size()>=audio_buf_min_size) {
-            Frame::ptr f=Frame::make();
+// fix me !!!
+//            Frame::ptr f=Frame::make();
 
-            f->audio.channels=2;
-            f->audio.sample_size=16;
-            f->audio.raw=context.ba_audio;
+//            f->audio.channels=2;
+//            f->audio.sample_size=16;
+//            f->audio.raw=context.ba_audio;
 
-            context.ba_audio.clear();
-            context.audio_buf_size=0;
+//            context.ba_audio.clear();
+//            context.audio_buf_size=0;
 
-            if(context.reset_audio) {
-                f->reset_counter=true;
-                context.reset_audio=false;
-            }
+//            if(context.reset_audio) {
+//                f->reset_counter=true;
+//                context.reset_audio=false;
+//            }
 
-            context.out_audio_buffer->append(f);
+//            context.out_audio_buffer->append(f);
 
-            f.reset();
+//            f.reset();
 
             do_nothing=false;
         }

@@ -27,7 +27,7 @@ QmlMessenger::QmlMessenger(QObject *parent)
 
     client=new HttpClient(this);
 
-    connect(client, SIGNAL(recStats(NRecStats)), SLOT(recStats(NRecStats)));
+    connect(client, SIGNAL(recStats(NRecStats,qint64)), SLOT(recStats(NRecStats,qint64)));
     connect(client, SIGNAL(recordIsRunning(bool)), SIGNAL(recStateChanged(bool)));
     connect(client, SIGNAL(playerDuration(qint64)), SIGNAL(playerDurationChanged(qint64)));
     connect(client, SIGNAL(playerPosition(qint64)), SIGNAL(playerPositionChanged(qint64)));
@@ -83,10 +83,11 @@ void QmlMessenger::playerSeek(qint64 pos)
     vibro->vibrate(30);
 }
 
-void QmlMessenger::recStats(NRecStats stats)
+void QmlMessenger::recStats(NRecStats stats, qint64 free_space)
 {
     emit updateRecStats(stats.time.toString(QStringLiteral("HH:mm:ss")),
-                        QString(QLatin1String("%1 bytes")).arg(QLocale().toString((qulonglong)stats.size)),
+                        QString(QLatin1String("%1 MB")).arg(QLocale().toString(qulonglong(stats.size/1024/1024))),
+                        QString(QLatin1String("%1 MB")).arg(QLocale().toString(qulonglong(free_space/1024/1024))),
                         QString(QLatin1String("%1 Mbits/s (%2 MB/s)")).arg(QLocale().toString((stats.avg_bitrate)/1000./1000., 'f', 2))
                         .arg(QLocale().toString((stats.avg_bitrate)/8/1024./1024., 'f', 2)),
                         QString::number(stats.dropped_frames_counter), QString(QLatin1String("%1/%2")).arg(stats.frame_buffer_used).arg(stats.frame_buffer_size));

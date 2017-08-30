@@ -11,6 +11,9 @@
 
 #include "device_list.h"
 
+#include "decklink_audio_input_packet.h"
+
+
 class DeckLinkCaptureDelegate;
 class DlConvertThreadContainer;
 
@@ -41,7 +44,7 @@ public:
     explicit DeckLinkCapture(QObject *parent=0);
     ~DeckLinkCapture();
 
-    void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size);
+    void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size, bool rgb_10bit);
 
     void subscribe(FrameBuffer::ptr obj);
     void unsubscribe(FrameBuffer::ptr obj);
@@ -49,6 +52,11 @@ public:
     bool isRunning() const;
 
     bool gotSignal() const;
+
+    bool rgbSource() const;
+    bool rgb10Bit() const;
+
+    void setHalfFps(bool value);
 
 protected:
     void run();
@@ -66,12 +74,13 @@ private:
 
     DeckLinkCaptureDelegate *decklink_capture_delegate;
 
-    std::atomic <bool> running;
 
     IDeckLink *decklink;
     IDeckLinkConfiguration *decklink_configuration;
     IDeckLinkDisplayMode *decklink_display_mode;
     IDeckLinkInput *decklink_input;
+
+    DeckLinkAudioInputPacket *audio_input_packet;
 
     DeckLinkDevice device;
     DeckLinkFormat format;
@@ -82,15 +91,21 @@ private:
     int64_t frame_scale;
     int64_t frame_time_prev;
 
-    DlConvertThreadContainer *conv_thread;
+    // DlConvertThreadContainer *conv_thread;
 
-    IDeckLinkVideoConversion *video_converter;
+    // IDeckLinkVideoConversion *video_converter;
 
     QList <FrameBuffer::ptr> subscription_list;
 
     uint8_t frame_counter;
 
+    std::atomic <bool> running;
+    std::atomic <bool> running_thread;
+    std::atomic <bool> half_fps;
     std::atomic <bool> signal_lost;
+    std::atomic <bool> skip_frame;
+    std::atomic <bool> rgb_source;
+    std::atomic <bool> rgb_10bit;
 
 signals:
     void signalLost(const bool &value);

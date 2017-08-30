@@ -36,6 +36,7 @@ FileSystemModel::FileSystemModel(QObject *parent)
     setSourceModel(model);
 
     connect(model, SIGNAL(rowsInserted(QModelIndex,int,int)), SLOT(srcRowsInserted(QModelIndex,int,int)));
+    connect(model, SIGNAL(rowsAboutToBeRemoved(QModelIndex,int,int)), SLOT(srcRowsRemoved(QModelIndex,int,int)));
 }
 
 FileSystemModel::~FileSystemModel()
@@ -69,6 +70,22 @@ QString FileSystemModel::path(const QModelIndex &index) const
 
 QModelIndex FileSystemModel::index(const QString &path) const
 {
+    image_provider->clear();
+
+    for(int i=0; i<file_snapshot_list_model.size(); ++i) {
+        file_snapshot_list_model.values()[i]->clear();
+    }
+
+    //
+
+    QFileInfo fi(path);
+
+    if(fi.isDir()) {
+        foreach(QString value, QDir(path).entryList(QDir::Files)) {
+            snapshot->enqueue(path + "/" + value);
+        }
+    }
+
     return mapFromSource(model->index(path));
 }
 
@@ -79,14 +96,14 @@ bool FileSystemModel::hasChildren(const QModelIndex &parent) const
 
 bool FileSystemModel::isDir(const QModelIndex &index) const
 {
-//    qInfo() << "isDir" << path(index) << model->isDir(mapToSource(index));
+    // qInfo() << "isDir" << path(index) << model->isDir(mapToSource(index));
 
     return model->isDir(mapToSource(index));
 }
 
 bool FileSystemModel::isDir(const QString &path) const
 {
-//    qInfo() << "isDir 2" << path;
+    // qInfo() << "isDir 2" << path;
 
     return model->isDir(model->index(path));
 }
@@ -122,7 +139,7 @@ SnapshotListModel *FileSystemModel::snapshotListModel(const QModelIndex &index)
     QFileInfo fi(index.data(QFileSystemModel::FilePathRole).toString());
 
     if(!filter_ext.contains(fi.suffix(), Qt::CaseInsensitive))
-        return 0;
+        return nullptr;
 
     if(!file_snapshot_list_model.contains(fi.filePath()))
         file_snapshot_list_model.insert(fi.filePath(), new SnapshotListModel());
@@ -130,9 +147,16 @@ SnapshotListModel *FileSystemModel::snapshotListModel(const QModelIndex &index)
     return file_snapshot_list_model[fi.filePath()];
 }
 
+QVariant FileSystemModel::data(const QModelIndex &index, int role) const
+{
+    // qInfo() << "FileSystemModel::data" << role;
+
+    return QSortFilterProxyModel::data(index, role);
+}
+
 void FileSystemModel::srcRowsInserted(const QModelIndex &parent, int first, int last)
 {
-    for(int i=first; i<last + 1; ++i) {
+    for(int i=first; i<=last; ++i) {
         const QModelIndex idx=model->index(i, 0, parent);
 
         const QFileInfo file_info=model->fileInfo(idx);
@@ -143,11 +167,36 @@ void FileSystemModel::srcRowsInserted(const QModelIndex &parent, int first, int 
         if(!filter_ext.contains(file_info.suffix(), Qt::CaseInsensitive))
             continue;
 
+        snapshot->enqueue(file_info.filePath());
+
         if(file_media_info.contains(file_info.filePath()))
             continue;
 
-        snapshot->enqueue(file_info.filePath());
         media_info->enqueue(file_info.filePath());
+    }
+}
+
+void FileSystemModel::srcRowsRemoved(const QModelIndex &parent, int first, int last)
+{
+    for(int i=first; i<=last; ++i) {
+        const QModelIndex idx=model->index(i, 0, parent);
+
+        const QFileInfo file_info=model->fileInfo(idx);
+
+        if(!file_info.isFile())
+            continue;
+
+        if(!filter_ext.contains(file_info.suffix(), Qt::CaseInsensitive))
+            continue;
+
+        file_media_info.remove(file_info.filePath());
+
+        image_provider->removeImages(file_info.filePath());
+
+        if(file_snapshot_list_model.contains(file_info.filePath())) {
+            file_snapshot_list_model[file_info.filePath()]->deleteLater();
+            file_snapshot_list_model.remove(file_info.filePath());
+        }
     }
 }
 
@@ -180,7 +229,12 @@ void FileSystemModel::addSnapshot(QString key, QImage image)
 void FileSystemModel::disableSnapshots(bool value)
 {
     media_info->pause(value);
-    snapshot->pause(value);
+    // snapshot->pause(value);
+}
+
+void FileSystemModel::fileBrowserVisibleState(bool visible)
+{
+    snapshot->viewerVisible(visible);
 }
 
 bool FileSystemModel::filterAcceptsRow(int source_row, const QModelIndex &source_parent) const

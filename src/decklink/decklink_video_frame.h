@@ -12,7 +12,7 @@ public:
     DeckLinkVideoFrame();
     virtual ~DeckLinkVideoFrame();
 
-    void init(QSize size, BMDPixelFormat pixel_format, BMDFrameFlags flags=bmdFrameFlagDefault);
+    void init(QSize size, BMDPixelFormat pixel_format, BMDFrameFlags flags=bmdFrameFlagDefault, bool alloc_buffer=true);
 
     static size_t frameSize(QSize size, BMDPixelFormat pixel_format);
     static size_t rowSize(int width, BMDPixelFormat pixel_format);
@@ -35,13 +35,15 @@ public:
     virtual ULONG STDMETHODCALLTYPE AddRef(void);
     virtual ULONG STDMETHODCALLTYPE Release(void);
 
+    void *buffer;
+    size_t buffer_size;
+    QSize size;
+
+
 private:
     BMDPixelFormat pixel_format;
     BMDFrameFlags flags;
 
-    QSize size;
-
-    void *buffer;
     QByteArray ba_buffer;
 };
 

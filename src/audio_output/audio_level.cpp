@@ -60,16 +60,16 @@ void AudioLevel::run()
 
         if(frame) {
             if(frame->audio.sample_size==16) {
-                int16_t *ptr_data=(int16_t*)frame->audio.raw.constData();
+                int16_t *ptr_data=(int16_t*)frame->audio.ptr_data;
 
-                for(int pos=0, size=frame->audio.raw.size()/2; pos<size; pos+=8)
+                for(int pos=0, size=frame->audio.data_size/2; pos<size; pos+=8)
                     for(int channel=0; channel<8; ++channel)
                         level[channel]=std::max(level[channel], (int32_t)ptr_data[pos + channel]);
 
             } else {
-                int32_t *ptr_data=(int32_t*)frame->audio.raw.constData();
+                int32_t *ptr_data=(int32_t*)frame->audio.ptr_data;
 
-                for(int pos=0, size=frame->audio.raw.size()/4; pos<size; pos+=8)
+                for(int pos=0, size=frame->audio.data_size/4; pos<size; pos+=8)
                     for(int channel=0; channel<8; ++channel)
                         level[channel]=std::max(level[channel], ptr_data[pos + channel]);
             }

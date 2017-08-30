@@ -12,10 +12,9 @@ extern "C" {
 }
 
 class FFMpegContext;
+class FFFormatConverter;
+class DecklinkFrameConverter;
 
-namespace FF {
-    class FormatConverter;
-}
 
 class FFEncoder : public QObject
 {
@@ -31,6 +30,11 @@ public:
 
     struct Framerate {
         enum T {
+            full_11,
+            full_12,
+            full_12_5,
+            full_14,
+            full_15,
             full_23,
             full_24,
             full_25,
@@ -51,24 +55,65 @@ public:
             libx264_10bit,
             libx264rgb,
             nvenc_h264,
-            nvenc_hevc
+            nvenc_hevc,
+            ffvhuff
+            // magicyuv
         };
+
+        static QString toString(uint32_t enc);
+
     };
 
     struct PixelFormat {
         enum T {
             RGB24=AV_PIX_FMT_RGB24,
             YUV420P=AV_PIX_FMT_YUV420P,
+            YUV422P=AV_PIX_FMT_YUV422P,
+            UYVY422=AV_PIX_FMT_UYVY422,
             YUV444P=AV_PIX_FMT_YUV444P,
             YUV420P10=AV_PIX_FMT_YUV420P10,
-            YUV444P10=AV_PIX_FMT_YUV444P10
+            // YUV422P10=AV_PIX_FMT_YUV422P10,
+            V210=AV_PIX_FMT_YUV422P10LE,
+            YUV444P10=AV_PIX_FMT_YUV444P10,
+            R210=AV_PIX_FMT_RGB48LE
         };
 
-        static QString toString(uint64_t format);
+        static QString toString(uint32_t value);
 
-        static uint64_t fromString(QString format);
+        static uint64_t fromString(QString value);
 
         static QList <FFEncoder::PixelFormat::T> compatiblePixelFormats(VideoEncoder::T encoder);
+    };
+
+    struct DownScale {
+        enum T {
+            Disabled,
+            to720,
+            to1080,
+            to1440
+        };
+
+        static int toWidth(uint32_t value);
+        static QString toString(uint32_t value);
+    };
+
+    struct ScaleFilter {
+        enum T {
+            FastBilinear,
+            Bilinear,
+            Bicubic,
+            X,
+            Point,
+            Area,
+            Bicublin,
+            Gauss,
+            Sinc,
+            Lanczos,
+            Spline
+        };
+
+        static int toSws(uint32_t value);
+        static QString toString(uint32_t value);
     };
 
     struct Config {
@@ -76,17 +121,26 @@ public:
             audio_channels_size=8;
             audio_sample_size=16;
             audio_dalay=0;
+            downscale=DownScale::Disabled;
+            scale_filter=ScaleFilter::FastBilinear;
+            rgb_source=true;
+            rgb_10bit=false;
         }
 
-        QSize frame_resolution;
+        QSize frame_resolution_src;
+        QSize frame_resolution_dst;
         Framerate::T framerate;
         uint8_t audio_channels_size;
         uint8_t audio_sample_size;
         int audio_dalay;
         uint8_t crf;
+        uint8_t downscale;
+        int scale_filter;
         AVPixelFormat pixel_format;
         VideoEncoder::T video_encoder;
         QString preset;
+        bool rgb_source;
+        bool rgb_10bit;
     };
 
     struct Stats {
@@ -114,7 +168,8 @@ private:
     void calcStats();
 
     FFMpegContext *context;
-    FF::FormatConverter *converter;
+    FFFormatConverter *format_converter_ff;
+    DecklinkFrameConverter *format_converter_dl;
 
     QSize last_frame_size;
 

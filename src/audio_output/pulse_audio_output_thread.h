@@ -20,7 +20,7 @@ public:
 protected:
     virtual void run();
 
-    void onInputFrameArrived(QByteArray *ba_data, int channels, int sample_size);
+    void onInputFrameArrived(void *data, size_t size, int channels, int sample_size);
 
     void init();
 

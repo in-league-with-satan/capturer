@@ -2,13 +2,14 @@
 
 #include "audio_tools.h"
 
-void channelsRemap16(QByteArray *ba_data)
+
+void channelsRemap16(void *data, size_t size)
 {
-    int16_t *ptr_data=(int16_t*)ba_data->constData();
+    int16_t *ptr_data=(int16_t*)data;
 
     int16_t tmp;
 
-    for(int pos=0, size=ba_data->size()/2; pos<size; pos+=8) {
+    for(int pos=0, csize=size/2; pos<csize; pos+=8) {
         // swap center and lfe
         tmp=ptr_data[pos + 2];
         ptr_data[pos + 2]=ptr_data[pos + 3];
@@ -26,13 +27,13 @@ void channelsRemap16(QByteArray *ba_data)
     }
 }
 
-void channelsRemap32(QByteArray *ba_data)
+void channelsRemap32(void *data, size_t size)
 {
-    int32_t *ptr_data=(int32_t*)ba_data->constData();
+    int32_t *ptr_data=(int32_t*)data;
 
     int32_t tmp;
 
-    for(int pos=0, size=ba_data->size()/4; pos<size; pos+=8) {
+    for(int pos=0, csize=size/4; pos<csize; pos+=8) {
         // swap center and lfe
         tmp=ptr_data[pos + 2];
         ptr_data[pos + 2]=ptr_data[pos + 3];
@@ -48,6 +49,16 @@ void channelsRemap32(QByteArray *ba_data)
         ptr_data[pos + 5]=ptr_data[pos + 7];
         ptr_data[pos + 7]=tmp;
     }
+}
+
+void channelsRemap16(QByteArray *ba_data)
+{
+    channelsRemap16((void*)ba_data->constData(), ba_data->size());
+}
+
+void channelsRemap32(QByteArray *ba_data)
+{
+    channelsRemap32((void*)ba_data->constData(), ba_data->size());
 }
 
 void mix8channelsTo2(QByteArray *ba_src, QByteArray *ba_dst)

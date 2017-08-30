@@ -3,6 +3,7 @@
 DeckLinkVideoFrame::DeckLinkVideoFrame()
 {
     buffer=nullptr;
+    buffer_size=0;
     pixel_format=bmdFormat8BitBGRA;
     flags=bmdFrameFlagDefault;
 }
@@ -57,15 +58,20 @@ QByteArray *DeckLinkVideoFrame::getBuffer()
     return &ba_buffer;
 }
 
-void DeckLinkVideoFrame::init(QSize size, BMDPixelFormat pixel_format, BMDFrameFlags flags)
+void DeckLinkVideoFrame::init(QSize size, BMDPixelFormat pixel_format, BMDFrameFlags flags, bool alloc_buffer)
 {
     this->size=size;
     this->pixel_format=pixel_format;
     this->flags=flags;
 
-    ba_buffer.resize(frameSize(size, pixel_format));
+    buffer_size=frameSize(size, pixel_format);
+    buffer=nullptr;
 
-    buffer=(void*)ba_buffer.constData();
+    if(alloc_buffer) {
+        ba_buffer.resize(buffer_size);
+
+        buffer=(void*)ba_buffer.constData();
+    }
 }
 
 long DeckLinkVideoFrame::GetWidth()
@@ -95,7 +101,7 @@ BMDFrameFlags DeckLinkVideoFrame::GetFlags()
 
 HRESULT DeckLinkVideoFrame::GetBytes(void **buffer)
 {
-    if(!this->buffer || ba_buffer.isEmpty())
+    if(!this->buffer)
         return E_FAIL;
 
     *buffer=this->buffer;

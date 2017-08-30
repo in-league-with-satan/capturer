@@ -4,6 +4,8 @@
 #include <QCryptographicHash>
 #include <qcoreapplication.h>
 
+#include "ff_encoder.h"
+
 #include "settings.h"
 
 
@@ -74,6 +76,8 @@ bool Settings::load()
 
     device.index=map_device.value(QStringLiteral("index"), 0).toInt();
     device.audio_sample_size=map_device.value(QStringLiteral("audio_sample_size"), 0).toInt();
+    device.half_fps=map_device.value(QStringLiteral("half_fps"), 0).toInt();
+    device.rgb_10bit=map_device.value(QStringLiteral("rgb_10_bit"), 0).toInt();
 
     rec.encoder=map_rec.value(QStringLiteral("encoder"), 0).toInt();
     rec.pixel_format=map_rec.value(QStringLiteral("pixel_format")).toMap();
@@ -81,6 +85,8 @@ bool Settings::load()
     rec.crf=map_rec.value(QStringLiteral("crf"), 0).toInt();
     rec.half_fps=map_rec.value(QStringLiteral("half_fps"), 0).toInt();
     rec.stop_rec_on_frames_drop=map_rec.value(QStringLiteral("stop_rec_on_frames_drop"), 0).toInt();
+    rec.downscale=map_rec.value(QStringLiteral("downscale"), FFEncoder::DownScale::Disabled).toInt();
+    rec.scale_filter=map_rec.value(QStringLiteral("scale_filter"), FFEncoder::ScaleFilter::FastBilinear).toInt();
 
 #ifdef LIB_QHTTP
     http_server.enabled=map_http_server.value(QStringLiteral("enabled"), true).toBool();
@@ -109,6 +115,8 @@ bool Settings::save()
 
     map_device.insert(QStringLiteral("index"), device.index);
     map_device.insert(QStringLiteral("audio_sample_size"), device.audio_sample_size);
+    map_device.insert(QStringLiteral("half_fps"), device.half_fps);
+    map_device.insert(QStringLiteral("rgb_10_bit"), device.rgb_10bit);
 
     map_rec.insert(QStringLiteral("encoder"), rec.encoder);
     map_rec.insert(QStringLiteral("pixel_format"), rec.pixel_format);
@@ -116,6 +124,8 @@ bool Settings::save()
     map_rec.insert(QStringLiteral("crf"), rec.crf);
     map_rec.insert(QStringLiteral("half_fps"), (bool)rec.half_fps);
     map_rec.insert(QStringLiteral("stop_rec_on_frames_drop"), (bool)rec.stop_rec_on_frames_drop);
+    map_rec.insert(QStringLiteral("downscale"), rec.downscale);
+    map_rec.insert(QStringLiteral("scale_filter"), rec.scale_filter);
 
 #ifdef LIB_QHTTP
     map_http_server.insert(QStringLiteral("enabled"), http_server.enabled);
