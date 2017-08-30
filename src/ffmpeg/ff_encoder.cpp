@@ -222,8 +222,8 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
 
     c->codec_id=(*codec)->id;
 
-    c->width=cfg.frame_resolution.width();
-    c->height=cfg.frame_resolution.height();
+    c->width=cfg.frame_resolution_dst.width();
+    c->height=cfg.frame_resolution_dst.height();
 
     // timebase: This is the fundamental unit of time (in seconds) in terms
     // of which frame timestamps are represented. For fixed-fps content,
@@ -231,7 +231,6 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
     // identical to 1
 
     switch(cfg.framerate) {
-
     case FFEncoder::Framerate::full_11:
         out_stream->av_stream->time_base={ 1001, 12000 };
         break;
@@ -461,7 +460,7 @@ void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictio
 
     // allocate and init a re-usable frame
 
-    ost->frame=alloc_frame(ost->frame_fmt, c->width, c->height);
+    ost->frame=alloc_frame(ost->frame_fmt, cfg.frame_resolution_src.width(), cfg.frame_resolution_src.height());
 
     if(!ost->frame) {
         qCritical() << "could not allocate video frame";
@@ -469,7 +468,7 @@ void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictio
     }
 
     // allocate and init a re-usable frame
-    ost->frame_converted=alloc_frame(cfg.pixel_format, c->width, c->height);
+    ost->frame_converted=alloc_frame(cfg.pixel_format, cfg.frame_resolution_dst.width(), cfg.frame_resolution_dst.height());
 
     if(!ost->frame_converted) {
         qCritical() << "Could not allocate video frame";
@@ -669,6 +668,7 @@ QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
 bool FFEncoder::setConfig(FFEncoder::Config cfg)
 {
     int ret;
+    int sws_flags=0;
 
 
     if(cfg.rgb_source)
@@ -678,14 +678,26 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
         context->out_stream_video.frame_fmt=AV_PIX_FMT_UYVY422;
 
 
-    if(!format_converter_ff->setup(context->out_stream_video.frame_fmt, cfg.frame_resolution, cfg.pixel_format, cfg.frame_resolution, false)) {
-        qCritical() << "err init format converter" << cfg.frame_resolution;
+    cfg.frame_resolution_dst=cfg.frame_resolution_src;
+
+    if(cfg.downscale!=DownScale::Disabled) {
+        if(cfg.frame_resolution_dst.height()>DownScale::toWidth(cfg.downscale)) {
+            cfg.frame_resolution_dst.setHeight(DownScale::toWidth(cfg.downscale));
+            cfg.frame_resolution_dst.setWidth(cfg.frame_resolution_dst.height()*(16./9.));
+            sws_flags|=ScaleFilter::toSws(cfg.scale_filter);
+        }
+    }
+
+
+
+    if(!format_converter_ff->setup(context->out_stream_video.frame_fmt, cfg.frame_resolution_src, cfg.pixel_format, cfg.frame_resolution_src, false)) {
+        qCritical() << "err init format converter" << cfg.frame_resolution_src;
         return false;
     }
 
 
     if(cfg.rgb_source && cfg.rgb_10bit) {
-        format_converter_dl->init(bmdFormat10BitRGB, cfg.frame_resolution, bmdFormat8BitBGRA, cfg.frame_resolution);
+        format_converter_dl->init(bmdFormat10BitRGB, cfg.frame_resolution_src, bmdFormat8BitBGRA, cfg.frame_resolution_src);
     }
 
 
@@ -726,11 +738,13 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     open_audio(context->av_format_context, context->av_codec_audio, &context->out_stream_audio, context->opt);
 
 
-    context->out_stream_video.convert_context=sws_getContext(cfg.frame_resolution.width(), cfg.frame_resolution.height(),
+
+    context->out_stream_video.convert_context=sws_getContext(cfg.frame_resolution_src.width(), cfg.frame_resolution_src.height(),
                                                              context->out_stream_video.frame_fmt,
-                                                             cfg.frame_resolution.width(), cfg.frame_resolution.height(),
+                                                             cfg.frame_resolution_dst.width(), cfg.frame_resolution_dst.height(),
                                                              cfg.pixel_format,
-                                                             /*SWS_FAST_BILINEAR*/ 0, nullptr, nullptr, nullptr);
+                                                             sws_flags, nullptr, nullptr, nullptr);
+
 
     av_dump_format(context->av_format_context, 0, "", 1);
 
@@ -925,9 +939,9 @@ void FFEncoder::calcStats()
 
 //
 
-QString FFEncoder::PixelFormat::toString(uint32_t format)
+QString FFEncoder::PixelFormat::toString(uint32_t value)
 {
-    switch(format) {
+    switch(value) {
     case RGB24:
         return QLatin1String("rgb24");
 
@@ -963,36 +977,36 @@ QString FFEncoder::PixelFormat::toString(uint32_t format)
     return QLatin1String("unknown");
 }
 
-uint64_t FFEncoder::PixelFormat::fromString(QString format)
+uint64_t FFEncoder::PixelFormat::fromString(QString value)
 {
-    if(format==QLatin1String("rgb24"))
+    if(value==QLatin1String("rgb24"))
         return RGB24;
 
-    else if(format==QLatin1String("yuv420p"))
+    else if(value==QLatin1String("yuv420p"))
         return YUV420P;
 
-    else if(format==QLatin1String("yuv422p"))
+    else if(value==QLatin1String("yuv422p"))
         return YUV422P;
 
-    else if(format==QLatin1String("uyvy422p"))
+    else if(value==QLatin1String("uyvy422p"))
         return UYVY422;
 
-    else if(format==QLatin1String("yuv444p"))
+    else if(value==QLatin1String("yuv444p"))
         return YUV444P;
 
-    else if(format==QLatin1String("yuv420p10"))
+    else if(value==QLatin1String("yuv420p10"))
         return YUV420P10;
 
-    // else if(format==QLatin1String("yuv422p10"))
+    // else if(value==QLatin1String("yuv422p10"))
     //     return YUV422P10;
 
-    else if(format==QLatin1String("yuv444p10"))
+    else if(value==QLatin1String("yuv444p10"))
         return YUV444P10;
 
-    else if(format==QLatin1String("yuv422p10le (v210)"))
+    else if(value==QLatin1String("yuv422p10le (v210)"))
         return V210;
 
-    else if(format==QLatin1String("r210"))
+    else if(value==QLatin1String("r210"))
         return R210;
 
     return 0;
@@ -1049,3 +1063,114 @@ QString FFEncoder::VideoEncoder::toString(uint32_t enc)
     return QLatin1String("");
 }
 
+int FFEncoder::DownScale::toWidth(uint32_t value)
+{
+    switch(value) {
+    case to720:
+        return 720;
+
+    case to1080:
+        return 1080;
+
+    case to1440:
+        return 1440;
+    }
+
+    return 1080;
+}
+
+QString FFEncoder::DownScale::toString(uint32_t value)
+{
+    switch(value) {
+    case to720:
+        return QLatin1String("720p");
+
+    case to1080:
+        return QLatin1String("1080p");
+
+    case to1440:
+        return QLatin1String("1440p");
+    }
+
+    return QLatin1String("disabled");
+}
+
+int FFEncoder::ScaleFilter::toSws(uint32_t value)
+{
+    switch(value) {
+    case FastBilinear:
+        return SWS_FAST_BILINEAR;
+
+    case Bilinear:
+        return SWS_BILINEAR;
+
+    case Bicubic:
+        return SWS_BICUBIC;
+
+    case X:
+        return SWS_X;
+
+    case Point:
+        return SWS_POINT;
+
+    case Area:
+        return SWS_AREA;
+
+    case Bicublin:
+        return SWS_BICUBLIN;
+
+    case Gauss:
+        return SWS_GAUSS;
+
+    case Sinc:
+        return SWS_SINC;
+
+    case Lanczos:
+        return SWS_LANCZOS;
+
+    case Spline:
+        return SWS_SPLINE;
+    }
+
+    return SWS_FAST_BILINEAR;
+}
+
+QString FFEncoder::ScaleFilter::toString(uint32_t value)
+{
+    switch(value) {
+    case FastBilinear:
+        return QLatin1String("fast bilinear");
+
+    case Bilinear:
+        return QLatin1String("bilinear");
+
+    case Bicubic:
+        return QLatin1String("bicubic");
+
+    case X:
+        return QLatin1String("x (experimental)");
+
+    case Point:
+        return QLatin1String("point (nearest neighbor)");
+
+    case Area:
+        return QLatin1String("averaging area");
+
+    case Bicublin:
+        return QLatin1String("luma bicubic, chroma bilinear");
+
+    case Gauss:
+        return QLatin1String("gaussian");
+
+    case Sinc:
+        return QLatin1String("sinc");
+
+    case Lanczos:
+        return QLatin1String("lanczos");
+
+    case Spline:
+        return QLatin1String("natural bicubic spline");
+    }
+
+    return QLatin1String("unknown?!!");
+}

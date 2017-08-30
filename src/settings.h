@@ -41,6 +41,8 @@ public:
         int encoder;
         int half_fps;
         int stop_rec_on_frames_drop;
+        int downscale;
+        int scale_filter;
 
     } rec;
 

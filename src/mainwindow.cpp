@@ -291,6 +291,34 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="downscale";
+    set_model_data.value=&settings->rec.downscale;
+
+    for(int i=0; i<=FFEncoder::DownScale::to1440; i++)
+        set_model_data.values << FFEncoder::DownScale::toString(i);
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    qInfo() << "downscale" <<  settings->rec.downscale << "scale_filter" << settings->rec.scale_filter;
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="scale filter";
+    set_model_data.value=&settings->rec.scale_filter;
+
+    for(int i=0; i<=FFEncoder::ScaleFilter::Spline; i++)
+        set_model_data.values << FFEncoder::ScaleFilter::toString(i);
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
     set_model_data.type=SettingsModel::Type::checkbox;
     set_model_data.name="half-fps";
     set_model_data.value=&settings->rec.half_fps;
@@ -708,7 +736,7 @@ void MainWindow::startStopRecording()
         FFEncoder::Config cfg;
 
         cfg.framerate=FFEncoder::calcFps(current_frame_duration, current_frame_scale, settings->rec.half_fps);
-        cfg.frame_resolution=current_frame_size;
+        cfg.frame_resolution_src=current_frame_size;
         cfg.pixel_format=(AVPixelFormat)messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();
         cfg.preset=messenger->settingsModel()->data_p(&settings->rec.preset_current)->values_data[settings->rec.preset_current].toString();
         cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
@@ -716,7 +744,8 @@ void MainWindow::startStopRecording()
         cfg.rgb_source=decklink_thread->rgbSource();
         cfg.rgb_10bit=decklink_thread->rgb10Bit();
         cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device.audio_sample_size)->values_data[settings->device.audio_sample_size].toInt();
-
+        cfg.downscale=settings->rec.downscale;
+        cfg.scale_filter=settings->rec.scale_filter;
 
         ff_enc->setConfig(cfg);
 

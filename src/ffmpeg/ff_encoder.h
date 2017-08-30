@@ -78,11 +78,42 @@ public:
             R210=AV_PIX_FMT_RGB48LE
         };
 
-        static QString toString(uint32_t format);
+        static QString toString(uint32_t value);
 
-        static uint64_t fromString(QString format);
+        static uint64_t fromString(QString value);
 
         static QList <FFEncoder::PixelFormat::T> compatiblePixelFormats(VideoEncoder::T encoder);
+    };
+
+    struct DownScale {
+        enum T {
+            Disabled,
+            to720,
+            to1080,
+            to1440
+        };
+
+        static int toWidth(uint32_t value);
+        static QString toString(uint32_t value);
+    };
+
+    struct ScaleFilter {
+        enum T {
+            FastBilinear,
+            Bilinear,
+            Bicubic,
+            X,
+            Point,
+            Area,
+            Bicublin,
+            Gauss,
+            Sinc,
+            Lanczos,
+            Spline
+        };
+
+        static int toSws(uint32_t value);
+        static QString toString(uint32_t value);
     };
 
     struct Config {
@@ -90,16 +121,21 @@ public:
             audio_channels_size=8;
             audio_sample_size=16;
             audio_dalay=0;
+            downscale=DownScale::Disabled;
+            scale_filter=ScaleFilter::FastBilinear;
             rgb_source=true;
             rgb_10bit=false;
         }
 
-        QSize frame_resolution;
+        QSize frame_resolution_src;
+        QSize frame_resolution_dst;
         Framerate::T framerate;
         uint8_t audio_channels_size;
         uint8_t audio_sample_size;
         int audio_dalay;
         uint8_t crf;
+        uint8_t downscale;
+        int scale_filter;
         AVPixelFormat pixel_format;
         VideoEncoder::T video_encoder;
         QString preset;
