@@ -230,6 +230,7 @@ void DeckLinkCapture::run()
 
     if(!decklink_iterator) {
         qCritical() << "This application requires the DeckLink drivers installed";
+        emit errorString("This application requires the DeckLink drivers installed");
         return;
     }
 
@@ -399,6 +400,7 @@ void DeckLinkCapture::init()
 
     if(!decklink_iterator) {
         qCritical() << "This application requires the DeckLink drivers installed";
+        emit errorString("This application requires the DeckLink drivers installed");
         return;
     }
 
@@ -431,6 +433,7 @@ void DeckLinkCapture::init()
 
     if(result!=S_OK) {
         qCritical() << "The device does not have an hdmi input";
+        emit errorString("The device does not have an hdmi input");
         goto bail;
     }
 
@@ -492,6 +495,7 @@ void DeckLinkCapture::init()
 
         if(result!=S_OK) {
             qCritical() << "Failed to enable video input. Is another application using the card?" << result;
+            emit errorString("Failed to enable video input. Is another application using the card?");
             goto bail;
         }
 

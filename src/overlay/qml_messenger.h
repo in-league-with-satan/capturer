@@ -99,6 +99,7 @@ signals:
     void playerDurationChanged(const qint64 &duration);
     void playerPositionChanged(const qint64 &position);
     void playerSetPosition(const qint64 &position);
+    void errorString(QString error_string);
 };
 
 #endif // QML_MESSENGER_H

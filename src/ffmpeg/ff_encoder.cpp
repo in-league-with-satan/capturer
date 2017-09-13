@@ -103,71 +103,66 @@ static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AV
     return av_interleaved_write_frame(fmt_ctx, pkt);
 }
 
-static void add_stream_audio(OutputStream *out_stream, AVFormatContext *format_context, AVCodec **codec, const FFEncoder::Config &cfg)
+static QString add_stream_audio(OutputStream *out_stream, AVFormatContext *format_context, AVCodec **codec, const FFEncoder::Config &cfg)
 {
-    AVCodecContext *c;
+    AVCodecID codec_id=AV_CODEC_ID_PCM_S16LE;
 
     // find the encoder
-    if(cfg.audio_sample_size==16)
-        *codec=avcodec_find_encoder(AV_CODEC_ID_PCM_S16LE);
+    if(cfg.audio_sample_size!=16)
+        codec_id=AV_CODEC_ID_PCM_S32LE;
 
-    else
-        *codec=avcodec_find_encoder(AV_CODEC_ID_PCM_S32LE);
+    (*codec)=avcodec_find_encoder(codec_id);
 
-    if(!(*codec)) {
-        qCritical() << "could not find encoder for PCM_S16LE";
-        exit(1);
-    }
+
+    if(!(*codec))
+        return QStringLiteral("could not find encoder for ") + avcodec_get_name(codec_id);
+
 
     out_stream->av_stream=avformat_new_stream(format_context, nullptr);
 
-    if(!out_stream->av_stream) {
-        qCritical() << "could not allocate stream";
-        exit(1);
-    }
+    if(!out_stream->av_stream)
+        return QStringLiteral("could not allocate stream");
+
 
     out_stream->av_stream->id=format_context->nb_streams - 1;
 
-    c=avcodec_alloc_context3(*codec);
+    out_stream->av_codec_context=avcodec_alloc_context3(*codec);
 
-    if(!c) {
-        qCritical() << "could not alloc an encoding context";
-        exit(1);
-    }
+    if(!out_stream->av_codec_context)
+        return QStringLiteral("could not alloc an encoding context");
 
-    out_stream->av_codec_context=c;
 
-    c->sample_fmt=(*codec)->sample_fmts ? (*codec)->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
+    out_stream->av_codec_context->sample_fmt=(*codec)->sample_fmts ? (*codec)->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
 
-    // c->bit_rate=480000;
-
-    c->sample_rate=48000;
+    out_stream->av_codec_context->sample_rate=48000;
 
     switch(cfg.audio_channels_size) {
     case 6:
     case 8:
-        c->channel_layout=AV_CH_LAYOUT_7POINT1;
+        out_stream->av_codec_context->channel_layout=AV_CH_LAYOUT_7POINT1;
         // c->channel_layout=AV_CH_LAYOUT_7POINT1_WIDE_BACK;
         break;
 
     case 2:
     default:
-        c->channel_layout=AV_CH_LAYOUT_STEREO;
+        out_stream->av_codec_context->channel_layout=AV_CH_LAYOUT_STEREO;
         break;
     }
 
-    c->channels=av_get_channel_layout_nb_channels(c->channel_layout);
+    out_stream->av_codec_context->channels=av_get_channel_layout_nb_channels(out_stream->av_codec_context->channel_layout);
 
 
-    out_stream->av_stream->time_base={ 1, c->sample_rate };
+    out_stream->av_stream->time_base={ 1, out_stream->av_codec_context->sample_rate };
 
 
     // some formats want stream headers to be separate
     if(format_context->oformat->flags & AVFMT_GLOBALHEADER)
-        c->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
+        out_stream->av_codec_context->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
+
+    return QStringLiteral("");
 }
 
-static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_context, AVCodec **codec, const FFEncoder::Config &cfg)
+static QString add_stream_video(OutputStream *out_stream, AVFormatContext *format_context, AVCodec **codec, const FFEncoder::Config &cfg)
 {
     AVCodecContext *c;
 
@@ -197,26 +192,22 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
         break;
     }
 
-    if(!(*codec)) {
-        qCritical() << "could not find encoder";
-        exit(1);
-    }
+    if(!(*codec))
+        return QStringLiteral("could not find encoder");
+
 
     out_stream->av_stream=avformat_new_stream(format_context, nullptr);
 
-    if(!out_stream->av_stream) {
-        qCritical() << "could not allocate stream";
-        exit(1);
-    }
+    if(!out_stream->av_stream)
+        return QStringLiteral("could not allocate stream");
+
 
     out_stream->av_stream->id=format_context->nb_streams - 1;
 
     c=avcodec_alloc_context3(*codec);
 
-    if(!c) {
-        qCritical() << "could not alloc an encoding context";
-        exit(1);
-    }
+    if(!c)
+        return QStringLiteral("could not allocate an encoding context");
 
     out_stream->av_codec_context=c;
 
@@ -339,38 +330,39 @@ static void add_stream_video(OutputStream *out_stream, AVFormatContext *format_c
     // some formats want stream headers to be separate
     if(format_context->oformat->flags & AVFMT_GLOBALHEADER)
         c->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
+
+    return QStringLiteral("");
 }
 
 // audio output
-static AVFrame *alloc_audio_frame(enum AVSampleFormat sample_fmt, uint64_t channel_layout, int sample_rate, int nb_samples)
+static QString alloc_audio_frame(enum AVSampleFormat sample_fmt, uint64_t channel_layout, int sample_rate, int nb_samples, AVFrame **frame)
 {
-    AVFrame *frame=av_frame_alloc();
+    (*frame)=av_frame_alloc();
 
     int ret;
 
-    if(!frame) {
-        qCritical() << "error allocating an audio frame";
-        exit(1);
-    }
+    if(!(*frame))
+        return QStringLiteral("error allocating an audio frame");
 
-    frame->format=sample_fmt;
-    frame->channel_layout=channel_layout;
-    frame->sample_rate=sample_rate;
-    frame->nb_samples=nb_samples;
+    (*frame)->format=sample_fmt;
+    (*frame)->channel_layout=channel_layout;
+    (*frame)->sample_rate=sample_rate;
+    (*frame)->nb_samples=nb_samples;
 
     if(nb_samples) {
-        ret=av_frame_get_buffer(frame, 0);
+        ret=av_frame_get_buffer(*frame, 0);
 
         if(ret<0) {
-            qCritical() << "error allocating an audio buffer";
-            exit(1);
+            av_frame_free(&(*frame));
+            (*frame)=nullptr;
+            return QStringLiteral("error allocating an audio buffer");
         }
     }
 
-    return frame;
+    return QStringLiteral("");
 }
 
-static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg)
+static QString open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg)
 {
     Q_UNUSED(oc)
 
@@ -390,26 +382,26 @@ static void open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
 
     av_dict_free(&opt);
 
-    if(ret<0) {
-        qCritical() << "could not open audio codec:" << ffErrorString(ret);
-        return;
-    }
-
+    if(ret<0)
+        return QStringLiteral("could not open audio codec: ") + ffErrorString(ret);
 
     nb_samples=10000;
 
-    ost->frame=alloc_audio_frame(c->sample_fmt, c->channel_layout, c->sample_rate, nb_samples);
+    QString err=alloc_audio_frame(c->sample_fmt, c->channel_layout, c->sample_rate, nb_samples, &ost->frame);
+
+    if(!err.isEmpty())
+        return err;
 
     // copy the stream parameters to the muxer
     ret=avcodec_parameters_from_context(ost->av_stream->codecpar, c);
 
-    if(ret<0) {
-        qCritical() << "could not copy the stream parameters";
-        exit(1);
-    }
+    if(ret<0)
+        return QStringLiteral("could not copy the stream parameters");
+
+    return QStringLiteral("");
 }
 
-static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
+static QString write_audio_frame(AVFormatContext *oc, OutputStream *ost)
 {
     int ret;
 
@@ -417,10 +409,8 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
 
     ret=avcodec_send_frame(ost->av_codec_context, ost->frame);
 
-    if(ret<0) {
-        qCritical() << "error encoding audio frame" << ffErrorString(ret);
-        exit(1);
-    }
+    if(ret<0)
+        return QStringLiteral("error encoding audio frame: ") + ffErrorString(ret);
 
     while(!ret) {
         ret=avcodec_receive_packet(ost->av_codec_context, pkt);
@@ -434,10 +424,10 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
 
     av_packet_free(&pkt);
 
-    return 0;
+    return QStringLiteral("");
 }
 
-void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg, FFEncoder::Config cfg)
+QString open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictionary *opt_arg, FFEncoder::Config cfg)
 {
     Q_UNUSED(oc)
 
@@ -454,37 +444,36 @@ void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictio
     av_dict_free(&opt);
 
     if(ret<0) {
-        qCritical() << "could not open video codec:" << ffErrorString(ret);
-        exit(1);
+        return QStringLiteral("could not open video codec: ") + ffErrorString(ret) + QStringLiteral("\nunsupported pixel format?");
     }
+
 
     // allocate and init a re-usable frame
-
     ost->frame=alloc_frame(ost->frame_fmt, cfg.frame_resolution_src.width(), cfg.frame_resolution_src.height());
 
-    if(!ost->frame) {
-        qCritical() << "could not allocate video frame";
-        exit(1);
-    }
+    if(!ost->frame)
+        return QStringLiteral("could not allocate video frame");
+
+
 
     // allocate and init a re-usable frame
     ost->frame_converted=alloc_frame(cfg.pixel_format, cfg.frame_resolution_dst.width(), cfg.frame_resolution_dst.height());
 
-    if(!ost->frame_converted) {
-        qCritical() << "Could not allocate video frame";
-        exit(1);
-    }
+    if(!ost->frame_converted)
+        return QStringLiteral("Could not allocate video frame");
+
 
     // copy the stream parameters to the muxer
     ret=avcodec_parameters_from_context(ost->av_stream->codecpar, c);
 
-    if(ret<0) {
-        qCritical() << "could not copy the stream parameters";
-        exit(1);
-    }
+    if(ret<0)
+        return QStringLiteral("could not copy the stream parameters");
+
+
+    return QStringLiteral("");
 }
 
-static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
+static QString write_video_frame(AVFormatContext *oc, OutputStream *ost)
 {
     int ret;
 
@@ -492,10 +481,9 @@ static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
 
     ret=avcodec_send_frame(ost->av_codec_context, ost->frame_converted);
 
-    if(ret<0) {
-        qCritical() << "error encoding video frame:" << ffErrorString(ret);
-        exit(1);
-    }
+    if(ret<0)
+       return QStringLiteral("error encoding video frame: ") + ffErrorString(ret);
+
 
     while(!ret) {
         ret=avcodec_receive_packet(ost->av_codec_context, pkt);
@@ -509,18 +497,30 @@ static int write_video_frame(AVFormatContext *oc, OutputStream *ost)
 
     av_packet_free(&pkt);
 
-    return 0;
+    return QStringLiteral("");
 }
 
-static void close_stream(AVFormatContext *oc, OutputStream *ost)
+static void close_stream(OutputStream *ost)
 {
-    Q_UNUSED(oc)
+    if(ost->av_codec_context) {
+        avcodec_free_context(&ost->av_codec_context);
+        ost->av_codec_context=nullptr;
+    }
 
-    avcodec_free_context(&ost->av_codec_context);
-    av_frame_free(&ost->frame);
-    av_frame_free(&ost->frame_converted);
+    if(ost->frame) {
+        av_frame_free(&ost->frame);
+        ost->frame=nullptr;
+    }
 
-    sws_freeContext(ost->convert_context);
+    if(ost->frame_converted) {
+        av_frame_free(&ost->frame_converted);
+        ost->frame_converted=nullptr;
+    }
+
+    if(ost->convert_context) {
+        sws_freeContext(ost->convert_context);
+        ost->convert_context=nullptr;
+    }
 }
 
 // ------------------------------
@@ -667,6 +667,8 @@ QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
 
 bool FFEncoder::setConfig(FFEncoder::Config cfg)
 {
+    last_error_string.clear();
+
     int ret;
     int sws_flags=0;
 
@@ -691,8 +693,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
 
     if(!format_converter_ff->setup(context->out_stream_video.frame_fmt, cfg.frame_resolution_src, cfg.pixel_format, cfg.frame_resolution_src, false)) {
-        qCritical() << "err init format converter" << cfg.frame_resolution_src;
-        return false;
+        emit errorString(last_error_string=QStringLiteral("err init format converter"));
+        goto fail;
     }
 
 
@@ -719,24 +721,61 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     avformat_alloc_output_context2(&context->av_format_context, nullptr, "matroska", nullptr);
 
     if(!context->av_format_context) {
-        qCritical() << "could not deduce output format";
-        return false;
+        emit errorString(last_error_string=QStringLiteral("could not deduce output format"));
+        goto fail;
     }
 
     context->av_output_format=context->av_format_context->oformat;
 
 
     // add the audio and video streams using the default format codecs
-    // and initialize the codecs.
-    add_stream_video(&context->out_stream_video, context->av_format_context, &context->av_codec_video, cfg);
-    add_stream_audio(&context->out_stream_audio, context->av_format_context, &context->av_codec_audio, cfg);
+    // and initialize the codecs
+    last_error_string=add_stream_video(&context->out_stream_video, context->av_format_context, &context->av_codec_video, cfg);
+
+    if(!last_error_string.isEmpty()) {
+//        close_stream(context->av_format_context, &context->out_stream_video);
+//        context->av_format_context=nullptr;
+        emit errorString(last_error_string);
+        goto fail;
+//        return false;
+    }
+
+
+    last_error_string=add_stream_audio(&context->out_stream_audio, context->av_format_context, &context->av_codec_audio, cfg);
+
+    if(!last_error_string.isEmpty()) {
+//        close_stream(context->av_format_context, &context->out_stream_video);
+//        close_stream(context->av_format_context, &context->out_stream_audio);
+//        context->av_format_context=nullptr;
+        emit errorString(last_error_string);
+        goto fail;
+//        return false;
+    }
 
     // now that all the parameters are set, we can open the audio and
     // video codecs and allocate the necessary encode buffers
-    open_video(context->av_format_context, context->av_codec_video, &context->out_stream_video, context->opt, cfg);
+    last_error_string=open_video(context->av_format_context, context->av_codec_video, &context->out_stream_video, context->opt, cfg);
 
-    open_audio(context->av_format_context, context->av_codec_audio, &context->out_stream_audio, context->opt);
+    if(!last_error_string.isEmpty()) {
+//        close_stream(context->av_format_context, &context->out_stream_video);
+//        close_stream(context->av_format_context, &context->out_stream_audio);
+//        context->av_format_context=nullptr;
+        emit errorString(last_error_string);
+        goto fail;
+//        return false;
+    }
 
+
+    last_error_string=open_audio(context->av_format_context, context->av_codec_audio, &context->out_stream_audio, context->opt);
+
+    if(!last_error_string.isEmpty()) {
+//        close_stream(context->av_format_context, &context->out_stream_video);
+//        close_stream(context->av_format_context, &context->out_stream_audio);
+//        context->av_format_context=nullptr;
+        emit errorString(last_error_string);
+        goto fail;
+//        return false;
+    }
 
 
     context->out_stream_video.convert_context=sws_getContext(cfg.frame_resolution_src.width(), cfg.frame_resolution_src.height(),
@@ -753,8 +792,12 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     ret=avio_open(&context->av_format_context->pb, context->filename.toLatin1().constData(), AVIO_FLAG_WRITE);
 
     if(ret<0) {
-        qCritical() << "could not open" << context->filename << ffErrorString(ret);
-        return false;
+//        close_stream(context->av_format_context, &context->out_stream_video);
+//        close_stream(context->av_format_context, &context->out_stream_audio);
+//        context->av_format_context=nullptr;
+        emit errorString(last_error_string=QString(QStringLiteral("could not open %1: %2")).arg(context->filename).arg(ffErrorString(ret)));
+        goto fail;
+//        return false;
     }
 
 
@@ -762,8 +805,12 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     ret=avformat_write_header(context->av_format_context, &context->opt);
 
     if(ret<0) {
-        qCritical() << "error occurred when opening output file:" << ffErrorString(ret);
-        return false;
+//        close_stream(context->av_format_context, &context->out_stream_video);
+//        close_stream(context->av_format_context, &context->out_stream_audio);
+//        context->av_format_context=nullptr;
+        emit errorString(last_error_string=QStringLiteral("error occurred when opening output file: ") + ffErrorString(ret));
+        goto fail;
+//        return false;
     }
 
 
@@ -787,6 +834,12 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     emit stateChanged(true);
 
     return true;
+
+fail:
+
+    stopCoder();
+
+    return false;
 }
 
 bool FFEncoder::appendFrame(Frame::ptr frame)
@@ -847,7 +900,6 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
                                                    sample_format, 0);
 
             if(ba_audio.size()>=buffer_size) {
-
                 break;
             }
 
@@ -862,8 +914,9 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
                                          (const uint8_t*)ba_audio_tmp.constData(), buffer_size, 0);
 
         if(ret<0) {
-            qCritical() << "could not setup audio frame";
-            exit(1);
+            stopCoder();
+            emit errorString(last_error_string=QStringLiteral("could not setup audio frame"));
+            return false;
         }
 
         context->out_stream_audio.frame->pts=context->out_stream_audio.next_pts;
@@ -889,22 +942,22 @@ bool FFEncoder::stopCoder()
     if(!context->canAcceptFrame())
         return false;
 
-    av_write_trailer(context->av_format_context);
+    if(context->av_format_context->pb)
+        av_write_trailer(context->av_format_context);
 
     // close each codec.
-
-    close_stream(context->av_format_context, &context->out_stream_video);
-
-    close_stream(context->av_format_context, &context->out_stream_audio);
+    close_stream(&context->out_stream_video);
+    close_stream(&context->out_stream_audio);
 
     // close the output file.
-    avio_closep(&context->av_format_context->pb);
+    if(context->av_format_context->pb)
+        avio_closep(&context->av_format_context->pb);
 
     // free the stream
-    avformat_free_context(context->av_format_context);
-
-    context->av_format_context=nullptr;
-
+    if(context->av_format_context) {
+        avformat_free_context(context->av_format_context);
+        context->av_format_context=nullptr;
+    }
 
     emit stateChanged(false);
 

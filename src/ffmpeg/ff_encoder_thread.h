@@ -24,6 +24,9 @@ public slots:
     void setConfig(FFEncoder::Config cfg);
     void stopCoder();
 
+private slots:
+    void onStateChanged(bool state);
+
 private:
     FrameBuffer::ptr frame_buffer;
 
@@ -40,6 +43,8 @@ signals:
 
     void stats(FFEncoder::Stats s);
     void stateChanged(bool state);
+
+    void errorString(QString err_string);
 };
 
 #endif // FF_ENCODER_THREAD_H
