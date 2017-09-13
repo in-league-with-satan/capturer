@@ -111,6 +111,7 @@ signals:
     void signalLost(const bool &value);
     void formatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format);
     void frameSkipped();
+    void errorString(QString err_string);
 };
 
 #endif // CAPTURE_H

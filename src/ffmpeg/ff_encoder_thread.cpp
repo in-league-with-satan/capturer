@@ -52,18 +52,21 @@ void FFEncoderThread::setConfig(FFEncoder::Config cfg)
 
     frame_buffer->clear();
     frame_buffer->setEnabled(true);
-
-    is_working=true;
 }
 
 void FFEncoderThread::stopCoder()
 {
     emit sigStopCoder();
+}
 
-    frame_buffer->clear();
-    frame_buffer->setEnabled(false);
+void FFEncoderThread::onStateChanged(bool state)
+{
+    is_working=state;
 
-    is_working=false;
+    if(!state) {
+        frame_buffer->setEnabled(false);
+        frame_buffer->clear();
+    }
 }
 
 void FFEncoderThread::run()
@@ -76,6 +79,8 @@ void FFEncoderThread::run()
     connect(this, SIGNAL(sigStopCoder()), ffmpeg, SLOT(stopCoder()), Qt::QueuedConnection);
     connect(ffmpeg, SIGNAL(stats(FFEncoder::Stats)), SIGNAL(stats(FFEncoder::Stats)), Qt::QueuedConnection);
     connect(ffmpeg, SIGNAL(stateChanged(bool)), SIGNAL(stateChanged(bool)), Qt::QueuedConnection);
+    connect(ffmpeg, SIGNAL(stateChanged(bool)), SLOT(onStateChanged(bool)), Qt::QueuedConnection);
+    connect(ffmpeg, SIGNAL(errorString(QString)), SIGNAL(errorString(QString)), Qt::QueuedConnection);
 
     Frame::ptr frame;
 

@@ -5,9 +5,7 @@ import QtMultimedia 5.8
 
 Rectangle {
     id: root
-
     visible: true
-
     color: "black"
 
     VideoOutput {
@@ -16,6 +14,12 @@ Rectangle {
     }
 
     NoSignal {}
+
+    ErrorMessage {
+        width: parent.width*.8
+        height: parent.height*.8
+        anchors.centerIn: parent
+    }
 
     About {
         id: about
