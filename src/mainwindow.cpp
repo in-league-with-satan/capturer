@@ -295,7 +295,7 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.name="downscale";
     set_model_data.value=&settings->rec.downscale;
 
-    for(int i=0; i<=FFEncoder::DownScale::to1440; i++)
+    for(int i=0; i<=FFEncoder::DownScale::to1800; i++)
         set_model_data.values << FFEncoder::DownScale::toString(i);
 
     messenger->settingsModel()->add(set_model_data);

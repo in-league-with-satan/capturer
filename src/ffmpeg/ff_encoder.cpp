@@ -448,6 +448,10 @@ void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDictio
 
     av_dict_copy(&opt, opt_arg, 0);
 
+    // av_dict_set(&ost->av_stream->metadata, "framerate", QString("%1/%2")
+    //             .arg(ost->av_codec_context->time_base.den)
+    //             .arg(ost->av_codec_context->time_base.num).toLatin1().constData(), 0);
+
     // open the codec
     ret=avcodec_open2(c, codec, &opt);
 
@@ -756,6 +760,13 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
         qCritical() << "could not open" << context->filename << ffErrorString(ret);
         return false;
     }
+
+
+    if(cfg.video_encoder!=VideoEncoder::ffvhuff)
+        av_dict_set(&context->av_format_context->metadata, "crf/quality", QString::number(cfg.crf).toLatin1().constData(), 0);
+
+    if(cfg.downscale!=DownScale::Disabled)
+        av_dict_set(&context->av_format_context->metadata, "scale filter", ScaleFilter::toString(cfg.scale_filter).toLatin1().constData(), 0);
 
 
     // write the stream header, if any
@@ -1074,6 +1085,9 @@ int FFEncoder::DownScale::toWidth(uint32_t value)
 
     case to1440:
         return 1440;
+
+    case to1800:
+        return 1800;
     }
 
     return 1080;
@@ -1090,6 +1104,9 @@ QString FFEncoder::DownScale::toString(uint32_t value)
 
     case to1440:
         return QLatin1String("1440p");
+
+    case to1800:
+        return QLatin1String("1800p");
     }
 
     return QLatin1String("disabled");

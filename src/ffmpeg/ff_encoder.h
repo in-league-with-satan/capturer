@@ -90,7 +90,8 @@ public:
             Disabled,
             to720,
             to1080,
-            to1440
+            to1440,
+            to1800
         };
 
         static int toWidth(uint32_t value);
