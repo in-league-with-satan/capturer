@@ -443,8 +443,9 @@ QString open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDic
 
     av_dict_free(&opt);
 
-    if(ret<0)
-        return QStringLiteral("could not open video codec: ") + ffErrorString(ret);
+    if(ret<0) {
+        return QStringLiteral("could not open video codec: ") + ffErrorString(ret) + QStringLiteral("\nunsupported pixel format?");
+    }
 
 
     // allocate and init a re-usable frame
@@ -499,15 +500,27 @@ static QString write_video_frame(AVFormatContext *oc, OutputStream *ost)
     return QStringLiteral("");
 }
 
-static void close_stream(AVFormatContext *oc, OutputStream *ost)
+static void close_stream(OutputStream *ost)
 {
-    Q_UNUSED(oc)
+    if(ost->av_codec_context) {
+        avcodec_free_context(&ost->av_codec_context);
+        ost->av_codec_context=nullptr;
+    }
 
-    avcodec_free_context(&ost->av_codec_context);
-    av_frame_free(&ost->frame);
-    av_frame_free(&ost->frame_converted);
+    if(ost->frame) {
+        av_frame_free(&ost->frame);
+        ost->frame=nullptr;
+    }
 
-    sws_freeContext(ost->convert_context);
+    if(ost->frame_converted) {
+        av_frame_free(&ost->frame_converted);
+        ost->frame_converted=nullptr;
+    }
+
+    if(ost->convert_context) {
+        sws_freeContext(ost->convert_context);
+        ost->convert_context=nullptr;
+    }
 }
 
 // ------------------------------
@@ -680,8 +693,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
 
     if(!format_converter_ff->setup(context->out_stream_video.frame_fmt, cfg.frame_resolution_src, cfg.pixel_format, cfg.frame_resolution_src, false)) {
-        qCritical() << "err init format converter" << cfg.frame_resolution_src;
-        return false;
+        emit errorString(last_error_string=QStringLiteral("err init format converter"));
+        goto fail;
     }
 
 
@@ -929,20 +942,22 @@ bool FFEncoder::stopCoder()
     if(!context->canAcceptFrame())
         return false;
 
-    av_write_trailer(context->av_format_context);
+    if(context->av_format_context->pb)
+        av_write_trailer(context->av_format_context);
 
     // close each codec.
-    close_stream(context->av_format_context, &context->out_stream_video);
-    close_stream(context->av_format_context, &context->out_stream_audio);
+    close_stream(&context->out_stream_video);
+    close_stream(&context->out_stream_audio);
 
     // close the output file.
-    avio_closep(&context->av_format_context->pb);
+    if(context->av_format_context->pb)
+        avio_closep(&context->av_format_context->pb);
 
     // free the stream
-    avformat_free_context(context->av_format_context);
-
-    context->av_format_context=nullptr;
-
+    if(context->av_format_context) {
+        avformat_free_context(context->av_format_context);
+        context->av_format_context=nullptr;
+    }
 
     emit stateChanged(false);
 

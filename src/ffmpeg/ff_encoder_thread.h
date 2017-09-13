@@ -24,6 +24,9 @@ public slots:
     void setConfig(FFEncoder::Config cfg);
     void stopCoder();
 
+private slots:
+    void onStateChanged(bool state);
+
 private:
     FrameBuffer::ptr frame_buffer;
 

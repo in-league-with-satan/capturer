@@ -87,6 +87,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ff_enc, SIGNAL(stateChanged(bool)), SLOT(encoderStateChanged(bool)), Qt::QueuedConnection);
     connect(ff_enc, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
 
+    connect(decklink_thread, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
+
     //
 
     ff_dec=new FFDecoderThread(this);
@@ -304,8 +306,6 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.values.clear();
 
     //
-
-    qInfo() << "downscale" <<  settings->rec.downscale << "scale_filter" << settings->rec.scale_filter;
 
     set_model_data.type=SettingsModel::Type::combobox;
     set_model_data.name="scale filter";
@@ -751,7 +751,6 @@ void MainWindow::startStopRecording()
         ff_enc->setConfig(cfg);
 
         messenger->updateRecStats();
-        messenger->setRecStarted(true);
 
         dropped_frames_counter=0;
     }
@@ -807,8 +806,7 @@ void MainWindow::previewOnOff()
 
 void MainWindow::encoderStateChanged(bool state)
 {
-    if(!state)
-        messenger->setRecStarted(false);
+    messenger->setRecStarted(state);
 
     http_server->setRecState(state);
 }
