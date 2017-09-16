@@ -6,6 +6,8 @@
 
 #include "audio_tools.h"
 #include "ff_tools.h"
+#include "decklink_video_frame.h"
+#include "decklink_audio_input_packet.h"
 
 #include "ff_decoder_thread.h"
 
@@ -422,16 +424,15 @@ void FFDecoderThread::_play()
 
             if(!context.wait_video) {
                 Frame::ptr f=Frame::make();
-// fix me !!!
-//                f->video.decklink_frame.init(QSize(context.frame_rgb->width, context.frame_rgb->height), bmdFormat8BitBGRA);
 
-//                int data_size=av_image_get_buffer_size(AV_PIX_FMT_BGRA, context.frame_rgb->width, context.frame_rgb->height, alignment);
+                DeckLinkVideoFrame *video_frame=new DeckLinkVideoFrame();
+                video_frame->init(QSize(context.frame_rgb->width, context.frame_rgb->height), bmdFormat8BitBGRA);
 
-//                assert(data_size==f->video.raw->size());
+                av_image_copy_to_buffer((uint8_t*)video_frame->buffer, video_frame->buffer_size, context.frame_rgb->data, context.frame_rgb->linesize,
+                                        AV_PIX_FMT_BGRA, context.frame_rgb->width, context.frame_rgb->height, alignment);
 
 
-//                av_image_copy_to_buffer((uint8_t*)f->video.raw->constData(), data_size, context.frame_rgb->data, context.frame_rgb->linesize,
-//                                        AV_PIX_FMT_BGRA, context.frame_rgb->width, context.frame_rgb->height, alignment);
+                f->setData((IDeckLinkVideoInputFrame*)video_frame, nullptr, 0, 0);
 
 
                 context.last_video_out_time=av_gettime();
@@ -529,24 +530,29 @@ void FFDecoderThread::_play()
         }
 
         if(context.out_audio_buffer->isEmpty() && context.ba_audio.size()>=audio_buf_min_size) {
-// fix me !!!
-//            Frame::ptr f=Frame::make();
 
-//            f->audio.channels=2;
-//            f->audio.sample_size=16;
-//            f->audio.raw=context.ba_audio;
+            Frame::ptr f=Frame::make();
 
-//            context.ba_audio.clear();
-//            context.audio_buf_size=0;
+            DeckLinkAudioInputPacket *audio_packet=new DeckLinkAudioInputPacket(2, 16);
+            audio_packet->append(context.ba_audio);
 
-//            if(context.reset_audio) {
-//                f->reset_counter=true;
-//                context.reset_audio=false;
-//            }
+                        context.ba_audio.clear();
+                        context.audio_buf_size=0;
 
-//            context.out_audio_buffer->append(f);
+                                    if(context.reset_audio) {
+                                        f->reset_counter=true;
+                                        context.reset_audio=false;
+                                    }
 
-//            f.reset();
+
+            f->setData(nullptr, audio_packet, audio_packet->audio_channels, audio_packet->audio_sample_size);
+
+
+            if(context.out_audio_buffer)
+                context.out_audio_buffer->append(f);
+
+
+            f.reset();
 
             do_nothing=false;
         }

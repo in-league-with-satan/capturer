@@ -39,12 +39,17 @@ public:
     size_t buffer_size;
     QSize size;
 
-
 private:
     BMDPixelFormat pixel_format;
     BMDFrameFlags flags;
 
     QByteArray ba_buffer;
+
+#ifdef _MSC_VER
+    unsigned long long ref_count;
+#else
+    int32_t ref_count;
+#endif
 };
 
 #endif // DECKLINK_VIDEO_FRAME_H

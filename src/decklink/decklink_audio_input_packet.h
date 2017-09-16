@@ -22,16 +22,18 @@ public:
 
     void append(const QByteArray &data);
 
-protected:
-    virtual ~DeckLinkAudioInputPacket(); // call Release method to drop reference count
+    //
 
-private:
     void *buffer;
     QByteArray ba_buffer;
 
     int audio_channels;
     int audio_sample_size;
 
+protected:
+    virtual ~DeckLinkAudioInputPacket(); // call Release method to drop reference count
+
+private:
 #ifdef _MSC_VER
     unsigned long long ref_count;
 #else

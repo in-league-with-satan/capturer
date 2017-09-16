@@ -32,27 +32,31 @@ struct Frame
     }
 
     void setData(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet, int audio_channels, int audio_sample_size) {
-        video_frame->AddRef();
-        audio_packet->AddRef();
+        if(video_frame) {
+            video_frame->AddRef();
 
-        this->video_frame=video_frame;
+            this->video_frame=video_frame;
 
-        video.rgb=video_frame->GetPixelFormat()!=bmdFormat8BitYUV;
-        video.rgb_10bit=video_frame->GetPixelFormat()==bmdFormat10BitRGB;
-        video.size=QSize(video_frame->GetWidth(), video_frame->GetHeight());
-        video.data_size=DeckLinkVideoFrame::frameSize(video.size, video_frame->GetPixelFormat());
+            video.rgb=video_frame->GetPixelFormat()!=bmdFormat8BitYUV;
+            video.rgb_10bit=video_frame->GetPixelFormat()==bmdFormat10BitRGB;
+            video.size=QSize(video_frame->GetWidth(), video_frame->GetHeight());
+            video.data_size=DeckLinkVideoFrame::frameSize(video.size, video_frame->GetPixelFormat());
 
-        video_frame->GetBytes((void**)&video.ptr_data);
+            video_frame->GetBytes((void**)&video.ptr_data);
+        }
 
         //
 
-        this->audio_packet=audio_packet;
+        if(audio_packet) {
+            audio_packet->AddRef();
+            this->audio_packet=audio_packet;
 
-        audio.channels=audio_channels;
-        audio.sample_size=audio_sample_size;
-        audio.data_size=audio_packet->GetSampleFrameCount()*audio_channels*(audio_sample_size/8);
+            audio.channels=audio_channels;
+            audio.sample_size=audio_sample_size;
+            audio.data_size=audio_packet->GetSampleFrameCount()*audio_channels*(audio_sample_size/8);
 
-        audio_packet->GetBytes((void**)&audio.ptr_data);
+            audio_packet->GetBytes((void**)&audio.ptr_data);
+        }
     }
 
     struct DataVideo {

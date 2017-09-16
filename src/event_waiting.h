@@ -20,11 +20,11 @@ public:
     void next();
 
 private:
-     QMutex mutex;
+    // QMutex mutex;
     // QWaitCondition wait_condition;
 
-    // std::mutex mutex;
-    // std::condition_variable condition;
+    std::mutex mutex;
+    std::condition_variable condition;
 };
 
 #endif // EVENT_WAITING_H

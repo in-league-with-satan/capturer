@@ -1,11 +1,16 @@
+#ifdef _MSC_VER
+#include <windows.h>
+#endif
+
 #include "decklink_video_frame.h"
 
 DeckLinkVideoFrame::DeckLinkVideoFrame()
+    : ref_count(0)
+    , buffer(nullptr)
+    , buffer_size(0)
+    , pixel_format(bmdFormat8BitBGRA)
+    , flags(bmdFrameFlagDefault)
 {
-    buffer=nullptr;
-    buffer_size=0;
-    pixel_format=bmdFormat8BitBGRA;
-    flags=bmdFrameFlagDefault;
 }
 
 DeckLinkVideoFrame::~DeckLinkVideoFrame()
@@ -134,10 +139,26 @@ HRESULT DeckLinkVideoFrame::QueryInterface(REFIID iid, LPVOID *ppv)
 
 ULONG DeckLinkVideoFrame::AddRef()
 {
-    return 1;
+#ifdef _MSC_VER
+    return InterlockedExchangeAdd(&ref_count, 1);
+#else
+    return __sync_add_and_fetch(&ref_count, 1);
+#endif
 }
 
 ULONG DeckLinkVideoFrame::Release()
 {
-    return 1;
+#ifdef _MSC_VER
+    int32_t new_ref_value=InterlockedExchangeSubtract(&ref_count, 1);
+#else
+    int32_t new_ref_value=__sync_sub_and_fetch(&ref_count, 1);
+#endif
+
+    if(new_ref_value==0) {
+        delete this;
+
+        return 0;
+    }
+
+    return new_ref_value;
 }
