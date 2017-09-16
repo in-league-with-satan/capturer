@@ -56,6 +56,7 @@ public:
             libx264rgb,
             nvenc_h264,
             nvenc_hevc,
+            qsv_h264,
             ffvhuff
             // magicyuv
         };
@@ -75,7 +76,9 @@ public:
             // YUV422P10=AV_PIX_FMT_YUV422P10,
             V210=AV_PIX_FMT_YUV422P10LE,
             YUV444P10=AV_PIX_FMT_YUV444P10,
-            R210=AV_PIX_FMT_RGB48LE
+            R210=AV_PIX_FMT_RGB48LE,
+            P010LE=AV_PIX_FMT_P010LE,
+            NV12=AV_PIX_FMT_NV12
         };
 
         static QString toString(uint32_t value);

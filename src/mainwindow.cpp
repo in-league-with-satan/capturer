@@ -226,7 +226,7 @@ MainWindow::MainWindow(QWidget *parent)
     else
         set_model_data.values_data << FFEncoder::VideoEncoder::libx264 << FFEncoder::VideoEncoder::libx264rgb
                                    << FFEncoder::VideoEncoder::nvenc_h264 << FFEncoder::VideoEncoder::nvenc_hevc
-                                   << FFEncoder::VideoEncoder::ffvhuff;
+                                   << FFEncoder::VideoEncoder::qsv_h264 << FFEncoder::VideoEncoder::ffvhuff;
 
 
     foreach(QVariant v, set_model_data.values_data)
