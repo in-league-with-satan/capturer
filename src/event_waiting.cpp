@@ -3,6 +3,8 @@
 
 #include "event_waiting.h"
 
+const std::chrono::milliseconds wait_timeout(200);
+
 EventWaiting::EventWaiting(QObject *parent)
     : QObject(parent)
 {
@@ -28,7 +30,8 @@ void EventWaiting::wait()
 
     std::unique_lock <std::mutex> ul(mutex);
 
-    condition.wait(ul);
+    // condition.wait(ul);
+    condition.wait_for(ul, wait_timeout);
 
     ul.unlock();
 }

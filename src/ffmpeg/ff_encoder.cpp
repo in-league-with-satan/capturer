@@ -459,7 +459,7 @@ QString open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDic
     av_dict_free(&opt);
 
     if(ret<0) {
-        return QStringLiteral("could not open video codec: ") + ffErrorString(ret) + QStringLiteral("\nunsupported pixel format?");
+        return QStringLiteral("could not open video codec: ") + ffErrorString(ret);
     }
 
 
