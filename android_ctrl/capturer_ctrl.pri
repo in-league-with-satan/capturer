@@ -62,6 +62,10 @@ INCLUDEPATH += \
 HEADERS += \
     ../shared/*.h
 
+SOURCES += \
+    ../shared/*.cpp
+
+
 INCLUDEPATH += \
     src \
     src/network

@@ -2,9 +2,12 @@
 #include <QFile>
 #include <QJsonDocument>
 #include <QCryptographicHash>
+#include <QKeySequence>
 #include <qcoreapplication.h>
 
 #include "ff_encoder.h"
+#include "data_types.h"
+#include "dialog_keyboard_shortcuts.h"
 
 #include "settings.h"
 
@@ -70,6 +73,7 @@ bool Settings::load()
     QVariantMap map_device=map_root.value(QStringLiteral("device")).toMap();
     QVariantMap map_rec=map_root.value(QStringLiteral("rec")).toMap();
     QVariantMap map_http_server=map_root.value(QStringLiteral("http_server")).toMap();
+    QVariantMap map_keyboard_shortcuts=map_root.value(QStringLiteral("keyboard_shortcuts")).toMap();
 
     main.preview=map_main.value(QStringLiteral("preview"), 1).toInt();
     main.smooth_transform=map_main.value(QStringLiteral("smooth_transform"), 0).toInt();
@@ -98,6 +102,20 @@ bool Settings::load()
     rec.pixel_format_current=rec.pixel_format.value(QString::number(rec.encoder), 0).toInt();
     rec.preset_current=rec.preset.value(QString::number(rec.encoder), 0).toInt();
 
+
+    keyboard_shortcuts.need_setup=map_keyboard_shortcuts.isEmpty();
+
+    for(int i=0; i<KeyCodeC::enm_size; ++i) {
+        keyboard_shortcuts.code.insert(DialogKeyboardShortcuts::defaultQtKey(i), i);
+    }
+
+    for(int i=0; i<map_keyboard_shortcuts.size(); ++i) {
+        QKeySequence seq(map_keyboard_shortcuts.values()[i].toString());
+
+        keyboard_shortcuts.code.insert(seq.count()==1 ? seq[0] : Qt::Key_F1,
+                                       KeyCodeC::fromString(map_keyboard_shortcuts.keys()[i]));
+    }
+
     return true;
 }
 
@@ -108,6 +126,7 @@ bool Settings::save()
     QVariantMap map_device;
     QVariantMap map_rec;
     QVariantMap map_http_server;
+    QVariantMap map_keyboard_shortcuts;
 
 
     map_main.insert(QStringLiteral("preview"), (bool)main.preview);
@@ -134,9 +153,17 @@ bool Settings::save()
     map_root.insert(QStringLiteral("http_server"), map_http_server);
 #endif
 
+    for(int i=0; i<KeyCodeC::enm_size; ++i)
+        map_keyboard_shortcuts.insert(
+                    KeyCodeC::toString(i),
+                    QKeySequence(keyboard_shortcuts.code.key(i, DialogKeyboardShortcuts::defaultQtKey(i))).toString()
+                    );
+
     map_root.insert(QStringLiteral("main"), map_main);
     map_root.insert(QStringLiteral("device"), map_device);
     map_root.insert(QStringLiteral("rec"), map_rec);
+    map_root.insert(QStringLiteral("keyboard_shortcuts"), map_keyboard_shortcuts);
+
 
     QByteArray ba=QJsonDocument::fromVariant(map_root).toJson();
 

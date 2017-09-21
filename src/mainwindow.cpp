@@ -25,6 +25,7 @@
 #include "overlay_view.h"
 #include "http_server.h"
 #include "data_types.h"
+#include "dialog_keyboard_shortcuts.h"
 
 #include "mainwindow.h"
 
@@ -116,6 +117,18 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     settings->load();
+
+    if(settings->keyboard_shortcuts.need_setup || qApp->arguments().contains("--setup_shortcuts", Qt::CaseInsensitive)) {
+        DialogKeyboardShortcuts dlg;
+
+        for(int i=0; i<KeyCodeC::enm_size; ++i)
+            dlg.setKey(i, (Qt::Key)settings->keyboard_shortcuts.code.key(i, DialogKeyboardShortcuts::defaultQtKey(i)));
+
+        if(dlg.exec()==DialogKeyboardShortcuts::Accepted) {
+            for(int i=0; i<KeyCodeC::enm_size; ++i)
+                settings->keyboard_shortcuts.code.insert(dlg.toQtKey(i), i);
+        }
+    }
 
     //
 
@@ -369,77 +382,8 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 
             int key=e->key();
 
-            switch(key) {
-            case Qt::Key_F1:
-                keyPressed(KeyCodeC::About);
-                return true;
-
-            case Qt::Key_F2:
-                keyPressed(KeyCodeC::FileBrowser);
-                return true;
-
-            case Qt::Key_F3:
-                keyPressed(KeyCodeC::SmoothTransform);
-                return true;
-
-            case Qt::Key_F4:
-                keyPressed(KeyCodeC::Rec);
-                return true;
-
-            case Qt::Key_F5:
-                keyPressed(KeyCodeC::Info);
-                return true;
-
-            case Qt::Key_F6:
-                keyPressed(KeyCodeC::RecState);
-                return true;
-
-            case Qt::Key_F7:
-                keyPressed(KeyCodeC::Preview);
-                return true;
-
-            case Qt::Key_F8:
-                keyPressed(KeyCodeC::PreviewFastYuv);
-                return true;
-
-            case Qt::Key_F11:
-                keyPressed(KeyCodeC::FullScreen);
-                return true;
-
-            case Qt::Key_F12:
-                QApplication::exit(0);
-                return true;
-
-            case Qt::Key_Menu:
-            case Qt::Key_Space:
-                keyPressed(KeyCodeC::Menu);
-                return true;
-
-            case Qt::Key_HomePage:
-            case Qt::Key_Back:
-            case Qt::Key_Backspace:
-            case Qt::Key_Delete:
-                keyPressed(KeyCodeC::Back);
-                return true;
-
-            case Qt::Key_Return:
-                keyPressed(KeyCodeC::Enter);
-                return true;
-
-            case Qt::Key_Up:
-                keyPressed(KeyCodeC::Up);
-                return true;
-
-            case Qt::Key_Down:
-                keyPressed(KeyCodeC::Down);
-                return true;
-
-            case Qt::Key_Left:
-                keyPressed(KeyCodeC::Left);
-                return true;
-
-            case Qt::Key_Right:
-                keyPressed(KeyCodeC::Right);
+            if(settings->keyboard_shortcuts.code.contains(key)) {
+                keyPressed(settings->keyboard_shortcuts.code.value(key));
                 return true;
             }
         }

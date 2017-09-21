@@ -52,6 +52,12 @@ public:
 
     } http_server;
 
+    struct Keys {
+        QMap <int, int> code; // Qt::Key : KeyCodeC
+        bool need_setup;
+
+    } keyboard_shortcuts;
+
 private:
     Settings(QObject *parent=0);
 
