@@ -40,7 +40,7 @@ void AudioSender::run()
 
     socket.moveToThread(this);
 
-    if(!socket.bind(QHostAddress::LocalHost, 4142)) {
+    if(!socket.bind(QHostAddress::Any, 4142)) {
         qCritical() << socket.errorString();
         return;
     }

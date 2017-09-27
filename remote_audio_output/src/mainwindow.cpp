@@ -147,7 +147,6 @@ void MainWindow::save()
 
 void MainWindow::audioDeviceChanged()
 {
-
    QAudioDeviceInfo dev_info=cb_audio_device->currentData().value<QAudioDeviceInfo>();
 
    cb_channels->clear();
