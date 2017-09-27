@@ -26,6 +26,7 @@
 #include "http_server.h"
 #include "data_types.h"
 #include "dialog_keyboard_shortcuts.h"
+#include "audio_sender.h"
 
 #include "mainwindow.h"
 
@@ -114,6 +115,7 @@ MainWindow::MainWindow(QWidget *parent)
             messenger, SIGNAL(audioLevels(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)), Qt::QueuedConnection);
 
 
+
     //
 
     settings->load();
@@ -129,6 +131,11 @@ MainWindow::MainWindow(QWidget *parent)
                 settings->keyboard_shortcuts.code.insert(dlg.toQtKey(i), i);
         }
     }
+
+    //
+
+    AudioSender *audio_sender=new AudioSender(this);
+    decklink_thread->subscribe(audio_sender->frameBuffer());
 
     //
 
