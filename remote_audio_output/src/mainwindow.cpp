@@ -35,6 +35,9 @@ MainWindow::MainWindow(QWidget *parent)
         exit(1);
     }
 
+    level_in=new AudioLevelWidget();
+    level_out=new AudioLevelWidget();
+
     cb_audio_device=new QComboBox();
 
     connect(cb_audio_device, SIGNAL(currentIndexChanged(int)), SLOT(audioDeviceChanged()));
@@ -61,6 +64,8 @@ MainWindow::MainWindow(QWidget *parent)
     QLabel *l_sample_rate=new QLabel(QStringLiteral("sample rate:"));
     QLabel *l_host=new QLabel(QStringLiteral("host:"));
     QLabel *l_port=new QLabel(QStringLiteral("port:"));
+    QLabel *l_in=new QLabel(QStringLiteral("in:"));
+    QLabel *l_out=new QLabel(QStringLiteral("out:"));
 
     QGridLayout *la_controls=new QGridLayout();
 
@@ -84,6 +89,12 @@ MainWindow::MainWindow(QWidget *parent)
     la_controls->addWidget(le_port, row++, 1);
 
     la_controls->addWidget(b_connect, row++, 1);
+
+    la_controls->addWidget(l_in, row, 0);
+    la_controls->addWidget(level_in, row++, 1);
+
+    la_controls->addWidget(l_out, row, 0);
+    la_controls->addWidget(level_out, row++, 1);
 
 
     QWidget *w_central=new QWidget();
@@ -176,7 +187,7 @@ void MainWindow::socketRead()
             continue;
 
         if(!audio_device)
-            return;
+            continue;
 
         packet.fromExt(QJsonDocument::fromBinaryData(dg.data()).toVariant().toMap());
 
@@ -192,6 +203,9 @@ void MainWindow::socketRead()
         audio_converter.convert(&packet.data, &ba_out);
 
         audio_device->write(ba_out);
+
+        level_in->write(packet.data, packet.channels, packet.sample_size);
+        level_out->write(ba_out, audio_format.channelCount(), 16);
     }
 }
 

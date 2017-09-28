@@ -10,6 +10,7 @@
 #include <QTimer>
 
 #include "ff_audio_converter.h"
+#include "audio_level_widget.h"
 
 class MainWindow : public QMainWindow
 {
@@ -31,6 +32,9 @@ private:
 
     QLineEdit *le_host;
     QLineEdit *le_port;
+
+    AudioLevelWidget *level_in;
+    AudioLevelWidget *level_out;
 
     QAudioOutput *audio_output;
     QAudioFormat audio_format;
