@@ -3,10 +3,6 @@
 
 #include <QWidget>
 
-class FrameBuffer;
-
-class QTimer;
-
 class AudioLevelWidget : public QWidget
 {
     Q_OBJECT

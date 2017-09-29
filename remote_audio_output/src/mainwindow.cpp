@@ -49,6 +49,24 @@ MainWindow::MainWindow(QWidget *parent)
     foreach(QAudioDeviceInfo dev_info, QAudioDeviceInfo::availableDevices(QAudio::AudioOutput))
         cb_audio_device->addItem(dev_info.deviceName(), QVariant::fromValue(dev_info));
 
+    //
+
+    cb_normalization=new QCheckBox(QStringLiteral("level normalization"));
+    le_norm_update_time=new QLineEdit();
+    le_norm_gain_change_step=new QLineEdit();
+    le_norm_maximum_level_percentage=new QLineEdit();
+    le_norm_gain_factor=new QLineEdit(QStringLiteral("1.00"));
+
+    le_norm_gain_factor->setReadOnly(true);
+
+    connect(le_norm_update_time, SIGNAL(textChanged(QString)), SLOT(setupNormalizer()));
+    connect(le_norm_gain_change_step, SIGNAL(textChanged(QString)), SLOT(setupNormalizer()));
+    connect(le_norm_maximum_level_percentage, SIGNAL(textChanged(QString)), SLOT(setupNormalizer()));
+
+    connect(&normalizer, SIGNAL(gainFactorChanged(double)), SLOT(normalizerGainFactor(double)));
+
+    //
+
     le_host=new QLineEdit();
     le_port=new QLineEdit();
 
@@ -62,6 +80,12 @@ MainWindow::MainWindow(QWidget *parent)
     QLabel *l_audio_device=new QLabel(QStringLiteral("device:"));
     QLabel *l_channels=new QLabel(QStringLiteral("channels:"));
     QLabel *l_sample_rate=new QLabel(QStringLiteral("sample rate:"));
+
+    QLabel *l_norm_update_time=new QLabel(QStringLiteral("update time:"));
+    QLabel *l_norm_gain_change_step=new QLabel(QStringLiteral("gain change step:"));
+    QLabel *l_norm_maximum_level_percentage=new QLabel(QStringLiteral("maximum level percentage:"));
+    QLabel *l_gain_factor=new QLabel(QStringLiteral("gain factor:"));
+
     QLabel *l_host=new QLabel(QStringLiteral("host:"));
     QLabel *l_port=new QLabel(QStringLiteral("port:"));
     QLabel *l_in=new QLabel(QStringLiteral("in:"));
@@ -82,6 +106,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     la_controls->addWidget(b_start_device, row++, 1);
 
+    QFrame *f_line=new QFrame();
+    f_line->setLineWidth(2);
+    f_line->setMidLineWidth(1);
+    f_line->setFrameShape(QFrame::HLine);
+    f_line->setFrameShadow(QFrame::Raised);
+
+    la_controls->addWidget(f_line, row++, 0, 1, 2);
+
     la_controls->addWidget(l_host, row, 0);
     la_controls->addWidget(le_host, row++, 1);
 
@@ -89,6 +121,37 @@ MainWindow::MainWindow(QWidget *parent)
     la_controls->addWidget(le_port, row++, 1);
 
     la_controls->addWidget(b_connect, row++, 1);
+
+    f_line=new QFrame();
+    f_line->setLineWidth(2);
+    f_line->setMidLineWidth(1);
+    f_line->setFrameShape(QFrame::HLine);
+    f_line->setFrameShadow(QFrame::Raised);
+
+    la_controls->addWidget(f_line, row++, 0, 1, 2);
+
+    la_controls->addWidget(cb_normalization, row++, 1);
+
+    la_controls->addWidget(l_norm_update_time, row, 0);
+    la_controls->addWidget(le_norm_update_time, row++, 1);
+
+    la_controls->addWidget(l_norm_gain_change_step, row, 0);
+    la_controls->addWidget(le_norm_gain_change_step, row++, 1);
+
+    la_controls->addWidget(l_norm_maximum_level_percentage, row, 0);
+    la_controls->addWidget(le_norm_maximum_level_percentage, row++, 1);
+
+    la_controls->addWidget(l_gain_factor, row, 0);
+    la_controls->addWidget(le_norm_gain_factor, row++, 1);
+
+
+    f_line=new QFrame();
+    f_line->setLineWidth(2);
+    f_line->setMidLineWidth(1);
+    f_line->setFrameShape(QFrame::HLine);
+    f_line->setFrameShadow(QFrame::Raised);
+
+    la_controls->addWidget(f_line, row++, 0, 1, 2);
 
     la_controls->addWidget(l_in, row, 0);
     la_controls->addWidget(level_in, row++, 1);
@@ -136,6 +199,13 @@ void MainWindow::load()
 
     le_host->setText(map_root.value(QStringLiteral("host"), QStringLiteral("127.0.0.1")).toString());
     le_port->setText(map_root.value(QStringLiteral("port"), QStringLiteral("4142")).toString());
+
+    cb_normalization->setChecked(map_root.value(QStringLiteral("normalization"), true).toBool());
+    le_norm_update_time->setText(map_root.value(QStringLiteral("normalization_update_time"), "2000").toString());
+    le_norm_gain_change_step->setText(map_root.value(QStringLiteral("normalization_gain_change_step"), "0.5").toString());
+    le_norm_maximum_level_percentage->setText(map_root.value(QStringLiteral("normalization_maximum_level_percentage"), "0.9").toString());
+
+    setupNormalizer();
 }
 
 void MainWindow::save()
@@ -146,11 +216,15 @@ void MainWindow::save()
 
     QVariantMap map_root;
 
-    map_root.insert(QStringLiteral("audio_device"), cb_audio_device->currentText());
-    map_root.insert(QStringLiteral("channels"), cb_channels->currentText().toInt());
-    map_root.insert(QStringLiteral("sample_rate"), cb_sample_rate->currentText().toInt());
-    map_root.insert(QStringLiteral("host"), le_host->text());
-    map_root.insert(QStringLiteral("port"), le_port->text());
+    map_root.insert(QStringLiteral("audio_device"), cb_audio_device->currentText().trimmed());
+    map_root.insert(QStringLiteral("channels"), cb_channels->currentText().trimmed().toInt());
+    map_root.insert(QStringLiteral("sample_rate"), cb_sample_rate->currentText().trimmed().toInt());
+    map_root.insert(QStringLiteral("host"), le_host->text().trimmed());
+    map_root.insert(QStringLiteral("port"), le_port->text().trimmed());
+    map_root.insert(QStringLiteral("normalization"), cb_normalization->isChecked());
+    map_root.insert(QStringLiteral("normalization_update_time"), le_norm_update_time->text().trimmed());
+    map_root.insert(QStringLiteral("normalization_gain_change_step"), le_norm_gain_change_step->text().trimmed());
+    map_root.insert(QStringLiteral("normalization_maximum_level_percentage"), le_norm_maximum_level_percentage->text().trimmed());
 
     f.write(QJsonDocument::fromVariant(map_root).toJson());
     f.close();
@@ -202,6 +276,9 @@ void MainWindow::socketRead()
 
         audio_converter.convert(&packet.data, &ba_out);
 
+        if(cb_normalization->isChecked())
+            normalizer.proc(&ba_out, audio_format.channelCount());
+
         audio_device->write(ba_out);
 
         level_in->write(packet.data, packet.channels, packet.sample_size);
@@ -238,4 +315,16 @@ void MainWindow::connectToHost()
 
     if(!timer_still_alive->isActive())
         timer_still_alive->start();
+}
+
+void MainWindow::setupNormalizer()
+{
+    normalizer.setUpdateTime(le_norm_update_time->text().trimmed().toUShort());
+    normalizer.setGainChangeStep(le_norm_gain_change_step->text().trimmed().toDouble());
+    normalizer.setMaximumLevelPercentage(le_norm_maximum_level_percentage->text().trimmed().toDouble());
+}
+
+void MainWindow::normalizerGainFactor(double value)
+{
+    le_norm_gain_factor->setText(QString::number(value, 'f', 2));
 }

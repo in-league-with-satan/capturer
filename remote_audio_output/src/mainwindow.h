@@ -7,10 +7,12 @@
 #include <QAudioFormat>
 #include <QComboBox>
 #include <QLineEdit>
+#include <QCheckBox>
 #include <QTimer>
 
 #include "ff_audio_converter.h"
 #include "audio_level_widget.h"
+#include "audio_normalization.h"
 
 class MainWindow : public QMainWindow
 {
@@ -33,8 +35,16 @@ private:
     QLineEdit *le_host;
     QLineEdit *le_port;
 
+    QCheckBox *cb_normalization;
+    QLineEdit *le_norm_update_time;
+    QLineEdit *le_norm_gain_change_step;
+    QLineEdit *le_norm_maximum_level_percentage;
+    QLineEdit *le_norm_gain_factor;
+
     AudioLevelWidget *level_in;
     AudioLevelWidget *level_out;
+
+    AudioNormalization normalizer;
 
     QAudioOutput *audio_output;
     QAudioFormat audio_format;
@@ -50,6 +60,10 @@ private slots:
     void socketRead();
     void startAudioDevice();
     void connectToHost();
+
+    void setupNormalizer();
+    void normalizerGainFactor(double value);
+
 };
 
 #endif // MAINWINDOW_H
