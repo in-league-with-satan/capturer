@@ -56,6 +56,7 @@ bool FFFormatConverter::setup(AVPixelFormat format_src, QSize resolution_src, AV
                                    resolution_dst.width(), resolution_dst.height(),
                                    format_dst,
                                    filter, nullptr, nullptr, nullptr);
+
     return true;
 }
 
@@ -64,22 +65,16 @@ void FFFormatConverter::convert(QByteArray *src, QByteArray *dst)
     if(!av_frame_src)
         return;
 
-    // av_image_fill_arrays(context->av_frame_src->data, context->av_frame_src->linesize, (const uint8_t*)src->constData(), format_src, resolution_src.width(), resolution_src.height(), alignment);
+     av_image_fill_arrays(av_frame_src->data, av_frame_src->linesize, (const uint8_t*)src->constData(), format_src, resolution_src.width(), resolution_src.height(), alignment);
 
-    // convert(context->av_frame_src, context->av_frame_dst);
+     convert(av_frame_src, av_frame_dst);
 
-    // int buf_size=av_image_get_buffer_size(format_dst, resolution_dst.width(), resolution_dst.height(), alignment);
+     int buf_size=av_image_get_buffer_size(format_dst, resolution_dst.width(), resolution_dst.height(), alignment);
 
-    // if(dst->size()!=buf_size)
-    //     dst->resize(buf_size);
+     if(dst->size()!=buf_size)
+         dst->resize(buf_size);
 
-    // av_image_copy_to_buffer((uint8_t*)dst->constData(), dst->size(), context->av_frame_dst->data, context->av_frame_dst->linesize, format_dst, resolution_dst.width(), resolution_dst.width(), alignment);
-
-    // byteArrayToAvFrame(src, context->av_frame_src);  // !!!
-
-    // convert(context->av_frame_src, context->av_frame_dst);
-
-    // avFrameToByteArray(context->av_frame_dst, dst);
+     av_image_copy_to_buffer((uint8_t*)dst->constData(), dst->size(), av_frame_dst->data, av_frame_dst->linesize, format_dst, resolution_dst.width(), resolution_dst.height(), alignment);
 }
 
 void FFFormatConverter::convert(AVFrame *src, AVFrame *dst)
@@ -108,3 +103,4 @@ void FFFormatConverter::free()
         convert_context=nullptr;
     }
 }
+

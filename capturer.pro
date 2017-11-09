@@ -159,7 +159,8 @@ INCLUDEPATH += \
     src/ffmpeg \
     src/audio_output \
     src/overlay \
-    src/network
+    src/network \
+    src/video_sources
 
 SOURCES += \
     src/*.cpp \
@@ -167,7 +168,8 @@ SOURCES += \
     src/ffmpeg/*.cpp \
     src/audio_output/*.cpp \
     src/overlay/*.cpp \
-    src/network/*.cpp
+    src/network/*.cpp \
+    src/video_sources/*.cpp
 
 HEADERS += \
     src/*.h \
@@ -175,7 +177,8 @@ HEADERS += \
     src/ffmpeg/*.h \
     src/audio_output/*.h \
     src/overlay/*.h \
-    src/network/*.h
+    src/network/*.h \
+    src/video_sources/*.h
 
 RESOURCES += \
     qml.qrc \

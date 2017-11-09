@@ -78,10 +78,15 @@ bool Settings::load()
     main.preview=map_main.value(QStringLiteral("preview"), 1).toInt();
     main.smooth_transform=map_main.value(QStringLiteral("smooth_transform"), 0).toInt();
 
-    device.index=map_device.value(QStringLiteral("index"), 0).toInt();
-    device.audio_sample_size=map_device.value(QStringLiteral("audio_sample_size"), 0).toInt();
-    device.half_fps=map_device.value(QStringLiteral("half_fps"), 0).toInt();
-    device.rgb_10bit=map_device.value(QStringLiteral("rgb_10_bit"), 0).toInt();
+    device_decklink.index=map_device.value(QStringLiteral("index"), 0).toInt();
+    device_decklink.audio_sample_size=map_device.value(QStringLiteral("audio_sample_size"), 0).toInt();
+    device_decklink.half_fps=map_device.value(QStringLiteral("half_fps"), 0).toInt();
+    device_decklink.rgb_10bit=map_device.value(QStringLiteral("rgb_10_bit"), 0).toInt();
+
+    device_cam.index=0;
+    device_cam.resolution=0;
+    device_cam.framerate=0;
+    device_cam.pixel_format=0;
 
     rec.encoder=map_rec.value(QStringLiteral("encoder"), 0).toInt();
     rec.pixel_format=map_rec.value(QStringLiteral("pixel_format")).toMap();
@@ -132,10 +137,10 @@ bool Settings::save()
     map_main.insert(QStringLiteral("preview"), (bool)main.preview);
     map_main.insert(QStringLiteral("smooth_transform"), (bool)main.smooth_transform);
 
-    map_device.insert(QStringLiteral("index"), device.index);
-    map_device.insert(QStringLiteral("audio_sample_size"), device.audio_sample_size);
-    map_device.insert(QStringLiteral("half_fps"), device.half_fps);
-    map_device.insert(QStringLiteral("rgb_10_bit"), device.rgb_10bit);
+    map_device.insert(QStringLiteral("index"), device_decklink.index);
+    map_device.insert(QStringLiteral("audio_sample_size"), device_decklink.audio_sample_size);
+    map_device.insert(QStringLiteral("half_fps"), device_decklink.half_fps);
+    map_device.insert(QStringLiteral("rgb_10_bit"), device_decklink.rgb_10bit);
 
     map_rec.insert(QStringLiteral("encoder"), rec.encoder);
     map_rec.insert(QStringLiteral("pixel_format"), rec.pixel_format);

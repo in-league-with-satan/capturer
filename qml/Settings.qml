@@ -53,9 +53,17 @@ ShowHideRect {
         property int role_value: 4
         property int role_name: 5
 
-        property int type_combobox: 0
-        property int type_checkbox: 1
-        property int type_button: 2
+        property int type_title: 0
+        property int type_divider: 1
+        property int type_combobox: 2
+        property int type_checkbox: 3
+        property int type_button: 4
+
+
+        onVisibleChanged: {
+            if(!posCheck(0))
+                focusNext()
+        }
 
         model: VisualDataModel {
             id: fs_model
@@ -64,8 +72,13 @@ ShowHideRect {
             delegate: Rectangle {
                 id: m_delegate
                 width: root.width
-                height: root.height*.1
-                color : "transparent"
+                height: {
+                    if(item_type==list.type_divider)
+                        return root.height*.1*.5
+
+                    return root.height*.1
+                }
+                color: "transparent"
 
                 property int item_type: type
                 property int item_value: value
@@ -120,22 +133,58 @@ ShowHideRect {
                     }
                 }
 
+                Rectangle {
+                    anchors.centerIn: parent
+                    width: parent.width
+                    height: parent.height*.33
+                    color: {
+                        if(item_type==list.type_divider)
+                            return "#ff323232"
+
+                        return "transparent"
+                    }
+
+                    z: parent.z - 1
+                }
+
                 Text {
                     id: t_name
                     color: "white"
-                    width: m_delegate.width*.5
+                    width: {
+                        if(item_type==list.type_title)
+                            return m_delegate.width
+
+                        return m_delegate.width*.5
+                    }
                     height: m_delegate.height
                     anchors.verticalCenter: m_delegate.verticalCenter
                     font.pixelSize: m_delegate.height*.5
                     verticalAlignment: Text.AlignVCenter
-                    clip: true
-                    text: item_name=="" ? "" : "  " + item_name + ":"
+                    horizontalAlignment: {
+                        if(item_type==list.type_title)
+                            return Text.AlignHCenter
 
-                    // Rectangle {
-                    //     anchors.fill: parent
-                    //     color: "#4400ff00"
-                    //     z: parent.z - 1
-                    // }
+                        return Text.AlignLeft
+                    }
+                    clip: true
+                    text: {
+                        if(item_type==list.type_title)
+                            return item_name
+
+                        if(item_type==list.type_divider)
+                            return ""
+
+                        if(item_name!="")
+                            return "  " + item_name + ":"
+
+                        return ""
+                    }
+
+//                     Rectangle {
+//                         anchors.fill: parent
+//                         color: "#4400ff00"
+//                         z: parent.z - 1
+//                     }
                 }
 
                 Rectangle {
@@ -150,7 +199,7 @@ ShowHideRect {
                         visible: m_delegate.item_type==list.type_combobox
                         model: item_values
                         font.pixelSize: m_delegate.height*.5
-                        anchors.fill: parent;
+                        anchors.fill: parent
 
                         currentIndex: {
                             if(m_delegate.item_type==list.type_combobox)
@@ -163,7 +212,7 @@ ShowHideRect {
                     CheckBox {
                         id: checkbox
                         visible: m_delegate.item_type==list.type_checkbox
-                        anchors.fill: parent;
+                        anchors.fill: parent
                         scale: m_delegate.height*.02
 
                         checked: {
@@ -177,7 +226,7 @@ ShowHideRect {
                     Button {
                         id: button
                         visible: m_delegate.item_type==list.type_button
-                        anchors.fill: parent;
+                        anchors.fill: parent
                         font.pixelSize: m_delegate.height*.5
                         text: {
                             if(m_delegate.item_type==list.type_button)
@@ -206,24 +255,49 @@ ShowHideRect {
             }
         }
 
+        function posCheck(index) {
+            if(index<0)
+                return false
+
+            if(index>=list.model.count)
+                return false
+
+            if(list.contentItem.children[index].item_type===list.type_title
+                    || list.contentItem.children[index].item_type===list.type_divider )
+                return false
+
+            return true
+        }
+
+
         function focusPrev() {
             if(!root.state_visible)
-                return;
+                return
 
-            list.currentIndex--;
+            while(true) {
+                list.currentIndex--
 
-            if(list.currentIndex<0)
-                list.currentIndex=list.model.count - 1;
+                if(list.currentIndex<0)
+                    list.currentIndex=list.model.count - 1
+
+                if(posCheck(list.currentIndex))
+                    return
+            }
         }
 
         function focusNext() {
             if(!root.state_visible)
-                return;
+                return
 
-            list.currentIndex++;
+            while(true) {
+                list.currentIndex++
 
-            if(list.currentIndex>=list.model.count)
-                list.currentIndex=0
+                if(list.currentIndex>=list.model.count)
+                    list.currentIndex=0
+
+                if(posCheck(list.currentIndex))
+                    return
+            }
         }
 
         function valuePrev() {
@@ -239,7 +313,7 @@ ShowHideRect {
 
             onKeyPressed: {
                 if(!root.state_visible)
-                    return;
+                    return
 
                 switch(key) {
                 case Qt.Key_Up:
@@ -268,6 +342,9 @@ ShowHideRect {
             target: messenger.settingsModel
 
             onDataChanged: {
+//                if(!qml)
+//                    return
+
                 if(role==list.role_values)
                     list.contentItem.children[row].combobox.model=messenger.settingsModel.data(row, list.role_values)
 

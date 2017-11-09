@@ -96,6 +96,16 @@ void SettingsModel::setData(const int &index, int role, QVariant data, bool qml)
     emit dataChanged(index, role, qml);
 }
 
+void SettingsModel::setData(int *ptr_value, int role, QVariant data, bool qml)
+{
+    for(int i=0; i<rowCount(); ++i) {
+        if(data_p(i)->value==ptr_value) {
+            setData(i, role, data, qml);
+            break;
+        }
+    }
+}
+
 void SettingsModel::reload()
 {
     emit changed(this);
@@ -134,12 +144,14 @@ QHash <int, QByteArray> SettingsModel::roleNames() const
     return roles;
 }
 
-void SettingsModel::add(const SettingsModel::Data &data)
+int SettingsModel::add(const SettingsModel::Data &data)
 {
     beginInsertRows(QModelIndex(), d.size(), d.size());
 
     d.append(data);
 
     endInsertRows();
+
+    return d.size() - 1;
 }
 

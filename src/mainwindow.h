@@ -14,6 +14,7 @@ class QmlMessenger;
 class OverlayView;
 class Server;
 class HttpServer;
+class QCam;
 
 class QMessageBox;
 
@@ -27,6 +28,7 @@ public:
 
 private:
     DeckLinkCapture *decklink_thread;
+    QCam *cam_device;
 
     FFEncoderThread *ff_enc;
     FFDecoderThread *ff_dec;

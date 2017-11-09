@@ -59,6 +59,23 @@ struct Frame
         }
     }
 
+    void setData(const QByteArray &video_frame, QSize size, const QByteArray &audio_packet, int audio_channels, int audio_sample_size) {
+        if(!video_frame.isEmpty()) {
+            video.dummy=video_frame;
+            video.ptr_data=(char*)video.dummy.constData();
+            video.data_size=video_frame.size();
+            video.size=size;
+        }
+
+        if(!audio_packet.isEmpty()) {
+            audio.dummy=audio_packet;
+            audio.ptr_data=(char*)audio.dummy.constData();
+            audio.data_size=audio_packet.size();
+            audio.channels=audio_channels;
+            audio.sample_size=audio_sample_size;
+        }
+    }
+
     struct DataVideo {
         DataVideo() {
             ptr_data=nullptr;
@@ -73,6 +90,8 @@ struct Frame
 
         bool rgb;
         bool rgb_10bit;
+
+        QByteArray dummy;
 
     } video;
 
@@ -89,6 +108,8 @@ struct Frame
 
         int channels;
         int sample_size;
+
+        QByteArray dummy;
 
     } audio;
 

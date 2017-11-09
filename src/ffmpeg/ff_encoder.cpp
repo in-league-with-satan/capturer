@@ -925,47 +925,49 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
     // audio
     {
-        QByteArray ba_audio=QByteArray(frame->audio.ptr_data, frame->audio.data_size);
+        if(frame->audio.data_size) {
+            QByteArray ba_audio=QByteArray(frame->audio.ptr_data, frame->audio.data_size);
 
-        ba_audio.insert(0, context->out_stream_audio.ba_audio_prev_part);
+            ba_audio.insert(0, context->out_stream_audio.ba_audio_prev_part);
 
-        AVSampleFormat sample_format=context->cfg.audio_sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32;
+            AVSampleFormat sample_format=context->cfg.audio_sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32;
 
-        int buffer_size=0;
+            int buffer_size=0;
 
-        int default_nb_samples=context->out_stream_audio.frame->nb_samples;
+            int default_nb_samples=context->out_stream_audio.frame->nb_samples;
 
-        while(true) {
-            buffer_size=av_samples_get_buffer_size(nullptr, context->out_stream_audio.frame->channels, context->out_stream_audio.frame->nb_samples,
-                                                   sample_format, 0);
+            while(true) {
+                buffer_size=av_samples_get_buffer_size(nullptr, context->out_stream_audio.frame->channels, context->out_stream_audio.frame->nb_samples,
+                                                       sample_format, 0);
 
-            if(ba_audio.size()>=buffer_size) {
-                break;
+                if(ba_audio.size()>=buffer_size) {
+                    break;
+                }
+
+                context->out_stream_audio.frame->nb_samples--;
             }
 
-            context->out_stream_audio.frame->nb_samples--;
+            QByteArray ba_audio_tmp=ba_audio.left(buffer_size);
+
+            context->out_stream_audio.ba_audio_prev_part=ba_audio.remove(0, buffer_size);
+
+            int ret=avcodec_fill_audio_frame(context->out_stream_audio.frame, context->out_stream_audio.frame->channels, sample_format,
+                                             (const uint8_t*)ba_audio_tmp.constData(), buffer_size, 0);
+
+            if(ret<0) {
+                stopCoder();
+                emit errorString(last_error_string=QStringLiteral("could not setup audio frame"));
+                return false;
+            }
+
+            context->out_stream_audio.frame->pts=context->out_stream_audio.next_pts;
+
+            context->out_stream_audio.next_pts+=context->out_stream_audio.frame->nb_samples;
+
+            write_audio_frame(context->av_format_context, &context->out_stream_audio);
+
+            context->out_stream_audio.frame->nb_samples=default_nb_samples;
         }
-
-        QByteArray ba_audio_tmp=ba_audio.left(buffer_size);
-
-        context->out_stream_audio.ba_audio_prev_part=ba_audio.remove(0, buffer_size);
-
-        int ret=avcodec_fill_audio_frame(context->out_stream_audio.frame, context->out_stream_audio.frame->channels, sample_format,
-                                         (const uint8_t*)ba_audio_tmp.constData(), buffer_size, 0);
-
-        if(ret<0) {
-            stopCoder();
-            emit errorString(last_error_string=QStringLiteral("could not setup audio frame"));
-            return false;
-        }
-
-        context->out_stream_audio.frame->pts=context->out_stream_audio.next_pts;
-
-        context->out_stream_audio.next_pts+=context->out_stream_audio.frame->nb_samples;
-
-        write_audio_frame(context->av_format_context, &context->out_stream_audio);
-
-        context->out_stream_audio.frame->nb_samples=default_nb_samples;
     }
 
     if(QDateTime::currentMSecsSinceEpoch() - context->last_stats_update_time>1000) {

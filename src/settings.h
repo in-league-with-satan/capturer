@@ -20,17 +20,28 @@ public:
     struct Main {
         int preview;
         int smooth_transform;
+        int dummy;
 
     } main;
 
-    struct Device {
+    struct DeviceDecklink {
         int index;
         int audio_sample_size;
-        int restart;
         int half_fps;
         int rgb_10bit;
+        int restart;
 
-    } device;
+    } device_decklink;
+
+
+    struct DeviceQCam {
+        int index;
+        int resolution;
+        int framerate;
+        int pixel_format;
+        int restart;
+
+    } device_cam;
 
     struct Rec {
         QVariantMap pixel_format;
