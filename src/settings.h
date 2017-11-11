@@ -35,7 +35,8 @@ public:
 
 
     struct DeviceQCam {
-        int index;
+        int index_video;
+        int index_audio;
         int resolution;
         int framerate;
         int pixel_format;

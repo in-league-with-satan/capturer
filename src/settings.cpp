@@ -83,7 +83,8 @@ bool Settings::load()
     device_decklink.half_fps=map_device.value(QStringLiteral("half_fps"), 0).toInt();
     device_decklink.rgb_10bit=map_device.value(QStringLiteral("rgb_10_bit"), 0).toInt();
 
-    device_cam.index=0;
+    device_cam.index_video=0;
+    device_cam.index_audio=0;
     device_cam.resolution=0;
     device_cam.framerate=0;
     device_cam.pixel_format=0;

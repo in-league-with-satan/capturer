@@ -3,6 +3,7 @@
 
 #include <QAbstractVideoSurface>
 #include <QList>
+#include <QAudioFormat>
 
 #include "frame_buffer.h"
 
@@ -22,13 +23,17 @@ public:
     void subscribe(FrameBuffer::ptr obj);
     void unsubscribe(FrameBuffer::ptr obj);
 
+    void setAudioDevice(QIODevice *dev, const QAudioFormat &format);
+
 private:
     QList <FrameBuffer::ptr> subscription_list;
 
     FFFormatConverter *format_converter;
 
-//signals:
-//    void frameAvailable(QImage frame);
+    //
+
+    QIODevice *audio_device;
+    QAudioFormat audio_format;
 };
 
 #endif // VIDEO_SURFACE_H

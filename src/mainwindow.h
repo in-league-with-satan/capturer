@@ -31,6 +31,7 @@ private:
     QCam *cam_device;
 
     FFEncoderThread *ff_enc;
+    FFEncoderThread *ff_enc_cam;
     FFDecoderThread *ff_dec;
 
     QmlMessenger *messenger;

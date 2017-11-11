@@ -1,6 +1,9 @@
+#include <QAudioInput>
 #include <QCameraInfo>
 #include <QCameraImageCapture>
 #include <qcoreapplication.h>
+
+#include <cmath>
 
 #include "video_surface.h"
 
@@ -14,6 +17,10 @@ struct QCamPrivate
     VideoSurace *surface;
 
     QList <QCameraViewfinderSettings> supported_viewfinder_settings;
+
+    //
+
+    QAudioInput *audio_input;
 };
 
 
@@ -25,6 +32,8 @@ QCam::QCam(QObject *parent)
     d->camera=nullptr;
     d->camera_image_capture=nullptr;
     d->surface=new VideoSurace(this);
+
+    d->audio_input=nullptr;
 }
 
 QCam::~QCam()
@@ -42,9 +51,20 @@ QStringList QCam::availableCameras()
     return list;
 }
 
+QStringList QCam::availableAudioInput()
+{
+     QStringList list;
+
+     foreach(QAudioDeviceInfo di, QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
+         list << di.deviceName();
+     }
+
+     return list;
+}
+
 QString QCam::pixelFormatToString(QVideoFrame::PixelFormat fmt)
 {
-    switch(fmt) {
+    switch((uint32_t)fmt) {
     case QVideoFrame::Format_ARGB32:
         return QStringLiteral("ARGB32");
 
@@ -142,7 +162,7 @@ QString QCam::pixelFormatToString(QVideoFrame::PixelFormat fmt)
     return QStringLiteral("Invalid");
 }
 
-void QCam::setDevice(size_t index)
+void QCam::setVideoDevice(size_t index)
 {
     QList <QCameraInfo> dev_list=QCameraInfo::availableCameras();
 
@@ -177,16 +197,47 @@ void QCam::setDevice(size_t index)
     d->supported_viewfinder_settings=d->camera->supportedViewfinderSettings();
 
     d->camera_image_capture=new QCameraImageCapture(d->camera);
+}
 
+void QCam::setAudioDevice(size_t index)
+{
+    QList <QAudioDeviceInfo> dev_list=QAudioDeviceInfo::availableDevices(QAudio::AudioInput);
+
+    if(dev_list.size()<=(int)index) {
+        qCritical() << "index out of range";
+        return;
+    }
+
+    if(d->audio_input) {
+        d->audio_input->stop();
+        d->audio_input->deleteLater();
+    }
+
+    QAudioFormat format;
+    format.setSampleRate(48000);
+    format.setChannelCount(2);
+    format.setSampleSize(16);
+    format.setCodec("audio/pcm");
+    format.setByteOrder(QAudioFormat::LittleEndian);
+    format.setSampleType(QAudioFormat::UnSignedInt);
+
+    if(!dev_list[index].isFormatSupported(format)) {
+        qWarning() << "Default format not supported, trying to use the nearest.";
+        format=dev_list[index].nearestFormat(format);
+    }
+
+    d->audio_input=new QAudioInput(dev_list[index], format, this);
 }
 
 QList <QSize> QCam::supportedResolutions()
 {
-    QList <QSize> lst;
+#ifdef __WIN32__
+    return QList<QSize>() << QSize(640, 480) << QSize(1280, 720) << QSize(1920, 1080);
+#endif
 
     if(!d->camera_image_capture) {
         qCritical() << "camera_image_capture nullptr";
-        return lst;
+        return QList <QSize>();
     }
 
     qInfo() << "supportedImageCodecs" << d->camera_image_capture->supportedImageCodecs();
@@ -196,43 +247,63 @@ QList <QSize> QCam::supportedResolutions()
 
 QList <QVideoFrame::PixelFormat> QCam::pixelFormats(QSize size)
 {
-    // qInfo()<<"QCam::pixelFormats" << size;
     QSet <QVideoFrame::PixelFormat> res;
 
     foreach(QCameraViewfinderSettings set, d->supported_viewfinder_settings) {
         if(set.resolution()==size)
-            res << set.pixelFormat();
+            if(QVideoFrame::Format_Jpeg!=set.pixelFormat())
+                res << set.pixelFormat();
     }
+
+    qInfo() << "QCam::pixelFormats:" << res.toList();
 
     return res.toList();
 }
 
 AVRational QCam::framrateToRational(qreal fr)
 {
-    static const double df=.0001;
+    static const double eps=.0001;
 
-    if(std::abs(fr - 23.976)<df)
+    static auto rnd2=[](const double &value)->double {
+       return round(value*100)/100.;
+    };
+
+    static auto rnd3=[](const double &value)->double {
+       return round(value*1000)/1000.;
+    };
+
+    static auto rnd4=[](const double &value)->double {
+       return round(value*10000)/10000.;
+    };
+
+    if(std::abs(fr - 15.)<eps)
+        return { 1000, 15000 };
+
+    if(std::abs(rnd3(fr) - 23.976)<eps)
         return { 1001, 24000 };
 
-    if(std::abs(fr - 24.)<df)
+    if(std::abs(fr - 24.)<eps)
         return { 1000, 24000 };
 
-    if(std::abs(fr - 25.)<df)
+    if(std::abs(fr - 25.)<eps)
         return { 1000, 25000 };
 
-    if(std::abs(fr - 29.97)<df)
+    if(std::abs(rnd2(fr) - 29.97)<eps)
         return { 1001, 30000 };
 
-    if(std::abs(fr - 30.)<df)
+    if(std::abs(fr - 30.)<eps)
         return { 1000, 30000 };
 
-    if(std::abs(fr - 50.)<df)
+    if(std::abs(fr - 50.)<eps)
         return { 1000, 50000 };
 
-    if(std::abs(fr - 59.9398)<df)
+    if(std::abs(rnd4(fr) - 59.9398)<eps)
         return { 1001, 60000 };
 
-    if(std::abs(fr - 60.)<df)
+    if(std::abs(rnd2(fr) - 59.94)<eps)
+        return { 1001, 60000 };
+
+    if(std::abs(fr - 60.)<eps)
         return { 1000, 60000 };
 
     qWarning() << "framrateToRational unknown fr:" << fr;
@@ -242,6 +313,9 @@ AVRational QCam::framrateToRational(qreal fr)
 
 qreal QCam::rationalToFramerate(AVRational value)
 {
+    if(value.num==1000 && value.den==15000)
+        return 15.;
+
     if(value.num==1001 && value.den==24000)
         return 23.976;
 
@@ -273,11 +347,8 @@ QList <AVRational> QCam::frameRateRanges(QSize size)
 {
     QSet <qreal> res_set;
 
-    //qInfo() << "m2" << d->supported_viewfinder_settings.size();
-
     foreach(QCameraViewfinderSettings set, d->supported_viewfinder_settings) {
         if(set.resolution()==size) {
-            // qInfo() << set.resolution() << set.minimumFrameRate() << set.maximumFrameRate();
             res_set << set.minimumFrameRate() << set.maximumFrameRate();
         }
     }
@@ -285,7 +356,10 @@ QList <AVRational> QCam::frameRateRanges(QSize size)
     QList <AVRational> res_list;
 
     foreach(qreal val, res_set) {
-        res_list << framrateToRational(val);
+        AVRational r=framrateToRational(val);
+
+        if(!res_list.contains(r))
+            res_list << r;
     }
 
     return res_list;
@@ -303,16 +377,17 @@ void QCam::start(QSize size, QVideoFrame::PixelFormat pixel_format, AVRational f
     vfs.setMinimumFrameRate(rationalToFramerate(framerate));
     vfs.setMaximumFrameRate(rationalToFramerate(framerate));
 
-    qInfo() << "rationalToFramerate:" << rationalToFramerate(framerate);
-
-    //    vfs.setMinimumFrameRate(30);
-//    vfs.setMaximumFrameRate(30);
-
 
     d->camera->setCaptureMode(QCamera::CaptureVideo);
     d->camera->setViewfinderSettings(vfs);
 
     d->camera->start();
+
+    if(d->audio_input)
+        d->surface->setAudioDevice(d->audio_input->start(), d->audio_input->format());
+
+    else
+        d->surface->setAudioDevice(0, QAudioFormat());
 }
 
 void QCam::subscribe(FrameBuffer::ptr obj)
@@ -324,4 +399,3 @@ void QCam::unsubscribe(FrameBuffer::ptr obj)
 {
     d->surface->unsubscribe(obj);
 }
-

@@ -22,12 +22,14 @@ public:
     ~QCam();
 
     static QStringList availableCameras();
+    static QStringList availableAudioInput();
     static QString pixelFormatToString(QVideoFrame::PixelFormat fmt);
     static qreal rationalToFramerate(AVRational value);
     static AVRational framrateToRational(qreal fr);
 
-//    void setDevice(QCameraInfo camera_info);
-    void setDevice(size_t index);
+    void setVideoDevice(size_t index);
+    void setAudioDevice(size_t index);
+
 
     QList <QSize> supportedResolutions();
     QList <QVideoFrame::PixelFormat> pixelFormats(QSize size);

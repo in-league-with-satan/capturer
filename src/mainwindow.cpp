@@ -51,8 +51,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     cam_device=new QCam(this);
 
-    cam_device->setDevice(10);
-
     //
 
     qmlRegisterType<SettingsModel>("FuckTheSystem", 0, 0, "SettingsModel");
@@ -165,24 +163,48 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    QStringList cams=QCam::availableCameras();
+    QStringList cam_devices=QCam::availableAudioInput();
 
     set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.group="device";
+    set_model_data.group="audio device";
     set_model_data.name="name";
 
 
-    if(cams.isEmpty()) {
+    if(cam_devices.isEmpty()) {
         set_model_data.values << "null";
 
     } else {
-        foreach(QString cam_name, cams) {
-            qInfo() << cams.size() << cam_name;
-            set_model_data.values << cam_name;
+        foreach(QString dev_name, cam_devices) {
+            set_model_data.values << dev_name;
         }
     }
 
-    set_model_data.value=&settings->device_cam.index;
+    set_model_data.value=&settings->device_cam.index_audio;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    cam_devices=QCam::availableCameras();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.group="video device";
+    set_model_data.name="name";
+
+
+    if(cam_devices.isEmpty()) {
+        set_model_data.values << "null";
+
+    } else {
+        foreach(QString dev_name, cam_devices) {
+            qInfo() << cam_devices.size() << dev_name;
+            set_model_data.values << dev_name;
+        }
+    }
+
+    set_model_data.value=&settings->device_cam.index_video;
 
     int model_index_cam_name=messenger->settingsModel()->add(set_model_data);
 
@@ -232,7 +254,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     set_model_data.values.clear();
 
-    if(!cams.isEmpty())
+    if(!cam_devices.isEmpty())
         settingsModelDataChanged(model_index_cam_name, 0, false);
 
     //
@@ -692,9 +714,13 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
     SettingsModel::Data *data=model->data_p(index);
 
+    if(data->value==&settings->device_cam.index_audio) {
+        cam_device->setAudioDevice(settings->device_cam.index_audio);
+    }
 
-    if(data->value==&settings->device_cam.index) {
-        cam_device->setDevice(settings->device_cam.index);
+
+    if(data->value==&settings->device_cam.index_video) {
+        cam_device->setVideoDevice(settings->device_cam.index_video);
 
         QStringList list_values;
         QVariantList list_values_data;
@@ -840,7 +866,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 }
 
 void MainWindow::startStopCapture()
-{
+{return;
     if(decklink_thread->isRunning()) {
         captureStop();
         return;
@@ -931,6 +957,7 @@ void MainWindow::startStopRecording()
         cfg.rgb_10bit=decklink_thread->rgb10Bit();
         cfg.rgb_10bit=false;
         cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device_decklink.audio_sample_size)->values_data[settings->device_decklink.audio_sample_size].toInt();
+        cfg.audio_channels_size=2;
         cfg.downscale=settings->rec.downscale;
         cfg.scale_filter=settings->rec.scale_filter;
 
