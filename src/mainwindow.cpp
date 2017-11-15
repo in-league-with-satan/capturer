@@ -63,7 +63,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(decklink_thread, SIGNAL(formatChanged(int,int,quint64,quint64,bool,QString)),
             messenger, SIGNAL(formatChanged(int,int,quint64,quint64,bool,QString)), Qt::QueuedConnection);
 
-    // fix me! connect(decklink_thread, SIGNAL(signalLost(bool)), messenger, SIGNAL(signalLost(bool)), Qt::QueuedConnection);
+    connect(decklink_thread, SIGNAL(signalLost(bool)), messenger, SIGNAL(signalLost(bool)), Qt::QueuedConnection);
 
     overlay_view=new OverlayView(this);
 
@@ -1106,8 +1106,28 @@ void MainWindow::playerStateChanged(int state)
 
 void MainWindow::updateStats(FFEncoder::Stats s)
 {
-    if(sender()==ff_enc_cam)
+    static FFEncoder::Stats st_main={ };
+    static FFEncoder::Stats st_cam={ };
+    static qint64 last_update=0;
+
+    if(sender()==ff_enc)
+        st_main=s;
+
+    else
+        st_cam=s;
+
+    s.avg_bitrate_audio=st_main.avg_bitrate_audio + st_cam.avg_bitrate_audio;
+    s.avg_bitrate_video=st_main.avg_bitrate_video + st_cam.avg_bitrate_video;
+    s.streams_size=st_main.streams_size + st_cam.streams_size;
+    s.time=st_main.time;
+
+    if(s.time.isNull())
+        s.time=st_cam.time;
+
+    if(QDateTime::currentMSecsSinceEpoch() - last_update<1000)
         return;
+
+    last_update=QDateTime::currentMSecsSinceEpoch();
 
     const QPair <int, int> buffer_size=ff_enc->frameBuffer()->size();
 
