@@ -32,6 +32,7 @@ public:
     void setMaxSize(uint16_t size);
 
     void setEnabled(bool value);
+    bool isEnabled();
 
     void clear();
 

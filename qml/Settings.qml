@@ -346,10 +346,12 @@ ShowHideRect {
 //                    return
 
                 if(role==list.role_values)
-                    list.contentItem.children[row].combobox.model=messenger.settingsModel.data(row, list.role_values)
+                    if(list.contentItem.children[row]!==undefined)
+                        list.contentItem.children[row].combobox.model=messenger.settingsModel.data(row, list.role_values)
 
                 if(!qml && role==list.role_value)
-                    list.contentItem.children[row].combobox.currentIndex=messenger.settingsModel.data(row, list.role_value)
+                    if(list.contentItem.children[row]!==undefined)
+                        list.contentItem.children[row].combobox.currentIndex=messenger.settingsModel.data(row, list.role_value)
             }
         }
     }

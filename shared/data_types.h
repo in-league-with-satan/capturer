@@ -46,6 +46,7 @@ public:
         Info,
         Preview,
         PreviewFastYuv,
+        PreviewCam,
         FullScreen,
         FileBrowser,
         Rec,

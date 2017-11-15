@@ -36,9 +36,12 @@ public:
     QList <AVRational> frameRateRanges(QSize size);
 
     void start(QSize size, QVideoFrame::PixelFormat pixel_format, AVRational framerate);
+    void stop();
 
     void subscribe(FrameBuffer::ptr obj);
     void unsubscribe(FrameBuffer::ptr obj);
+
+    bool isActive();
 
 private:
     QCamPrivate *d;

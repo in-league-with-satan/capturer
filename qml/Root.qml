@@ -15,6 +15,15 @@ Rectangle {
 
     NoSignal {}
 
+    VideoOutput {
+        id: cam_output
+        x: parent.width*.06
+        y: parent.height - height - parent.height*.1
+        width: parent.width*.3
+        height: parent.height*.3
+        source: messenger.videoSourceCam()
+    }
+
     ErrorMessage {
         width: parent.width*.8
         height: parent.height*.8
@@ -124,6 +133,10 @@ Rectangle {
             menu_header.state_visible=false
             settings.state_visible=false
             file_browser.state_visible=false
+        }
+
+        onCamPreview: {
+            cam_output.visible=visible
         }
     }
 }

@@ -108,6 +108,9 @@ Qt::Key DialogKeyboardShortcuts::defaultQtKey(int code)
     case KeyCodeC::PreviewFastYuv:
         return Qt::Key_F8;
 
+    case KeyCodeC::PreviewCam:
+        return Qt::Key_F9;
+
     case KeyCodeC::FullScreen:
         return Qt::Key_F11;
 

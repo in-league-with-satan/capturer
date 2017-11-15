@@ -93,8 +93,6 @@ bool VideoSurace::present(const QVideoFrame &video_frame)
         else
             frame->setData(ba_video_frame_dst, frame_clone.size(), QByteArray(), 0, 0);
 
-        qInfo() << "aud.size" << frame->audio.data_size;
-
         frame_clone.unmap();
 
         foreach(FrameBuffer::ptr buf, subscription_list)
@@ -122,4 +120,3 @@ void VideoSurace::setAudioDevice(QIODevice *dev, const QAudioFormat &format)
     audio_device=dev;
     audio_format=format;
 }
-

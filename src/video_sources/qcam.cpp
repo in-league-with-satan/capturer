@@ -38,6 +38,18 @@ QCam::QCam(QObject *parent)
 
 QCam::~QCam()
 {
+    if(d->camera) {
+        d->camera->stop();
+        d->camera->unload();
+        d->camera->deleteLater();
+        d->camera=nullptr;
+    }
+
+    if(d->audio_input) {
+        d->audio_input->stop();
+        d->audio_input=nullptr;
+    }
+
     delete d;
 }
 
@@ -173,6 +185,7 @@ void QCam::setVideoDevice(size_t index)
 
     if(d->camera) {
         d->camera->stop();
+        d->camera->unload();
         d->camera->deleteLater();
     }
 
@@ -251,7 +264,7 @@ QList <QVideoFrame::PixelFormat> QCam::pixelFormats(QSize size)
 
     foreach(QCameraViewfinderSettings set, d->supported_viewfinder_settings) {
         if(set.resolution()==size)
-            if(QVideoFrame::Format_Jpeg!=set.pixelFormat())
+            // if(QVideoFrame::Format_Jpeg!=set.pixelFormat())
                 res << set.pixelFormat();
     }
 
@@ -370,6 +383,12 @@ void QCam::start(QSize size, QVideoFrame::PixelFormat pixel_format, AVRational f
     if(!d->camera)
         return;
 
+
+    stop();
+
+    qApp->processEvents();
+
+
     QCameraViewfinderSettings vfs;
 
     vfs.setPixelFormat(pixel_format);
@@ -390,6 +409,15 @@ void QCam::start(QSize size, QVideoFrame::PixelFormat pixel_format, AVRational f
         d->surface->setAudioDevice(0, QAudioFormat());
 }
 
+void QCam::stop()
+{
+    if(d->camera)
+        d->camera->stop();
+
+    if(d->audio_input)
+        d->audio_input->stop();
+}
+
 void QCam::subscribe(FrameBuffer::ptr obj)
 {
     d->surface->subscribe(obj);
@@ -399,3 +427,15 @@ void QCam::unsubscribe(FrameBuffer::ptr obj)
 {
     d->surface->unsubscribe(obj);
 }
+
+bool QCam::isActive()
+{
+    if(!d->camera)
+        return false;
+
+    if(d->camera->state()==QCamera::ActiveState)
+        return true;
+
+    return false;
+}
+

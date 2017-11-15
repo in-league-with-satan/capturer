@@ -13,6 +13,7 @@ QmlMessenger::QmlMessenger(QObject *parent)
     : QObject(parent)
 {
     video_source_main=new QuickVideoSource(false, this);
+    video_source_cam=new QuickVideoSource(false, this);
 
     settings_model=new SettingsModel();
 
@@ -91,6 +92,11 @@ QString QmlMessenger::networkAddresses() const
 QuickVideoSource *QmlMessenger::videoSourceMain()
 {
     return video_source_main;
+}
+
+QuickVideoSource *QmlMessenger::videoSourceCam()
+{
+    return video_source_cam;
 }
 
 FileSystemModel *QmlMessenger::fileSystemModel()

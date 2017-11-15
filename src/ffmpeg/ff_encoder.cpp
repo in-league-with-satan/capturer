@@ -91,6 +91,9 @@ public:
     bool skip_frame;
 
     qint64 last_stats_update_time;
+
+    FFEncoderBaseFilename *base_filename;
+    FFEncoder::Mode::T mode;
 };
 
 static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AVStream *st, AVPacket *pkt)
@@ -547,13 +550,15 @@ static void close_stream(OutputStream *ost)
 
 // ------------------------------
 
-FFEncoder::FFEncoder(QObject *parent) :
+FFEncoder::FFEncoder(FFEncoder::Mode::T mode, QObject *parent) :
     QObject(parent)
 {
     context=new FFMpegContext();
-
     format_converter_ff=new FFFormatConverter();
     format_converter_dl=new DecklinkFrameConverter();
+
+    context->base_filename=nullptr;
+    context->mode=mode;
 }
 
 FFEncoder::~FFEncoder()
@@ -692,8 +697,16 @@ QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
     return QStringList() << QLatin1String("--");
 }
 
+void FFEncoder::setBaseFilename(FFEncoderBaseFilename *bf)
+{
+    context->base_filename=bf;
+}
+
 bool FFEncoder::setConfig(FFEncoder::Config cfg)
 {
+    if(context->mode==FFEncoder::Mode::webcam)
+        cfg.audio_channels_size=2;
+
     last_error_string.clear();
 
     int ret;
@@ -737,8 +750,23 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             dir.mkdir(dir.dirName());
     }
 
-    context->filename=QString(QLatin1String("%1/videos/%2.mkv"))
-            .arg(QApplication::applicationDirPath(), QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss"));
+    {
+        QString name;
+
+        if(!context->base_filename->isEmpty())
+            name=(*context->base_filename);
+
+        else
+            name=QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss");
+
+
+        if(context->mode==Mode::webcam)
+            name+=QLatin1String("_cam");
+
+
+        context->filename=QString(QLatin1String("%1/videos/%2.mkv"))
+                .arg(QApplication::applicationDirPath()).arg(name);
+    }
 
     // context->filename="/dev/null";
 

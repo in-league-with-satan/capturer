@@ -53,6 +53,8 @@ private:
 
     QPoint pos_mouse_press;
 
+    FFEncoderBaseFilename enc_base_filename;
+
 protected:
     virtual bool eventFilter(QObject *object, QEvent *event);
     virtual void closeEvent(QCloseEvent *);
@@ -78,6 +80,7 @@ private slots:
     void encoderBufferOverload();
 
     void previewOnOff();
+    void previewCamOnOff();
 
     void encoderStateChanged(bool state);
     void playerStateChanged(int state);

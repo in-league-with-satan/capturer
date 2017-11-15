@@ -41,6 +41,7 @@ public:
         int framerate;
         int pixel_format;
         int restart;
+        int stop;
 
     } device_cam;
 
