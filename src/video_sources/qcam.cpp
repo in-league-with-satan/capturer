@@ -375,6 +375,10 @@ QList <AVRational> QCam::frameRateRanges(QSize size)
             res_list << r;
     }
 
+    std::sort(res_list.begin(), res_list.end(),
+              [](const AVRational &l, const AVRational &r) { return (l.den/(double)l.num)<(r.den/(double)r.num); }
+    );
+
     return res_list;
 }
 

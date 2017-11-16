@@ -70,7 +70,8 @@ bool Settings::load()
     //
 
     QVariantMap map_main=map_root.value(QStringLiteral("main")).toMap();
-    QVariantMap map_device=map_root.value(QStringLiteral("device")).toMap();
+    QVariantMap map_device_decklink=map_root.value(QStringLiteral("device")).toMap();
+    QVariantMap map_device_qcam=map_root.value(QStringLiteral("device_qcam")).toMap();
     QVariantMap map_rec=map_root.value(QStringLiteral("rec")).toMap();
     QVariantMap map_http_server=map_root.value(QStringLiteral("http_server")).toMap();
     QVariantMap map_keyboard_shortcuts=map_root.value(QStringLiteral("keyboard_shortcuts")).toMap();
@@ -78,16 +79,16 @@ bool Settings::load()
     main.preview=map_main.value(QStringLiteral("preview"), 1).toInt();
     main.smooth_transform=map_main.value(QStringLiteral("smooth_transform"), 0).toInt();
 
-    device_decklink.index=map_device.value(QStringLiteral("index"), 0).toInt();
-    device_decklink.audio_sample_size=map_device.value(QStringLiteral("audio_sample_size"), 0).toInt();
-    device_decklink.half_fps=map_device.value(QStringLiteral("half_fps"), 0).toInt();
-    device_decklink.rgb_10bit=map_device.value(QStringLiteral("rgb_10_bit"), 0).toInt();
+    device_decklink.index=map_device_decklink.value(QStringLiteral("index"), 0).toInt();
+    device_decklink.audio_sample_size=map_device_decklink.value(QStringLiteral("audio_sample_size"), 0).toInt();
+    device_decklink.half_fps=map_device_decklink.value(QStringLiteral("half_fps"), 0).toInt();
+    device_decklink.rgb_10bit=map_device_decklink.value(QStringLiteral("rgb_10_bit"), 0).toInt();
 
-    device_cam.index_video=0;
-    device_cam.index_audio=0;
-    device_cam.resolution=0;
-    device_cam.framerate=0;
-    device_cam.pixel_format=0;
+    device_cam.index_video=map_device_qcam.value(QStringLiteral("index_video"), 0).toInt();
+    device_cam.index_audio=map_device_qcam.value(QStringLiteral("index_audio"), 0).toInt();
+    device_cam.resolution=map_device_qcam.value(QStringLiteral("resolution"), 0).toInt();
+    device_cam.framerate=map_device_qcam.value(QStringLiteral("framerate"), 0).toInt();
+    device_cam.pixel_format=map_device_qcam.value(QStringLiteral("pixel_format"), 0).toInt();
 
     rec.encoder=map_rec.value(QStringLiteral("encoder"), 0).toInt();
     rec.pixel_format=map_rec.value(QStringLiteral("pixel_format")).toMap();
@@ -129,7 +130,8 @@ bool Settings::save()
 {
     QVariantMap map_root;
     QVariantMap map_main;
-    QVariantMap map_device;
+    QVariantMap map_device_decklink;
+    QVariantMap map_device_qcam;
     QVariantMap map_rec;
     QVariantMap map_http_server;
     QVariantMap map_keyboard_shortcuts;
@@ -138,10 +140,16 @@ bool Settings::save()
     map_main.insert(QStringLiteral("preview"), (bool)main.preview);
     map_main.insert(QStringLiteral("smooth_transform"), (bool)main.smooth_transform);
 
-    map_device.insert(QStringLiteral("index"), device_decklink.index);
-    map_device.insert(QStringLiteral("audio_sample_size"), device_decklink.audio_sample_size);
-    map_device.insert(QStringLiteral("half_fps"), device_decklink.half_fps);
-    map_device.insert(QStringLiteral("rgb_10_bit"), device_decklink.rgb_10bit);
+    map_device_decklink.insert(QStringLiteral("index"), device_decklink.index);
+    map_device_decklink.insert(QStringLiteral("audio_sample_size"), device_decklink.audio_sample_size);
+    map_device_decklink.insert(QStringLiteral("half_fps"), device_decklink.half_fps);
+    map_device_decklink.insert(QStringLiteral("rgb_10_bit"), device_decklink.rgb_10bit);
+
+    map_device_qcam.insert(QStringLiteral("index_audio"), device_cam.index_audio);
+    map_device_qcam.insert(QStringLiteral("index_video"), device_cam.index_video);
+    map_device_qcam.insert(QStringLiteral("resolution"), device_cam.resolution);
+    map_device_qcam.insert(QStringLiteral("framerate"), device_cam.framerate);
+    map_device_qcam.insert(QStringLiteral("pixel_format"), device_cam.pixel_format);
 
     map_rec.insert(QStringLiteral("encoder"), rec.encoder);
     map_rec.insert(QStringLiteral("pixel_format"), rec.pixel_format);
@@ -166,7 +174,8 @@ bool Settings::save()
                     );
 
     map_root.insert(QStringLiteral("main"), map_main);
-    map_root.insert(QStringLiteral("device"), map_device);
+    map_root.insert(QStringLiteral("device_decklink"), map_device_decklink);
+    map_root.insert(QStringLiteral("device_qcam"), map_device_qcam);
     map_root.insert(QStringLiteral("rec"), map_rec);
     map_root.insert(QStringLiteral("keyboard_shortcuts"), map_keyboard_shortcuts);
 
