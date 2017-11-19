@@ -7,7 +7,8 @@ QT += \
     qml \
     quick \
     quickwidgets \
-    sql
+    sql \
+    svg
 
 
 TARGET = capturer

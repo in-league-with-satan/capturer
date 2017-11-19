@@ -18,6 +18,7 @@ AudioOutputThread::AudioOutputThread(QObject *parent) :
 
 
     audio_format.setSampleRate(48000);
+    audio_format.setChannelCount(6);
     audio_format.setChannelCount(2);
     audio_format.setSampleSize(16);
     audio_format.setCodec("audio/pcm");
@@ -73,7 +74,7 @@ void AudioOutputThread::run()
             if(frame->audio.data_size) {
                 // buf_trig_size=frame->audio.raw.size()*.5;
 
-                dev_audio_output.write(convert(frame->audio.ptr_data, frame->audio.data_size, frame->audio.channels, frame->audio.sample_size));
+                dev_audio_output.write(convert(frame->audio.ptr_data, frame->audio.data_size, frame->audio.channels, frame->audio.sample_size, audio_format.channelCount()));
 
                 if(audio_output->state()!=QAudio::ActiveState) {
                     audio_output->start(&dev_audio_output);

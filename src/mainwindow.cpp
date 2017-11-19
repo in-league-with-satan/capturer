@@ -26,6 +26,7 @@
 #include "http_server.h"
 #include "data_types.h"
 #include "dialog_keyboard_shortcuts.h"
+#include "audio_sender.h"
 #include "qcam.h"
 
 #include "mainwindow.h"
@@ -76,8 +77,6 @@ MainWindow::MainWindow(QWidget *parent)
     decklink_thread->subscribe(messenger->videoSourceMain()->frameBuffer());
 
     cam_device->subscribe(messenger->videoSourceCam()->frameBuffer());
-
-
 
     //
 
@@ -132,7 +131,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(audio_level, SIGNAL(levels(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)),
             messenger, SIGNAL(audioLevels(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)), Qt::QueuedConnection);
 
-
     //
 
     settings->load();
@@ -151,6 +149,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
+    AudioSender *audio_sender=new AudioSender(this);
+    decklink_thread->subscribe(audio_sender->frameBuffer());
+
+    //
+
     http_server=new HttpServer(settings->http_server.enabled ? settings->http_server.port : 0, this);
     connect(http_server, SIGNAL(keyPressed(int)), SLOT(keyPressed(int)));
     connect(http_server, SIGNAL(playerSeek(qint64)), ff_dec, SLOT(seek(qint64)));
@@ -161,7 +164,6 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     SettingsModel::Data set_model_data;
-
 
     //
 
@@ -233,7 +235,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     set_model_data.values.clear();
 
-
     //
 
     set_model_data.type=SettingsModel::Type::combobox;
@@ -247,7 +248,6 @@ MainWindow::MainWindow(QWidget *parent)
     messenger->settingsModel()->add(set_model_data);
 
     set_model_data.values.clear();
-
 
     //
 
@@ -405,7 +405,6 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.value=&settings->main.dummy;
     messenger->settingsModel()->add(set_model_data);
 
-
     //
 
     set_model_data.type=SettingsModel::Type::title;
@@ -415,7 +414,6 @@ MainWindow::MainWindow(QWidget *parent)
     messenger->settingsModel()->add(set_model_data);
 
     //
-
 
     set_model_data.type=SettingsModel::Type::combobox;
     set_model_data.group="rec";
