@@ -14,6 +14,7 @@ QString KeyCodeC::key_title[KeyCodeC::enm_size]={
     QStringLiteral("Preview"),
     QStringLiteral("Preview Fast Yuv"),
     QStringLiteral("Preview Cam"),
+    QStringLiteral("PreviewCam Change Position"),
     QStringLiteral("Full Screen"),
     QStringLiteral("File Browser"),
     QStringLiteral("Rec"),

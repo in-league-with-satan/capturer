@@ -83,6 +83,8 @@ RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-rcc
 
 
 linux {
+GCCFLAGS += -lz
+
     INCLUDEPATH += \
         externals/3rdparty/blackmagic_decklink_sdk/Linux/include
 
@@ -105,8 +107,9 @@ linux {
     SOURCES += \
         externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
 
-    LIBS += -lavformat -lavcodec -lavutil -lswscale -lswresample
-    LIBS += -lz -lbz2 -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
+    LIBS += -lavdevice -lavfilter -lpostproc -lavformat -lavcodec -lavutil -lswscale -lswresample
+    LIBS += -lz -lbz2 -llzma -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
+# -libxcb1
 }
 
 windows {

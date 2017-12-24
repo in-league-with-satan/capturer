@@ -111,6 +111,9 @@ Qt::Key DialogKeyboardShortcuts::defaultQtKey(int code)
     case KeyCodeC::PreviewCam:
         return Qt::Key_F9;
 
+    case KeyCodeC::PreviewCamChangePosition:
+        return Qt::Key_C;
+
     case KeyCodeC::FullScreen:
         return Qt::Key_F11;
 

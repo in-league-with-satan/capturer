@@ -47,6 +47,7 @@ public:
         Preview,
         PreviewFastYuv,
         PreviewCam,
+        PreviewCamChangePosition,
         FullScreen,
         FileBrowser,
         Rec,

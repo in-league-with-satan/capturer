@@ -64,15 +64,29 @@ bool VideoSurace::present(const QVideoFrame &video_frame)
 
         frame_clone.map(QAbstractVideoBuffer::ReadOnly);
 
-        Frame::ptr frame=Frame::make();
 
         QByteArray ba_video_frame_src;
         QByteArray ba_video_frame_dst;
 
         ba_video_frame_src.resize(frame_clone.mappedBytes());
 
-        QImage img=QImage(frame_clone.bits(), frame_clone.size().width(), frame_clone.size().height(),
-                          QVideoFrame::imageFormatFromPixelFormat(frame_clone.pixelFormat())).mirrored();
+        // qInfo() << frame_clone.pixelFormat();
+
+        QImage img;
+
+        if(frame_clone.pixelFormat()==QVideoFrame::Format_RGB32)
+            img=QImage(frame_clone.bits(), frame_clone.size().width(), frame_clone.size().height(),
+                       QVideoFrame::imageFormatFromPixelFormat(frame_clone.pixelFormat()));
+
+        else
+            img=QImage(frame_clone.bits(), frame_clone.size().width(), frame_clone.size().height(),
+                       QVideoFrame::imageFormatFromPixelFormat(frame_clone.pixelFormat())).mirrored();
+
+        if(img.isNull()) {
+            frame_clone.unmap();
+
+            return false;
+        }
 
         memcpy((char*)ba_video_frame_src.constData(), img.bits(), ba_video_frame_src.size());
 
@@ -86,6 +100,8 @@ bool VideoSurace::present(const QVideoFrame &video_frame)
         }
 
         format_converter->convert(&ba_video_frame_src, &ba_video_frame_dst);
+
+        Frame::ptr frame=Frame::make();
 
         if(audio_device)
             frame->setData(ba_video_frame_dst, frame_clone.size(), audio_device->readAll(), audio_format.channelCount(), audio_format.sampleSize());

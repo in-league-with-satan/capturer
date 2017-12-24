@@ -22,6 +22,7 @@ Rectangle {
         width: parent.width*.3
         height: parent.height*.3
         source: messenger.videoSourceCam()
+        property int position: 0
     }
 
     ErrorMessage {
@@ -137,6 +138,27 @@ Rectangle {
 
         onCamPreview: {
             cam_output.visible=visible
+        }
+
+        onCamPreviewChangePosition: {
+            cam_output.position++;
+
+            if(cam_output.position>1)
+                cam_output.position=0;
+
+            if(cam_output.position==0) {
+                cam_output.x=Qt.binding(function() { return root.width*.06 })
+                cam_output.y=Qt.binding(function() { return root.height - cam_output.height - root.height*.1 })
+                cam_output.width=Qt.binding(function() { return root.width*.3 })
+                cam_output.height=Qt.binding(function() { return root.height*.3 })
+            }
+
+            if(cam_output.position==1) {
+                cam_output.x=0
+                cam_output.y=0
+                cam_output.width=Qt.binding(function() { return root.width})
+                cam_output.height=Qt.binding(function() { return root.height })
+            }
         }
     }
 }

@@ -16,6 +16,7 @@ extern "C" {
 #include <libavfilter/avfilter.h>
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
+#include <libavdevice/avdevice.h>
 }
 
 const int alignment=32;

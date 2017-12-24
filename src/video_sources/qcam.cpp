@@ -57,8 +57,8 @@ QStringList QCam::availableCameras()
 {
     QStringList list;
 
-    foreach(QCameraInfo inf, QCameraInfo::availableCameras())
-        list << inf.description();
+//    foreach(QCameraInfo inf, QCameraInfo::availableCameras())
+//        list << inf.description();
 
     return list;
 }
@@ -338,20 +338,37 @@ qreal QCam::rationalToFramerate(AVRational value)
     if(value.num==1000 && value.den==25000)
         return 25.;
 
+    if(value.num==100 && value.den==2997)
+        return 29.97;
+
     if(value.num==1001 && value.den==30000)
         return 29.97;
+
+    if(value.num==1 && value.den==30)
+        return 30.;
 
     if(value.num==1000 && value.den==30000)
         return 30.;
 
+    if(value.num==1 && value.den==50)
+        return 50.;
+
     if(value.num==1000 && value.den==50000)
         return 50.;
+
+    if(value.num==83 && value.den==4975)
+        return 59.9398;
 
     if(value.num==1001 && value.den==60000)
         return 59.9398;
 
+    if(value.num==1 && value.den==60)
+        return 60.;
+
     if(value.num==1000 && value.den==60000)
         return 60.;
+
+    qWarning() << "rationalToFramerate unknown:" << value.num << value.den;
 
     return 30.;
 }

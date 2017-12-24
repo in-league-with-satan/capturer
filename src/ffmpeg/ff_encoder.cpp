@@ -75,6 +75,8 @@ public:
 
     QString filename;
 
+    int64_t in_start_pts;
+
     OutputStream out_stream_video;
     OutputStream out_stream_audio;
 
@@ -577,6 +579,7 @@ void FFEncoder::init()
     qRegisterMetaType<FFEncoder::Stats>("FFEncoder::Stats");
 
     av_register_all();
+    avdevice_register_all();
 }
 
 bool FFEncoder::isLib_x264_10bit()
@@ -612,8 +615,15 @@ FFEncoder::Framerate::T FFEncoder::calcFps(int64_t frame_duration, int64_t frame
         case 30000:
             return frame_duration==1000 ? Framerate::full_30 : Framerate::full_29;
 
+        case 50:
         case 50000:
             return Framerate::half_50;
+
+        case 60:
+            return Framerate::half_60;
+
+        case 4975:
+            return Framerate::half_59;
 
         case 60000:
             return frame_duration==1000 ? Framerate::half_60: Framerate::half_59;
@@ -639,8 +649,15 @@ FFEncoder::Framerate::T FFEncoder::calcFps(int64_t frame_duration, int64_t frame
         case 30000:
             return frame_duration==1000 ? Framerate::full_30 : Framerate::full_29;
 
+        case 50:
         case 50000:
             return Framerate::full_50;
+
+        case 60:
+            return Framerate::full_60;
+
+        case 4975:
+            return Framerate::half_59;
 
         case 60000:
             return frame_duration==1000 ? Framerate::full_60: Framerate::full_59;
@@ -888,6 +905,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
     context->out_stream_video.size_total=0;
 
+    context->in_start_pts=AV_NOPTS_VALUE;
+
 
     if(cfg.audio_dalay!=0)
         context->out_stream_audio.next_pts=cfg.audio_dalay/1000.*context->out_stream_audio.av_codec_context->sample_rate;
@@ -937,7 +956,19 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
             sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
 
-            context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
+            if(frame->video.pts==AV_NOPTS_VALUE) {
+                context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
+
+            } else {
+                if(context->in_start_pts==AV_NOPTS_VALUE)
+                    context->in_start_pts=frame->video.pts;
+
+                context->out_stream_video.frame_converted->pts=
+                        context->out_stream_video.next_pts=
+                        av_rescale_q(frame->video.pts - context->in_start_pts,
+                                     frame->video.time_base,
+                                     context->out_stream_video.av_codec_context->time_base);
+            }
 
             last_error_string=write_video_frame(context->av_format_context, &context->out_stream_video);
 

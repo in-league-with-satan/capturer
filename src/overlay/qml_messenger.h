@@ -104,6 +104,7 @@ signals:
     void errorString(QString error_string);
 
     void camPreview(bool visible);
+    void camPreviewChangePosition();
 };
 
 #endif // QML_MESSENGER_H

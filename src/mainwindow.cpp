@@ -28,6 +28,8 @@
 #include "dialog_keyboard_shortcuts.h"
 #include "audio_sender.h"
 #include "qcam.h"
+#include "tools_video4linux2.h"
+#include "ff_cam.h"
 
 #include "mainwindow.h"
 
@@ -35,6 +37,19 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , mb_rec_stopped(nullptr)
 {
+     toolsV4L2::testDevList();
+
+     //exit(0);
+//    FFCam *ffcam=new FFCam();
+
+//    ffcam->setVideoDevice(0);
+//    ffcam->start(QSize(640, 480), { 1, 15 });
+//    ffcam->start2(QSize(1280, 720), { 1, 30 });
+//    ffcam->start(QSize(1920, 1080), { 1, 30 });
+
+
+//    exit(0);
+
     QDir dir(qApp->applicationDirPath() + "/videos");
 
     if(!dir.exists())
@@ -50,7 +65,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    cam_device=new QCam(this);
+    cam_device=new FFCam(this);
 
     //
 
@@ -75,6 +90,8 @@ MainWindow::MainWindow(QWidget *parent)
     overlay_view->addImageProvider("fs_image_provider", (QQmlImageProviderBase*)messenger->fileSystemModel()->imageProvider());
 
     decklink_thread->subscribe(messenger->videoSourceMain()->frameBuffer());
+
+    //ffcam->subscribe(messenger->videoSourceMain()->frameBuffer());
 
     cam_device->subscribe(messenger->videoSourceCam()->frameBuffer());
 
@@ -198,7 +215,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    cam_devices=QCam::availableCameras();
+    cam_devices=FFCam::availableCameras();
 
     set_model_data.type=SettingsModel::Type::combobox;
     set_model_data.group="video device";
@@ -548,7 +565,7 @@ MainWindow::MainWindow(QWidget *parent)
         showFullScreen();
     }
 
-    emit messenger->signalLost(true);
+//    emit messenger->signalLost(true);
 
     startStopCapture();
 }
@@ -637,6 +654,11 @@ void MainWindow::keyPressed(int code)
 
     case KeyCodeC::PreviewCam:
         previewCamOnOff();
+        break;
+
+
+    case KeyCodeC::PreviewCamChangePosition:
+        messenger->camPreviewChangePosition();
         break;
 
     case KeyCodeC::SmoothTransform:
@@ -740,9 +762,9 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
     SettingsModel::Data *data=model->data_p(index);
 
-    if(data->value==&settings->device_cam.index_audio) {
-        // cam_device->setAudioDevice(settings->device_cam.index_audio);
-    }
+    // if(data->value==&settings->device_cam.index_audio) {
+    //     cam_device->setAudioDevice(settings->device_cam.index_audio);
+    // }
 
     if(data->value==&settings->device_cam.index_video) {
         cam_device->setVideoDevice(settings->device_cam.index_video);
@@ -751,7 +773,6 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
         QVariantList list_values_data;
 
         foreach(QSize val, cam_device->supportedResolutions()) {
-            qInfo() << "res" << val;
             list_values << QString("%1x%2").arg(val.width()).arg(val.height());
             list_values_data << val;
         }
@@ -760,27 +781,27 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
         model->setData(&settings->device_cam.resolution, SettingsModel::Role::values_data, list_values_data);
 
         if(!list_values_data.isEmpty()) {
-            QSize size=list_values_data.value(settings->device_cam.pixel_format).toSize();
+            QSize size=list_values_data.value(settings->device_cam.resolution).toSize();
 
             list_values.clear();
             list_values_data.clear();
 
-            foreach(AVRational val, cam_device->frameRateRanges(size)) {
-                list_values << QString::number(QCam::rationalToFramerate(val));
-                list_values_data << QSize(val.num, val.den);
-            }
+            if(!messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data.isEmpty())
+                foreach(AVRational val, cam_device->supportedFramerates(size, messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data[settings->device_cam.pixel_format].toLongLong())) {
+                    list_values << QString::number(QCam::rationalToFramerate(val));
+                    list_values_data << QSize(val.num, val.den);
+                }
 
             model->setData(&settings->device_cam.framerate, SettingsModel::Role::values, list_values);
             model->setData(&settings->device_cam.framerate, SettingsModel::Role::values_data, list_values_data);
-
 
             //
 
             list_values.clear();
             list_values_data.clear();
 
-            foreach(QVideoFrame::PixelFormat val, cam_device->pixelFormats(size)) {
-                list_values << QCam::pixelFormatToString(val);
+            foreach(qint64 val, cam_device->supportedPixelFormats(size)) {
+                list_values << toolsV4L2::v4l2PixFmtToString(val);
                 list_values_data << val;
             }
 
@@ -795,22 +816,22 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
         QStringList list_values;
         QVariantList list_values_data;
 
-        foreach(AVRational val, cam_device->frameRateRanges(size)) {
-            list_values << QString::number(QCam::rationalToFramerate(val));
-            list_values_data << QSize(val.num, val.den);
-        }
+        if(!messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data.isEmpty())
+            foreach(AVRational val, cam_device->supportedFramerates(size, messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data[settings->device_cam.pixel_format].toLongLong())) {
+                list_values << QString::number(QCam::rationalToFramerate(val));
+                list_values_data << QSize(val.num, val.den);
+            }
 
         model->setData(&settings->device_cam.framerate, SettingsModel::Role::values, list_values);
         model->setData(&settings->device_cam.framerate, SettingsModel::Role::values_data, list_values_data);
-
 
         //
 
         list_values.clear();
         list_values_data.clear();
 
-        foreach(QVideoFrame::PixelFormat val, cam_device->pixelFormats(size)) {
-            list_values << QCam::pixelFormatToString(val);
+        foreach(qint64 val, cam_device->supportedPixelFormats(size)) {
+            list_values << toolsV4L2::v4l2PixFmtToString(val);
             list_values_data << val;
         }
 
@@ -883,13 +904,15 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
         SettingsModel::Data *model_data_pixel_format=messenger->settingsModel()->data_p(&settings->device_cam.pixel_format);
 
         QSize fr=model_data_framerate->values_data.value(settings->device_cam.framerate).toSize();
+        int64_t pixel_format=model_data_pixel_format->values_data.value(settings->device_cam.pixel_format).toLongLong();
+
 
         cam_device->setAudioDevice(settings->device_cam.index_audio);
         cam_device->setVideoDevice(settings->device_cam.index_video);
 
-        cam_device->start(model_data_resolution->values_data.value(settings->device_cam.resolution).toSize()
-                          , (QVideoFrame::PixelFormat)model_data_pixel_format->values_data.value(settings->device_cam.pixel_format).toULongLong()
-                          , { fr.height(), fr.width() });
+        cam_device->setConfig(model_data_resolution->values_data.value(settings->device_cam.resolution).toSize(), { fr.width(), fr.height() }, pixel_format);
+
+        QMetaObject::invokeMethod(cam_device, "startCam", Qt::QueuedConnection);
     }
 
     if(data->value==&settings->device_cam.stop) {

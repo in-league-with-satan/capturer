@@ -6,6 +6,7 @@
 
 #include <memory>
 
+#include "ff_tools.h"
 #include "decklink_video_frame.h"
 
 struct Frame
@@ -82,11 +83,16 @@ struct Frame
             data_size=0;
             rgb=true;
             rgb_10bit=false;
+            time_base={};
+            pts=AV_NOPTS_VALUE;
         }
 
         char *ptr_data;
         size_t data_size;
         QSize size;
+
+        AVRational time_base;
+        int64_t pts;
 
         bool rgb;
         bool rgb_10bit;
