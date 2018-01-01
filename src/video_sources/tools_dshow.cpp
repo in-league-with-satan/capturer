@@ -1,12 +1,19 @@
 #include <QDebug>
 #include <assert.h>
+
+#ifdef __WIN32__
+
 #include <windows.h>
 #include <dshow.h>
+
+#endif
 
 #include "qcam.h"
 #include "ff_tools.h"
 
 #include "tools_dshow.h"
+
+#ifdef __WIN32__
 
 IBaseFilter *getDevFilter(const QString &device_name)
 {
@@ -167,9 +174,13 @@ next_pin:
     return capabilities;
 }
 
+#endif
+
 QList <ToolsV4L2::v4l2_Dev> ToolsDirectShow::devList()
 {
     QList <ToolsV4L2::v4l2_Dev> list;
+
+#ifdef __WIN32__
 
     ICreateDevEnum *dev_enum;
 
@@ -236,6 +247,8 @@ QList <ToolsV4L2::v4l2_Dev> ToolsDirectShow::devList()
             }
         }
     }
+
+#endif
 
     return list;
 }
