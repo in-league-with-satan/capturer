@@ -9,13 +9,12 @@
 #include "ff_format_converter.h"
 #include "ff_audio_converter.h"
 
-#include "tools_video4linux2.h"
-#include "tools_dshow.h"
+#include "tools_cam.h".h"
 
 #include "ff_cam.h"
 
 
-QList <ToolsV4L2::v4l2_Dev> dev_list;
+QList <Cam::Dev> dev_list;
 
 
 QAudioFormat default_format;
@@ -146,7 +145,7 @@ QStringList FFCam::availableCameras()
     if(dev_list.isEmpty())
         updateDevList();
 
-    foreach(ToolsV4L2::v4l2_Dev dev, dev_list) {
+    foreach(Cam::Dev dev, dev_list) {
         list << dev.name;
     }
 
@@ -188,8 +187,8 @@ QList <QSize> FFCam::supportedResolutions()
 
     QMap <int64_t, QList <QSize>> res_per_format;
 
-    foreach(ToolsV4L2::v4l2_Format format, dev_list.at(index_device_video).format) {
-        foreach(ToolsV4L2::v4l2_Resolution res, format.resolution) {
+    foreach(Cam::Format format, dev_list.at(index_device_video).format) {
+        foreach(Cam::Resolution res, format.resolution) {
             res_per_format[format.pixel_format].append(res.size);
 
             if(!lst.contains(res.size)) {
@@ -222,8 +221,8 @@ QList <int64_t> FFCam::supportedPixelFormats(QSize size)
 
     QSet <int64_t> set;
 
-    foreach(ToolsV4L2::v4l2_Format format, dev_list.at(index_device_video).format) {
-        foreach(ToolsV4L2::v4l2_Resolution res, format.resolution) {
+    foreach(Cam::Format format, dev_list.at(index_device_video).format) {
+        foreach(Cam::Resolution res, format.resolution) {
             if(res.size==size) {
                 set << format.pixel_format;
             }
@@ -238,9 +237,9 @@ QList <AVRational> FFCam::supportedFramerates(QSize size, int64_t fmt)
     if(dev_list.size() - 1<index_device_video)
         return QList<AVRational>();
 
-    foreach(ToolsV4L2::v4l2_Format format, dev_list.at(index_device_video).format) {
+    foreach(Cam::Format format, dev_list.at(index_device_video).format) {
         if(format.pixel_format==fmt) {
-            foreach(ToolsV4L2::v4l2_Resolution res, format.resolution) {
+            foreach(Cam::Resolution res, format.resolution) {
                 if(res.size==size) {
                     return res.framerate;
                 }
@@ -462,17 +461,9 @@ bool FFCam::isActive()
 
 void FFCam::updateDevList()
 {
-#ifdef __linux__
+    dev_list=ToolsCam::devList();
 
-    dev_list=ToolsV4L2::devList();
-
-#else
-
-    dev_list=ToolsDirectShow::devList();
-
-#endif
-
-    ToolsV4L2::testDevList(dev_list);
+    ToolsCam::testDevList(dev_list);
 }
 
 void FFCam::run()

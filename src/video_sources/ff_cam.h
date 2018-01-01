@@ -42,8 +42,6 @@ public:
 
     bool isActive();
 
-
-
 public slots:
     void setConfig(QSize size, AVRational framerate, int64_t pixel_format);
     void startCam();

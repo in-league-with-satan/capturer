@@ -27,9 +27,7 @@
 #include "data_types.h"
 #include "dialog_keyboard_shortcuts.h"
 #include "audio_sender.h"
-#include "qcam.h"
-#include "tools_video4linux2.h"
-#include "tools_dshow.h"
+#include "tools_cam.h".h"
 #include "ff_cam.h"
 
 #include "mainwindow.h"
@@ -178,7 +176,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    QStringList cam_devices=QCam::availableAudioInput();
+    QStringList cam_devices=FFCam::availableAudioInput();
 
     set_model_data.type=SettingsModel::Type::combobox;
     set_model_data.group="cam device";
@@ -797,7 +795,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
             if(!messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data.isEmpty())
                 foreach(AVRational val, cam_device->supportedFramerates(size, messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data[settings->device_cam.pixel_format].toLongLong())) {
-                    list_values << QString::number(QCam::rationalToFramerate(val));
+                    list_values << QString::number(ToolsCam::rationalToFramerate(val));
                     list_values_data << QSize(val.num, val.den);
                 }
 
@@ -810,7 +808,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             list_values_data.clear();
 
             foreach(qint64 val, cam_device->supportedPixelFormats(size)) {
-                list_values << ToolsV4L2::v4l2PixFmtToString(val);
+                list_values << Cam::PixelFormat::toString(val);
                 list_values_data << val;
             }
 
@@ -827,7 +825,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
         if(!messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data.isEmpty())
             foreach(AVRational val, cam_device->supportedFramerates(size, messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data[settings->device_cam.pixel_format].toLongLong())) {
-                list_values << QString::number(QCam::rationalToFramerate(val));
+                list_values << QString::number(ToolsCam::rationalToFramerate(val));
                 list_values_data << QSize(val.num, val.den);
             }
 
@@ -840,7 +838,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
         list_values_data.clear();
 
         foreach(qint64 val, cam_device->supportedPixelFormats(size)) {
-            list_values << ToolsV4L2::v4l2PixFmtToString(val);
+            list_values << Cam::PixelFormat::toString(val);
             list_values_data << val;
         }
 

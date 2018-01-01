@@ -8,7 +8,6 @@
 
 #endif
 
-#include "qcam.h"
 #include "ff_tools.h"
 
 #include "tools_dshow.h"
@@ -70,11 +69,11 @@ fail:
     return base_filter;
 }
 
-QList <ToolsV4L2::v4l2_Format> getDeviceCapabilities(const QString &dev_name)
+QList <Cam::Format> getDeviceCapabilities(const QString &dev_name)
 {
-    QList <ToolsV4L2::v4l2_Format> capabilities;
+    QList <Cam::Format> capabilities;
 
-    QMap <quint64, ToolsV4L2::v4l2_Resolution> resolution;
+    QMap <quint64, Cam::Resolution> resolution;
 
     IBaseFilter *dev_filter=getDevFilter(dev_name);
 
@@ -138,8 +137,8 @@ QList <ToolsV4L2::v4l2_Format> getDeviceCapabilities(const QString &dev_name)
 
                     resolution[res_key].size=QSize(vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy);
 
-                    if(!resolution[res_key].framerate.contains(QCam::framrateToRational(1e7/vcaps->MinFrameInterval)))
-                        resolution[res_key].framerate << QCam::framrateToRational(1e7/vcaps->MinFrameInterval);
+                    if(!resolution[res_key].framerate.contains(ToolsCam::framrateToRational(1e7/vcaps->MinFrameInterval)))
+                        resolution[res_key].framerate << ToolsCam::framrateToRational(1e7/vcaps->MinFrameInterval);
                 }
 
 next_format:
@@ -163,9 +162,9 @@ next_pin:
     }
 
 
-    ToolsV4L2::v4l2_Format fmt;
+    Cam::Format fmt;
 
-    fmt.pixel_format=V4L2_PIX_FMT_YUYV;
+    fmt.pixel_format=Cam::PixelFormat::YUYV;
     fmt.resolution=resolution.values();
 
     capabilities.append(fmt);
@@ -176,9 +175,9 @@ next_pin:
 
 #endif
 
-QList <ToolsV4L2::v4l2_Dev> ToolsDirectShow::devList()
+QList <Cam::Dev> ToolsDirectShow::devList()
 {
-    QList <ToolsV4L2::v4l2_Dev> list;
+    QList <Cam::Dev> list;
 
 #ifdef __WIN32__
 
@@ -209,7 +208,7 @@ QList <ToolsV4L2::v4l2_Dev> ToolsDirectShow::devList()
             hr=moniker->BindToStorage(0, 0, IID_IPropertyBag, (void**)&property_bag);
 
             if(SUCCEEDED(hr)) {
-                ToolsV4L2::v4l2_Dev dev;
+                Cam::Dev dev;
 
                 VARIANT var;
 

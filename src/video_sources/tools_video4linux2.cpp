@@ -28,34 +28,25 @@ bool supportedPixelFormat(uint64_t pix_fmt)
         return true;
     }
 
+#else
+
+    Q_UNUSED(pix_fmt)
+
 #endif
 
     return false;
 }
 
-QString ToolsV4L2::v4l2PixFmtToString(uint64_t pix_fmt)
+QList <Cam::Dev> ToolsV4L2::devList()
 {
-    switch(pix_fmt) {
-    case V4L2_PIX_FMT_YUYV:
-        return QStringLiteral("YUYV");
-
-    case V4L2_PIX_FMT_MJPEG:
-        return QStringLiteral("MJPEG");
-    }
-
-    return QStringLiteral("unknown");
-}
-
-QList <ToolsV4L2::v4l2_Dev> ToolsV4L2::devList()
-{
-    QList <ToolsV4L2::v4l2_Dev> list;
+    QList <Cam::Dev> list;
 
 #ifdef __linux__
 
     int fd=0;
 
     for(int i=0; i<64; ++i) {
-        v4l2_Dev dev={};
+        Cam::Dev dev={};
 
         dev.dev=QString("/dev/video%1").arg(i);
 
@@ -81,9 +72,9 @@ QList <ToolsV4L2::v4l2_Dev> ToolsV4L2::devList()
             if(!supportedPixelFormat(fmtdesc.pixelformat))
                 continue;
 
-            v4l2_Resolution resolution={};
+            Cam::Resolution resolution={};
 
-            v4l2_Format format;
+            Cam::Format format;
             format.pixel_format=fmtdesc.pixelformat;
 
             v4l2_frmsizeenum frmsizeenum={};
@@ -160,24 +151,3 @@ end:
     return list;
 }
 
-void ToolsV4L2::testDevList(const QList<v4l2_Dev> &list)
-{
-    foreach(ToolsV4L2::v4l2_Dev dev, list) {
-        qInfo() << "dev name:" << dev.name << dev.dev;
-
-        foreach(ToolsV4L2::v4l2_Format fmt, dev.format) {
-
-            qInfo() << "pixel_format:" << ToolsV4L2::v4l2PixFmtToString(fmt.pixel_format);
-
-            foreach(ToolsV4L2::v4l2_Resolution res, fmt.resolution) {
-                qInfo() << "resolution:" << res.size;
-
-                foreach(AVRational fr, res.framerate) {
-                    qInfo() << "framerate:" << fr.den/(double)fr.num << fr.num << fr.den;
-                }
-            }
-        }
-
-        qInfo() << "------------";
-    }
-}

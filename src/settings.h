@@ -34,7 +34,7 @@ public:
     } device_decklink;
 
 
-    struct DeviceQCam {
+    struct DeviceCam {
         int index_video;
         int index_audio;
         int resolution;
