@@ -28,7 +28,9 @@ public:
     static QStringList availableAudioInput();
     static QString pixelFormatToString(int64_t fmt);
 
-    void setVideoDevice(int index);
+    static void updateDevList();
+
+    bool setVideoDevice(int index);
     void setAudioDevice(int index);
 
     QList <QSize> supportedResolutions();
@@ -39,6 +41,8 @@ public:
     void unsubscribe(FrameBuffer::ptr obj);
 
     bool isActive();
+
+
 
 public slots:
     void setConfig(QSize size, AVRational framerate, int64_t pixel_format);
@@ -58,8 +62,8 @@ private:
 
     QList <FrameBuffer::ptr> subscription_list;
 
-    int index_device_video=-1;
-    int index_device_audio=-1;
+    int index_device_video=0;
+    int index_device_audio=0;
 
     FFCamPrivate *d;
 

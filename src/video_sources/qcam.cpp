@@ -275,7 +275,7 @@ QList <QVideoFrame::PixelFormat> QCam::pixelFormats(QSize size)
 
 AVRational QCam::framrateToRational(qreal fr)
 {
-    static const double eps=.0001;
+    static const double eps=.0003;
 
     static auto rnd2=[](const double &value)->double {
        return round(value*100)/100.;
@@ -288,6 +288,12 @@ AVRational QCam::framrateToRational(qreal fr)
     static auto rnd4=[](const double &value)->double {
        return round(value*10000)/10000.;
     };
+
+    if(std::abs(fr - 2.)<eps)
+        return { 1, 2 };
+
+    if(std::abs(fr - 10.)<eps)
+        return { 1, 10 };
 
     if(std::abs(fr - 15.)<eps)
         return { 1000, 15000 };
@@ -326,6 +332,12 @@ AVRational QCam::framrateToRational(qreal fr)
 
 qreal QCam::rationalToFramerate(AVRational value)
 {
+    if(value.num==1 && value.den==2)
+        return 2.;
+
+    if(value.num==1 && value.den==10)
+        return 10.;
+
     if(value.num==1000 && value.den==15000)
         return 15.;
 

@@ -14,6 +14,8 @@ ShowHideRect {
         anchors.fill: parent
         cacheBuffer: height*4
 
+        currentIndex: 1
+
         highlight: Rectangle {
             color: "#aa3355ff"
             radius: root.height*.017
@@ -61,7 +63,7 @@ ShowHideRect {
 
 
         onVisibleChanged: {
-            if(!posCheck(0))
+            if(!posCheck(list.currentIndex))
                 focusNext()
         }
 
@@ -263,8 +265,9 @@ ShowHideRect {
                 return false
 
             if(list.contentItem.children[index].item_type===list.type_title
-                    || list.contentItem.children[index].item_type===list.type_divider )
+                    || list.contentItem.children[index].item_type===list.type_divider) {
                 return false
+            }
 
             return true
         }
@@ -274,30 +277,14 @@ ShowHideRect {
             if(!root.state_visible)
                 return
 
-            while(true) {
-                list.currentIndex--
-
-                if(list.currentIndex<0)
-                    list.currentIndex=list.model.count - 1
-
-                if(posCheck(list.currentIndex))
-                    return
-            }
+            list.currentIndex=messenger.settingsModel.focusPrev(list.currentIndex)
         }
 
         function focusNext() {
             if(!root.state_visible)
                 return
 
-            while(true) {
-                list.currentIndex++
-
-                if(list.currentIndex>=list.model.count)
-                    list.currentIndex=0
-
-                if(posCheck(list.currentIndex))
-                    return
-            }
+            list.currentIndex=messenger.settingsModel.focusNext(list.currentIndex)
         }
 
         function valuePrev() {

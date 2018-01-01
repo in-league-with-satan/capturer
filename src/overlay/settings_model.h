@@ -31,6 +31,10 @@ public:
     Q_INVOKABLE void setData(const int &index, int role, QVariant data, bool qml=false);
     Q_INVOKABLE void setData(int *ptr_value, int role, QVariant data, bool qml=false);
 
+    Q_INVOKABLE int focusPrev(int index) const;
+    Q_INVOKABLE int focusNext(int index) const;
+    Q_INVOKABLE bool posCheck(int index) const;
+
     Q_INVOKABLE void reload();
 
     virtual SettingsModel::Data *data_p(const int &index);

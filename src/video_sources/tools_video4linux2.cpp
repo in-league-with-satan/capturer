@@ -1,43 +1,56 @@
 #include <QDebug>
+#include <map>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <linux/videodev2.h>
-#include <map>
-#include <sys/ioctl.h>
 #include <unistd.h>
+
+#ifdef __linux__
+
+#include <linux/videodev2.h>
+#include <sys/ioctl.h>
+
+#endif
+
 
 #include "ff_tools.h"
 
 #include "tools_video4linux2.h"
 
+
 bool supportedPixelFormat(uint64_t pix_fmt)
 {
+#ifdef __linux__
+
     switch(pix_fmt) {
     case V4L2_PIX_FMT_MJPEG:
     case V4L2_PIX_FMT_YUYV:
         return true;
     }
 
+#endif
+
     return false;
 }
 
-QString toolsV4L2::v4l2PixFmtToString(uint64_t pix_fmt)
+QString ToolsV4L2::v4l2PixFmtToString(uint64_t pix_fmt)
 {
     switch(pix_fmt) {
     case V4L2_PIX_FMT_YUYV:
-        return "YUYV";
+        return QStringLiteral("YUYV");
 
     case V4L2_PIX_FMT_MJPEG:
-        return "MJPEG";
+        return QStringLiteral("MJPEG");
     }
 
-    return "unknown";
+    return QStringLiteral("unknown");
 }
 
-QList <toolsV4L2::v4l2_Dev> toolsV4L2::devList()
+QList <ToolsV4L2::v4l2_Dev> ToolsV4L2::devList()
 {
-    QList <toolsV4L2::v4l2_Dev> list;
+    QList <ToolsV4L2::v4l2_Dev> list;
+
+#ifdef __linux__
 
     int fd=0;
 
@@ -142,23 +155,25 @@ end:
     if(fd>0)
         close(fd);
 
+#endif
+
     return list;
 }
 
-void toolsV4L2::testDevList()
+void ToolsV4L2::testDevList(const QList<v4l2_Dev> &list)
 {
-    foreach(toolsV4L2::v4l2_Dev dev, toolsV4L2::devList()) {
+    foreach(ToolsV4L2::v4l2_Dev dev, list) {
         qInfo() << "dev name:" << dev.name << dev.dev;
 
-        foreach(toolsV4L2::v4l2_Format fmt, dev.format) {
+        foreach(ToolsV4L2::v4l2_Format fmt, dev.format) {
 
-            qInfo() << "pixel_format:" << toolsV4L2::v4l2PixFmtToString(fmt.pixel_format);
+            qInfo() << "pixel_format:" << ToolsV4L2::v4l2PixFmtToString(fmt.pixel_format);
 
-            foreach(toolsV4L2::v4l2_Resolution res, fmt.resolution) {
+            foreach(ToolsV4L2::v4l2_Resolution res, fmt.resolution) {
                 qInfo() << "resolution:" << res.size;
 
                 foreach(AVRational fr, res.framerate) {
-                    qInfo() << "framerate:" << fr.num << fr.den;
+                    qInfo() << "framerate:" << fr.den/(double)fr.num << fr.num << fr.den;
                 }
             }
         }

@@ -83,7 +83,7 @@ RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-rcc
 
 
 linux {
-GCCFLAGS += -lz
+    GCCFLAGS += -lz
 
     INCLUDEPATH += \
         externals/3rdparty/blackmagic_decklink_sdk/Linux/include
@@ -126,13 +126,12 @@ windows {
     SOURCES += \
         externals/3rdparty/blackmagic_decklink_sdk-mingw/*.c
 
-    LIBS += -lole32
-
+    LIBS += -lole32 -lstrmiids -loleaut32
 
     INCLUDEPATH += externals/3rdparty/ffmpeg/include
     LIBS += -Lexternals/3rdparty/ffmpeg/lib
 
-    LIBS += -lswresample -lavformat -lavcodec -lavutil -lswscale
+    LIBS += -lavdevice -lswresample -lavformat -lavcodec -lavutil -lswscale
 }
 
 contains(DEFINES, USE_PULSE_AUDIO) {

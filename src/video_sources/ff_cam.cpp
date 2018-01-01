@@ -10,10 +10,13 @@
 #include "ff_audio_converter.h"
 
 #include "tools_video4linux2.h"
+#include "tools_dshow.h"
 
 #include "ff_cam.h"
 
-QList <toolsV4L2::v4l2_Dev> dev_list=toolsV4L2::devList();
+
+QList <ToolsV4L2::v4l2_Dev> dev_list;
+
 
 QAudioFormat default_format;
 
@@ -140,7 +143,10 @@ QStringList FFCam::availableCameras()
 {
     QStringList list;
 
-    foreach(toolsV4L2::v4l2_Dev dev, toolsV4L2::devList()) {
+    if(dev_list.isEmpty())
+        updateDevList();
+
+    foreach(ToolsV4L2::v4l2_Dev dev, dev_list) {
         list << dev.name;
     }
 
@@ -158,9 +164,14 @@ QStringList FFCam::availableAudioInput()
     return list;
 }
 
-void FFCam::setVideoDevice(int index)
+bool FFCam::setVideoDevice(int index)
 {
+    if(index<0 || index>=dev_list.size())
+        return false;
+
     index_device_video=index;
+
+    return true;
 }
 
 void FFCam::setAudioDevice(int index)
@@ -177,8 +188,8 @@ QList <QSize> FFCam::supportedResolutions()
 
     QMap <int64_t, QList <QSize>> res_per_format;
 
-    foreach(toolsV4L2::v4l2_Format format, dev_list.at(index_device_video).format) {
-        foreach(toolsV4L2::v4l2_Resolution res, format.resolution) {
+    foreach(ToolsV4L2::v4l2_Format format, dev_list.at(index_device_video).format) {
+        foreach(ToolsV4L2::v4l2_Resolution res, format.resolution) {
             res_per_format[format.pixel_format].append(res.size);
 
             if(!lst.contains(res.size)) {
@@ -211,8 +222,8 @@ QList <int64_t> FFCam::supportedPixelFormats(QSize size)
 
     QSet <int64_t> set;
 
-    foreach(toolsV4L2::v4l2_Format format, dev_list.at(index_device_video).format) {
-        foreach(toolsV4L2::v4l2_Resolution res, format.resolution) {
+    foreach(ToolsV4L2::v4l2_Format format, dev_list.at(index_device_video).format) {
+        foreach(ToolsV4L2::v4l2_Resolution res, format.resolution) {
             if(res.size==size) {
                 set << format.pixel_format;
             }
@@ -227,9 +238,9 @@ QList <AVRational> FFCam::supportedFramerates(QSize size, int64_t fmt)
     if(dev_list.size() - 1<index_device_video)
         return QList<AVRational>();
 
-    foreach(toolsV4L2::v4l2_Format format, dev_list.at(index_device_video).format) {
+    foreach(ToolsV4L2::v4l2_Format format, dev_list.at(index_device_video).format) {
         if(format.pixel_format==fmt) {
-            foreach(toolsV4L2::v4l2_Resolution res, format.resolution) {
+            foreach(ToolsV4L2::v4l2_Resolution res, format.resolution) {
                 if(res.size==size) {
                     return res.framerate;
                 }
@@ -288,7 +299,11 @@ void FFCam::startCam()
         }
     }
 
+    int ret;
+
     //
+
+#ifdef __linux__
 
     if(cfg.pixel_format==1196444237) // mjpeg
         av_dict_set(&d->dictionary, "pixel_format", "mjpeg", 0);
@@ -299,23 +314,52 @@ void FFCam::startCam()
     else
         av_dict_set(&d->dictionary, "pixel_format", "yuyv422", 0);
 
+#endif
+
     av_dict_set(&d->dictionary, "video_size", QString("%1x%2").arg(cfg.size.width()).arg(cfg.size.height()).toLatin1().constData(), 0);
     av_dict_set(&d->dictionary, "framerate", QString("%1/%2").arg(cfg.framerate.den).arg(cfg.framerate.num).toLatin1().constData(), 0);
 
+    qDebug() << "video_size:" << QString("%1x%2").arg(cfg.size.width()).arg(cfg.size.height()) << "framerate:" << QString("%1/%2").arg(cfg.framerate.den).arg(cfg.framerate.num);
 
-    if(!d->input_format)
+
+    if(!d->input_format) {
+#ifdef __linux__
+
         d->input_format=av_find_input_format("video4linux2");
 
+#else
+
+        d->input_format=av_find_input_format("dshow");
+
+#endif
+    }
+
+    if(!d->input_format) {
+        qCritical() << "av_find_input_format return null";
+        goto fail;
+    }
 
     d->format_context=avformat_alloc_context();
 
     d->format_context->flags|=AVFMT_FLAG_NONBLOCK;
+
+#ifdef __linux__
 
     if(avformat_open_input(&d->format_context, QString("/dev/video%1").arg(index_device_video).toLatin1().constData(), d->input_format, &d->dictionary)!=0) {
         qCritical() << "Couldn't open input stream";
         goto fail;
     }
 
+#else
+
+    ret=avformat_open_input(&d->format_context, QString("video=%1").arg(dev_list[index_device_video].name).toLatin1().constData(), d->input_format, &d->dictionary);
+
+    if(ret!=0) {
+        qCritical() << "Couldn't open input stream" << dev_list[index_device_video].name << ffErrorString(ret);
+        goto fail;
+    }
+
+#endif
 
     av_dump_format(d->format_context, 0, "", 0);
 
@@ -339,6 +383,7 @@ void FFCam::startCam()
         goto fail;
     }
 
+    qDebug() << "avcodec name:" << avcodec_get_name(d->stream->codecpar->codec_id);
 
     d->codec_context=avcodec_alloc_context3(d->codec);
 
@@ -347,8 +392,10 @@ void FFCam::startCam()
         goto fail;
     }
 
-    if(avcodec_open2(d->codec_context, d->codec, nullptr)<0) {
-        qCritical() << "Cannot open video decoder for webcam";
+    ret=avcodec_open2(d->codec_context, d->codec, nullptr);
+
+    if(ret<0) {
+        qCritical() << "Cannot open video decoder for webcam" << ffErrorString(ret);
         goto fail;
     }
 
@@ -371,17 +418,19 @@ void FFCam::stop()
 
     d->audio_device=nullptr;
 
+
+    if(d->codec_context) {
+        avcodec_free_context(&d->codec_context);
+        d->codec_context=nullptr;
+    }
+
+
     if(d->format_context) {
         avformat_close_input(&d->format_context);
         avformat_free_context(d->format_context);
         d->format_context=nullptr;
     }
 
-    if(d->codec_context) {
-        avcodec_close(d->codec_context);
-        avcodec_free_context(&d->codec_context);
-        d->codec_context=nullptr;
-    }
 
     if(d->frame) {
         av_frame_free(&d->frame);
@@ -409,6 +458,21 @@ bool FFCam::isActive()
         return true;
 
     return false;
+}
+
+void FFCam::updateDevList()
+{
+#ifdef __linux__
+
+    dev_list=ToolsV4L2::devList();
+
+#else
+
+    dev_list=ToolsDirectShow::devList();
+
+#endif
+
+    ToolsV4L2::testDevList(dev_list);
 }
 
 void FFCam::run()

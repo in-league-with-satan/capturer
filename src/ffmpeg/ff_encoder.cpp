@@ -502,8 +502,10 @@ static QString write_video_frame(AVFormatContext *oc, OutputStream *ost)
 
     ret=avcodec_send_frame(ost->av_codec_context, ost->frame_converted);
 
-    if(ret<0)
-       return QStringLiteral("error encoding video frame: ") + ffErrorString(ret);
+    if(ret<0) {
+        qCritical() << "write_video_frame err1";
+        return QStringLiteral("error encoding video frame: ") + ffErrorString(ret);
+    }
 
 
     while(!ret) {
@@ -517,6 +519,7 @@ static QString write_video_frame(AVFormatContext *oc, OutputStream *ost)
             if(ret_2!=0) {
                 av_packet_free(&pkt);
 
+                qCritical() << "write_video_frame err2";
                 return ffErrorString(ret_2);
             }
         }
@@ -976,7 +979,7 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
             if(!last_error_string.isEmpty()) {
                 stopCoder();
-                emit errorString(last_error_string);
+                emit errorString("write_video_frame error: " + last_error_string);
                 return false;
             }
         }
@@ -1015,7 +1018,7 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
             if(ret<0) {
                 stopCoder();
-                emit errorString(last_error_string=QStringLiteral("could not setup audio frame"));
+                emit errorString(last_error_string=QStringLiteral("avcodec_fill_audio_frame error: could not setup audio frame"));
                 return false;
             }
 
