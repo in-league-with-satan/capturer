@@ -27,9 +27,10 @@
 #include "data_types.h"
 #include "dialog_keyboard_shortcuts.h"
 #include "audio_sender.h"
+#include "tools_cam.h".h"
+#include "ff_cam.h"
 
 #include "mainwindow.h"
-
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -47,6 +48,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(decklink_thread, SIGNAL(formatChanged(int,int,quint64,quint64,bool,QString)),
             SLOT(formatChanged(int,int,quint64,quint64,bool,QString)), Qt::QueuedConnection);
     connect(decklink_thread, SIGNAL(frameSkipped()), SLOT(frameSkipped()), Qt::QueuedConnection);
+
+    //
+
+    cam_device=new FFCam(this);
 
     //
 
@@ -72,15 +77,20 @@ MainWindow::MainWindow(QWidget *parent)
 
     decklink_thread->subscribe(messenger->videoSourceMain()->frameBuffer());
 
+
+    cam_device->subscribe(messenger->videoSourceCam()->frameBuffer());
+
     //
 
     audio_output=newAudioOutput(this);
 
     decklink_thread->subscribe(audio_output->frameBuffer());
 
+    connect(decklink_thread, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
+
     //
 
-    ff_enc=new FFEncoderThread(this);
+    ff_enc=new FFEncoderThread(FFEncoder::Mode::primary, &enc_base_filename, this);
 
     decklink_thread->subscribe(ff_enc->frameBuffer());
 
@@ -89,7 +99,16 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ff_enc, SIGNAL(stateChanged(bool)), SLOT(encoderStateChanged(bool)), Qt::QueuedConnection);
     connect(ff_enc, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
 
-    connect(decklink_thread, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
+    //
+
+    ff_enc_cam=new FFEncoderThread(FFEncoder::Mode::webcam, &enc_base_filename, this);
+
+    cam_device->subscribe(ff_enc_cam->frameBuffer());
+
+    // connect(ff_enc_cam->frameBuffer().get(), SIGNAL(frameSkipped()), SLOT(encoderBufferOverload()), Qt::QueuedConnection);
+    connect(ff_enc_cam, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
+    connect(ff_enc_cam, SIGNAL(stateChanged(bool)), SLOT(encoderStateChanged(bool)), Qt::QueuedConnection);
+    connect(ff_enc_cam, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
 
     //
 
@@ -113,8 +132,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(audio_level, SIGNAL(levels(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)),
             messenger, SIGNAL(audioLevels(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)), Qt::QueuedConnection);
-
-
 
     //
 
@@ -150,6 +167,178 @@ MainWindow::MainWindow(QWidget *parent)
 
     SettingsModel::Data set_model_data;
 
+    //
+
+    set_model_data.type=SettingsModel::Type::title;
+    set_model_data.value=&settings->main.dummy;
+    set_model_data.name="camera";
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
+    QStringList cam_devices=FFCam::availableAudioInput();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.group="cam device";
+    set_model_data.name="audio device";
+
+
+    if(cam_devices.isEmpty()) {
+        set_model_data.values << "null";
+
+    } else {
+        foreach(QString dev_name, cam_devices) {
+            set_model_data.values << dev_name;
+        }
+    }
+
+    set_model_data.value=&settings->device_cam.index_audio;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    cam_devices=FFCam::availableCameras();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.group="cam device";
+    set_model_data.name="video device";
+
+    if(cam_devices.isEmpty()) {
+        set_model_data.values << "null";
+
+    } else {
+        foreach(QString dev_name, cam_devices) {
+            qInfo() << cam_devices.size() << dev_name;
+            set_model_data.values << dev_name;
+        }
+    }
+
+    if(!cam_device->setVideoDevice(settings->device_cam.index_video))
+        settings->device_cam.index_video=0;
+
+    set_model_data.value=&settings->device_cam.index_video;
+
+    int model_index_cam_name=messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.group="cam device";
+    set_model_data.name="resolution";
+
+    QList <QSize> supported_resolutions=cam_device->supportedResolutions();
+
+    if(settings->device_cam.resolution>=supported_resolutions.size())
+        settings->device_cam.resolution=0;
+
+    set_model_data.value=&settings->device_cam.resolution;
+
+    QSize cam_resolution;
+
+    if(!supported_resolutions.isEmpty())
+        cam_resolution=supported_resolutions[settings->device_cam.resolution];
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.group="cam device";
+    set_model_data.name="pixel format";
+
+    QList <int64_t> supported_pix_fmts=cam_device->supportedPixelFormats(cam_resolution);
+
+    if(settings->device_cam.pixel_format>=supported_pix_fmts.size())
+        settings->device_cam.pixel_format=0;
+
+    int64_t cam_pix_fmt=0;
+
+    if(!supported_pix_fmts.isEmpty())
+        cam_pix_fmt=supported_pix_fmts[settings->device_cam.pixel_format];
+
+    set_model_data.value=&settings->device_cam.pixel_format;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.group="cam device";
+    set_model_data.name="framerate";
+
+
+    if(settings->device_cam.framerate>=cam_device->supportedFramerates(cam_resolution, cam_pix_fmt).size())
+        settings->device_cam.framerate=0;
+
+    set_model_data.value=&settings->device_cam.framerate;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    if(!cam_devices.isEmpty())
+        settingsModelDataChanged(model_index_cam_name, 0, false);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::button;
+    set_model_data.group="cam device";
+    set_model_data.name.clear();
+    set_model_data.values << "restart device";
+    set_model_data.values_data << 0;
+
+    set_model_data.value=&settings->device_cam.restart;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::button;
+    set_model_data.group="cam device";
+    set_model_data.name.clear();
+    set_model_data.values << "stop device";
+    set_model_data.values_data << 0;
+
+    set_model_data.value=&settings->device_cam.stop;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::divider;
+    set_model_data.value=&settings->main.dummy;
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::title;
+    set_model_data.value=&settings->main.dummy;
+    set_model_data.name="decklink";
+
+    messenger->settingsModel()->add(set_model_data);
 
     //
 
@@ -176,7 +365,7 @@ MainWindow::MainWindow(QWidget *parent)
         }
     }
 
-    set_model_data.value=&settings->device.index;
+    set_model_data.value=&settings->device_decklink.index;
 
 
     messenger->settingsModel()->add(set_model_data);
@@ -191,7 +380,7 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.values << "16 bit" << "32 bit";
     set_model_data.values_data << 16 << 32;
 
-    set_model_data.value=&settings->device.audio_sample_size;
+    set_model_data.value=&settings->device_decklink.audio_sample_size;
 
     messenger->settingsModel()->add(set_model_data);
 
@@ -205,7 +394,7 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.values << "8 bit" << "10 bit";
     set_model_data.values_data << 0 << 1;
 
-    set_model_data.value=&settings->device.rgb_10bit;
+    set_model_data.value=&settings->device_decklink.rgb_10bit;
 
     messenger->settingsModel()->add(set_model_data);
 
@@ -216,7 +405,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     set_model_data.type=SettingsModel::Type::checkbox;
     set_model_data.name="half-fps";
-    set_model_data.value=&settings->device.half_fps;
+    set_model_data.value=&settings->device_decklink.half_fps;
 
     messenger->settingsModel()->add(set_model_data);
 
@@ -227,12 +416,26 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.values << "restart device";
     set_model_data.values_data << 0;
 
-    set_model_data.value=&settings->device.restart;
+    set_model_data.value=&settings->device_decklink.restart;
 
     messenger->settingsModel()->add(set_model_data);
 
     set_model_data.values.clear();
     set_model_data.values_data.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::divider;
+    set_model_data.value=&settings->main.dummy;
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::title;
+    set_model_data.value=&settings->main.dummy;
+    set_model_data.name="rec";
+
+    messenger->settingsModel()->add(set_model_data);
 
     //
 
@@ -369,7 +572,7 @@ MainWindow::MainWindow(QWidget *parent)
         showFullScreen();
     }
 
-    emit messenger->signalLost(true);
+//    emit messenger->signalLost(true);
 
     startStopCapture();
 }
@@ -454,6 +657,15 @@ void MainWindow::keyPressed(int code)
 
     case KeyCodeC::PreviewFastYuv:
         messenger->videoSourceMain()->setFastYuv(!messenger->videoSourceMain()->fastYuv());
+        break;
+
+    case KeyCodeC::PreviewCam:
+        previewCamOnOff();
+        break;
+
+
+    case KeyCodeC::PreviewCamChangePosition:
+        messenger->camPreviewChangePosition();
         break;
 
     case KeyCodeC::SmoothTransform:
@@ -557,6 +769,83 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
     SettingsModel::Data *data=model->data_p(index);
 
+    // if(data->value==&settings->device_cam.index_audio) {
+    //     cam_device->setAudioDevice(settings->device_cam.index_audio);
+    // }
+
+    if(data->value==&settings->device_cam.index_video) {
+        cam_device->setVideoDevice(settings->device_cam.index_video);
+
+        QStringList list_values;
+        QVariantList list_values_data;
+
+        foreach(QSize val, cam_device->supportedResolutions()) {
+            list_values << QString("%1x%2").arg(val.width()).arg(val.height());
+            list_values_data << val;
+        }
+
+        model->setData(&settings->device_cam.resolution, SettingsModel::Role::values, list_values);
+        model->setData(&settings->device_cam.resolution, SettingsModel::Role::values_data, list_values_data);
+
+        if(!list_values_data.isEmpty()) {
+            QSize size=list_values_data.value(settings->device_cam.resolution).toSize();
+
+            list_values.clear();
+            list_values_data.clear();
+
+            if(!messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data.isEmpty())
+                foreach(AVRational val, cam_device->supportedFramerates(size, messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data[settings->device_cam.pixel_format].toLongLong())) {
+                    list_values << QString::number(ToolsCam::rationalToFramerate(val));
+                    list_values_data << QSize(val.num, val.den);
+                }
+
+            model->setData(&settings->device_cam.framerate, SettingsModel::Role::values, list_values);
+            model->setData(&settings->device_cam.framerate, SettingsModel::Role::values_data, list_values_data);
+
+            //
+
+            list_values.clear();
+            list_values_data.clear();
+
+            foreach(qint64 val, cam_device->supportedPixelFormats(size)) {
+                list_values << Cam::PixelFormat::toString(val);
+                list_values_data << val;
+            }
+
+            model->setData(&settings->device_cam.pixel_format, SettingsModel::Role::values, list_values);
+            model->setData(&settings->device_cam.pixel_format, SettingsModel::Role::values_data, list_values_data);
+        }
+    }
+
+    if(data->value==&settings->device_cam.resolution) {
+        QSize size=data->values_data.value(settings->device_cam.resolution).toSize();
+
+        QStringList list_values;
+        QVariantList list_values_data;
+
+        if(!messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data.isEmpty())
+            foreach(AVRational val, cam_device->supportedFramerates(size, messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data[settings->device_cam.pixel_format].toLongLong())) {
+                list_values << QString::number(ToolsCam::rationalToFramerate(val));
+                list_values_data << QSize(val.num, val.den);
+            }
+
+        model->setData(&settings->device_cam.framerate, SettingsModel::Role::values, list_values);
+        model->setData(&settings->device_cam.framerate, SettingsModel::Role::values_data, list_values_data);
+
+        //
+
+        list_values.clear();
+        list_values_data.clear();
+
+        foreach(qint64 val, cam_device->supportedPixelFormats(size)) {
+            list_values << Cam::PixelFormat::toString(val);
+            list_values_data << val;
+        }
+
+        model->setData(&settings->device_cam.pixel_format, SettingsModel::Role::values, list_values);
+        model->setData(&settings->device_cam.pixel_format, SettingsModel::Role::values_data, list_values_data);
+    }
+
     if(data->value==&settings->rec.encoder) {
         QList <FFEncoder::PixelFormat::T> fmts=
                 FFEncoder::PixelFormat::compatiblePixelFormats((FFEncoder::VideoEncoder::T)data->values_data.value(settings->rec.encoder, 0).toInt());
@@ -612,8 +901,28 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             settings->rec.preset[QString::number(settings->rec.encoder)]=settings->rec.preset_current;
 
 
-    if(data->value==&settings->device.restart) {
+    if(data->value==&settings->device_decklink.restart) {
         captureRestart();
+    }
+
+    if(data->value==&settings->device_cam.restart) {
+        SettingsModel::Data *model_data_resolution=messenger->settingsModel()->data_p(&settings->device_cam.resolution);
+        SettingsModel::Data *model_data_framerate=messenger->settingsModel()->data_p(&settings->device_cam.framerate);
+        SettingsModel::Data *model_data_pixel_format=messenger->settingsModel()->data_p(&settings->device_cam.pixel_format);
+
+        QSize framerate=model_data_framerate->values_data.value(settings->device_cam.framerate).toSize();
+        int64_t pixel_format=model_data_pixel_format->values_data.value(settings->device_cam.pixel_format).toLongLong();
+
+        cam_device->setAudioDevice(settings->device_cam.index_audio);
+        cam_device->setVideoDevice(settings->device_cam.index_video);
+
+        cam_device->setConfig(model_data_resolution->values_data.value(settings->device_cam.resolution).toSize(), { framerate.width(), framerate.height() }, pixel_format);
+
+        QMetaObject::invokeMethod(cam_device, "startCam", Qt::QueuedConnection);
+    }
+
+    if(data->value==&settings->device_cam.stop) {
+        cam_device->stop();
     }
 }
 
@@ -644,8 +953,8 @@ void MainWindow::captureRestart()
 
 void MainWindow::captureStart()
 {
-    SettingsModel::Data *model_data_device=messenger->settingsModel()->data_p(&settings->device.index);
-    SettingsModel::Data *model_data_audio=messenger->settingsModel()->data_p(&settings->device.audio_sample_size);
+    SettingsModel::Data *model_data_device=messenger->settingsModel()->data_p(&settings->device_decklink.index);
+    SettingsModel::Data *model_data_audio=messenger->settingsModel()->data_p(&settings->device_decklink.audio_sample_size);
 
     if(!model_data_device || !model_data_audio) {
         qCritical() << "model_data null pointer";
@@ -658,15 +967,15 @@ void MainWindow::captureStart()
     }
 
 
-    decklink_thread->setup(model_data_device->values_data[settings->device.index].value<DeckLinkDevice>(),
+    decklink_thread->setup(model_data_device->values_data[settings->device_decklink.index].value<DeckLinkDevice>(),
             DeckLinkFormat(),
             DeckLinkPixelFormat(),
             8,
-            model_data_audio->values_data[settings->device.audio_sample_size].toInt(),
-            settings->device.rgb_10bit
+            model_data_audio->values_data[settings->device_decklink.audio_sample_size].toInt(),
+            settings->device_decklink.rgb_10bit
             );
 
-    decklink_thread->setHalfFps(settings->device.half_fps);
+    decklink_thread->setHalfFps(settings->device_decklink.half_fps);
 
     QMetaObject::invokeMethod(decklink_thread, "captureStart", Qt::QueuedConnection);
 }
@@ -678,28 +987,62 @@ void MainWindow::captureStop()
 
 void MainWindow::startStopRecording()
 {
-    if(ff_enc->isWorking()) {
+    bool enc_running=ff_enc->isWorking() || ff_enc_cam->isWorking();
+
+    if(enc_running) {
         ff_enc->stopCoder();
+        ff_enc_cam->stopCoder();
 
     } else {
-        if(ff_dec->currentState()!=FFDecoderThread::ST_STOPPED || !decklink_thread->gotSignal())
+        if(ff_dec->currentState()!=FFDecoderThread::ST_STOPPED)
             return;
 
-        FFEncoder::Config cfg;
+        enc_base_filename=
+                QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss");
 
-        cfg.framerate=FFEncoder::calcFps(current_frame_duration, current_frame_scale, settings->rec.half_fps);
-        cfg.frame_resolution_src=current_frame_size;
-        cfg.pixel_format=(AVPixelFormat)messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();
-        cfg.preset=messenger->settingsModel()->data_p(&settings->rec.preset_current)->values_data[settings->rec.preset_current].toString();
-        cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
-        cfg.crf=settings->rec.crf;
-        cfg.rgb_source=decklink_thread->rgbSource();
-        cfg.rgb_10bit=decklink_thread->rgb10Bit();
-        cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device.audio_sample_size)->values_data[settings->device.audio_sample_size].toInt();
-        cfg.downscale=settings->rec.downscale;
-        cfg.scale_filter=settings->rec.scale_filter;
+        if(decklink_thread->gotSignal()) {
+            FFEncoder::Config cfg;
 
-        ff_enc->setConfig(cfg);
+            cfg.framerate=FFEncoder::calcFps(current_frame_duration, current_frame_scale, settings->rec.half_fps);
+            cfg.frame_resolution_src=current_frame_size;
+            cfg.pixel_format=(AVPixelFormat)messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();
+            cfg.preset=messenger->settingsModel()->data_p(&settings->rec.preset_current)->values_data[settings->rec.preset_current].toString();
+            cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
+            cfg.crf=settings->rec.crf;
+            cfg.rgb_source=decklink_thread->rgbSource();
+            cfg.rgb_10bit=decklink_thread->rgb10Bit();
+            cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device_decklink.audio_sample_size)->values_data[settings->device_decklink.audio_sample_size].toInt();
+            cfg.downscale=settings->rec.downscale;
+            cfg.scale_filter=settings->rec.scale_filter;
+
+            ff_enc->setConfig(cfg);
+        }
+
+        if(cam_device->isActive()) {
+            SettingsModel::Data *model_data_resolution=messenger->settingsModel()->data_p(&settings->device_cam.resolution);
+            SettingsModel::Data *model_data_framerate=messenger->settingsModel()->data_p(&settings->device_cam.framerate);
+
+            QSize resolution=model_data_resolution->values_data.value(*model_data_resolution->value).toSize();
+            QSize framerate=model_data_framerate->values_data.value(*model_data_framerate->value).toSize();
+
+            FFEncoder::Config cfg;
+
+            cfg.framerate=FFEncoder::calcFps(framerate.width(), framerate.height(), false);
+            cfg.frame_resolution_src=resolution;
+
+            cfg.pixel_format=(AVPixelFormat)messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();
+            cfg.preset=messenger->settingsModel()->data_p(&settings->rec.preset_current)->values_data[settings->rec.preset_current].toString();
+            cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
+            cfg.crf=settings->rec.crf;
+            cfg.rgb_source=true;
+            cfg.rgb_10bit=false;
+            cfg.audio_sample_size=16;
+            cfg.audio_channels_size=2;
+            cfg.downscale=settings->rec.downscale;
+            cfg.scale_filter=settings->rec.scale_filter;
+
+            ff_enc_cam->setConfig(cfg);
+        }
 
         messenger->updateRecStats();
 
@@ -755,6 +1098,13 @@ void MainWindow::previewOnOff()
     messenger->videoSourceMain()->frameBuffer()->setEnabled(settings->main.preview);
 }
 
+void MainWindow::previewCamOnOff()
+{
+    messenger->videoSourceCam()->frameBuffer()->setEnabled(!messenger->videoSourceCam()->frameBuffer()->isEnabled());
+
+    messenger->camPreview(messenger->videoSourceCam()->frameBuffer()->isEnabled());
+}
+
 void MainWindow::encoderStateChanged(bool state)
 {
     messenger->setRecStarted(state);
@@ -783,6 +1133,29 @@ void MainWindow::playerStateChanged(int state)
 
 void MainWindow::updateStats(FFEncoder::Stats s)
 {
+    static FFEncoder::Stats st_main={ };
+    static FFEncoder::Stats st_cam={ };
+    static qint64 last_update=0;
+
+    if(sender()==ff_enc)
+        st_main=s;
+
+    else
+        st_cam=s;
+
+    s.avg_bitrate_audio=st_main.avg_bitrate_audio + st_cam.avg_bitrate_audio;
+    s.avg_bitrate_video=st_main.avg_bitrate_video + st_cam.avg_bitrate_video;
+    s.streams_size=st_main.streams_size + st_cam.streams_size;
+    s.time=st_main.time;
+
+    if(s.time.isNull())
+        s.time=st_cam.time;
+
+    if(QDateTime::currentMSecsSinceEpoch() - last_update<1000)
+        return;
+
+    last_update=QDateTime::currentMSecsSinceEpoch();
+
     const QPair <int, int> buffer_size=ff_enc->frameBuffer()->size();
 
     messenger->updateRecStats(s.time.toString(QStringLiteral("HH:mm:ss")),

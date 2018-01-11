@@ -5,8 +5,10 @@
 
 #include "ff_encoder_thread.h"
 
-FFEncoderThread::FFEncoderThread(QObject *parent)
+FFEncoderThread::FFEncoderThread(FFEncoder::Mode::T mode, FFEncoderBaseFilename *base_filename, QObject *parent)
     : QThread(parent)
+    , mode(mode)
+    , base_filename(base_filename)
 {
     frame_buffer=FrameBuffer::make();
 
@@ -71,7 +73,7 @@ void FFEncoderThread::onStateChanged(bool state)
 
 void FFEncoderThread::run()
 {
-    FFEncoder *ffmpeg=new FFEncoder();
+    FFEncoder *ffmpeg=new FFEncoder(mode);
 
     ffmpeg->moveToThread(this);
 
@@ -81,6 +83,8 @@ void FFEncoderThread::run()
     connect(ffmpeg, SIGNAL(stateChanged(bool)), SIGNAL(stateChanged(bool)), Qt::QueuedConnection);
     connect(ffmpeg, SIGNAL(stateChanged(bool)), SLOT(onStateChanged(bool)), Qt::QueuedConnection);
     connect(ffmpeg, SIGNAL(errorString(QString)), SIGNAL(errorString(QString)), Qt::QueuedConnection);
+
+    ffmpeg->setBaseFilename(base_filename);
 
     Frame::ptr frame;
 

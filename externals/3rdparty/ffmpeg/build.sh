@@ -221,6 +221,9 @@ else
   git reset --hard
   git pull
 fi
+
+git checkout release/3.4
+
 make distclean
 ./configure --prefix="$PATH_BASE" --extra-cflags="-I$PATH_BASE/include -I$DECKLINK_INCLUDE $str_opt" --extra-ldflags="-L$PATH_BASE/lib" --bindir="$PATH_BASE/bin" --pkg-config-flags="--static" \
   --enable-gpl \
@@ -234,12 +237,11 @@ make distclean
   --enable-libvpx \
   --enable-libx264 \
   --enable-libx265 \
-  --enable-decklink \
   --disable-crystalhd
 make -j$cpu_count
 make install
 
-
+exit 0
 #----------------------------
 
 PATH=$PATH_ROOT/10bit/lib:$PATH_ROOT/10bit/include:$PATH_ROOT/10bit/bin:$PATH_ORIG

@@ -62,7 +62,6 @@ void SettingsModel::setData(const int &index, int role, QVariant data, bool qml)
     if(index<0 || index>=d.size())
         return;
 
-    // qInfo() << "SettingsModel::setData" << index << role << data;
 
     switch(role) {
     case Role::type:
@@ -94,6 +93,57 @@ void SettingsModel::setData(const int &index, int role, QVariant data, bool qml)
     }
 
     emit dataChanged(index, role, qml);
+}
+
+void SettingsModel::setData(int *ptr_value, int role, QVariant data, bool qml)
+{
+    for(int i=0; i<rowCount(); ++i) {
+        if(data_p(i)->value==ptr_value) {
+            setData(i, role, data, qml);
+            break;
+        }
+    }
+}
+
+int SettingsModel::focusPrev(int index) const
+{
+    while(true) {
+        index--;
+
+        if(index<1)
+            index=d.size() - 1;
+
+        if(d[index].type!=Type::title && d[index].type!=Type::divider)
+            break;
+    }
+
+    return index;
+}
+
+int SettingsModel::focusNext(int index) const
+{
+    while(true) {
+        index++;
+
+        if(index>=d.size())
+            index=0;
+
+        if(d[index].type!=Type::title && d[index].type!=Type::divider)
+            break;
+    }
+
+    return index;
+}
+
+bool SettingsModel::posCheck(int index) const
+{
+    if(index<0 || index>=d.size())
+        return false;
+
+    if(d[index].type!=Type::title && d[index].type!=Type::divider)
+        return true;
+
+    return false;
 }
 
 void SettingsModel::reload()
@@ -134,12 +184,14 @@ QHash <int, QByteArray> SettingsModel::roleNames() const
     return roles;
 }
 
-void SettingsModel::add(const SettingsModel::Data &data)
+int SettingsModel::add(const SettingsModel::Data &data)
 {
     beginInsertRows(QModelIndex(), d.size(), d.size());
 
     d.append(data);
 
     endInsertRows();
+
+    return d.size() - 1;
 }
 

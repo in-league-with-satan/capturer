@@ -39,6 +39,7 @@ public:
     Q_INVOKABLE QString networkAddresses() const;
 
     Q_INVOKABLE QuickVideoSource *videoSourceMain();
+    Q_INVOKABLE QuickVideoSource *videoSourceCam();
 
 public slots:
     void keyEvent(const Qt::Key &key);
@@ -52,6 +53,7 @@ private:
     FileSystemModel *file_system_model;
 
     QuickVideoSource *video_source_main;
+    QuickVideoSource *video_source_cam;
 
 signals:
     void updateRecStats(QString duration=QString(), QString bitrate=QString(), QString size=QString(),
@@ -100,6 +102,9 @@ signals:
     void playerPositionChanged(const qint64 &position);
     void playerSetPosition(const qint64 &position);
     void errorString(QString error_string);
+
+    void camPreview(bool visible);
+    void camPreviewChangePosition();
 };
 
 #endif // QML_MESSENGER_H

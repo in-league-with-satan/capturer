@@ -14,6 +14,7 @@ class QmlMessenger;
 class OverlayView;
 class Server;
 class HttpServer;
+class FFCam;
 
 class QMessageBox;
 
@@ -27,8 +28,10 @@ public:
 
 private:
     DeckLinkCapture *decklink_thread;
+    FFCam *cam_device;
 
     FFEncoderThread *ff_enc;
+    FFEncoderThread *ff_enc_cam;
     FFDecoderThread *ff_dec;
 
     QmlMessenger *messenger;
@@ -49,6 +52,8 @@ private:
     uint32_t dropped_frames_counter;
 
     QPoint pos_mouse_press;
+
+    FFEncoderBaseFilename enc_base_filename;
 
 protected:
     virtual bool eventFilter(QObject *object, QEvent *event);
@@ -75,6 +80,7 @@ private slots:
     void encoderBufferOverload();
 
     void previewOnOff();
+    void previewCamOnOff();
 
     void encoderStateChanged(bool state);
     void playerStateChanged(int state);

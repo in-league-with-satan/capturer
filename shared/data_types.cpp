@@ -2,23 +2,25 @@
 
 
 QString KeyCodeC::key_title[KeyCodeC::enm_size]={
-   QStringLiteral("Up"),
-   QStringLiteral("Down"),
-   QStringLiteral("Left"),
-   QStringLiteral("Right"),
-   QStringLiteral("Enter"),
-   QStringLiteral("Menu"),
-   QStringLiteral("Back"),
-   QStringLiteral("About"),
-   QStringLiteral("Info"),
-   QStringLiteral("Preview"),
-   QStringLiteral("Preview Fast Yuv"),
-   QStringLiteral("Full Screen"),
-   QStringLiteral("File Browser"),
-   QStringLiteral("Rec"),
-   QStringLiteral("Rec State"),
-   QStringLiteral("Smooth Transform"),
-   QStringLiteral("Exit")
+    QStringLiteral("Up"),
+    QStringLiteral("Down"),
+    QStringLiteral("Left"),
+    QStringLiteral("Right"),
+    QStringLiteral("Enter"),
+    QStringLiteral("Menu"),
+    QStringLiteral("Back"),
+    QStringLiteral("About"),
+    QStringLiteral("Info"),
+    QStringLiteral("Preview"),
+    QStringLiteral("Preview Fast Yuv"),
+    QStringLiteral("Preview Cam"),
+    QStringLiteral("PreviewCam Change Position"),
+    QStringLiteral("Full Screen"),
+    QStringLiteral("File Browser"),
+    QStringLiteral("Rec"),
+    QStringLiteral("Rec State"),
+    QStringLiteral("Smooth Transform"),
+    QStringLiteral("Exit")
 };
 
 

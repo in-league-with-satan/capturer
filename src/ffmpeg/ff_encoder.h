@@ -6,6 +6,7 @@
 #include <QDateTime>
 
 #include "frame.h"
+#include "ff_encoder_base_filename.h"
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -21,12 +22,20 @@ class FFEncoder : public QObject
     Q_OBJECT
 
 public:
-    FFEncoder(QObject *parent=0);
+    struct Mode {
+        enum T {
+            primary,
+            webcam
+        };
+    };
+
+    FFEncoder(FFEncoder::Mode::T mode, QObject *parent=0);
     ~FFEncoder();
 
     static void init();
 
     static bool isLib_x264_10bit();
+
 
     struct Framerate {
         enum T {
@@ -62,7 +71,6 @@ public:
         };
 
         static QString toString(uint32_t enc);
-
     };
 
     struct PixelFormat {
@@ -157,6 +165,8 @@ public:
     static Framerate::T calcFps(int64_t frame_duration, int64_t frame_scale, bool half_fps);
     static QString presetVisualNameToParamName(const QString &str);
     static QStringList compatiblePresets(VideoEncoder::T encoder);
+
+    void setBaseFilename(FFEncoderBaseFilename *bf);
 
     QString lastErrorString() const;
 

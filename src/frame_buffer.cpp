@@ -73,6 +73,13 @@ void FrameBuffer::setEnabled(bool value)
     event.next();
 }
 
+bool FrameBuffer::isEnabled()
+{
+    QMutexLocker ml(&mutex);
+
+    return enabled;
+}
+
 void FrameBuffer::clear()
 {
     QMutexLocker ml(&mutex);

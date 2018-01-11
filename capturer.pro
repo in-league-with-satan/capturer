@@ -83,6 +83,8 @@ RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-rcc
 
 
 linux {
+    GCCFLAGS += -lz
+
     INCLUDEPATH += \
         externals/3rdparty/blackmagic_decklink_sdk/Linux/include
 
@@ -105,8 +107,9 @@ linux {
     SOURCES += \
         externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
 
-    LIBS += -lavformat -lavcodec -lavutil -lswscale -lswresample
-    LIBS += -lz -lbz2 -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
+    LIBS += -lavdevice -lavfilter -lpostproc -lavformat -lavcodec -lavutil -lswscale -lswresample
+    LIBS += -lz -lbz2 -llzma -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
+# -libxcb1
 }
 
 windows {
@@ -123,13 +126,12 @@ windows {
     SOURCES += \
         externals/3rdparty/blackmagic_decklink_sdk-mingw/*.c
 
-    LIBS += -lole32
-
+    LIBS += -lole32 -lstrmiids -loleaut32
 
     INCLUDEPATH += externals/3rdparty/ffmpeg/include
     LIBS += -Lexternals/3rdparty/ffmpeg/lib
 
-    LIBS += -lswresample -lavformat -lavcodec -lavutil -lswscale
+    LIBS += -lavdevice -lswresample -lavformat -lavcodec -lavutil -lswscale
 }
 
 contains(DEFINES, USE_PULSE_AUDIO) {
@@ -160,7 +162,8 @@ INCLUDEPATH += \
     src/ffmpeg \
     src/audio_output \
     src/overlay \
-    src/network
+    src/network \
+    src/video_sources
 
 SOURCES += \
     src/*.cpp \
@@ -168,7 +171,8 @@ SOURCES += \
     src/ffmpeg/*.cpp \
     src/audio_output/*.cpp \
     src/overlay/*.cpp \
-    src/network/*.cpp
+    src/network/*.cpp \
+    src/video_sources/*.cpp
 
 HEADERS += \
     src/*.h \
@@ -176,7 +180,8 @@ HEADERS += \
     src/ffmpeg/*.h \
     src/audio_output/*.h \
     src/overlay/*.h \
-    src/network/*.h
+    src/network/*.h \
+    src/video_sources/*.h
 
 RESOURCES += \
     qml.qrc \

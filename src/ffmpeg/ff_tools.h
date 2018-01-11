@@ -16,6 +16,7 @@ extern "C" {
 #include <libavfilter/avfilter.h>
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
+#include <libavdevice/avdevice.h>
 }
 
 const int alignment=32;
@@ -53,5 +54,7 @@ static QString versionlibswresample()
 {
     return QString("%1.%2.%3").arg(LIBSWRESAMPLE_VERSION_MAJOR).arg(LIBSWRESAMPLE_VERSION_MINOR).arg(LIBSWRESAMPLE_VERSION_MICRO);
 }
+
+bool operator==(const AVRational &l, const AVRational &r);
 
 #endif // FF_TOOLS_H
