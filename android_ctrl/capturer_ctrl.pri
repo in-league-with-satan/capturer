@@ -28,10 +28,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #!isEmpty(target.path): INSTALLS += target
 
 
-
 CONFIG += c++14
 
-DESTDIR = bin
+!android {
+    DESTDIR = $$PWD/../bin
+}
+
 
 TARGET = capturer_ctrl
 
@@ -57,30 +59,30 @@ MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/moc
 RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/rcc
 
 INCLUDEPATH += \
-    ../shared
+    $$PWD/../shared
 
 HEADERS += \
-    ../shared/*.h
+    $$PWD/../shared/*.h
 
 SOURCES += \
-    ../shared/*.cpp
+    $$PWD/../shared/*.cpp
 
 
 INCLUDEPATH += \
-    src \
-    src/network
+    $$PWD/src \
+    $$PWD/src/network
 
 SOURCES += \
-    src/*.cpp \
-    src/network/*.cpp
+    $$PWD/src/*.cpp \
+    $$PWD/src/network/*.cpp
 
 HEADERS += \
-    src/*.h \
-    src/network/*.h
+    $$PWD/src/*.h \
+    $$PWD/src/network/*.h
 
 
 RESOURCES += \
-    qml.qrc
+    $$PWD/qml.qrc
 
 OTHER_FILES += \
-    qml/*.qml
+    $$PWD/qml/*.qml

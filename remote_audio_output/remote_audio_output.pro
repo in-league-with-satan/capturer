@@ -11,7 +11,7 @@ TEMPLATE = app
 
 CONFIG += c++14
 
-DESTDIR = ../bin
+DESTDIR = $$PWD/../bin
 
 GIT_VERSION = $$system(git --git-dir $$PWD/../.git --work-tree $$PWD describe --always)
 
@@ -24,8 +24,6 @@ windows {
     DATE_VERSION = $$system(echo '%date:~8,2%.%date:~3,2%.%date:~0,2%')
     DEFINES += VERSION_STRING=QString(\\\"$$DATE_VERSION-$$GIT_VERSION\\\").replace(\\\".0\\\",\\\".\\\")
 }
-
-
 
 
 
@@ -56,40 +54,39 @@ RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/rcc
 
 
 linux {
-    INCLUDEPATH += ../externals/3rdparty/ffmpeg/8bit/include
-    LIBS += -L../externals/3rdparty/ffmpeg/8bit/lib
+    INCLUDEPATH += $$PWD/../externals/3rdparty/ffmpeg/8bit/include
+    LIBS += -L$$PWD/../externals/3rdparty/ffmpeg/8bit/lib
 
     LIBS += -lavformat -lavcodec -lavutil -lswscale -lswresample
     LIBS += -lz -lbz2 -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
 }
 
 windows {
-    INCLUDEPATH += ../externals/3rdparty/ffmpeg/include
-    LIBS += -L../externals/3rdparty/ffmpeg/lib
+    INCLUDEPATH += $$PWD/../externals/3rdparty/ffmpeg/include
+    LIBS += -L$$PWD/../externals/3rdparty/ffmpeg/lib
 
     LIBS += -lswresample -lavformat -lavutil
 }
 
+
 INCLUDEPATH += \
-    ../shared
+    $$PWD/../shared
 
 HEADERS += \
-    ../shared/audio_packet.h
-
+    $$PWD/../shared/audio_packet.h
 
 
 INCLUDEPATH += \
-    src \
-    ../src/ffmpeg
-
+    $$PWD/src \
+    $$PWD/../capturer/src/ffmpeg
 
 SOURCES += \
-    src/*.cpp \
-    ../src/ffmpeg/ff_audio_converter.cpp \
-    ../src/ffmpeg/ff_tools.cpp
+    $$PWD/src/*.cpp \
+    $$PWD/../capturer/src/ffmpeg/ff_audio_converter.cpp \
+    $$PWD/../capturer/src/ffmpeg/ff_tools.cpp
 
 HEADERS += \
-    src/*.h \
-    ../src/ffmpeg/ff_audio_converter.h \
-    ../src/ffmpeg/ff_tools.h
+    $$PWD/src/*.h \
+    $$PWD/../capturer/src/ffmpeg/ff_audio_converter.h \
+    $$PWD/../capturer/src/ffmpeg/ff_tools.h
 

@@ -591,7 +591,7 @@ MainWindow::MainWindow(QWidget *parent)
         showFullScreen();
     }
 
-//    emit messenger->signalLost(true);
+    emit messenger->signalLost(true);
 
     startStopCapture();
 }

@@ -16,9 +16,9 @@ TEMPLATE = app
 
 CONFIG += c++14
 
-DESTDIR = bin
+DESTDIR = $$PWD/../bin
 
-GIT_VERSION = $$system(git --git-dir $$PWD/.git --work-tree $$PWD describe --always)
+GIT_VERSION = $$system(git --git-dir $$PWD/../.git --work-tree $$PWD describe --always)
 
 linux {
     DATE_VERSION = $$system(date +%y.%-m.%-d)
@@ -81,12 +81,15 @@ OBJECTS_DIR = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-obj
 MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-moc
 RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-rcc
 
+IMPORT_CPP = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/$$lower($$basename(TARGET))_qml_plugin_import.cpp
+QML_IMPORT_CPP = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/$$lower($$basename(TARGET))_qml_plugin_import.cpp
+
 
 linux {
     GCCFLAGS += -lz
 
     INCLUDEPATH += \
-        externals/3rdparty/blackmagic_decklink_sdk/Linux/include
+        $$PWD/../externals/3rdparty/blackmagic_decklink_sdk/Linux/include
 
     contains(DEFINES, USE_X264_10B) {
         TARGET = capturer_10bit
@@ -95,21 +98,21 @@ linux {
         MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-moc
         RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-rcc
 
-        INCLUDEPATH += externals/3rdparty/ffmpeg/10bit/include
-        LIBS += -Lexternals/3rdparty/ffmpeg/10bit/lib
+        INCLUDEPATH += $$PWD/../externals/3rdparty/ffmpeg/10bit/include
+        LIBS += -L$$PWD/../externals/3rdparty/ffmpeg/10bit/lib
 
     } else {
-        INCLUDEPATH += externals/3rdparty/ffmpeg/8bit/include
-        LIBS += -Lexternals/3rdparty/ffmpeg/8bit/lib
+        INCLUDEPATH += $$PWD/../externals/3rdparty/ffmpeg/8bit/include
+        LIBS += -L$$PWD/../externals/3rdparty/ffmpeg/8bit/lib
     }
 
 
     SOURCES += \
-        externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
+        $$PWD/../externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
 
     LIBS += -lavdevice -lavfilter -lpostproc -lavformat -lavcodec -lavutil -lswscale -lswresample
     LIBS += -lz -lbz2 -llzma -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
-# -libxcb1
+    # -libxcb1
 }
 
 windows {
@@ -118,18 +121,18 @@ windows {
     DEFINES -= USE_SDL2
 
     INCLUDEPATH += \
-        externals/3rdparty/blackmagic_decklink_sdk-mingw
+        $$PWD/../externals/3rdparty/blackmagic_decklink_sdk-mingw
 
     HEADERS += \
-        externals/3rdparty/blackmagic_decklink_sdk-mingw/*.h
+        $$PWD/../externals/3rdparty/blackmagic_decklink_sdk-mingw/*.h
 
     SOURCES += \
-        externals/3rdparty/blackmagic_decklink_sdk-mingw/*.c
+        $$PWD/../externals/3rdparty/blackmagic_decklink_sdk-mingw/*.c
 
     LIBS += -lole32 -lstrmiids -loleaut32
 
-    INCLUDEPATH += externals/3rdparty/ffmpeg/include
-    LIBS += -Lexternals/3rdparty/ffmpeg/lib
+    INCLUDEPATH += $$PWD/../externals/3rdparty/ffmpeg/include
+    LIBS += -L$$PWD/../externals/3rdparty/ffmpeg/lib
 
     LIBS += -lavdevice -lswresample -lavformat -lavcodec -lavutil -lswscale
 }
@@ -143,49 +146,49 @@ contains(DEFINES, USE_SDL2) {
 }
 
 
-include(externals/3rdparty/http_server.pri)
+include($$PWD/../externals/3rdparty/http_server.pri)
 
 
 INCLUDEPATH += \
-    shared
+    $$PWD/../shared
 
 HEADERS += \
-    shared/*.h
+    $$PWD/../shared/*.h
 
 SOURCES += \
-    shared/*.cpp
+    $$PWD/../shared/*.cpp
 
 
 INCLUDEPATH += \
-    src \
-    src/decklink \
-    src/ffmpeg \
-    src/audio_output \
-    src/overlay \
-    src/network \
-    src/video_sources
+    $$PWD/src \
+    $$PWD/src/decklink \
+    $$PWD/src/ffmpeg \
+    $$PWD/src/audio_output \
+    $$PWD/src/overlay \
+    $$PWD/src/network \
+    $$PWD/src/video_sources
 
 SOURCES += \
-    src/*.cpp \
-    src/decklink/*.cpp \
-    src/ffmpeg/*.cpp \
-    src/audio_output/*.cpp \
-    src/overlay/*.cpp \
-    src/network/*.cpp \
-    src/video_sources/*.cpp
+    $$PWD/src/*.cpp \
+    $$PWD/src/decklink/*.cpp \
+    $$PWD/src/ffmpeg/*.cpp \
+    $$PWD/src/audio_output/*.cpp \
+    $$PWD/src/overlay/*.cpp \
+    $$PWD/src/network/*.cpp \
+    $$PWD/src/video_sources/*.cpp
 
 HEADERS += \
-    src/*.h \
-    src/decklink/*.h \
-    src/ffmpeg/*.h \
-    src/audio_output/*.h \
-    src/overlay/*.h \
-    src/network/*.h \
-    src/video_sources/*.h
+    $$PWD/src/*.h \
+    $$PWD/src/decklink/*.h \
+    $$PWD/src/ffmpeg/*.h \
+    $$PWD/src/audio_output/*.h \
+    $$PWD/src/overlay/*.h \
+    $$PWD/src/network/*.h \
+    $$PWD/src/video_sources/*.h
 
 RESOURCES += \
-    qml.qrc \
-    images.qrc
+    $$PWD/qml.qrc \
+    $$PWD/images.qrc
 
 OTHER_FILES += \
-    qml/*.qml
+    $$PWD/qml/*.qml
