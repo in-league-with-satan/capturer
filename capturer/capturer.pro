@@ -81,9 +81,6 @@ OBJECTS_DIR = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-obj
 MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-moc
 RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-rcc
 
-IMPORT_CPP = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/$$lower($$basename(TARGET))_qml_plugin_import.cpp
-QML_IMPORT_CPP = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/$$lower($$basename(TARGET))_qml_plugin_import.cpp
-
 
 linux {
     GCCFLAGS += -lz

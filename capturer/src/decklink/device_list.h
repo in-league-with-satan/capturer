@@ -22,6 +22,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <QtGlobal>
 #include <QMetaType>
+#include <QString>
+#include <QList>
 
 QString BMDPixelFormatToString(uint32_t format);
 

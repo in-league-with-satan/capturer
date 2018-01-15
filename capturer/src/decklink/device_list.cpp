@@ -42,6 +42,8 @@ const uint32_t known_pixel_formats[]={
     bmdFormat12BitRGBLE,
     bmdFormat10BitRGBXLE,
     bmdFormat10BitRGBX,
+    bmdFormatH265,
+    bmdFormatDNxHR,
     0
 };
 
@@ -76,6 +78,12 @@ QString BMDPixelFormatToString(uint32_t format)
 
         format_names[bmdFormat10BitRGBX]=
                 "10BitRGBX";
+
+        format_names[bmdFormatH265]=
+                "H265";
+
+        format_names[bmdFormatDNxHR]=
+                "DNxHR";
     }
 
     return format_names.value(format, QStringLiteral("unknown"));
@@ -145,6 +153,7 @@ int GetDevices(DeckLinkDevices *devices)
 
         supportedInputFormats(decklink, &dev.formats);
 
+        //
 
         devices->append(dev);
 
