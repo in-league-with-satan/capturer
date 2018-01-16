@@ -97,13 +97,14 @@ void AudioSender::run()
 
         frame_buffer->wait();
 
-        if(listener.isEmpty()) {
-            continue;
-        }
-
         frame=frame_buffer->take();
 
         if(frame) {
+            if(listener.isEmpty()) {
+                frame.reset();
+                continue;
+            }
+
             packet.data=QByteArray(frame->audio.ptr_data, frame->audio.data_size);
             packet.channels=frame->audio.channels;
             packet.sample_size=frame->audio.sample_size;
