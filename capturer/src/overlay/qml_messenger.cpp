@@ -31,8 +31,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 QmlMessenger::QmlMessenger(QObject *parent)
     : QObject(parent)
 {
-    video_source_main=new QuickVideoSource(false, this);
-    video_source_cam=new QuickVideoSource(false, this);
+    video_source_main=new QuickVideoSource(this);
+    video_source_cam=new QuickVideoSource(this);
 
     settings_model=new SettingsModel();
 

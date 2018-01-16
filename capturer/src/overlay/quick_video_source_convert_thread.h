@@ -17,51 +17,57 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
-#ifndef QUICK_VIDEO_SOURCE_H
-#define QUICK_VIDEO_SOURCE_H
+#ifndef QUICK_VIDEO_SOURCE_CONVERT_THREAD_H
+#define QUICK_VIDEO_SOURCE_CONVERT_THREAD_H
 
-#include <QObject>
+#include <QThread>
 #include <QAbstractVideoSurface>
 #include <QVideoSurfaceFormat>
 
+#include <atomic>
+
 #include "frame_buffer.h"
 
-class QuickVideoSourceConvertThread;
+class AVFrame;
 
-class QuickVideoSource : public QObject
+class FFFormatConverter;
+
+class DecklinkFrameConverter;
+
+class QuickVideoSourceConvertThread : public QThread
 {
     Q_OBJECT
 
-    Q_PROPERTY(QAbstractVideoSurface *videoSurface READ videoSurface WRITE setVideoSurface)
-
 public:
-    explicit QuickVideoSource(QObject *parent=0);
-    ~QuickVideoSource();
+    explicit QuickVideoSourceConvertThread(QObject *parent=0);
+    ~QuickVideoSourceConvertThread();
 
-    FrameBuffer::ptr frameBuffer();
-
-    QAbstractVideoSurface *videoSurface() const;
-    void setVideoSurface(QAbstractVideoSurface *s);
+    FrameBuffer::ptr frameBufferIn();
+    FrameBuffer::ptr frameBufferOut();
 
     bool fastYuv() const;
+
+public slots:
     void setFastYuv(bool value);
 
-private slots:
-    void checkFrame();
+protected:
+    virtual void run();
 
 private:
-    void closeSurface();
+    FrameBuffer::ptr frame_buffer_in;
+    FrameBuffer::ptr frame_buffer_out;
 
-private:
-    QAbstractVideoSurface *surface;
-    QVideoSurfaceFormat format;
+    std::atomic <bool> running;
+    std::atomic <bool> fast_yuv;
 
-    QImage last_image;
-    QVideoFrame last_frame;
+    AVFrame *yuv_src;
+    AVFrame *yuv_dst;
 
-    bool fast_yuv;
+    FFFormatConverter *format_converter_ff;
+    DecklinkFrameConverter *format_converter_dl;
 
-    QuickVideoSourceConvertThread *convert_thread;
+signals:
+    void gotFrame();
 };
 
-#endif // QUICK_VIDEO_SOURCE_H
+#endif // QUICK_VIDEO_SOURCE_CONVERT_THREAD_H

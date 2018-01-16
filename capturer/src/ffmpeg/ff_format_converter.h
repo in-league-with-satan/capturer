@@ -53,6 +53,8 @@ public:
 
     bool setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, bool use_internal_frames=true, Filter::T filter=Filter::cNull);
 
+    bool compareParams(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, bool use_internal_frames=true, Filter::T filter=Filter::cNull);
+
     void convert(QByteArray *src, QByteArray *dst);
 
     void convert(AVFrame *src, AVFrame *dst);

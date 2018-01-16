@@ -39,6 +39,8 @@ private:
     DeckLinkVideoFrame frame_dst;
 
     IDeckLinkVideoConversion *video_converter;
+
+
 };
 
 #endif // DL_FRAME_CONVERTER_H

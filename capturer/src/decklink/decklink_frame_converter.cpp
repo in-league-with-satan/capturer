@@ -38,8 +38,11 @@ void DecklinkFrameConverter::init(BMDPixelFormat src_format, QSize src_size, BMD
     if(!video_converter)
         video_converter=CreateVideoConversionInstance();
 
-    frame_src.init(src_size, src_format, bmdFrameFlagDefault, false);
-    frame_dst.init(dst_size, dst_format, bmdFrameFlagDefault, false);
+    if(frame_src.GetPixelFormat()!=src_format || frame_src.getSize()!=src_size)
+        frame_src.init(src_size, src_format, bmdFrameFlagDefault, false);
+
+    if(frame_dst.GetPixelFormat()!=dst_format || frame_dst.getSize()!=dst_size)
+        frame_dst.init(dst_size, dst_format, bmdFrameFlagDefault, false);
 }
 
 int64_t DecklinkFrameConverter::convert(void *src_data, void *dst_data)

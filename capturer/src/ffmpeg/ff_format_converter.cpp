@@ -37,9 +37,7 @@ FFFormatConverter::~FFFormatConverter()
 
 bool FFFormatConverter::setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, bool use_internal_frames, FFFormatConverter::Filter::T filter)
 {
-    if(this->format_src==format_src && this->format_dst==format_dst
-            && this->resolution_src==resolution_src && this->resolution_dst==resolution_dst
-            && this->filter==filter && this->use_internal_frames==use_internal_frames)
+    if(compareParams(format_src, resolution_src, format_dst, resolution_dst, use_internal_frames, filter))
         return true;
 
     free();
@@ -77,6 +75,16 @@ bool FFFormatConverter::setup(AVPixelFormat format_src, QSize resolution_src, AV
                                    filter, nullptr, nullptr, nullptr);
 
     return true;
+}
+
+bool FFFormatConverter::compareParams(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, bool use_internal_frames, FFFormatConverter::Filter::T filter)
+{
+    if(this->format_src==format_src && this->format_dst==format_dst
+            && this->resolution_src==resolution_src && this->resolution_dst==resolution_dst
+            && this->filter==filter && this->use_internal_frames==use_internal_frames)
+        return true;
+
+    return false;
 }
 
 void FFFormatConverter::convert(QByteArray *src, QByteArray *dst)
@@ -122,4 +130,3 @@ void FFFormatConverter::free()
         convert_context=nullptr;
     }
 }
-
