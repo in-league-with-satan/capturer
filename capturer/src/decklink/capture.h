@@ -63,7 +63,7 @@ public:
     explicit DeckLinkCapture(QObject *parent=0);
     ~DeckLinkCapture();
 
-    void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size, bool rgb_10bit);
+    void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size, bool source_10bit);
 
     void subscribe(FrameBuffer::ptr obj);
     void unsubscribe(FrameBuffer::ptr obj);
@@ -72,8 +72,8 @@ public:
 
     bool gotSignal() const;
 
-    bool rgbSource() const;
-    bool rgb10Bit() const;
+    bool sourceRGB() const;
+    bool source10Bit() const;
 
     void setHalfFps(bool value);
 
@@ -123,8 +123,8 @@ private:
     std::atomic <bool> half_fps;
     std::atomic <bool> signal_lost;
     std::atomic <bool> skip_frame;
-    std::atomic <bool> rgb_source;
-    std::atomic <bool> rgb_10bit;
+    std::atomic <bool> source_rgb;
+    std::atomic <bool> source_10bit;
 
 signals:
     void signalLost(const bool &value);

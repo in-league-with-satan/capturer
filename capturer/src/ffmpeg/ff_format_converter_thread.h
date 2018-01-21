@@ -17,56 +17,46 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
-#ifndef QUICK_VIDEO_SOURCE_CONVERT_THREAD_H
-#define QUICK_VIDEO_SOURCE_CONVERT_THREAD_H
+#ifndef FF_FORMAT_CONVERTER_THREAD_H
+#define FF_FORMAT_CONVERTER_THREAD_H
 
 #include <QThread>
-#include <QAbstractVideoSurface>
-#include <QVideoSurfaceFormat>
-
 #include <atomic>
 
+#include "ff_format_converter.h"
 #include "frame_buffer.h"
+#include "decode_from_210.h"
 
-class AVFrame;
-
-class FFFormatConverter;
-class DecklinkFrameConverter;
-
-class QuickVideoSourceConvertThread : public QThread
+class FFFormatConverterThread : public QThread
 {
     Q_OBJECT
 
 public:
-    explicit QuickVideoSourceConvertThread(QObject *parent=0);
-    ~QuickVideoSourceConvertThread();
+    FFFormatConverterThread(QObject *parent=0);
+    ~FFFormatConverterThread();
 
     FrameBuffer::ptr frameBufferIn();
     FrameBuffer::ptr frameBufferOut();
 
-    bool fastYuv() const;
-
-public slots:
-    void setFastYuv(bool value);
+    bool setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst,
+               FFFormatConverter::Filter::T filter=FFFormatConverter::Filter::cNull,
+               DecodeFrom210::Format::T format_210=DecodeFrom210::Format::Disabled);
 
 protected:
-    virtual void run();
+    void run();
 
 private:
+    FFFormatConverter *ff;
+
+    DecodeFrom210 *from_210;
+
+    DecodeFrom210::Format::T format_210=DecodeFrom210::Format::Disabled;
+
     FrameBuffer::ptr frame_buffer_in;
     FrameBuffer::ptr frame_buffer_out;
 
     std::atomic <bool> running;
-    std::atomic <bool> fast_yuv;
-
-    AVFrame *yuv_src;
-    AVFrame *yuv_dst;
-
-    FFFormatConverter *format_converter_ff;
-    DecklinkFrameConverter *format_converter_dl;
-
-signals:
-    void gotFrame();
+    std::atomic <bool> in_progress;
 };
 
-#endif // QUICK_VIDEO_SOURCE_CONVERT_THREAD_H
+#endif // FF_FORMAT_CONVERTER_THREAD_H

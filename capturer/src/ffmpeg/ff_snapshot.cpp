@@ -400,11 +400,11 @@ void FFSnapshot::checkQueue()
 
                                 //
 
-                                int data_size=av_image_get_buffer_size(AV_PIX_FMT_BGRA, frame_rgb->width, frame_rgb->height, 32);
+                                int data_size=av_image_get_buffer_size(AV_PIX_FMT_BGRA, frame_rgb->width, frame_rgb->height, alignment);
 
                                 ba_frame.resize(data_size);
 
-                                av_image_copy_to_buffer((uint8_t*)ba_frame.constData(), data_size, frame_rgb->data, frame_rgb->linesize, AV_PIX_FMT_BGRA, frame_rgb->width, frame_rgb->height, 32);
+                                av_image_copy_to_buffer((uint8_t*)ba_frame.constData(), data_size, frame_rgb->data, frame_rgb->linesize, AV_PIX_FMT_BGRA, frame_rgb->width, frame_rgb->height, alignment);
                             }
                         }
                     }

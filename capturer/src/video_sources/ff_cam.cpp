@@ -28,7 +28,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "ff_format_converter.h"
 #include "ff_audio_converter.h"
 
-#include "tools_cam.h".h"
+#include "tools_cam.h"
 
 #include "ff_cam.h"
 
@@ -336,6 +336,7 @@ void FFCam::startCam()
 
     av_dict_set(&d->dictionary, "video_size", QString("%1x%2").arg(cfg.size.width()).arg(cfg.size.height()).toLatin1().constData(), 0);
     av_dict_set(&d->dictionary, "framerate", QString("%1/%2").arg(cfg.framerate.den).arg(cfg.framerate.num).toLatin1().constData(), 0);
+    av_dict_set(&d->dictionary, "rtbufsize", "1000M", 0);
 
     qDebug() << "video_size:" << QString("%1x%2").arg(cfg.size.width()).arg(cfg.size.height()) << "framerate:" << QString("%1/%2").arg(cfg.framerate.den).arg(cfg.framerate.num);
 

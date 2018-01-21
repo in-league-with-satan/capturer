@@ -57,12 +57,12 @@ struct Frame
 
             this->video_frame=video_frame;
 
-            video.rgb=video_frame->GetPixelFormat()!=bmdFormat8BitYUV;
-            video.rgb_10bit=video_frame->GetPixelFormat()==bmdFormat10BitRGB;
+            video.source_rgb=video_frame->GetPixelFormat()!=bmdFormat8BitYUV && video_frame->GetPixelFormat()!=bmdFormat10BitYUV;
+            video.source_10bit=video_frame->GetPixelFormat()==bmdFormat10BitRGB || video_frame->GetPixelFormat()==bmdFormat10BitYUV || video_frame->GetPixelFormat()==bmdFormat10BitRGBXLE;
             video.size=QSize(video_frame->GetWidth(), video_frame->GetHeight());
             video.data_size=DeckLinkVideoFrame::frameSize(video.size, video_frame->GetPixelFormat());
 
-            video_frame->GetBytes((void**)&video.ptr_data);
+            video_frame->GetBytes((void**)&video.data_ptr);
         }
 
         //
@@ -82,14 +82,14 @@ struct Frame
     void setData(const QByteArray &video_frame, QSize size, const QByteArray &audio_packet, int audio_channels, int audio_sample_size) {
         if(!video_frame.isEmpty()) {
             video.dummy=video_frame;
-            video.ptr_data=(char*)video.dummy.constData();
+            video.data_ptr=(uint8_t*)video.dummy.constData();
             video.data_size=video_frame.size();
             video.size=size;
         }
 
         if(!audio_packet.isEmpty()) {
             audio.dummy=audio_packet;
-            audio.ptr_data=(char*)audio.dummy.constData();
+            audio.ptr_data=(uint8_t*)audio.dummy.constData();
             audio.data_size=audio_packet.size();
             audio.channels=audio_channels;
             audio.sample_size=audio_sample_size;
@@ -98,23 +98,23 @@ struct Frame
 
     struct DataVideo {
         DataVideo() {
-            ptr_data=nullptr;
+            data_ptr=nullptr;
             data_size=0;
-            rgb=true;
-            rgb_10bit=false;
+            source_rgb=true;
+            source_10bit=false;
             time_base={};
             pts=AV_NOPTS_VALUE;
         }
 
-        char *ptr_data;
+        uint8_t *data_ptr;
         size_t data_size;
         QSize size;
 
         AVRational time_base;
         int64_t pts;
 
-        bool rgb;
-        bool rgb_10bit;
+        bool source_rgb;
+        bool source_10bit;
 
         QByteArray dummy;
 
@@ -128,7 +128,7 @@ struct Frame
             sample_size=0;
         }
 
-        char *ptr_data;
+        uint8_t *ptr_data;
         size_t data_size;
 
         int channels;

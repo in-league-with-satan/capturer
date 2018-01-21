@@ -33,8 +33,9 @@ extern "C" {
 
 class FFMpegContext;
 class FFFormatConverter;
+class FFFormatConverterMt;
 class DecklinkFrameConverter;
-
+class DecodeFrom210;
 
 class FFEncoder : public QObject
 {
@@ -95,15 +96,17 @@ public:
     struct PixelFormat {
         enum T {
             RGB24=AV_PIX_FMT_RGB24,
+            BGR0=AV_PIX_FMT_BGR0,
+            RGB0=AV_PIX_FMT_RGB0,
             YUV420P=AV_PIX_FMT_YUV420P,
+            YUV420P10=AV_PIX_FMT_YUV420P10,
             YUV422P=AV_PIX_FMT_YUV422P,
             UYVY422=AV_PIX_FMT_UYVY422,
             YUV444P=AV_PIX_FMT_YUV444P,
-            YUV420P10=AV_PIX_FMT_YUV420P10,
-            // YUV422P10=AV_PIX_FMT_YUV422P10,
-            V210=AV_PIX_FMT_YUV422P10LE,
+            YUV422P10LE=AV_PIX_FMT_YUV422P10LE,
             YUV444P10=AV_PIX_FMT_YUV444P10,
-            R210=AV_PIX_FMT_RGB48LE,
+            YUV444P16LE=AV_PIX_FMT_YUV444P16LE,
+            RGB48LE=AV_PIX_FMT_RGB48LE,
             P010LE=AV_PIX_FMT_P010LE,
             NV12=AV_PIX_FMT_NV12
         };
@@ -155,7 +158,7 @@ public:
             downscale=DownScale::Disabled;
             scale_filter=ScaleFilter::FastBilinear;
             rgb_source=true;
-            rgb_10bit=false;
+            depth_10bit=false;
         }
 
         QSize frame_resolution_src;
@@ -171,7 +174,7 @@ public:
         VideoEncoder::T video_encoder;
         QString preset;
         bool rgb_source;
-        bool rgb_10bit;
+        bool depth_10bit;
     };
 
     struct Stats {
@@ -197,12 +200,14 @@ public slots:
 
     bool stopCoder();
 
+private slots:
+    void converterFrameSkip();
+
 private:
     void calcStats();
 
     FFMpegContext *context;
-    FFFormatConverter *format_converter_ff;
-    DecklinkFrameConverter *format_converter_dl;
+    FFFormatConverterMt *format_converter_ff;
 
     QSize last_frame_size;
 
@@ -214,7 +219,7 @@ signals:
     void errorString(QString err_string);
 };
 
-Q_DECLARE_METATYPE(FFEncoder::Config)
-Q_DECLARE_METATYPE(FFEncoder::Stats)
+Q_DECLARE_METATYPE(FFEncoder::Config);
+Q_DECLARE_METATYPE(FFEncoder::Stats);
 
 #endif // FF_ENCODER_H

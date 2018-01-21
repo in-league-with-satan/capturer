@@ -23,7 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QByteArray>
 #include <QImage>
 
-#include "libavutil/pixfmt.h"
+#include "ff_tools.h"
 
 class AVFrame;
 class SwsContext;

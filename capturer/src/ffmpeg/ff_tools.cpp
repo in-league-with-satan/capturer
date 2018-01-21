@@ -85,4 +85,3 @@ bool operator==(const AVRational &l, const AVRational &r)
 {
     return l.den==r.den && l.num==r.num;
 }
-

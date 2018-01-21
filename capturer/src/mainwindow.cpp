@@ -409,11 +409,11 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="rgb depth";
+    set_model_data.name="video depth";
     set_model_data.values << "8 bit" << "10 bit";
     set_model_data.values_data << 0 << 1;
 
-    set_model_data.value=&settings->device_decklink.rgb_10bit;
+    set_model_data.value=&settings->device_decklink.video_depth_10bit;
 
     messenger->settingsModel()->add(set_model_data);
 
@@ -463,7 +463,8 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.name="video encoder";
 
     if(FFEncoder::isLib_x264_10bit())
-        set_model_data.values_data << FFEncoder::VideoEncoder::libx264_10bit << FFEncoder::VideoEncoder::nvenc_h264 << FFEncoder::VideoEncoder::nvenc_hevc;
+        set_model_data.values_data << FFEncoder::VideoEncoder::libx264_10bit << FFEncoder::VideoEncoder::nvenc_h264 << FFEncoder::VideoEncoder::nvenc_hevc
+                                   << FFEncoder::VideoEncoder::qsv_h264 << FFEncoder::VideoEncoder::ffvhuff;
 
     else
         set_model_data.values_data << FFEncoder::VideoEncoder::libx264 << FFEncoder::VideoEncoder::libx264rgb
@@ -991,7 +992,7 @@ void MainWindow::captureStart()
             DeckLinkPixelFormat(),
             8,
             model_data_audio->values_data[settings->device_decklink.audio_sample_size].toInt(),
-            settings->device_decklink.rgb_10bit
+            settings->device_decklink.video_depth_10bit
             );
 
     decklink_thread->setHalfFps(settings->device_decklink.half_fps);
@@ -1028,8 +1029,8 @@ void MainWindow::startStopRecording()
             cfg.preset=messenger->settingsModel()->data_p(&settings->rec.preset_current)->values_data[settings->rec.preset_current].toString();
             cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
             cfg.crf=settings->rec.crf;
-            cfg.rgb_source=decklink_thread->rgbSource();
-            cfg.rgb_10bit=decklink_thread->rgb10Bit();
+            cfg.rgb_source=decklink_thread->sourceRGB();
+            cfg.depth_10bit=decklink_thread->source10Bit();
             cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device_decklink.audio_sample_size)->values_data[settings->device_decklink.audio_sample_size].toInt();
             cfg.downscale=settings->rec.downscale;
             cfg.scale_filter=settings->rec.scale_filter;
@@ -1054,7 +1055,7 @@ void MainWindow::startStopRecording()
             cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
             cfg.crf=settings->rec.crf;
             cfg.rgb_source=true;
-            cfg.rgb_10bit=false;
+            cfg.depth_10bit=false;
             cfg.audio_sample_size=16;
             cfg.audio_channels_size=2;
             cfg.downscale=settings->rec.downscale;

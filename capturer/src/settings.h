@@ -47,7 +47,7 @@ public:
         int index;
         int audio_sample_size;
         int half_fps;
-        int rgb_10bit;
+        int video_depth_10bit;
         int restart;
 
     } device_decklink;

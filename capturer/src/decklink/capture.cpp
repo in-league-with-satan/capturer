@@ -132,7 +132,7 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
     running=false;
     running_thread=false;
 
-    rgb_source=true;
+    source_rgb=true;
 
     half_fps=false;
 
@@ -178,7 +178,7 @@ void DeckLinkCapture::setup(DeckLinkDevice device, DeckLinkFormat format, DeckLi
     this->pixel_format=pixel_format;
     this->audio_channels=audio_channels;
     this->audio_sample_size=audio_sample_size;
-    this->rgb_10bit=rgb_10bit;
+    this->source_10bit=rgb_10bit;
 
     // if(ext_converter) {
     //     conv_thread->setAudioChannels(audio_channels);
@@ -218,14 +218,14 @@ bool DeckLinkCapture::gotSignal() const
     return !signal_lost;
 }
 
-bool DeckLinkCapture::rgbSource() const
+bool DeckLinkCapture::sourceRGB() const
 {
-    return rgb_source;
+    return source_rgb;
 }
 
-bool DeckLinkCapture::rgb10Bit() const
+bool DeckLinkCapture::source10Bit() const
 {
-    return rgb_10bit;
+    return source_10bit;
 }
 
 void DeckLinkCapture::setHalfFps(bool value)
@@ -304,17 +304,19 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
 
     pixel_format=bmdFormat8BitYUV;
 
-    rgb_source=false;
+    source_rgb=false;
 
     if(format_flags&bmdDetectedVideoInputRGB444) {
-        rgb_source=true;
+        source_rgb=true;
 
-        if(rgb_10bit)
+        if(source_10bit)
             pixel_format=bmdFormat10BitRGB;
 
         else
             pixel_format=bmdFormat8BitBGRA;
-    }
+
+    } else if(source_10bit)
+        pixel_format=bmdFormat10BitYUV;
 
     if(decklink_input) {
         decklink_input->StopStreams();
@@ -345,7 +347,7 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
                          .arg(mode->GetHeight())
                          .arg(frame_scale/frame_duration)
                          .arg(mode->GetFieldDominance()==bmdProgressiveFrame || mode->GetFieldDominance()==bmdProgressiveSegmentedFrame ? "p" : "i")
-                         .arg(rgb_source ? "RGB" : "YUV");
+                         .arg(source_rgb ? "RGB" : "YUV");
 }
 
 void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet)
