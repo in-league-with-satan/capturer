@@ -26,8 +26,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 FFEncoderThread::FFEncoderThread(FFEncoder::Mode::T mode, FFEncoderBaseFilename *base_filename, QObject *parent)
     : QThread(parent)
-    , mode(mode)
     , base_filename(base_filename)
+    , mode(mode)
 {
     frame_buffer=FrameBuffer::make();
 

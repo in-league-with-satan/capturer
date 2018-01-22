@@ -24,11 +24,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "decklink_video_frame.h"
 
 DeckLinkVideoFrame::DeckLinkVideoFrame()
-    : ref_count(0)
-    , buffer(nullptr)
+    : buffer(nullptr)
     , buffer_size(0)
     , pixel_format(bmdFormat8BitBGRA)
     , flags(bmdFrameFlagDefault)
+    , ref_count(0)
 {
 }
 

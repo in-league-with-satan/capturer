@@ -731,6 +731,8 @@ QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
         return QStringList() << QLatin1String("veryfast") << QLatin1String("faster") << QLatin1String("fast")
                              << QLatin1String("medium")
                              << QLatin1String("slow") << QLatin1String("slower") << QLatin1String("veryslow");
+
+    default: return QStringList() << QLatin1String("--");
     }
 
     return QStringList() << QLatin1String("--");

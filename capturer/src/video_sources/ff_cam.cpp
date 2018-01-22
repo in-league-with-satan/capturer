@@ -28,7 +28,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "ff_format_converter.h"
 #include "ff_audio_converter.h"
 
-#include "tools_cam.h".h"
+#include "tools_cam.h"
 
 #include "ff_cam.h"
 

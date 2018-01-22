@@ -76,13 +76,49 @@ AVPixelFormat correctPixelFormat(AVPixelFormat fmt)
     case AV_PIX_FMT_YUVJ422P: return AV_PIX_FMT_YUV422P;
     case AV_PIX_FMT_YUVJ444P: return AV_PIX_FMT_YUV444P;
     case AV_PIX_FMT_YUVJ440P: return AV_PIX_FMT_YUV440P;
+    default: return fmt;
     }
 
     return fmt;
+}
+
+QString versionlibavutil()
+{
+    static QString ver=QString("%1.%2.%3").arg(LIBAVUTIL_VERSION_MAJOR).arg(LIBAVUTIL_VERSION_MINOR).arg(LIBAVUTIL_VERSION_MICRO);
+    return ver;
+}
+
+QString versionlibavcodec()
+{
+    static QString ver=QString("%1.%2.%3").arg(LIBAVCODEC_VERSION_MAJOR).arg(LIBAVCODEC_VERSION_MINOR).arg(LIBAVCODEC_VERSION_MICRO);
+    return ver;
+}
+
+QString versionlibavformat()
+{
+    static QString ver=QString("%1.%2.%3").arg(LIBAVFORMAT_VERSION_MAJOR).arg(LIBAVFORMAT_VERSION_MINOR).arg(LIBAVFORMAT_VERSION_MICRO);
+    return ver;
+}
+
+QString versionlibavfilter()
+{
+    static QString ver=QString("%1.%2.%3").arg(LIBAVFILTER_VERSION_MAJOR).arg(LIBAVFILTER_VERSION_MINOR).arg(LIBAVFILTER_VERSION_MICRO);
+    return ver;
+}
+
+QString versionlibswscale()
+{
+    static QString ver=QString("%1.%2.%3").arg(LIBSWSCALE_VERSION_MAJOR).arg(LIBSWSCALE_VERSION_MINOR).arg(LIBSWSCALE_VERSION_MICRO);
+    return ver;
+}
+
+QString versionlibswresample()
+{
+    static QString ver=QString("%1.%2.%3").arg(LIBSWRESAMPLE_VERSION_MAJOR).arg(LIBSWRESAMPLE_VERSION_MINOR).arg(LIBSWRESAMPLE_VERSION_MICRO);
+    return ver;
 }
 
 bool operator==(const AVRational &l, const AVRational &r)
 {
     return l.den==r.den && l.num==r.num;
 }
-

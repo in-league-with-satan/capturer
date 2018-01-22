@@ -25,9 +25,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 DeckLinkAudioInputPacket::DeckLinkAudioInputPacket(int audio_channels, int audio_sample_size)
     : buffer(nullptr)
-    , ref_count(0)
     , audio_channels(audio_channels)
     , audio_sample_size(audio_sample_size)
+    , ref_count(0)
 {
 }
 
