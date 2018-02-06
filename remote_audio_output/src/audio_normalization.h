@@ -29,11 +29,14 @@ class AudioNormalization : public QObject
 public:
     explicit AudioNormalization(QObject *parent=0);
 
-    void proc(QByteArray *data, int channels);
+    void proc(QByteArray *data, int channels, bool disable_auto_gain=false);
 
     void setUpdateTime(uint16_t ms);
     void setGainChangeStep(double value);
     void setMaximumLevelPercentage(double value);
+
+    double gainFactor();
+    void setGainFactor(double value);
 
 private:
     qint64 last_update_timestamp;

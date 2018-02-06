@@ -55,6 +55,7 @@ private:
     QLineEdit *le_port;
 
     QCheckBox *cb_normalization;
+    QCheckBox *cb_manual_gain_factor;
     QLineEdit *le_norm_update_time;
     QLineEdit *le_norm_gain_change_step;
     QLineEdit *le_norm_maximum_level_percentage;
@@ -74,8 +75,38 @@ private:
 
     AudioConverter audio_converter;
 
+    QVariantMap dev_settings;
+
+    double manual_gain_factor_value=1.;
+
+    struct Dev {
+        QVariantMap toExt() {
+            QVariantMap map;
+
+            map.insert("channels", channels);
+            map.insert("sample_rate", sample_rate);
+
+            return map;
+        }
+
+        void fromExt(const QVariantMap &map) {
+            channels=map.value("channels", 0).toInt();
+            sample_rate=map.value("sample_rate", 0).toInt();
+        }
+
+        int channels=0;
+        int sample_rate=0;
+    };
+
 private slots:
+    void updateDeviceList();
+
     void audioDeviceChanged();
+    void channelsChanged();
+    void sampleRateChanged();
+
+    void applySettings();
+
     void socketRead();
     void startAudioDevice();
     void connectToHost();
@@ -83,6 +114,9 @@ private slots:
     void setupNormalizer();
     void normalizerGainFactor(double value);
 
+    void normalizationModeChanged();
+
+    void gainFactorChanged(const QString &value);
 };
 
 #endif // MAINWINDOW_H
