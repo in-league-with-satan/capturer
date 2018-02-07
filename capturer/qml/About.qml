@@ -18,43 +18,90 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ******************************************************************************/
 
 import QtQuick 2.7
-import QtQuick.Controls 1.4
+import QtQuick.Controls 2.3
 
 ShowHideRect {
     id: root
     color: "#bb000000"
 
-    property string version_software: messenger.versionThis()
-    property string version_avutil: messenger.versionLibAVUtil()
-    property string version_avcodec: messenger.versionlibAVCodec()
-    property string version_avformat: messenger.versionlibAVFormat()
-    property string version_avfilter: messenger.versionlibAVFilter()
-    property string version_swscale: messenger.versionlibSWScale()
-    property string version_swresample: messenger.versionlibSWResample()
-    property string network_addresses: messenger.networkAddresses()
-    property int scroll_step: (width + height)/2*.04
-
-    ScrollView {
-        id: scroll_view
+    ListView {
         anchors.fill: parent
-        horizontalScrollBarPolicy: Qt.ScrollBarAlwaysOff
-        // verticalScrollBarPolicy: Qt.ScrollBarAlwaysOff
+        clip: true
 
-        Text {
-            font.pixelSize: (root.width + root.height)/2*.04
-            width: root.width*.9
-            x: root.width*.1
-            color: "white"
-            text: "network addresses:\n" + network_addresses +
-                  "\n\n" +
-                  "versions\n\n" +
-                  "software:\t\t" + version_software + "\n" +
-                  "avutil:\t\t\t" + version_avutil + "\n" +
-                  "avcodec:\t\t" + version_avcodec + "\n" +
-                  "avformat:\t\t" + version_avformat + "\n" +
-                  "avfilter:\t\t" + version_avfilter + "\n" +
-                  "swscale:\t\t" + version_swscale + "\n" +
-                  "swresample:\t" + version_swresample
+        ScrollBar.vertical: ScrollBar {
+            id: scrollbar
+            anchors.right: parent.right
+            width: { return parent.width*.01<12 ? 12 : parent.width*.01 }
+            stepSize: .024
+            policy: ScrollBar.AlwaysOn
+        }
+
+        model: ListModel {
+            Component.onCompleted: {
+                var addr=messenger.networkAddresses();
+
+                append({ first: "", second: "", title: "network addresses" })
+
+                for(var i=0; i<addr.length; i++)
+                    append({ first: addr[i], second: "", title: "" })
+
+                //
+
+                append({ first: "", second: "", title: "" })
+
+                //
+
+                append({ first: "", second: "", title: "versions" })
+                append({ first: "software", second: messenger.versionThis(), title: "" })
+                append({ first: "avutil", second: messenger.versionLibAVUtil(), title: "" })
+                append({ first: "avcodec", second: messenger.versionlibAVCodec(), title: "" })
+                append({ first: "avformat", second: messenger.versionlibAVFormat(), title: "" })
+                append({ first: "avfilter", second: messenger.versionlibAVFilter(), title: "" })
+                append({ first: "swscale", second: messenger.versionlibSWScale(), title: "" })
+                append({ first: "swresample", second: messenger.versionlibSWResample(), title: "" })
+            }
+        }
+
+        delegate: Rectangle {
+            width: root.width
+            height: root.height*.1
+
+            property int font_size: height*.678
+
+            color: "transparent"
+
+            Text {
+                color: "white"
+                anchors.fill: parent
+                font.pixelSize: font_size
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignHCenter
+                text: title
+            }
+
+            Text {
+                color: "white"
+                x: parent.width*.2
+                width: parent.width*.2
+                height: parent.height
+                font.pixelSize: font_size
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignRight
+                // clip: true
+                text: first
+            }
+
+            Text {
+                color: "white"
+                x: parent.width*.6
+                width: parent.width*.2
+                height: parent.height
+                font.pixelSize: font_size
+                verticalAlignment: Text.AlignVCenter
+                horizontalAlignment: Text.AlignLeft
+                // clip: true
+                text: second
+            }
         }
     }
 
@@ -67,20 +114,20 @@ ShowHideRect {
 
             switch(key) {
             case Qt.Key_Up:
-                if(scroll_view.flickableItem.contentY<(scroll_view.flickableItem.contentHeight>root.height ? scroll_view.flickableItem.contentHeight - root.height : 0))
-                    scroll_view.flickableItem.contentY+=scroll_step
-
+                scrollbar.decrease()
                 break
 
             case Qt.Key_Down:
-                if(scroll_view.flickableItem.contentY>0)
-                    scroll_view.flickableItem.contentY-=scroll_step
+                scrollbar.increase()
+                break
 
+            case Qt.Key_Left:
+                scrollbar.position=0
                 break
 
             case Qt.Key_Right:
-                scroll_view.flickableItem.contentY=0
-
+                scrollbar.position=scrollbar.size
+                scrollbar.increase()
                 break
 
             default:

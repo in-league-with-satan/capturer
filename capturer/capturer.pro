@@ -7,6 +7,7 @@ QT += \
     qml \
     quick \
     quickwidgets \
+    quickcontrols2 \
     sql \
     svg
 
@@ -18,18 +19,9 @@ CONFIG += c++14
 
 DESTDIR = $$PWD/../bin
 
-GIT_VERSION = $$system(git --git-dir $$PWD/../.git --work-tree $$PWD describe --always)
 
-linux {
-    DATE_VERSION = $$system(date +%y.%-m.%-d)
-    DEFINES += VERSION_STRING=\\\"$$DATE_VERSION-$$GIT_VERSION\\\"
-}
-
-windows {
-    DATE_VERSION = $$system(echo '%date:~8,2%.%date:~3,2%.%date:~0,2%')
-    DEFINES += VERSION_STRING=QString(\\\"$$DATE_VERSION-$$GIT_VERSION\\\").replace(\\\".0\\\",\\\".\\\")
-}
-
+GIT_VERSION = $$system(git --git-dir $$PWD/../.git --work-tree $$PWD describe --always --tags)
+DEFINES += VERSION_STRING=\\\"$$GIT_VERSION\\\"
 
 
 

@@ -48,6 +48,9 @@ int main(int argc, char *argv[])
 {
     QApplication application(argc, argv);
 
+    application.setApplicationName(QString("capturer (%1)").arg(QString(VERSION_STRING).split("-").first()));
+    application.setApplicationVersion(QString(VERSION_STRING));
+
 #ifndef __linux__
 
     if(!comInit())
@@ -71,7 +74,7 @@ int main(int argc, char *argv[])
 
     Settings::createInstance();
 
-    MainWindow main_window;
+    new MainWindow();
 
     return application.exec();
 }

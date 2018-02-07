@@ -55,7 +55,8 @@ public:
     Q_INVOKABLE QString versionlibAVFilter() const;
     Q_INVOKABLE QString versionlibSWScale() const;
     Q_INVOKABLE QString versionlibSWResample() const;
-    Q_INVOKABLE QString networkAddresses() const;
+    Q_INVOKABLE QString networkAddressesStr() const;
+    Q_INVOKABLE QStringList networkAddresses() const;
 
     Q_INVOKABLE QuickVideoSource *videoSourceMain();
     Q_INVOKABLE QuickVideoSource *videoSourceCam();
