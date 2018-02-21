@@ -281,10 +281,10 @@ void FFSnapshot::checkQueue()
         }
 
 
-        if(codec_video->capabilities & CODEC_CAP_TRUNCATED)
-            codec_context_video->flags|=CODEC_FLAG_TRUNCATED;
+        // if(codec_video->capabilities & CODEC_CAP_TRUNCATED)
+        //     codec_context_video->flags|=CODEC_FLAG_TRUNCATED;
 
-        codec_context_video->flags2|=CODEC_FLAG2_FAST;
+        // codec_context_video->flags2|=CODEC_FLAG2_FAST;
 
         codec_context_video->thread_count=QThread::idealThreadCount();
 

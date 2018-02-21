@@ -600,7 +600,7 @@ void FFEncoder::init()
     qRegisterMetaType<FFEncoder::Config>("FFEncoder::Config");
     qRegisterMetaType<FFEncoder::Stats>("FFEncoder::Stats");
 
-    av_register_all();
+    // av_register_all();
     avdevice_register_all();
 }
 
