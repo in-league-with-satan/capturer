@@ -208,10 +208,10 @@ void FFDecoderThread::_open()
     }
 
 
-    if(context.codec_video->capabilities & CODEC_CAP_TRUNCATED)
-        context.codec_context_video->flags|=CODEC_FLAG_TRUNCATED;
+    // if(context.codec_video->capabilities & CODEC_CAP_TRUNCATED)
+    //     context.codec_context_video->flags|=CODEC_FLAG_TRUNCATED;
 
-    context.codec_context_video->flags2|=CODEC_FLAG2_FAST;
+    // context.codec_context_video->flags2|=CODEC_FLAG2_FAST;
 
     context.codec_context_video->thread_count=QThread::idealThreadCount();
     // context.codec_context_video->thread_count=qMin(QThread::idealThreadCount(), 4);

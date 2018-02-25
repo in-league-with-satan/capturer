@@ -526,7 +526,7 @@ void FFCam::run()
                         d->converter.setup((AVPixelFormat)d->frame->format, QSize(d->frame->width, d->frame->height),
                                            AV_PIX_FMT_BGRA, QSize(d->frame->width, d->frame->height));
 
-                        d->converter.convert(&ba_frame_yuv, &ba_frame_rgb);
+                        d->converter.convert(ba_frame_yuv, &ba_frame_rgb);
 
                         if(d->audio_device) {
                             QByteArray ba_audio=d->audio_device->readAll();

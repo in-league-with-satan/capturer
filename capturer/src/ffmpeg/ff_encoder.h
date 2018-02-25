@@ -202,6 +202,7 @@ public slots:
 
 private slots:
     void converterFrameSkip();
+    void processAudio(Frame::ptr frame);
 
 private:
     void calcStats();
@@ -219,7 +220,7 @@ signals:
     void errorString(QString err_string);
 };
 
-Q_DECLARE_METATYPE(FFEncoder::Config);
-Q_DECLARE_METATYPE(FFEncoder::Stats);
+Q_DECLARE_METATYPE(FFEncoder::Config)
+Q_DECLARE_METATYPE(FFEncoder::Stats)
 
 #endif // FF_ENCODER_H

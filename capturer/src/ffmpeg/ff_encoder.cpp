@@ -23,6 +23,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QFile>
 #include <QDir>
 
+#include <iostream>
+
 #ifdef __linux__
 
 #include <x264_config.h>
@@ -341,10 +343,11 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
         av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::ffvhuff) {
-        c->thread_count=QThread::idealThreadCount() - 1;
+        // c->thread_count=QThread::idealThreadCount() - 1;
 
-        if(c->thread_count<=0)
-            c->thread_count=1;
+
+        // if(c->thread_count<=0)
+        //     c->thread_count=1;
     }
 
     // c->thread_count=8;
@@ -580,6 +583,7 @@ FFEncoder::FFEncoder(FFEncoder::Mode::T mode, QObject *parent) :
     context=new FFMpegContext();
 
     int thread_count=QThread::idealThreadCount()/2;
+    // thread_count=QThread::idealThreadCount();
 
     if(thread_count<1)
         thread_count=2;
@@ -587,9 +591,11 @@ FFEncoder::FFEncoder(FFEncoder::Mode::T mode, QObject *parent) :
     if(thread_count>12)
         thread_count=12;
 
+    // thread_count=2;
+
     format_converter_ff=new FFFormatConverterMt(thread_count);
 
-    connect(format_converter_ff, SIGNAL(frameSkipped()), SLOT(converterFrameSkip()), Qt::QueuedConnection);
+    // connect(format_converter_ff, SIGNAL(frameSkipped()), SLOT(converterFrameSkip()), Qt::QueuedConnection);
 
     context->base_filename=nullptr;
     context->mode=mode;
@@ -610,6 +616,8 @@ void FFEncoder::init()
 
     av_register_all();
     avdevice_register_all();
+
+    // av_lockmgr_register(&ff_lock_callback);
 }
 
 bool FFEncoder::isLib_x264_10bit()
@@ -792,7 +800,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
         bool ret;
 
         if(cfg.rgb_source)
-            ret=format_converter_ff->setup(DecodeFrom210::r210PixelFormat(), cfg.frame_resolution_src, cfg.pixel_format, cfg.frame_resolution_dst,
+            ret=format_converter_ff->setup(DecodeFrom210::v210PixelFormat(), cfg.frame_resolution_src, cfg.pixel_format, cfg.frame_resolution_dst,
                                            cfg.downscale==DownScale::Disabled ? FFFormatConverter::Filter::cNull : (FFFormatConverter::Filter::T)ScaleFilter::toSws(cfg.scale_filter),
                                            DecodeFrom210::Format::R210);
 
@@ -935,6 +943,10 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     if(cfg.downscale!=DownScale::Disabled)
         av_dict_set(&context->av_format_context->metadata, "scale filter", ScaleFilter::toString(cfg.scale_filter).toLatin1().constData(), 0);
 
+    av_dict_set(&context->av_format_context->metadata, "encoder", "test", AV_DICT_DONT_OVERWRITE);
+
+    av_dict_set(&context->opt, "encoder", "test", AV_DICT_DONT_OVERWRITE);
+
 
     // write the stream header, if any
     ret=avformat_write_header(context->av_format_context, &context->opt);
@@ -985,103 +997,60 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
         return false;
 
 
-    // video
-    {
-        switch(context->cfg.framerate) {
-        case Framerate::half_50:
-        case Framerate::half_59:
-        case Framerate::half_60:
-            context->skip_frame=!context->skip_frame;
-            break;
+    processAudio(frame);
 
-        default:
-            break;
-        }
 
-        if(!context->skip_frame) {
-            format_converter_ff->convert(frame);
+    switch(context->cfg.framerate) {
+    case Framerate::half_50:
+    case Framerate::half_59:
+    case Framerate::half_60:
+        context->skip_frame=!context->skip_frame;
+        break;
 
-            Frame::ptr frame_out;
-
-            while(frame_out=format_converter_ff->result()) {
-                if(frame->video.pts==AV_NOPTS_VALUE) {
-                    context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
-
-                } else {
-                    if(context->in_start_pts==AV_NOPTS_VALUE)
-                        context->in_start_pts=frame->video.pts;
-
-                    context->out_stream_video.frame_converted->pts=
-                            context->out_stream_video.next_pts=
-                            av_rescale_q(frame->video.pts - context->in_start_pts,
-                                         frame->video.time_base,
-                                         context->out_stream_video.av_codec_context->time_base);
-                }
-
-                av_image_fill_arrays(context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize, frame_out->video.data_ptr,
-                                     (AVPixelFormat)context->out_stream_video.frame_converted->format,
-                                     context->out_stream_video.frame_converted->width, context->out_stream_video.frame_converted->height, alignment);
-
-                frame_out.reset();
-
-                last_error_string=write_video_frame(context->av_format_context, &context->out_stream_video);
-
-                if(!last_error_string.isEmpty()) {
-                    stopCoder();
-                    emit errorString("write_video_frame error: " + last_error_string);
-                    return false;
-                }
-            }
-        }
+    default:
+        break;
     }
 
+    if(!context->skip_frame) {
+        format_converter_ff->convert(frame);
+    }
 
-    // audio
-    {
-        if(frame->audio.data_size) {
-            QByteArray ba_audio=QByteArray((char*)frame->audio.ptr_data, frame->audio.data_size);
+    Frame::ptr frame_out;
 
-            ba_audio.insert(0, context->out_stream_audio.ba_audio_prev_part);
+    while(frame_out=format_converter_ff->result()) {
+        if(frame_out->video.data_ptr) {
+            if(frame_out->video.pts==AV_NOPTS_VALUE) {
+                context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
 
-            AVSampleFormat sample_format=context->cfg.audio_sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32;
+            } else {
+                if(context->in_start_pts==AV_NOPTS_VALUE)
+                    context->in_start_pts=frame->video.pts;
 
-            int buffer_size=0;
-
-            int default_nb_samples=context->out_stream_audio.frame->nb_samples;
-
-            while(true) {
-                buffer_size=av_samples_get_buffer_size(nullptr, context->out_stream_audio.frame->channels, context->out_stream_audio.frame->nb_samples,
-                                                       sample_format, 0);
-
-                if(ba_audio.size()>=buffer_size) {
-                    break;
-                }
-
-                context->out_stream_audio.frame->nb_samples--;
+                context->out_stream_video.frame_converted->pts=
+                        context->out_stream_video.next_pts=
+                        av_rescale_q(frame->video.pts - context->in_start_pts,
+                                     frame->video.time_base,
+                                     context->out_stream_video.av_codec_context->time_base);
             }
 
-            QByteArray ba_audio_tmp=ba_audio.left(buffer_size);
+            av_image_fill_arrays(context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize, frame_out->video.data_ptr,
+                                 (AVPixelFormat)context->out_stream_video.frame_converted->format,
+                                 context->out_stream_video.frame_converted->width, context->out_stream_video.frame_converted->height, alignment);
 
-            context->out_stream_audio.ba_audio_prev_part=ba_audio.remove(0, buffer_size);
+            last_error_string=write_video_frame(context->av_format_context, &context->out_stream_video);
 
-            int ret=avcodec_fill_audio_frame(context->out_stream_audio.frame, context->out_stream_audio.frame->channels, sample_format,
-                                             (const uint8_t*)ba_audio_tmp.constData(), buffer_size, 0);
-
-            if(ret<0) {
+            if(!last_error_string.isEmpty()) {
                 stopCoder();
-                emit errorString(last_error_string=QStringLiteral("avcodec_fill_audio_frame error: could not setup audio frame"));
+                emit errorString("write_video_frame error: " + last_error_string);
                 return false;
             }
 
-            context->out_stream_audio.frame->pts=context->out_stream_audio.next_pts;
-
-            context->out_stream_audio.next_pts+=context->out_stream_audio.frame->nb_samples;
-
-            write_audio_frame(context->av_format_context, &context->out_stream_audio);
-
-            context->out_stream_audio.frame->nb_samples=default_nb_samples;
+        } else {
+            // std::cout << "frame skipped " << frame_out->counter_2 << std::endl << std::flush;
+            context->out_stream_video.next_pts++;
         }
     }
+
 
     if(QDateTime::currentMSecsSinceEpoch() - context->last_stats_update_time>1000) {
         context->last_stats_update_time=QDateTime::currentMSecsSinceEpoch();
@@ -1090,6 +1059,53 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
     }
 
     return true;
+}
+
+void FFEncoder::processAudio(Frame::ptr frame)
+{
+    if(frame->audio.data_size) {
+        QByteArray ba_audio=QByteArray((char*)frame->audio.data_ptr, frame->audio.data_size);
+
+        ba_audio.insert(0, context->out_stream_audio.ba_audio_prev_part);
+
+        AVSampleFormat sample_format=context->cfg.audio_sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32;
+
+        int buffer_size=0;
+
+        int default_nb_samples=context->out_stream_audio.frame->nb_samples;
+
+        while(true) {
+            buffer_size=av_samples_get_buffer_size(nullptr, context->out_stream_audio.frame->channels, context->out_stream_audio.frame->nb_samples,
+                                                   sample_format, 0);
+
+            if(ba_audio.size()>=buffer_size) {
+                break;
+            }
+
+            context->out_stream_audio.frame->nb_samples--;
+        }
+
+        QByteArray ba_audio_tmp=ba_audio.left(buffer_size);
+
+        context->out_stream_audio.ba_audio_prev_part=ba_audio.remove(0, buffer_size);
+
+        int ret=avcodec_fill_audio_frame(context->out_stream_audio.frame, context->out_stream_audio.frame->channels, sample_format,
+                                         (const uint8_t*)ba_audio_tmp.constData(), buffer_size, 0);
+
+        if(ret<0) {
+            stopCoder();
+            emit errorString(last_error_string=QStringLiteral("avcodec_fill_audio_frame error: could not setup audio frame"));
+            return;
+        }
+
+        context->out_stream_audio.frame->pts=context->out_stream_audio.next_pts;
+
+        context->out_stream_audio.next_pts+=context->out_stream_audio.frame->nb_samples;
+
+        write_audio_frame(context->av_format_context, &context->out_stream_audio);
+
+        context->out_stream_audio.frame->nb_samples=default_nb_samples;
+    }
 }
 
 bool FFEncoder::stopCoder()
@@ -1121,7 +1137,7 @@ bool FFEncoder::stopCoder()
 
 void FFEncoder::converterFrameSkip()
 {
-    context->out_stream_video.next_pts++;
+    // context->out_stream_video.next_pts++;
 }
 
 void FFEncoder::calcStats()

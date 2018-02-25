@@ -85,3 +85,32 @@ bool operator==(const AVRational &l, const AVRational &r)
 {
     return l.den==r.den && l.num==r.num;
 }
+
+#include <mutex>
+
+int ff_lock_callback(void **mutex, enum AVLockOp op)
+{
+    qInfo() << "ff_lock_callback" << op;
+
+    static std::mutex m;
+
+    switch(op) {
+    case AV_LOCK_CREATE:
+        *mutex=&m;
+        break;
+
+    case AV_LOCK_OBTAIN:
+        ((std::mutex*)(*mutex))->lock();
+        break;
+
+    case AV_LOCK_RELEASE:
+        ((std::mutex*)(*mutex))->unlock();
+        break;
+
+    case AV_LOCK_DESTROY:
+        *mutex=0;
+        break;
+    }
+
+    return 0;
+}

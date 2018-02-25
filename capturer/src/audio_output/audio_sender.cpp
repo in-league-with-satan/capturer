@@ -105,7 +105,7 @@ void AudioSender::run()
                 continue;
             }
 
-            packet.data=QByteArray((char*)frame->audio.ptr_data, frame->audio.data_size);
+            packet.data=QByteArray((char*)frame->audio.data_ptr, frame->audio.data_size);
             packet.channels=frame->audio.channels;
             packet.sample_size=frame->audio.sample_size;
 

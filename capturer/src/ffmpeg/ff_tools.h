@@ -76,4 +76,8 @@ static QString versionlibswresample()
 
 bool operator==(const AVRational &l, const AVRational &r);
 
+
+int ff_lock_callback(void **mutex, enum AVLockOp op);
+
+
 #endif // FF_TOOLS_H

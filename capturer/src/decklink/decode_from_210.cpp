@@ -106,8 +106,10 @@ Frame::ptr DecodeFrom210::convert(Format::T format, Frame::ptr frame)
         d->init();
     }
 
-    if(format==Format::Disabled)
+    if(format==Format::Disabled) {
+        qCritical() << "DecodeFrom210::convert: Disabled";
         return Frame::ptr();
+    }
 
     d->packet.data=frame->video.data_ptr;
     d->packet.size=frame->video.data_size;
@@ -116,11 +118,11 @@ Frame::ptr DecodeFrom210::convert(Format::T format, Frame::ptr frame)
         const int ret=avcodec_receive_frame(d->codec_context, d->av_frame);
 
         if(ret<0 && ret!=AVERROR(EAGAIN)) {
-            qCritical() << "avcodec_receive_frame" << ffErrorString(ret);
+            qCritical() << "DecodeFrom210::convert: avcodec_receive_frame err" << ffErrorString(ret);
             return Frame::ptr();
         }
 
-        Frame::ptr frame_result=Frame::make();
+        Frame::ptr frame_result=frame->copyFrameSoundOnly();
 
         frame_result->video.data_size=av_image_get_buffer_size((AVPixelFormat)d->av_frame->format, d->width, d->height, alignment);
         frame_result->video.dummy.resize(frame_result->video.data_size);
@@ -130,10 +132,12 @@ Frame::ptr DecodeFrom210::convert(Format::T format, Frame::ptr frame)
         av_image_copy_to_buffer((uint8_t*)frame_result->video.dummy.constData(), frame_result->video.dummy.size(), d->av_frame->data, d->av_frame->linesize,
                                 (AVPixelFormat)d->av_frame->format, d->av_frame->width, d->av_frame->height, alignment);
 
+        //
+
         return frame_result;
     }
 
-    qCritical() << "avcodec_send_packet err";
+    qCritical() << "DecodeFrom210::convert: avcodec_send_packet err";
 
     return Frame::ptr();
 }
@@ -173,7 +177,7 @@ void Context::init()
 
     codec_context->width=width;
     codec_context->height=height;
-
+    codec_context->thread_count=1;
 
     if(avcodec_open2(codec_context, codec, nullptr)<0) {
         qCritical() << "avcodec_open2 err";

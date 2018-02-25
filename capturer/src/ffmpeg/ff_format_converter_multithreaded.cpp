@@ -17,6 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
+#include <QDebug>
+
 #include "ff_format_converter_multithreaded.h"
 
 FFFormatConverterMt::FFFormatConverterMt(uint8_t thread_count, QObject *parent)
@@ -25,7 +27,7 @@ FFFormatConverterMt::FFFormatConverterMt(uint8_t thread_count, QObject *parent)
     thread.resize(thread_count);
 
     for(int i=0; i<thread_count; ++i) {
-        thread[i]=std::shared_ptr<FFFormatConverterThread>(new FFFormatConverterThread(this));
+        thread[i]=std::shared_ptr<FFFormatConverterThread>(new FFFormatConverterThread(i, this));
 
         connect(thread[i]->frameBufferIn().get(), SIGNAL(frameSkipped()), SIGNAL(frameSkipped()), Qt::QueuedConnection);
         connect(thread[i]->frameBufferOut().get(), SIGNAL(frameSkipped()), SIGNAL(frameSkipped()), Qt::QueuedConnection);
@@ -51,6 +53,8 @@ bool FFFormatConverterMt::setup(AVPixelFormat format_src, QSize resolution_src, 
     index_thread_src=0;
     index_thread_dst=0;
 
+    frame_counter=0;
+
     bool result=true;
 
     for(int i=0; i<thread.size(); ++i)
@@ -74,15 +78,48 @@ bool FFFormatConverterMt::compareParams(AVPixelFormat format_src, QSize resoluti
 
 void FFFormatConverterMt::convert(Frame::ptr frame)
 {
+    QPair <int, int> buf_sizes=thread[index_thread_src]->frameBufferIn()->size();
+
+    frame_counter++;
+
+    frame->counter=frame_counter;
+
+    if(buf_sizes.first>=1) {
+        if(frame->video.data_ptr) {
+//            qWarning() << "FFFormatConverterMt::convert: frame skipped";
+//            frame=frame->copyFrameSoundOnly();
+        }
+
+        frame=Frame::make();
+
+        frame->counter=frame_counter;
+    }
+
     thread[index_thread_src]->frameBufferIn()->append(frame);
+
+    //
 
     index_thread_src++;
 
     if(index_thread_src>=thread.size())
         index_thread_src=0;
+
+    //
+
+    while(frame=checkReady()) {
+        queue_converted.enqueue(frame);
+    }
 }
 
 Frame::ptr FFFormatConverterMt::result()
+{
+    if(queue_converted.isEmpty())
+        return Frame::ptr();
+
+    return queue_converted.dequeue();
+}
+
+Frame::ptr FFFormatConverterMt::checkReady()
 {
     Frame::ptr frame=thread[index_thread_dst]->frameBufferOut()->take();
 

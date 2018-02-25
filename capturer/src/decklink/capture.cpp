@@ -393,10 +393,10 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
         if(audio_channels==8) {
             if(audio_sample_size==16)
-                channelsRemap16(frame->audio.ptr_data, frame->audio.data_size);
+                channelsRemap16(frame->audio.data_ptr, frame->audio.data_size);
 
             else
-                channelsRemap32(frame->audio.ptr_data, frame->audio.data_size);
+                channelsRemap32(frame->audio.data_ptr, frame->audio.data_size);
         }
 
         //

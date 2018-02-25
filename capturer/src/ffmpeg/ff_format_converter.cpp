@@ -74,6 +74,8 @@ bool FFFormatConverter::setup(AVPixelFormat format_src, QSize resolution_src, AV
                                    format_dst,
                                    filter, nullptr, nullptr, nullptr);
 
+    qInfo().noquote() << "convert_context ptr" << QString::number((quintptr)convert_context, 16);
+
     return true;
 }
 
@@ -87,21 +89,41 @@ bool FFFormatConverter::compareParams(AVPixelFormat format_src, QSize resolution
     return false;
 }
 
-void FFFormatConverter::convert(QByteArray *src, QByteArray *dst)
+void FFFormatConverter::convert(const QByteArray &src, QByteArray *dst)
 {
     if(!av_frame_src)
         return;
 
-     av_image_fill_arrays(av_frame_src->data, av_frame_src->linesize, (const uint8_t*)src->constData(), format_src, resolution_src.width(), resolution_src.height(), alignment);
+     av_image_fill_arrays(av_frame_src->data, av_frame_src->linesize, (const uint8_t*)src.constData(), format_src, resolution_src.width(), resolution_src.height(), alignment);
 
      convert(av_frame_src, av_frame_dst);
 
-     int buf_size=av_image_get_buffer_size(format_dst, resolution_dst.width(), resolution_dst.height(), alignment);
+     const int buf_size=av_image_get_buffer_size(format_dst, resolution_dst.width(), resolution_dst.height(), alignment);
 
      if(dst->size()!=buf_size)
          dst->resize(buf_size);
 
-     av_image_copy_to_buffer((uint8_t*)dst->constData(), dst->size(), av_frame_dst->data, av_frame_dst->linesize, format_dst, resolution_dst.width(), resolution_dst.height(), alignment);
+     av_image_copy_to_buffer((uint8_t*)dst->constData(), buf_size, av_frame_dst->data, av_frame_dst->linesize, format_dst, resolution_dst.width(), resolution_dst.height(), alignment);
+}
+
+QByteArray FFFormatConverter::convert(const QByteArray &src)
+{
+    if(!av_frame_src)
+        return QByteArray();
+
+     av_image_fill_arrays(av_frame_src->data, av_frame_src->linesize, (const uint8_t*)src.constData(), format_src, resolution_src.width(), resolution_src.height(), alignment);
+
+     convert(av_frame_src, av_frame_dst);
+
+     const int buf_size=av_image_get_buffer_size(format_dst, resolution_dst.width(), resolution_dst.height(), alignment);
+
+     QByteArray dst;
+
+     dst.resize(buf_size);
+
+     av_image_copy_to_buffer((uint8_t*)dst.constData(), buf_size, av_frame_dst->data, av_frame_dst->linesize, format_dst, resolution_dst.width(), resolution_dst.height(), alignment);
+
+     return dst;
 }
 
 void FFFormatConverter::convert(AVFrame *src, AVFrame *dst)

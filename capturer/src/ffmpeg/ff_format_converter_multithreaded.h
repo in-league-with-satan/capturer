@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef FF_FORMAT_CONVERTER_MULTITHREADED_H
 #define FF_FORMAT_CONVERTER_MULTITHREADED_H
 
-#include <QThread>
+#include <QObject>
 
 #include "ff_format_converter_thread.h"
 
@@ -44,6 +44,8 @@ public:
     Frame::ptr result();
 
 private:
+    Frame::ptr checkReady();
+
     AVPixelFormat format_src;
     AVPixelFormat format_dst;
 
@@ -58,6 +60,10 @@ private:
 
     int index_thread_src;
     int index_thread_dst;
+
+    QQueue <Frame::ptr> queue_converted;
+
+    uint16_t frame_counter;
 
 signals:
     void frameSkipped();

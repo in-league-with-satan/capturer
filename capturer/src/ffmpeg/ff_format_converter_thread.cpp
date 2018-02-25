@@ -19,20 +19,23 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <QDebug>
 
+#include "decklink_frame_converter.h"
+
 #include "ff_format_converter_thread.h"
 
-FFFormatConverterThread::FFFormatConverterThread(QObject *parent)
+FFFormatConverterThread::FFFormatConverterThread(int thread_index, QObject *parent)
     : QThread(parent)
+    , thread_index(thread_index)
 {
-    ff=new FFFormatConverter();
-
+    cnv_ff=new FFFormatConverter();
+    cnv_decklink=new DecklinkFrameConverter();
     from_210=new DecodeFrom210();
 
     frame_buffer_in=FrameBuffer::make();
     frame_buffer_out=FrameBuffer::make();
 
-    frame_buffer_in->setMaxSize(4);
-    frame_buffer_out->setMaxSize(4);
+    frame_buffer_in->setMaxSize(128);
+    frame_buffer_out->setMaxSize(128);
 
     start(QThread::LowestPriority);
 }
@@ -47,7 +50,8 @@ FFFormatConverterThread::~FFFormatConverterThread()
         usleep(100);
     }
 
-    delete ff;
+    delete cnv_ff;
+    delete cnv_decklink;
 }
 
 FrameBuffer::ptr FFFormatConverterThread::frameBufferIn()
@@ -72,7 +76,9 @@ bool FFFormatConverterThread::setup(AVPixelFormat format_src, QSize resolution_s
 
     this->format_210=format_210;
 
-    return ff->setup(format_src, resolution_src, format_dst, resolution_dst, true, filter);
+    cnv_decklink->init(bmdFormat10BitRGB, resolution_src, bmdFormat10BitYUV, resolution_src);
+
+    return cnv_ff->setup(format_src, resolution_src, format_dst, resolution_dst, true, filter);
 }
 
 void FFFormatConverterThread::run()
@@ -83,44 +89,51 @@ void FFFormatConverterThread::run()
     Frame::ptr frame_src;
     Frame::ptr frame_dst;
 
-    QByteArray ba_src;
     QByteArray ba_dst;
 
     while(running) {
         frame_buffer_in->wait();
 
-        frame_src=frame_buffer_in->take();
+        while(frame_src=frame_buffer_in->take()) {
+            uint16_t frame_counter=frame_src->counter;
 
-        if(frame_src) {
             in_progress=true;
-
-            if(format_210!=DecodeFrom210::Format::Disabled) {
-                frame_src=from_210->convert(format_210, frame_src);
-
-                if(!frame_src) {
-                    qCritical() << "from_210 err";
-                    continue;
-                }
-            }
-
-            ba_src=QByteArray((char*)frame_src->video.data_ptr, frame_src->video.data_size);
-
-            ff->convert(&ba_src, &ba_dst);
-
 
             frame_dst=Frame::make();
 
-            frame_dst->setData(ba_dst, frame_src->video.size, QByteArray(), 0, 0);
+            if(frame_src->video.data_ptr) {
+                if(format_210!=DecodeFrom210::Format::Disabled) {
+                    if(format_210==DecodeFrom210::Format::R210) {
+                        ba_dst.resize(DeckLinkVideoFrame::frameSize(frame_src->video.size, bmdFormat10BitYUV));
 
+                        cnv_decklink->convert((void*)frame_src->video.data_ptr, (void*)ba_dst.constData());
+
+                        frame_dst->setDataVideo(ba_dst, frame_src->video.size);
+
+                        frame_src=from_210->convert(DecodeFrom210::Format::V210, frame_dst);
+
+                    } else {
+                        frame_src=from_210->convert(DecodeFrom210::Format::V210, frame_src);
+                    }
+                }
+
+                if(frame_src) {
+                    frame_dst->setDataVideo(cnv_ff->convert(QByteArray((char*)frame_src->video.data_ptr, frame_src->video.data_size)), frame_src->video.size);
+
+                } else {
+                    //qCritical() << "FFFormatConverterThread::run frame_src nullptr";
+                }
+            }
+
+            frame_dst->counter=frame_counter;
 
             frame_buffer_out->append(frame_dst);
 
 
-            in_progress=false;
-
-
             frame_src.reset();
             frame_dst.reset();
+
+            in_progress=false;
         }
     }
 }

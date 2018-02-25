@@ -22,7 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "event_waiting.h"
 
-const std::chrono::milliseconds wait_timeout(200);
+const std::chrono::milliseconds wait_timeout(1000);
 
 EventWaiting::EventWaiting(QObject *parent)
     : QObject(parent)
@@ -67,5 +67,5 @@ void EventWaiting::next()
 
     //
 
-    condition.notify_all();
+    condition.notify_one();
 }

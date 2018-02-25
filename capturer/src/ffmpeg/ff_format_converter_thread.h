@@ -27,12 +27,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "frame_buffer.h"
 #include "decode_from_210.h"
 
+class DecklinkFrameConverter;
+
 class FFFormatConverterThread : public QThread
 {
     Q_OBJECT
 
 public:
-    FFFormatConverterThread(QObject *parent=0);
+    FFFormatConverterThread(int thread_index=0, QObject *parent=0);
     ~FFFormatConverterThread();
 
     FrameBuffer::ptr frameBufferIn();
@@ -46,7 +48,8 @@ protected:
     void run();
 
 private:
-    FFFormatConverter *ff;
+    FFFormatConverter *cnv_ff;
+    DecklinkFrameConverter *cnv_decklink;
 
     DecodeFrom210 *from_210;
 
@@ -57,6 +60,8 @@ private:
 
     std::atomic <bool> running;
     std::atomic <bool> in_progress;
+
+    int thread_index;
 };
 
 #endif // FF_FORMAT_CONVERTER_THREAD_H
