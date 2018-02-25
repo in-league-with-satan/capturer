@@ -51,11 +51,6 @@ public:
     FFEncoder(FFEncoder::Mode::T mode, QObject *parent=0);
     ~FFEncoder();
 
-    static void init();
-
-    static bool isLib_x264_10bit();
-
-
     struct Framerate {
         enum T {
             full_11,
@@ -80,7 +75,6 @@ public:
     struct VideoEncoder {
         enum T {
             libx264,
-            libx264_10bit,
             libx264rgb,
             nvenc_h264,
             nvenc_hevc,
@@ -90,6 +84,11 @@ public:
         };
 
         static QString toString(uint32_t enc);
+        static QString toEncName(uint32_t enc);
+
+        static uint64_t fromString(QString value);
+
+        static QList <FFEncoder::VideoEncoder::T> list();
     };
 
     struct PixelFormat {
@@ -113,6 +112,8 @@ public:
         static uint64_t fromString(QString value);
 
         static QList <FFEncoder::PixelFormat::T> compatiblePixelFormats(VideoEncoder::T encoder);
+
+        static QList <FFEncoder::PixelFormat::T> list();
     };
 
     struct DownScale {

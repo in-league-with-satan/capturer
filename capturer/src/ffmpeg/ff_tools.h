@@ -40,6 +40,8 @@ extern "C" {
 
 const int alignment=32;
 
+void initLibAV();
+
 QString ffErrorString(int code);
 AVFrame *alloc_frame(AVPixelFormat pix_fmt, int width, int height, bool alloc_buffer=true);
 AVPixelFormat correctPixelFormat(AVPixelFormat fmt);
@@ -50,6 +52,10 @@ QString versionlibavformat();
 QString versionlibavfilter();
 QString versionlibswscale();
 QString versionlibswresample();
+
+bool checkEncoder(const QString &encoder_name, const uint64_t &pixel_format);
+bool checkEncoder(const QString &encoder_name, const AVPixelFormat &pixel_format);
+bool isHighBitDepthBuild();
 
 bool operator==(const AVRational &l, const AVRational &r);
 

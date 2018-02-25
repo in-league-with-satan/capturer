@@ -70,7 +70,10 @@ int main(int argc, char *argv[])
     qRegisterMetaType<qintptr>("qintptr");
     qRegisterMetaType<NRecStats>("NRecStats");
 
-    FFEncoder::init();
+    qRegisterMetaType<FFEncoder::Config>("FFEncoder::Config");
+    qRegisterMetaType<FFEncoder::Stats>("FFEncoder::Stats");
+
+    initLibAV();
 
     Settings::createInstance();
 

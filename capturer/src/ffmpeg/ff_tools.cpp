@@ -32,6 +32,11 @@ extern "C" {
 
 #include "ff_tools.h"
 
+void initLibAV()
+{
+    // av_register_all();
+    avdevice_register_all();
+}
 
 QString ffErrorString(int code)
 {
@@ -121,4 +126,63 @@ QString versionlibswresample()
 bool operator==(const AVRational &l, const AVRational &r)
 {
     return l.den==r.den && l.num==r.num;
+}
+
+bool checkEncoder(const QString &encoder_name, const uint64_t &pixel_format)
+{
+    return checkEncoder(encoder_name, (AVPixelFormat)pixel_format);
+}
+
+bool checkEncoder(const QString &encoder_name, const AVPixelFormat &pixel_format)
+{
+    bool result=false;
+
+    AVCodec *codec=
+            avcodec_find_encoder_by_name(encoder_name.toLatin1().constData());
+
+    AVCodecContext *codec_context=nullptr;
+
+    int ret=0;
+
+    if(!codec)
+        goto exit;
+
+    codec_context=avcodec_alloc_context3(codec);
+
+    if(!codec_context)
+        goto exit;
+
+    codec_context->width=640;
+    codec_context->height=480;
+    codec_context->time_base={ 1000, 15000 };
+    codec_context->pix_fmt=pixel_format;
+
+    ret=avcodec_open2(codec_context, codec, nullptr);
+
+    if(ret==0) {
+        result=true;
+
+    } else {
+        // qCritical() << ffErrorString(ret);
+    }
+
+exit:
+    if(codec_context)
+        avcodec_free_context(&codec_context);
+
+    return result;
+}
+
+bool isHighBitDepthBuild()
+{
+    static bool checked=false;
+    static bool result=false;
+
+    if(!checked) {
+        checked=true;
+
+        result=checkEncoder("libx264", AV_PIX_FMT_YUV420P10);
+    }
+
+    return result;
 }

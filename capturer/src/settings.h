@@ -67,6 +67,7 @@ public:
     struct Rec {
         QVariantMap pixel_format;
         QVariantMap preset;
+        QVariantMap supported_enc;
         int pixel_format_current;
         int preset_current;
         int crf;
@@ -75,6 +76,7 @@ public:
         int stop_rec_on_frames_drop;
         int downscale;
         int scale_filter;
+        int check_encoders;
 
     } rec;
 
@@ -89,6 +91,8 @@ public:
         bool need_setup;
 
     } keyboard_shortcuts;
+
+    void checkEncoders();
 
 private:
     Settings(QObject *parent=0);
