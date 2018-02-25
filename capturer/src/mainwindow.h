@@ -94,6 +94,7 @@ private slots:
     void captureStop();
 
     void startStopRecording();
+    void updateEncList();
 
     void frameSkipped();
     void encoderBufferOverload();

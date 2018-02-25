@@ -61,7 +61,7 @@ class DeckLinkCapture : public QThread
 
 public:
     explicit DeckLinkCapture(QObject *parent=0);
-    ~DeckLinkCapture();
+    virtual ~DeckLinkCapture();
 
     void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size, bool source_10bit);
 

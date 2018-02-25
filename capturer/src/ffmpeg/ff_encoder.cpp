@@ -25,12 +25,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <iostream>
 
-#ifdef __linux__
-
-#include <x264_config.h>
-
-#endif
-
 #include "ff_tools.h"
 #include "ff_format_converter_multithreaded.h"
 #include "decklink_frame_converter.h"
@@ -194,7 +188,6 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
 
     switch(cfg.video_encoder) {
     case FFEncoder::VideoEncoder::libx264:
-    case FFEncoder::VideoEncoder::libx264_10bit:
         *codec=avcodec_find_encoder_by_name("libx264");
         break;
 
@@ -609,28 +602,6 @@ FFEncoder::~FFEncoder()
     delete format_converter_ff;
 }
 
-void FFEncoder::init()
-{
-    qRegisterMetaType<FFEncoder::Config>("FFEncoder::Config");
-    qRegisterMetaType<FFEncoder::Stats>("FFEncoder::Stats");
-
-    av_register_all();
-    avdevice_register_all();
-
-    // av_lockmgr_register(&ff_lock_callback);
-}
-
-bool FFEncoder::isLib_x264_10bit()
-{
-#ifdef __linux__
-
-    return X264_BIT_DEPTH==10;
-
-#endif
-
-    return false;
-}
-
 FFEncoder::Framerate::T FFEncoder::calcFps(int64_t frame_duration, int64_t frame_scale, bool half_fps)
 {
     if(half_fps) {
@@ -733,7 +704,6 @@ QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
     switch(encoder) {
     case VideoEncoder::libx264:
     case VideoEncoder::libx264rgb:
-    case VideoEncoder::libx264_10bit:
         return QStringList() << QLatin1String("ultrafast") << QLatin1String("superfast") << QLatin1String("veryfast") << QLatin1String("faster")
                              << QLatin1String("fast") << QLatin1String("medium") << QLatin1String("slow");
 
@@ -747,6 +717,8 @@ QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
         return QStringList() << QLatin1String("veryfast") << QLatin1String("faster") << QLatin1String("fast")
                              << QLatin1String("medium")
                              << QLatin1String("slow") << QLatin1String("slower") << QLatin1String("veryslow");
+
+    default: return QStringList() << QLatin1String("--");
     }
 
     return QStringList() << QLatin1String("--");
@@ -1270,8 +1242,8 @@ QList <FFEncoder::PixelFormat::T> FFEncoder::PixelFormat::compatiblePixelFormats
     case VideoEncoder::libx264:
         return QList<T>() << YUV420P << YUV422P << YUV444P;
 
-    case VideoEncoder::libx264_10bit:
-        return QList<T>() << YUV420P10 << YUV444P10;
+    // case VideoEncoder::libx264_10bit:
+    //     return QList<T>() << YUV420P10 << YUV444P10;
 
     case VideoEncoder::libx264rgb:
         return QList<T>() << RGB24;
@@ -1292,14 +1264,20 @@ QList <FFEncoder::PixelFormat::T> FFEncoder::PixelFormat::compatiblePixelFormats
     return QList<T>() << RGB24 << YUV420P << YUV444P << YUV420P10 << YUV444P10;
 }
 
+QList <FFEncoder::PixelFormat::T> FFEncoder::PixelFormat::list()
+{
+    static QList <FFEncoder::PixelFormat::T> res=
+            QList <FFEncoder::PixelFormat::T>() << RGB24 << BGR0 << RGB0 << YUV420P << YUV420P10 << YUV422P << UYVY422 << YUV444P
+                                                << YUV422P10LE << YUV444P10 << YUV444P16LE << RGB48LE << P010LE << NV12;
+
+    return res;
+}
+
 QString FFEncoder::VideoEncoder::toString(uint32_t enc)
 {
     switch(enc) {
     case libx264:
         return QLatin1String("libx264");
-
-    case libx264_10bit:
-        return QLatin1String("libx264_10bit");
 
     case libx264rgb:
         return QLatin1String("libx264rgb");
@@ -1318,6 +1296,62 @@ QString FFEncoder::VideoEncoder::toString(uint32_t enc)
     }
 
     return QLatin1String("");
+}
+
+QString FFEncoder::VideoEncoder::toEncName(uint32_t enc)
+{
+    switch(enc) {
+    case libx264:
+        return QLatin1String("libx264");
+
+    case libx264rgb:
+        return QLatin1String("libx264rgb");
+
+    case nvenc_h264:
+        return QLatin1String("h264_nvenc");
+
+    case nvenc_hevc:
+        return QLatin1String("hevc_nvenc");
+
+    case qsv_h264:
+        return QLatin1String("h264_qsv");
+
+    case ffvhuff:
+        return QLatin1String("ffvhuff");
+    }
+
+    return QLatin1String("");
+}
+
+uint64_t FFEncoder::VideoEncoder::fromString(QString value)
+{
+    if(value==QLatin1String("libx264"))
+        return libx264;
+
+    else if(value==QLatin1String("libx264rgb"))
+        return libx264rgb;
+
+    else if(value==QLatin1String("nvenc_h264"))
+        return nvenc_h264;
+
+    else if(value==QLatin1String("nvenc_hevc"))
+        return nvenc_hevc;
+
+    else if(value==QLatin1String("qsv_h264"))
+        return qsv_h264;
+
+    else if(value==QLatin1String("ffvhuff"))
+        return ffvhuff;
+
+    return 0;
+}
+
+QList <FFEncoder::VideoEncoder::T> FFEncoder::VideoEncoder::list()
+{
+    QList <FFEncoder::VideoEncoder::T> res=
+            QList <FFEncoder::VideoEncoder::T>() << libx264 << libx264rgb << nvenc_h264 << nvenc_hevc << qsv_h264 << ffvhuff;
+
+    return res;
 }
 
 int FFEncoder::DownScale::toWidth(uint32_t value)

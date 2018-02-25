@@ -105,7 +105,14 @@ void PulseAudioOutputThread::run()
 
 void PulseAudioOutputThread::onInputFrameArrived(void *data, size_t size, int channels, int sample_size)
 {
-#ifdef USE_PULSE_AUDIO
+#ifndef USE_PULSE_AUDIO
+
+    Q_UNUSED(data);
+    Q_UNUSED(size);
+    Q_UNUSED(channels);
+    Q_UNUSED(sample_size);
+
+#else
 
     if(!s) {
         return;

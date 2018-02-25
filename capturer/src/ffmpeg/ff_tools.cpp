@@ -19,6 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <QDebug>
 
+#include <mutex>
+
 extern "C" {
 #include <libavutil/opt.h>
 #include <libavcodec/avcodec.h>
@@ -32,6 +34,15 @@ extern "C" {
 
 #include "ff_tools.h"
 
+int ff_lock_callback(void **mutex, enum AVLockOp op);
+
+void initLibAV()
+{
+    av_register_all();
+    avdevice_register_all();
+
+    // av_lockmgr_register(&ff_lock_callback);
+}
 
 QString ffErrorString(int code)
 {
@@ -76,9 +87,46 @@ AVPixelFormat correctPixelFormat(AVPixelFormat fmt)
     case AV_PIX_FMT_YUVJ422P: return AV_PIX_FMT_YUV422P;
     case AV_PIX_FMT_YUVJ444P: return AV_PIX_FMT_YUV444P;
     case AV_PIX_FMT_YUVJ440P: return AV_PIX_FMT_YUV440P;
+    default: return fmt;
     }
 
     return fmt;
+}
+
+QString versionlibavutil()
+{
+    static QString ver=QString("%1.%2.%3").arg(LIBAVUTIL_VERSION_MAJOR).arg(LIBAVUTIL_VERSION_MINOR).arg(LIBAVUTIL_VERSION_MICRO);
+    return ver;
+}
+
+QString versionlibavcodec()
+{
+    static QString ver=QString("%1.%2.%3").arg(LIBAVCODEC_VERSION_MAJOR).arg(LIBAVCODEC_VERSION_MINOR).arg(LIBAVCODEC_VERSION_MICRO);
+    return ver;
+}
+
+QString versionlibavformat()
+{
+    static QString ver=QString("%1.%2.%3").arg(LIBAVFORMAT_VERSION_MAJOR).arg(LIBAVFORMAT_VERSION_MINOR).arg(LIBAVFORMAT_VERSION_MICRO);
+    return ver;
+}
+
+QString versionlibavfilter()
+{
+    static QString ver=QString("%1.%2.%3").arg(LIBAVFILTER_VERSION_MAJOR).arg(LIBAVFILTER_VERSION_MINOR).arg(LIBAVFILTER_VERSION_MICRO);
+    return ver;
+}
+
+QString versionlibswscale()
+{
+    static QString ver=QString("%1.%2.%3").arg(LIBSWSCALE_VERSION_MAJOR).arg(LIBSWSCALE_VERSION_MINOR).arg(LIBSWSCALE_VERSION_MICRO);
+    return ver;
+}
+
+QString versionlibswresample()
+{
+    static QString ver=QString("%1.%2.%3").arg(LIBSWRESAMPLE_VERSION_MAJOR).arg(LIBSWRESAMPLE_VERSION_MINOR).arg(LIBSWRESAMPLE_VERSION_MICRO);
+    return ver;
 }
 
 bool operator==(const AVRational &l, const AVRational &r)
@@ -86,7 +134,64 @@ bool operator==(const AVRational &l, const AVRational &r)
     return l.den==r.den && l.num==r.num;
 }
 
-#include <mutex>
+bool checkEncoder(const QString &encoder_name, const uint64_t &pixel_format)
+{
+    return checkEncoder(encoder_name, (AVPixelFormat)pixel_format);
+}
+
+bool checkEncoder(const QString &encoder_name, const AVPixelFormat &pixel_format)
+{
+    bool result=false;
+
+    AVCodec *codec=
+            avcodec_find_encoder_by_name(encoder_name.toLatin1().constData());
+
+    AVCodecContext *codec_context=nullptr;
+
+    int ret=0;
+
+    if(!codec)
+        goto exit;
+
+    codec_context=avcodec_alloc_context3(codec);
+
+    if(!codec_context)
+        goto exit;
+
+    codec_context->width=640;
+    codec_context->height=480;
+    codec_context->time_base={ 1000, 15000 };
+    codec_context->pix_fmt=pixel_format;
+
+    ret=avcodec_open2(codec_context, codec, nullptr);
+
+    if(ret==0) {
+        result=true;
+
+    } else {
+        // qCritical() << ffErrorString(ret);
+    }
+
+exit:
+    if(codec_context)
+        avcodec_free_context(&codec_context);
+
+    return result;
+}
+
+bool isHighBitDepthBuild()
+{
+    static bool checked=false;
+    static bool result=false;
+
+    if(!checked) {
+        checked=true;
+
+        result=checkEncoder("libx264", AV_PIX_FMT_YUV420P10);
+    }
+
+    return result;
+}
 
 int ff_lock_callback(void **mutex, enum AVLockOp op)
 {
@@ -114,3 +219,4 @@ int ff_lock_callback(void **mutex, enum AVLockOp op)
 
     return 0;
 }
+

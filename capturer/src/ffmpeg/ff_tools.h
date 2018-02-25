@@ -40,44 +40,24 @@ extern "C" {
 
 const int alignment=32;
 
+void initLibAV();
+
 QString ffErrorString(int code);
 AVFrame *alloc_frame(AVPixelFormat pix_fmt, int width, int height, bool alloc_buffer=true);
 AVPixelFormat correctPixelFormat(AVPixelFormat fmt);
 
-static QString versionlibavutil()
-{
-    return QString("%1.%2.%3").arg(LIBAVUTIL_VERSION_MAJOR).arg(LIBAVUTIL_VERSION_MINOR).arg(LIBAVUTIL_VERSION_MICRO);
-}
+QString versionlibavutil();
+QString versionlibavcodec();
+QString versionlibavformat();
+QString versionlibavfilter();
+QString versionlibswscale();
+QString versionlibswresample();
 
-static QString versionlibavcodec()
-{
-    return QString("%1.%2.%3").arg(LIBAVCODEC_VERSION_MAJOR).arg(LIBAVCODEC_VERSION_MINOR).arg(LIBAVCODEC_VERSION_MICRO);
-}
-
-static QString versionlibavformat()
-{
-    return QString("%1.%2.%3").arg(LIBAVFORMAT_VERSION_MAJOR).arg(LIBAVFORMAT_VERSION_MINOR).arg(LIBAVFORMAT_VERSION_MICRO);
-}
-
-static QString versionlibavfilter()
-{
-    return QString("%1.%2.%3").arg(LIBAVFILTER_VERSION_MAJOR).arg(LIBAVFILTER_VERSION_MINOR).arg(LIBAVFILTER_VERSION_MICRO);
-}
-
-static QString versionlibswscale()
-{
-    return QString("%1.%2.%3").arg(LIBSWSCALE_VERSION_MAJOR).arg(LIBSWSCALE_VERSION_MINOR).arg(LIBSWSCALE_VERSION_MICRO);
-}
-
-static QString versionlibswresample()
-{
-    return QString("%1.%2.%3").arg(LIBSWRESAMPLE_VERSION_MAJOR).arg(LIBSWRESAMPLE_VERSION_MINOR).arg(LIBSWRESAMPLE_VERSION_MICRO);
-}
+bool checkEncoder(const QString &encoder_name, const uint64_t &pixel_format);
+bool checkEncoder(const QString &encoder_name, const AVPixelFormat &pixel_format);
+bool isHighBitDepthBuild();
 
 bool operator==(const AVRational &l, const AVRational &r);
-
-
-int ff_lock_callback(void **mutex, enum AVLockOp op);
 
 
 #endif // FF_TOOLS_H

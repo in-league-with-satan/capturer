@@ -187,6 +187,15 @@ SettingsModel::Data *SettingsModel::data_p(int *value)
     return nullptr;
 }
 
+int SettingsModel::data_p_index(int *value)
+{
+    for(int i=0; i<d.size(); ++i)
+        if(d[i].value==value)
+            return i;
+
+    return -1;
+}
+
 QHash <int, QByteArray> SettingsModel::roleNames() const
 {
     static QHash <int, QByteArray> roles;

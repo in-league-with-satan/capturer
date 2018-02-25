@@ -50,12 +50,6 @@ Settings *Settings::instance()
 
 QString filename()
 {
-#ifdef USE_X264_10B
-
-    return qApp->applicationDirPath() + "/capturer_10bit.json";
-
-#endif
-
     return qApp->applicationDirPath() + "/capturer.json";
 }
 
@@ -109,6 +103,7 @@ bool Settings::load()
     device_cam.framerate=map_device_cam.value(QStringLiteral("framerate"), 0).toInt();
     device_cam.pixel_format=map_device_cam.value(QStringLiteral("pixel_format"), 0).toInt();
 
+    rec.supported_enc=map_rec.value(QStringLiteral("supported_enc")).toMap();
     rec.encoder=map_rec.value(QStringLiteral("encoder"), 0).toInt();
     rec.pixel_format=map_rec.value(QStringLiteral("pixel_format")).toMap();
     rec.preset=map_rec.value(QStringLiteral("preset")).toMap();
@@ -142,6 +137,11 @@ bool Settings::load()
                                        KeyCodeC::fromString(map_keyboard_shortcuts.keys()[i]));
     }
 
+
+    if(rec.supported_enc.isEmpty())
+        checkEncoders();
+
+
     return true;
 }
 
@@ -170,6 +170,7 @@ bool Settings::save()
     map_device_cam.insert(QStringLiteral("framerate"), device_cam.framerate);
     map_device_cam.insert(QStringLiteral("pixel_format"), device_cam.pixel_format);
 
+    map_rec.insert(QStringLiteral("supported_enc"), rec.supported_enc);
     map_rec.insert(QStringLiteral("encoder"), rec.encoder);
     map_rec.insert(QStringLiteral("pixel_format"), rec.pixel_format);
     map_rec.insert(QStringLiteral("preset"), rec.preset);
@@ -220,4 +221,23 @@ bool Settings::save()
     f.close();
 
     return true;
+}
+
+void Settings::checkEncoders()
+{
+    rec.supported_enc.clear();
+
+    foreach(FFEncoder::VideoEncoder::T enc, FFEncoder::VideoEncoder::list()) {
+        QStringList lst_fmt;
+
+        foreach(FFEncoder::PixelFormat::T fmt, FFEncoder::PixelFormat::list()) {
+            if(checkEncoder(FFEncoder::VideoEncoder::toEncName(enc), (AVPixelFormat)fmt))
+                lst_fmt << FFEncoder::PixelFormat::toString(fmt);
+        }
+
+        if(!lst_fmt.isEmpty())
+            rec.supported_enc[FFEncoder::VideoEncoder::toString(enc)]=lst_fmt;
+    }
+
+    save();
 }

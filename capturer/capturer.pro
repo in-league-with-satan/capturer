@@ -7,6 +7,7 @@ QT += \
     qml \
     quick \
     quickwidgets \
+    quickcontrols2 \
     sql \
     svg
 
@@ -18,18 +19,9 @@ CONFIG += c++14
 
 DESTDIR = $$PWD/../bin
 
-GIT_VERSION = $$system(git --git-dir $$PWD/../.git --work-tree $$PWD describe --always)
 
-linux {
-    DATE_VERSION = $$system(date +%y.%-m.%-d)
-    DEFINES += VERSION_STRING=\\\"$$DATE_VERSION-$$GIT_VERSION\\\"
-}
-
-windows {
-    DATE_VERSION = $$system(echo '%date:~8,2%.%date:~3,2%.%date:~0,2%')
-    DEFINES += VERSION_STRING=QString(\\\"$$DATE_VERSION-$$GIT_VERSION\\\").replace(\\\".0\\\",\\\".\\\")
-}
-
+GIT_VERSION = $$system(git --git-dir $$PWD/../.git --work-tree $$PWD describe --always --tags)
+DEFINES += VERSION_STRING=\\\"$$GIT_VERSION\\\"
 
 
 
@@ -53,7 +45,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += USE_X264_10B
 DEFINES += USE_PULSE_AUDIO
 #DEFINES += USE_SDL2
-
+#DEFINES += STATIC_WIN_FF
 
 
 LINK_OPT=shared
@@ -133,7 +125,16 @@ windows {
     INCLUDEPATH += $$PWD/../externals/3rdparty/ffmpeg/include
     LIBS += -L$$PWD/../externals/3rdparty/ffmpeg/lib
 
-    LIBS += -lavdevice -lswresample -lavformat -lavcodec -lavutil -lswscale
+    contains(DEFINES, STATIC_WIN_FF) {
+        LIBS += -lavdevice -lavfilter -lavformat -lavcodec -lavresample -lavutil -lpostproc -lswresample -lswscale
+        LIBS += -lvfw32 -lcaca -lSDL2 -lbs2b -lrubberband -lfftw3 -lsamplerate -lmysofa -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt
+        LIBS += -lflite_usenglish -lflite_cmulex -lflite -lfribidi -lass -liconv -lfontconfig -lfreetype -lxml2 -lbz2 -lvidstab -lzimg -lmfx -lgme -lmodplug -lbluray -lgnutls -lcrypt32
+        LIBS += -lhogweed -lgmp -lnettle -lvpx -lopencore-amrwb -lzvbi -lsnappy -lgsm -lilbc -lmp3lame -lopencore-amrnb -lopenjp2 -lopus -lspeex -ltheoraenc -ltheoradec -logg -ltwolame
+        LIBS += -lvo-amrwbenc -lvorbis -lvorbisenc -lx264 -lx265 -lkernel32 -lxavs -lxvidcore -lopenh264 -lsoxr -ldl -lz -llzma -lpsapi
+
+    } else {
+        LIBS += -lavdevice -lswresample -lavformat -lavcodec -lavutil -lswscale
+    }
 }
 
 contains(DEFINES, USE_PULSE_AUDIO) {

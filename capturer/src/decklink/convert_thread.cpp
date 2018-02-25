@@ -92,7 +92,7 @@ void DlConvertThread::addFrame(IDeckLinkVideoFrame *frame,  IDeckLinkAudioInputP
 void DlConvertThread::run()
 {
     Frame::ptr frame;
-    void *d_audio;
+//    void *d_audio;
 
     running=true;
 

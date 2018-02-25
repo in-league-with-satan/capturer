@@ -58,6 +58,7 @@ public:
 
     virtual SettingsModel::Data *data_p(const int &index);
     virtual SettingsModel::Data *data_p(int *value);
+    virtual int data_p_index(int *value);
     virtual QHash <int, QByteArray> roleNames() const;
 
     int add(const SettingsModel::Data &data);

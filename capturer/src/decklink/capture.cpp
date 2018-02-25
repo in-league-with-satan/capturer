@@ -48,6 +48,7 @@ class DeckLinkCaptureDelegate : public IDeckLinkInputCallback
 {
 public:
     DeckLinkCaptureDelegate(DeckLinkCapture *parent);
+    virtual ~DeckLinkCaptureDelegate();
 
     virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, LPVOID *ppv) { Q_UNUSED(iid); Q_UNUSED(ppv); return E_NOINTERFACE; }
     virtual ULONG STDMETHODCALLTYPE AddRef(void);
@@ -68,6 +69,10 @@ private:
 DeckLinkCaptureDelegate::DeckLinkCaptureDelegate(DeckLinkCapture *parent) :
     d(parent)
   , ref_count(1)
+{
+}
+
+DeckLinkCaptureDelegate::~DeckLinkCaptureDelegate()
 {
 }
 

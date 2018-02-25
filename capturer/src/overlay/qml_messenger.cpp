@@ -97,15 +97,25 @@ QString QmlMessenger::versionlibSWResample() const
     return versionlibswresample();
 }
 
-QString QmlMessenger::networkAddresses() const
+QString QmlMessenger::networkAddressesStr() const
 {
     QString res;
 
-    foreach(const QHostAddress &address, QNetworkInterface::allAddresses())
-        if(address.protocol()==QAbstractSocket::IPv4Protocol && !address.isLoopback())
-            res+="\t" + address.toString() + "\n";
+    foreach(const QString address, networkAddresses())
+        res+="\t" + address + "\n";
 
     return res;
+}
+
+QStringList QmlMessenger::networkAddresses() const
+{
+    QStringList sl;
+
+    foreach(const QHostAddress &address, QNetworkInterface::allAddresses())
+        if(address.protocol()==QAbstractSocket::IPv4Protocol && !address.isLoopback())
+            sl << address.toString();
+
+    return sl;
 }
 
 QuickVideoSource *QmlMessenger::videoSourceMain()

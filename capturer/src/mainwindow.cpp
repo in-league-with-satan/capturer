@@ -458,22 +458,26 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::button;
+    set_model_data.name.clear();
+    set_model_data.values << "check encoders";
+    set_model_data.values_data << 0;
+
+    set_model_data.value=&settings->rec.check_encoders;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    //
+
     set_model_data.type=SettingsModel::Type::combobox;
     set_model_data.group="rec";
     set_model_data.name="video encoder";
-
-    if(FFEncoder::isLib_x264_10bit())
-        set_model_data.values_data << FFEncoder::VideoEncoder::libx264_10bit << FFEncoder::VideoEncoder::nvenc_h264 << FFEncoder::VideoEncoder::nvenc_hevc
-                                   << FFEncoder::VideoEncoder::qsv_h264 << FFEncoder::VideoEncoder::ffvhuff;
-
-    else
-        set_model_data.values_data << FFEncoder::VideoEncoder::libx264 << FFEncoder::VideoEncoder::libx264rgb
-                                   << FFEncoder::VideoEncoder::nvenc_h264 << FFEncoder::VideoEncoder::nvenc_hevc
-                                   << FFEncoder::VideoEncoder::qsv_h264 << FFEncoder::VideoEncoder::ffvhuff;
-
-
-    foreach(QVariant v, set_model_data.values_data)
-        set_model_data.values << FFEncoder::VideoEncoder::toString(v.toInt());
 
 
     set_model_data.value=&settings->rec.encoder;
@@ -489,13 +493,6 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.values.clear();
     set_model_data.values_data.clear();
 
-    QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt());
-
-    foreach(const QString &preset, presets) {
-        set_model_data.values << preset;
-        set_model_data.values_data << FFEncoder::presetVisualNameToParamName(preset);
-    }
-
     set_model_data.value=&settings->rec.preset_current;
 
     messenger->settingsModel()->add(set_model_data);
@@ -506,21 +503,14 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.name="pixel format";
     set_model_data.value=&settings->rec.pixel_format_current;
 
-    QList <FFEncoder::PixelFormat::T> fmts=
-            FFEncoder::PixelFormat::compatiblePixelFormats((FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt());
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    for(int i=0; i<fmts.size(); ++i) {
-        set_model_data.values << FFEncoder::PixelFormat::toString(fmts[i]);
-        set_model_data.values_data << fmts[i];
-    }
-
     messenger->settingsModel()->add(set_model_data);
 
     set_model_data.values.clear();
     set_model_data.values_data.clear();
+
+    //
+
+    updateEncList();
 
     //
 
@@ -624,6 +614,7 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
 
 void MainWindow::closeEvent(QCloseEvent *)
 {
+    settings->save();
 }
 
 void MainWindow::mousePressEvent(QMouseEvent *event)
@@ -702,7 +693,9 @@ void MainWindow::keyPressed(int code)
         break;
 
     case KeyCodeC::Exit:
-        QApplication::exit(0);
+        // QApplication::exit(0);
+        close();
+
         break;
 
     case KeyCodeC::Menu:
@@ -867,8 +860,14 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
     }
 
     if(data->value==&settings->rec.encoder) {
-        QList <FFEncoder::PixelFormat::T> fmts=
-                FFEncoder::PixelFormat::compatiblePixelFormats((FFEncoder::VideoEncoder::T)data->values_data.value(settings->rec.encoder, 0).toInt());
+        // pix_fmt
+        const int index_encoder=data->values_data[settings->rec.encoder].toInt();
+
+        QList <FFEncoder::PixelFormat::T> fmts;
+
+        foreach(const QString &fmt_str, settings->rec.supported_enc[FFEncoder::VideoEncoder::toString(index_encoder)].toStringList()) {
+            fmts << (FFEncoder::PixelFormat::T)FFEncoder::PixelFormat::fromString(fmt_str);
+        }
 
         QStringList list_values;
         QVariantList list_values_data;
@@ -943,6 +942,12 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
     if(data->value==&settings->device_cam.stop) {
         cam_device->stop();
+    }
+
+    if(data->value==&settings->rec.check_encoders) {
+        settings->checkEncoders();
+
+        updateEncList();
     }
 }
 
@@ -1068,6 +1073,33 @@ void MainWindow::startStopRecording()
 
         dropped_frames_counter=0;
     }
+}
+
+void MainWindow::updateEncList()
+{
+    if(settings->rec.supported_enc.isEmpty()) {
+        qCritical() << "supported_enc.isEmpty";
+        exit(1);
+        return;
+    }
+
+    SettingsModel::Data *set_model_data=
+            messenger->settingsModel()->data_p(&settings->rec.encoder);
+
+    if(!set_model_data) {
+        qCritical() << "set_model_data null pointer";
+        return;
+    }
+
+    set_model_data->values.clear();
+    set_model_data->values_data.clear();
+
+    for(int i=0; i<settings->rec.supported_enc.size(); ++i) {
+        set_model_data->values << settings->rec.supported_enc.keys()[i];
+        set_model_data->values_data << FFEncoder::VideoEncoder::fromString(settings->rec.supported_enc.keys()[i]);
+    }
+
+    settingsModelDataChanged(messenger->settingsModel()->data_p_index(&settings->rec.encoder), 0, false);
 }
 
 void MainWindow::frameSkipped()

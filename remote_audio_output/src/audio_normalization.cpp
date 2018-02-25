@@ -38,28 +38,30 @@ AudioNormalization::AudioNormalization(QObject *parent)
     max_level=0;
 }
 
-void AudioNormalization::proc(QByteArray *data, int channels)
+void AudioNormalization::proc(QByteArray *data, int channels, bool disable_auto_gain)
 {
     if(channels<1 || channels>8)
         return;
 
     int16_t *ptr_data=(int16_t*)data->constData();
 
-    for(int pos=0, size=data->size()/2; pos<size; pos+=channels)
-        for(int channel=0; channel<channels; ++channel)
-            max_level=std::max(max_level, (int32_t)ptr_data[pos + channel]);
+    if(!disable_auto_gain) {
+        for(int pos=0, size=data->size()/2; pos<size; pos+=channels)
+            for(int channel=0; channel<channels; ++channel)
+                max_level=std::max(max_level, (int32_t)ptr_data[pos + channel]);
 
-    //
+        //
 
-    if(QDateTime::currentMSecsSinceEpoch() - last_update_timestamp>=update_time) {
-        if(max_level>0) {
-            if(max_level*gain_factor<max_value*maximum_level_percentage) {
-                emit gainFactorChanged(gain_factor+=gain_change_step);
+        if(QDateTime::currentMSecsSinceEpoch() - last_update_timestamp>=update_time) {
+            if(max_level>0) {
+                if(max_level*gain_factor<max_value*maximum_level_percentage) {
+                    emit gainFactorChanged(gain_factor+=gain_change_step);
+                }
             }
-        }
 
-        max_level=0;
-        last_update_timestamp=QDateTime::currentMSecsSinceEpoch();
+            max_level=0;
+            last_update_timestamp=QDateTime::currentMSecsSinceEpoch();
+        }
     }
 
     //
@@ -74,11 +76,13 @@ void AudioNormalization::proc(QByteArray *data, int channels)
         for(int channel=0; channel<channels; ++channel) {
             ptr_out[pos + channel]=ptr_data[pos + channel]*gain_factor;
 
-            if(abs(ptr_out[pos + channel])>=max_value*maximum_level_percentage) {
-                emit gainFactorChanged(gain_factor=gain_factor*(max_value*maximum_level_percentage/(double)abs(ptr_out[pos + channel])) - gain_change_step);
+            if(!disable_auto_gain) {
+                if(abs(ptr_out[pos + channel])>=max_value*maximum_level_percentage) {
+                    emit gainFactorChanged(gain_factor=gain_factor*(max_value*maximum_level_percentage/(double)abs(ptr_out[pos + channel])) - gain_change_step);
 
-                pos=0;
-                channel=0;
+                    pos=0;
+                    channel=0;
+                }
             }
         }
     }
@@ -105,4 +109,14 @@ void AudioNormalization::setMaximumLevelPercentage(double value)
         return;
 
     maximum_level_percentage=value;
+}
+
+double AudioNormalization::gainFactor()
+{
+    return gain_factor;
+}
+
+void AudioNormalization::setGainFactor(double value)
+{
+    gain_factor=value;
 }
