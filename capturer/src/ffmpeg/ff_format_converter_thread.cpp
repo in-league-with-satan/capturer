@@ -19,8 +19,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <QDebug>
 
-#include "decklink_frame_converter.h"
-
 #include "ff_format_converter_thread.h"
 
 FFFormatConverterThread::FFFormatConverterThread(int thread_index, QObject *parent)
@@ -28,7 +26,6 @@ FFFormatConverterThread::FFFormatConverterThread(int thread_index, QObject *pare
     , thread_index(thread_index)
 {
     cnv_ff=new FFFormatConverter();
-    cnv_decklink=new DecklinkFrameConverter();
     from_210=new DecodeFrom210();
 
     frame_buffer_in=FrameBuffer::make();
@@ -51,7 +48,6 @@ FFFormatConverterThread::~FFFormatConverterThread()
     }
 
     delete cnv_ff;
-    delete cnv_decklink;
 }
 
 FrameBuffer::ptr FFFormatConverterThread::frameBufferIn()
@@ -75,8 +71,6 @@ bool FFFormatConverterThread::setup(AVPixelFormat format_src, QSize resolution_s
     frame_buffer_out->clear();
 
     this->format_210=format_210;
-
-    cnv_decklink->init(bmdFormat10BitRGB, resolution_src, bmdFormat10BitYUV, resolution_src);
 
     return cnv_ff->setup(format_src, resolution_src, format_dst, resolution_dst, true, filter);
 }
@@ -102,20 +96,8 @@ void FFFormatConverterThread::run()
             frame_dst=Frame::make();
 
             if(frame_src->video.data_ptr) {
-                if(format_210!=DecodeFrom210::Format::Disabled) {
-                    if(format_210==DecodeFrom210::Format::R210) {
-                        ba_dst.resize(DeckLinkVideoFrame::frameSize(frame_src->video.size, bmdFormat10BitYUV));
-
-                        cnv_decklink->convert((void*)frame_src->video.data_ptr, (void*)ba_dst.constData());
-
-                        frame_dst->setDataVideo(ba_dst, frame_src->video.size);
-
-                        frame_src=from_210->convert(DecodeFrom210::Format::V210, frame_dst);
-
-                    } else {
-                        frame_src=from_210->convert(DecodeFrom210::Format::V210, frame_src);
-                    }
-                }
+                if(format_210!=DecodeFrom210::Format::Disabled)
+                    frame_src=from_210->convert(format_210, frame_src);
 
                 if(frame_src) {
                     frame_dst->setDataVideo(cnv_ff->convert(QByteArray((char*)frame_src->video.data_ptr, frame_src->video.data_size)), frame_src->video.size);

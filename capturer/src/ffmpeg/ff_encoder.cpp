@@ -772,7 +772,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
         bool ret;
 
         if(cfg.rgb_source)
-            ret=format_converter_ff->setup(DecodeFrom210::v210PixelFormat(), cfg.frame_resolution_src, cfg.pixel_format, cfg.frame_resolution_dst,
+            ret=format_converter_ff->setup(DecodeFrom210::r210PixelFormat(), cfg.frame_resolution_src, cfg.pixel_format, cfg.frame_resolution_dst,
                                            cfg.downscale==DownScale::Disabled ? FFFormatConverter::Filter::cNull : (FFFormatConverter::Filter::T)ScaleFilter::toSws(cfg.scale_filter),
                                            DecodeFrom210::Format::R210);
 

@@ -21,17 +21,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <mutex>
 
-extern "C" {
-#include <libavutil/opt.h>
-#include <libavcodec/avcodec.h>
-#include <libavutil/channel_layout.h>
-#include <libavutil/common.h>
-#include <libavutil/imgutils.h>
-#include <libavutil/mathematics.h>
-#include <libavutil/samplefmt.h>
-#include "libswscale/swscale.h"
-}
-
 #include "ff_tools.h"
 
 int ff_lock_callback(void **mutex, enum AVLockOp op);

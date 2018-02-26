@@ -36,6 +36,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
 #include <libavdevice/avdevice.h>
+#include <libavutil/bswap.h>
 }
 
 const int alignment=32;

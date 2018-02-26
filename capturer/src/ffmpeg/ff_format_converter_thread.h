@@ -27,8 +27,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "frame_buffer.h"
 #include "decode_from_210.h"
 
-class DecklinkFrameConverter;
-
 class FFFormatConverterThread : public QThread
 {
     Q_OBJECT
@@ -49,7 +47,6 @@ protected:
 
 private:
     FFFormatConverter *cnv_ff;
-    DecklinkFrameConverter *cnv_decklink;
 
     DecodeFrom210 *from_210;
 

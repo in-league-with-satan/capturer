@@ -59,7 +59,7 @@ AVPixelFormat DecodeFrom210::v210PixelFormat()
 
 AVPixelFormat DecodeFrom210::r210PixelFormat()
 {
-    return AV_PIX_FMT_RGB48LE;
+    return AV_PIX_FMT_GBRP10LE;
 }
 
 bool DecodeFrom210::convert(Format::T format, uint8_t *data, int size, int width, int height, AVFrame *frame)
@@ -109,6 +109,38 @@ Frame::ptr DecodeFrom210::convert(Format::T format, Frame::ptr frame)
     if(format==Format::Disabled) {
         qCritical() << "DecodeFrom210::convert: Disabled";
         return Frame::ptr();
+    }
+
+    if(format==Format::R210) {
+        Frame::ptr frame_result=frame->copyFrameSoundOnly();
+
+        frame_result->video.data_size=av_image_get_buffer_size(r210PixelFormat(), d->width, d->height, alignment);
+        frame_result->video.dummy.resize(frame_result->video.data_size);
+        frame_result->video.data_ptr=(uint8_t*)frame_result->video.dummy.constData();
+        frame_result->video.size=frame->video.size;
+
+        uint32_t *src_ptr=(uint32_t*)frame->video.data_ptr;
+
+        uint16_t *dst_av_frame_ptr_g=(uint16_t*)d->av_frame->data[0];
+        uint16_t *dst_av_frame_ptr_b=(uint16_t*)d->av_frame->data[1];
+        uint16_t *dst_av_frame_ptr_r=(uint16_t*)d->av_frame->data[2];
+
+        uint32_t pixel;
+
+        for(size_t i_row=0, rows=d->height, pos=0; i_row<rows; ++i_row) {
+            for(size_t i_col=0, cols=d->width; i_col<cols; ++i_col, ++pos) {
+                pixel=AV_BSWAP32C(src_ptr[pos]);
+
+                dst_av_frame_ptr_b[pos]=pixel&0x3ff;
+                dst_av_frame_ptr_g[pos]=(pixel&0xffc00) >> 10;
+                dst_av_frame_ptr_r[pos]=(pixel&0x3ff00000) >> 20;
+            }
+        }
+
+        av_image_copy_to_buffer((uint8_t*)frame_result->video.dummy.constData(), frame_result->video.dummy.size(), d->av_frame->data, d->av_frame->linesize,
+                                (AVPixelFormat)d->av_frame->format, d->av_frame->width, d->av_frame->height, alignment);
+
+        return frame_result;
     }
 
     d->packet.data=frame->video.data_ptr;
@@ -185,7 +217,11 @@ void Context::init()
     }
 
 
-    av_frame=av_frame_alloc();
+    if(format==DecodeFrom210::Format::R210)
+        av_frame=alloc_frame(DecodeFrom210::r210PixelFormat(), width, height);
+
+    else
+        av_frame=av_frame_alloc();
 }
 
 void Context::close()
