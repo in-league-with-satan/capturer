@@ -32,10 +32,30 @@ extern "C" {
 
 #include "ff_tools.h"
 
+void av_log_callback(void*, int level, const char *fmt, va_list vl)
+{
+    // if(level>AV_LOG_ERROR)
+    //     return;
+
+    // if(level>AV_LOG_WARNING)
+    //     return;
+
+    if(level>AV_LOG_INFO)
+        return;
+
+    if(!fmt)
+        return;
+
+    qInfo().noquote() << "#" << QString().vsprintf(fmt, vl).remove("\n");
+}
+
 void initLibAV()
 {
     // av_register_all();
     avdevice_register_all();
+
+    av_log_set_callback(av_log_callback);
+    // av_log_set_level(AV_LOG_ERROR);
 }
 
 QString ffErrorString(int code)
