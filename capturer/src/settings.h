@@ -50,6 +50,13 @@ public:
         int rgb_10bit;
         int restart;
 
+        struct {
+            bool enabled=false;
+            bool frame_counter=false;
+            int frame_height=1080;
+
+        } dummy;
+
     } device_decklink;
 
 

@@ -63,26 +63,26 @@ public:
     explicit DeckLinkCapture(QObject *parent=0);
     virtual ~DeckLinkCapture();
 
-    void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size, bool rgb_10bit);
+    virtual void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size, bool rgb_10bit);
 
-    void subscribe(FrameBuffer::ptr obj);
-    void unsubscribe(FrameBuffer::ptr obj);
+    virtual void subscribe(FrameBuffer::ptr obj);
+    virtual void unsubscribe(FrameBuffer::ptr obj);
 
-    bool isRunning() const;
+    virtual bool isRunning() const;
 
-    bool gotSignal() const;
+    virtual bool gotSignal() const;
 
-    bool rgbSource() const;
-    bool rgb10Bit() const;
+    virtual bool rgbSource() const;
+    virtual bool rgb10Bit() const;
 
-    void setHalfFps(bool value);
+    virtual void setHalfFps(bool value);
 
 protected:
-    void run();
+    virtual void run();
 
 public slots:
-    void captureStart();
-    void captureStop();
+    virtual void captureStart();
+    virtual void captureStop();
 
 private:
     void videoInputFormatChanged(uint32_t events, IDeckLinkDisplayMode *mode, uint32_t format_flags);
@@ -114,9 +114,11 @@ private:
 
     // IDeckLinkVideoConversion *video_converter;
 
-    QList <FrameBuffer::ptr> subscription_list;
 
     uint8_t frame_counter;
+
+protected:
+    QList <FrameBuffer::ptr> subscription_list;
 
     std::atomic <bool> running;
     std::atomic <bool> running_thread;
