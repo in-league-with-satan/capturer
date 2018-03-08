@@ -587,6 +587,8 @@ FFEncoder::FFEncoder(FFEncoder::Mode::T mode, QObject *parent) :
     // thread_count=2;
 
     format_converter_ff=new FFFormatConverterMt(thread_count);
+    // format_converter_ff->useMultithreading(false);
+    format_converter_ff->useMultithreading(true);
 
     // connect(format_converter_ff, SIGNAL(frameSkipped()), SLOT(converterFrameSkip()), Qt::QueuedConnection);
 
@@ -794,6 +796,9 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             goto fail;
         }
     }
+
+
+    format_converter_ff->resetQueues();
 
 
     {

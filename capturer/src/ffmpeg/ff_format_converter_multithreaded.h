@@ -31,6 +31,10 @@ class FFFormatConverterMt : public QObject
 public:
     FFFormatConverterMt(uint8_t thread_count, QObject *parent=0);
 
+    void useMultithreading(bool value);
+
+    void resetQueues();
+
     bool setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst,
                FFFormatConverter::Filter::T filter=FFFormatConverter::Filter::cNull,
                DecodeFrom210::Format::T format_210=DecodeFrom210::Format::Disabled);
@@ -65,9 +69,10 @@ private:
 
     uint16_t frame_counter;
 
+    bool use_multithreading=false;
+
 signals:
     void frameSkipped();
-
 };
 
 #endif // FF_FORMAT_CONVERTER_MULTITHREADED_H

@@ -24,7 +24,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 FFFormatConverterMt::FFFormatConverterMt(uint8_t thread_count, QObject *parent)
     : QObject(parent)
 {
+    // qInfo() << "FFFormatConverterMt: thread_count" << thread_count;
+
     thread.resize(thread_count);
+
+    if(thread_count<1)
+        thread_count=1;
 
     for(int i=0; i<thread_count; ++i) {
         thread[i]=std::shared_ptr<FFFormatConverterThread>(new FFFormatConverterThread(i, this));
@@ -32,6 +37,29 @@ FFFormatConverterMt::FFFormatConverterMt(uint8_t thread_count, QObject *parent)
         connect(thread[i]->frameBufferIn().get(), SIGNAL(frameSkipped()), SIGNAL(frameSkipped()), Qt::QueuedConnection);
         connect(thread[i]->frameBufferOut().get(), SIGNAL(frameSkipped()), SIGNAL(frameSkipped()), Qt::QueuedConnection);
     }
+}
+
+void FFFormatConverterMt::useMultithreading(bool value)
+{
+    use_multithreading=value;
+
+    for(int i=0; i<thread.size(); ++i) {
+        if(use_multithreading)
+            thread[i]->startThread();
+
+        else
+            thread[i]->stopThread();
+    }
+}
+
+void FFFormatConverterMt::resetQueues()
+{
+    for(int i=0; i<thread.size(); ++i) {
+        thread[i]->frameBufferIn()->clear();
+        thread[i]->frameBufferOut()->clear();
+    }
+
+    queue_converted.clear();
 }
 
 bool FFFormatConverterMt::setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst,
@@ -78,6 +106,16 @@ bool FFFormatConverterMt::compareParams(AVPixelFormat format_src, QSize resoluti
 
 void FFFormatConverterMt::convert(Frame::ptr frame)
 {
+    if(!use_multithreading) {
+        thread[0]->frameBufferIn()->append(frame);
+        thread[0]->convert();
+
+        if(frame=thread[0]->frameBufferOut()->take())
+            queue_converted.enqueue(frame);
+
+        return;
+    }
+
     QPair <int, int> buf_sizes=thread[index_thread_src]->frameBufferIn()->size();
 
     frame_counter++;
@@ -85,10 +123,10 @@ void FFFormatConverterMt::convert(Frame::ptr frame)
     frame->counter=frame_counter;
 
     if(buf_sizes.first>=1) {
-        if(frame->video.data_ptr) {
-//            qWarning() << "FFFormatConverterMt::convert: frame skipped";
-//            frame=frame->copyFrameSoundOnly();
-        }
+        // if(frame->video.data_ptr) {
+        //     qWarning() << "FFFormatConverterMt::convert: frame skipped";
+        //     frame=frame->copyFrameSoundOnly();
+        // }
 
         frame=Frame::make();
 

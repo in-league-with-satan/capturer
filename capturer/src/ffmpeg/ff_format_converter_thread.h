@@ -38,14 +38,20 @@ public:
     FrameBuffer::ptr frameBufferIn();
     FrameBuffer::ptr frameBufferOut();
 
+    void startThread();
+    void stopThread();
+
     bool setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst,
                FFFormatConverter::Filter::T filter=FFFormatConverter::Filter::cNull,
                DecodeFrom210::Format::T format_210=DecodeFrom210::Format::Disabled);
+
+    void convert();
 
 protected:
     void run();
 
 private:
+    void work(Frame::ptr *frame_src, Frame::ptr *frame_dst);
     FFFormatConverter *cnv_ff;
 
     DecodeFrom210 *from_210;

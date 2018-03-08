@@ -128,6 +128,11 @@ QByteArray FFFormatConverter::convert(const QByteArray &src)
 
 void FFFormatConverter::convert(AVFrame *src, AVFrame *dst)
 {
+    if(!convert_context) {
+        qCritical() << "SwsContext null ptr";
+        return;
+    }
+
     sws_scale(convert_context, src->data, src->linesize, 0, src->height, dst->data, dst->linesize);
 }
 

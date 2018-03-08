@@ -24,6 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 FFFormatConverterThread::FFFormatConverterThread(int thread_index, QObject *parent)
     : QThread(parent)
     , thread_index(thread_index)
+    , in_progress(false)
 {
     cnv_ff=new FFFormatConverter();
     from_210=new DecodeFrom210();
@@ -33,21 +34,14 @@ FFFormatConverterThread::FFFormatConverterThread(int thread_index, QObject *pare
 
     frame_buffer_in->setMaxSize(128);
     frame_buffer_out->setMaxSize(128);
-
-    start(QThread::LowestPriority);
 }
 
 FFFormatConverterThread::~FFFormatConverterThread()
 {
-    running=false;
-
-    frame_buffer_in->append(nullptr);
-
-    while(isRunning()) {
-        usleep(100);
-    }
+    stopThread();
 
     delete cnv_ff;
+    delete from_210;
 }
 
 FrameBuffer::ptr FFFormatConverterThread::frameBufferIn()
@@ -58,6 +52,24 @@ FrameBuffer::ptr FFFormatConverterThread::frameBufferIn()
 FrameBuffer::ptr FFFormatConverterThread::frameBufferOut()
 {
     return frame_buffer_out;
+}
+
+void FFFormatConverterThread::startThread()
+{
+    if(!isRunning()) {
+        start(QThread::LowestPriority);
+    }
+}
+
+void FFFormatConverterThread::stopThread()
+{
+    running=false;
+
+    frame_buffer_in->append(nullptr);
+
+    while(isRunning()) {
+        usleep(100);
+    }
 }
 
 bool FFFormatConverterThread::setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst,
@@ -75,47 +87,58 @@ bool FFFormatConverterThread::setup(AVPixelFormat format_src, QSize resolution_s
     return cnv_ff->setup(format_src, resolution_src, format_dst, resolution_dst, true, filter);
 }
 
+void FFFormatConverterThread::convert()
+{
+    Frame::ptr frame_src;
+    Frame::ptr frame_dst;
+
+    while(frame_src=frame_buffer_in->take()) {
+        work(&frame_src, &frame_dst);
+
+        frame_buffer_out->append(frame_dst);
+    }
+}
+
 void FFFormatConverterThread::run()
 {
+    // qInfo() << "FFFormatConverterThread::run" << QThread::currentThreadId();
+
     running=true;
     in_progress=false;
 
     Frame::ptr frame_src;
     Frame::ptr frame_dst;
 
-    QByteArray ba_dst;
-
     while(running) {
         frame_buffer_in->wait();
 
         while(frame_src=frame_buffer_in->take()) {
-            uint16_t frame_counter=frame_src->counter;
-
             in_progress=true;
 
             frame_dst=Frame::make();
 
-            if(frame_src->video.data_ptr) {
-                if(format_210!=DecodeFrom210::Format::Disabled)
-                    frame_src=from_210->convert(format_210, frame_src);
-
-                if(frame_src) {
-                    frame_dst->setDataVideo(cnv_ff->convert(QByteArray((char*)frame_src->video.data_ptr, frame_src->video.data_size)), frame_src->video.size);
-
-                } else {
-                    //qCritical() << "FFFormatConverterThread::run frame_src nullptr";
-                }
-            }
-
-            frame_dst->counter=frame_counter;
+            work(&frame_src, &frame_dst);
 
             frame_buffer_out->append(frame_dst);
 
-
-            frame_src.reset();
-            frame_dst.reset();
-
             in_progress=false;
+        }
+    }
+}
+
+void FFFormatConverterThread::work(Frame::ptr *frame_src, Frame::ptr *frame_dst)
+{
+    (*frame_dst)=Frame::make();
+
+    if((*frame_src)->video.data_ptr) {
+        if(format_210!=DecodeFrom210::Format::Disabled)
+            (*frame_src)=from_210->convert(format_210, (*frame_src));
+
+        if((*frame_src)) {
+            (*frame_dst)->setDataVideo(cnv_ff->convert(QByteArray((char*)(*frame_src)->video.data_ptr, (*frame_src)->video.data_size)), (*frame_src)->video.size);
+
+        } else {
+            //qCritical() << "FFFormatConverterThread::run frame_src nullptr";
         }
     }
 }
