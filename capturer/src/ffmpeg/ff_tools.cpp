@@ -160,6 +160,18 @@ bool checkEncoder(const QString &encoder_name, const AVPixelFormat &pixel_format
     AVCodec *codec=
             avcodec_find_encoder_by_name(encoder_name.toLatin1().constData());
 
+    /*
+    if(!codec)
+        return false;
+
+    for(int i=0; codec->pix_fmts[i]!=AV_PIX_FMT_NONE; ++i) {
+        if(codec->pix_fmts[i]==pixel_format)
+            return true;
+    }
+
+    return false;
+    */
+
     AVCodecContext *codec_context=nullptr;
 
     int ret=0;
