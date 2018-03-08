@@ -58,6 +58,28 @@ QString filename()
 Settings::Settings(QObject *parent) :
     QObject(parent)
 {
+    foreach(const QString &arg, qApp->arguments()) {
+        if(arg.contains("decklink_dummy", Qt::CaseInsensitive)) {
+            device_decklink.dummy.enabled=true;
+
+            if(arg.contains("frame_counter", Qt::CaseInsensitive))
+                device_decklink.dummy.frame_counter=true;
+
+            if(arg.contains("480"))
+                device_decklink.dummy.frame_height=480;
+
+            else if(arg.contains("720"))
+                device_decklink.dummy.frame_height=720;
+
+            else if(arg.contains("1080"))
+                device_decklink.dummy.frame_height=1080;
+
+            else if(arg.contains("2160"))
+                device_decklink.dummy.frame_height=2160;
+
+            break;
+        }
+    }
 }
 
 bool Settings::load()

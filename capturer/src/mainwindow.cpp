@@ -48,6 +48,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "audio_sender.h"
 #include "tools_cam.h"
 #include "ff_cam.h"
+#include "decklink_dummy.h"
 
 #include "mainwindow.h"
 
@@ -62,7 +63,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    decklink_thread=new DeckLinkCapture(this);
+    if(settings->device_decklink.dummy.enabled)
+        decklink_thread=new DeckLinkDummy(settings->device_decklink.dummy.frame_counter, settings->device_decklink.dummy.frame_height, this);
+
+    else
+        decklink_thread=new DeckLinkCapture(this);
+
 
     connect(decklink_thread, SIGNAL(formatChanged(int,int,quint64,quint64,bool,QString)),
             SLOT(formatChanged(int,int,quint64,quint64,bool,QString)), Qt::QueuedConnection);
@@ -986,21 +992,23 @@ void MainWindow::captureStart()
         return;
     }
 
-    if(model_data_device->values_data.isEmpty()) {
-        qCritical() << "values_data is empty";
-        return;
+
+    if(!settings->device_decklink.dummy.enabled) {
+        if(model_data_device->values_data.isEmpty()) {
+            qCritical() << "values_data is empty";
+            return;
+        }
+
+        decklink_thread->setup(model_data_device->values_data[settings->device_decklink.index].value<DeckLinkDevice>(),
+                DeckLinkFormat(),
+                DeckLinkPixelFormat(),
+                8,
+                model_data_audio->values_data[settings->device_decklink.audio_sample_size].toInt(),
+                settings->device_decklink.video_depth_10bit
+                );
+
+        decklink_thread->setHalfFps(settings->device_decklink.half_fps);
     }
-
-
-    decklink_thread->setup(model_data_device->values_data[settings->device_decklink.index].value<DeckLinkDevice>(),
-            DeckLinkFormat(),
-            DeckLinkPixelFormat(),
-            8,
-            model_data_audio->values_data[settings->device_decklink.audio_sample_size].toInt(),
-            settings->device_decklink.video_depth_10bit
-            );
-
-    decklink_thread->setHalfFps(settings->device_decklink.half_fps);
 
     QMetaObject::invokeMethod(decklink_thread, "captureStart", Qt::QueuedConnection);
 }
