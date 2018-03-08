@@ -311,6 +311,22 @@ build_aac() {
 build_ff() {
   cd $PATH_BUILD
 
+  if [ ! -e nv-codec-headers ]; then
+    git clone https://github.com/FFmpeg/nv-codec-headers.git
+    cd nv-codec-headers
+
+  else
+    cd nv-codec-headers
+    git pull
+  fi
+
+  cp -rf include/ffnvcodec "$PATH_BASE/include"
+  cp -f ffnvcodec.pc.in "$PATH_BASE/lib/pkgconfig/ffnvcodec.pc"
+
+  #
+
+  cd $PATH_BUILD
+
   if [ ! -e ffmpeg ]; then
     git clone git://source.ffmpeg.org/ffmpeg
     cd ffmpeg
@@ -324,10 +340,10 @@ build_ff() {
 
   make distclean
   ./configure --prefix="$PATH_BASE" --extra-libs=-lpthread --extra-cflags="-I$PATH_BASE/include $DECKLINK_INCLUDE $str_opt" --extra-ldflags="-L$PATH_BASE/lib" --bindir="$PATH_BASE/bin" --pkg-config-flags="--static" \
-    --enable-avresample \
     --enable-pic \
     --enable-gpl \
     --enable-nonfree \
+    --enable-nvenc \
     --enable-libx264 \
     --enable-libx265 \
     --enable-libvpx \
