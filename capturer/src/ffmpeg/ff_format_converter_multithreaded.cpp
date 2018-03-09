@@ -56,6 +56,7 @@ void FFFormatConverterMt::resetQueues()
 {
     for(int i=0; i<thread.size(); ++i) {
         thread[i]->frameBufferIn()->clear();
+        thread[i]->pauseWaiting();
         thread[i]->frameBufferOut()->clear();
     }
 
@@ -65,6 +66,9 @@ void FFFormatConverterMt::resetQueues()
 bool FFFormatConverterMt::setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst,
                                 FFFormatConverter::Filter::T filter, DecodeFrom210::Format::T format_210)
 {
+    index_thread_src=0;
+    index_thread_dst=0;
+
     if(compareParams(format_src, resolution_src, format_dst, resolution_dst, filter, format_210))
         return true;
 
@@ -78,16 +82,12 @@ bool FFFormatConverterMt::setup(AVPixelFormat format_src, QSize resolution_src, 
 
     this->format_210=format_210;
 
-    index_thread_src=0;
-    index_thread_dst=0;
-
-    frame_counter=0;
-
     bool result=true;
 
-    for(int i=0; i<thread.size(); ++i)
+    for(int i=0; i<thread.size(); ++i) {
         if(!thread[i]->setup(format_src, resolution_src, format_dst, resolution_dst, filter, format_210))
             result=false;
+    }
 
     return result;
 }
@@ -118,10 +118,6 @@ void FFFormatConverterMt::convert(Frame::ptr frame)
 
     QPair <int, int> buf_sizes=thread[index_thread_src]->frameBufferIn()->size();
 
-    frame_counter++;
-
-    frame->counter=frame_counter;
-
     if(buf_sizes.first>=1) {
         // if(frame->video.data_ptr) {
         //     qWarning() << "FFFormatConverterMt::convert: frame skipped";
@@ -129,8 +125,6 @@ void FFFormatConverterMt::convert(Frame::ptr frame)
         // }
 
         frame=Frame::make();
-
-        frame->counter=frame_counter;
     }
 
     thread[index_thread_src]->frameBufferIn()->append(frame);

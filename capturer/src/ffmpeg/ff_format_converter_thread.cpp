@@ -77,8 +77,7 @@ bool FFFormatConverterThread::setup(AVPixelFormat format_src, QSize resolution_s
 {
     frame_buffer_in->clear();
 
-    while(in_progress)
-        usleep(100);
+    pauseWaiting();
 
     frame_buffer_out->clear();
 
@@ -97,6 +96,12 @@ void FFFormatConverterThread::convert()
 
         frame_buffer_out->append(frame_dst);
     }
+}
+
+void FFFormatConverterThread::pauseWaiting()
+{
+    while(in_progress)
+        usleep(100);
 }
 
 void FFFormatConverterThread::run()

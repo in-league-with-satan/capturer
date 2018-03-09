@@ -1104,7 +1104,7 @@ void MainWindow::updateEncList()
 
     for(int i=0; i<settings->rec.supported_enc.size(); ++i) {
         set_model_data->values << settings->rec.supported_enc.keys()[i];
-        set_model_data->values_data << FFEncoder::VideoEncoder::fromString(settings->rec.supported_enc.keys()[i]);
+        set_model_data->values_data << (quint64)FFEncoder::VideoEncoder::fromString(settings->rec.supported_enc.keys()[i]);
     }
 
     settingsModelDataChanged(messenger->settingsModel()->data_p_index(&settings->rec.encoder), 0, false);

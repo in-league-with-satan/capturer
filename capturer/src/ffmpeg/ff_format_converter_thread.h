@@ -47,6 +47,8 @@ public:
 
     void convert();
 
+    void pauseWaiting();
+
 protected:
     void run();
 

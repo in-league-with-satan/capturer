@@ -67,8 +67,6 @@ private:
 
     QQueue <Frame::ptr> queue_converted;
 
-    uint16_t frame_counter;
-
     bool use_multithreading=false;
 
 signals:

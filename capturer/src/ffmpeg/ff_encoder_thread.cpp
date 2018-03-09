@@ -70,9 +70,6 @@ bool FFEncoderThread::isWorking()
 void FFEncoderThread::setConfig(FFEncoder::Config cfg)
 {
     emit sigSetConfig(cfg);
-
-    frame_buffer->clear();
-    frame_buffer->setEnabled(true);
 }
 
 void FFEncoderThread::stopCoder()
@@ -87,7 +84,11 @@ void FFEncoderThread::onStateChanged(bool state)
 {
     is_working=state;
 
-    if(!state) {
+    if(state) {
+        frame_buffer->clear();
+        frame_buffer->setEnabled(true);
+
+    } else {
         frame_buffer->setEnabled(false);
         frame_buffer->clear();
     }
