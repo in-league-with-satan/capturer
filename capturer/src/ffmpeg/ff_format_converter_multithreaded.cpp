@@ -116,15 +116,15 @@ void FFFormatConverterMt::convert(Frame::ptr frame)
         return;
     }
 
-    QPair <int, int> buf_sizes=thread[index_thread_src]->frameBufferIn()->size();
+    QPair <int, int> buf_sizes;
 
-    if(buf_sizes.first>=1) {
-        // if(frame->video.data_ptr) {
-        //     qWarning() << "FFFormatConverterMt::convert: frame skipped";
-        //     frame=frame->copyFrameSoundOnly();
-        // }
+    while(true) {
+        buf_sizes=thread[index_thread_src]->frameBufferIn()->size();
 
-        frame=Frame::make();
+        if(buf_sizes.first==0)
+            break;
+
+        QThread::usleep(24);
     }
 
     thread[index_thread_src]->frameBufferIn()->append(frame);

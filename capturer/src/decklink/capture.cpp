@@ -329,7 +329,7 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
         result=decklink_input->EnableVideoInput(mode->GetDisplayMode(), pixel_format, bmdVideoInputEnableFormatDetection);
 
         if(result!=S_OK) {
-            fprintf(stderr, "Failed to switch video mode\n");
+            qWarning() << "Failed to switch video mode" << (result==E_INVALIDARG ? "- invalid mode or video flags" : "");
             return;
         }
 
@@ -360,7 +360,9 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
     if(!video_frame || !audio_packet)
         return;
 
-    if(video_frame->GetFlags() & bmdFrameHasNoInputSource) {
+    const BMDFrameFlags frame_flags=video_frame->GetFlags();
+
+    if(frame_flags&bmdFrameHasNoInputSource) {
         if(!signal_lost) {
             qWarning() << "no input signal";
             emit signalLost(signal_lost=true);

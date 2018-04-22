@@ -116,9 +116,7 @@ void FFEncoderThread::run()
     while(running) {
         frame_buffer->wait();
 
-        frame=frame_buffer->take();
-
-        if(frame) {
+        while(frame=frame_buffer->take()) {
             ffmpeg->appendFrame(frame);
 
             frame.reset();
