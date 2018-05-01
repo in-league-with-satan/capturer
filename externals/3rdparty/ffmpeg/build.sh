@@ -3,6 +3,31 @@
 #sudo apt-get -y install autoconf automake libtool build-essential cmake git subversion mercurial pkg-config
 #numactl libnuma-dev
 
+
+missing_deps=""
+
+test_cmd() {
+  if ! [ -x "$(command -v $1)" ]; then
+    missing_deps="$missing_deps $2"
+  fi
+}
+
+test_cmd autoconf autoconf
+test_cmd automake automake
+test_cmd libtoolize libtool
+test_cmd make build-essential
+test_cmd cmake cmake
+test_cmd git git
+test_cmd svn subversion
+test_cmd hg mercurial
+test_cmd pkg-config pkg-config
+
+if [[ ! -z "$missing_deps" ]]; then
+  echo "following packages are required:$missing_deps"
+  exit 1
+fi
+
+
 str_opt="-march=native -O3"
 
 
@@ -146,7 +171,7 @@ build_x265() {
     cd x265
     hg update --clean
     # hg checkout stable
-    hg pull
+    hg pull -u
     cd build/linux
     rm -rf *
   fi
