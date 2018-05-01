@@ -38,7 +38,7 @@ public:
     explicit QuickVideoSource(QObject *parent=0);
     ~QuickVideoSource();
 
-    FrameBuffer::ptr frameBuffer();
+    FrameBuffer<Frame::ptr>::ptr frameBuffer();
 
     QAbstractVideoSurface *videoSurface() const;
     void setVideoSurface(QAbstractVideoSurface *s);

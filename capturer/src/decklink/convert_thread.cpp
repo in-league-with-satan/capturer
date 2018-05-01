@@ -192,13 +192,13 @@ void DlConvertThreadContainer::addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAud
         thread_num=0;
 }
 
-void DlConvertThreadContainer::subscribe(FrameBuffer::ptr obj)
+void DlConvertThreadContainer::subscribe(FrameBuffer<Frame::ptr>::ptr obj)
 {
     if(!subscription_list.contains(obj))
         subscription_list.append(obj);
 }
 
-void DlConvertThreadContainer::unsubscribe(FrameBuffer::ptr obj)
+void DlConvertThreadContainer::unsubscribe(FrameBuffer<Frame::ptr>::ptr obj)
 {
     subscription_list.removeAll(obj);
 }
@@ -240,7 +240,7 @@ void DlConvertThreadContainer::frameCompleted(Frame::ptr frame)
     } else {
         last_frame_counter++;
 
-        foreach(FrameBuffer::ptr buf, subscription_list)
+        foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
             buf->append(frame);
 
         for(int i=0; i<queue.size(); ++i) {
@@ -251,7 +251,7 @@ void DlConvertThreadContainer::frameCompleted(Frame::ptr frame)
 
                 last_frame_counter++;
 
-                foreach(FrameBuffer::ptr buf, subscription_list)
+                foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
                     buf->append(f);
             }
         }

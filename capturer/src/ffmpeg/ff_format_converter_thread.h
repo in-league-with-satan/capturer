@@ -35,8 +35,8 @@ public:
     FFFormatConverterThread(int thread_index=0, QObject *parent=0);
     ~FFFormatConverterThread();
 
-    FrameBuffer::ptr frameBufferIn();
-    FrameBuffer::ptr frameBufferOut();
+    FrameBuffer<Frame::ptr>::ptr frameBufferIn();
+    FrameBuffer<AVFrameSP::ptr>::ptr frameBufferOut();
 
     void startThread();
     void stopThread();
@@ -53,15 +53,15 @@ protected:
     void run();
 
 private:
-    void work(Frame::ptr *frame_src, Frame::ptr *frame_dst);
+    void work(Frame::ptr *frame_src, AVFrameSP::ptr *frame_dst);
     FFFormatConverter *cnv_ff;
 
     DecodeFrom210 *from_210;
 
     DecodeFrom210::Format::T format_210=DecodeFrom210::Format::Disabled;
 
-    FrameBuffer::ptr frame_buffer_in;
-    FrameBuffer::ptr frame_buffer_out;
+    FrameBuffer<Frame::ptr>::ptr frame_buffer_in;
+    FrameBuffer<AVFrameSP::ptr>::ptr frame_buffer_out;
 
     std::atomic <bool> running;
     std::atomic <bool> in_progress;

@@ -17,35 +17,28 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
-#ifndef AUDIO_OUTPUT_INTERFACE_H
-#define AUDIO_OUTPUT_INTERFACE_H
+#ifndef AV_FRAME_SHARED_PTR_H
+#define AV_FRAME_SHARED_PTR_H
 
-#include <QThread>
+#include <QtGlobal>
 
-#include <atomic>
+#include <memory>
 
-#include "frame_buffer.h"
+#include "ff_tools.h"
 
-class AudioConverter;
-
-class AudioOutputInterface : public QThread
+class AVFrameSP
 {
-    Q_OBJECT
+    AVFrameSP(AVPixelFormat pixel_format, int width, int height, bool allocate_buffer);
 
 public:
-    AudioOutputInterface(QObject *parent=0);
-    ~AudioOutputInterface();
+    typedef std::shared_ptr<AVFrameSP> ptr;
 
-    FrameBuffer<Frame::ptr>::ptr frameBuffer();
+    ~AVFrameSP();
 
-protected:
-    QByteArray convert(void *data, size_t size, const int in_channels, int in_sample_size, int out_channels);
+    static ptr make(AVPixelFormat pixel_format, int width, int height, bool allocate_buffer=true);
 
-    FrameBuffer<Frame::ptr>::ptr frame_buffer;
-
-    std::atomic <bool> running;
-
-    AudioConverter *audio_converter;
+    AVFrame *d=nullptr;
+    AVRational time_base={};
 };
 
-#endif // AUDIO_OUTPUT_THREAD_H
+#endif // AV_FRAME_SHARED_PTR_H

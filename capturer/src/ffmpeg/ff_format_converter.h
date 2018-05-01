@@ -20,9 +20,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef FF_FORMAT_CONVERTER_H
 #define FF_FORMAT_CONVERTER_H
 
-#include <QByteArray>
-#include <QImage>
+#include <QSize>
 
+#include "av_frame_sp.h"
 #include "ff_tools.h"
 
 class AVFrame;
@@ -51,14 +51,16 @@ public:
         };
     };
 
-    bool setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, bool use_internal_frames=true, Filter::T filter=Filter::cNull);
+    bool setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, Filter::T filter=Filter::cNull);
 
-    bool compareParams(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, bool use_internal_frames=true, Filter::T filter=Filter::cNull);
+    bool compareParams(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, Filter::T filter=Filter::cNull);
 
-    void convert(const QByteArray &src, QByteArray *dst);
-    QByteArray convert(const QByteArray &src);
+    AVPixelFormat formatSrc() const;
+    AVPixelFormat formatDst() const;
 
-    void convert(AVFrame *src, AVFrame *dst);
+    bool convert(AVFrame *src, AVFrame *dst);
+
+    AVFrameSP::ptr convert(AVFrame *src);
 
 private:
     void free();
@@ -71,11 +73,7 @@ private:
 
     Filter::T filter;
 
-    bool use_internal_frames;
-
     SwsContext *convert_context;
-    AVFrame *av_frame_src;
-    AVFrame *av_frame_dst;
 };
 
 #endif // FF_FORMAT_CONVERTER_H

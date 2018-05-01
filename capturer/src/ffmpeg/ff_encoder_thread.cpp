@@ -29,7 +29,7 @@ FFEncoderThread::FFEncoderThread(FFEncoder::Mode::T mode, FFEncoderBaseFilename 
     , base_filename(base_filename)
     , mode(mode)
 {
-    frame_buffer=FrameBuffer::make();
+    frame_buffer=FrameBuffer<Frame::ptr>::make();
 
     frame_buffer->setMaxSize(120);
 
@@ -57,7 +57,7 @@ FFEncoderThread::~FFEncoderThread()
     }
 }
 
-FrameBuffer::ptr FFEncoderThread::frameBuffer()
+FrameBuffer<Frame::ptr>::ptr FFEncoderThread::frameBuffer()
 {
     return frame_buffer;
 }

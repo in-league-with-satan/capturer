@@ -78,7 +78,8 @@ AVFrame *alloc_frame(AVPixelFormat pix_fmt, int width, int height, bool alloc_bu
 
     // allocate the buffers for the frame data
     if(alloc_buffer) {
-        ret=av_frame_get_buffer(av_frame, alignment);
+        // ret=av_frame_get_buffer(av_frame, alignment);
+        ret=av_frame_get_buffer(av_frame, 0);
 
         if(ret<0) {
             qCritical() << "Could not allocate frame data";

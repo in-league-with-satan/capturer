@@ -191,7 +191,7 @@ void DeckLinkCapture::setup(DeckLinkDevice device, DeckLinkFormat format, DeckLi
     // }
 }
 
-void DeckLinkCapture::subscribe(FrameBuffer::ptr obj)
+void DeckLinkCapture::subscribe(FrameBuffer<Frame::ptr>::ptr obj)
 {
     // if(ext_converter)
     //     conv_thread->subscribe(obj);
@@ -201,7 +201,7 @@ void DeckLinkCapture::subscribe(FrameBuffer::ptr obj)
         subscription_list.append(obj);
 }
 
-void DeckLinkCapture::unsubscribe(FrameBuffer::ptr obj)
+void DeckLinkCapture::unsubscribe(FrameBuffer<Frame::ptr>::ptr obj)
 {
     // if(ext_converter)
     //     conv_thread->unsubscribe(obj);
@@ -408,7 +408,7 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
         //
 
-        foreach(FrameBuffer::ptr buf, subscription_list)
+        foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
             buf->append(frame);
     }
 }

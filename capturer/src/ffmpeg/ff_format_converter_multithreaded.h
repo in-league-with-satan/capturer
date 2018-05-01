@@ -45,10 +45,10 @@ public:
 
     void convert(Frame::ptr frame);
 
-    Frame::ptr result();
+    AVFrameSP::ptr result();
 
 private:
-    Frame::ptr checkReady();
+    AVFrameSP::ptr checkReady();
 
     AVPixelFormat format_src;
     AVPixelFormat format_dst;
@@ -65,7 +65,7 @@ private:
     int index_thread_src;
     int index_thread_dst;
 
-    QQueue <Frame::ptr> queue_converted;
+    QQueue <AVFrameSP::ptr> queue_converted;
 
     bool use_multithreading=false;
 

@@ -34,13 +34,13 @@ public:
     explicit AudioLevel(QObject *parent=0);
     ~AudioLevel();
 
-    FrameBuffer::ptr frameBuffer();
+    FrameBuffer<Frame::ptr>::ptr frameBuffer();
 
 protected:
     void run();
 
 private:
-    FrameBuffer::ptr frame_buffer;
+    FrameBuffer<Frame::ptr>::ptr frame_buffer;
 
     std::atomic <bool> running;
 

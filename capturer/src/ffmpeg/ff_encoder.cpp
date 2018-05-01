@@ -336,15 +336,14 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
         av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::ffvhuff) {
-        // c->thread_count=QThread::idealThreadCount() - 1;
+        c->thread_count=QThread::idealThreadCount() - 1;
 
-
-        // if(c->thread_count<=0)
-        //     c->thread_count=1;
+        if(c->thread_count<=0)
+            c->thread_count=1;
     }
 
     // c->thread_count=8;
-
+    // c->thread_count=2;
 
     if(c->codec_id==AV_CODEC_ID_MPEG2VIDEO) {
         // just for testing, we also add B-frames
@@ -581,10 +580,10 @@ FFEncoder::FFEncoder(FFEncoder::Mode::T mode, QObject *parent) :
     if(thread_count<1)
         thread_count=2;
 
-    if(thread_count>12)
-        thread_count=12;
+    if(thread_count>4)
+        thread_count=4;
 
-    // thread_count=2;
+    // thread_count=10;
 
     format_converter_ff=new FFFormatConverterMt(thread_count);
     // format_converter_ff->useMultithreading(false);
@@ -992,42 +991,37 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
         format_converter_ff->convert(frame);
     }
 
-    Frame::ptr frame_out;
+    AVFrameSP::ptr frame_out;
 
     while(frame_out=format_converter_ff->result()) {
-        if(frame_out->video.data_ptr) {
-            if(frame_out->video.pts==AV_NOPTS_VALUE) {
-                context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
-
-            } else {
-                if(context->in_start_pts==AV_NOPTS_VALUE)
-                    context->in_start_pts=frame->video.pts;
-
-                context->out_stream_video.frame_converted->pts=
-                        context->out_stream_video.next_pts=
-                        av_rescale_q(frame->video.pts - context->in_start_pts,
-                                     frame->video.time_base,
-                                     context->out_stream_video.av_codec_context->time_base);
-            }
-
-            av_image_fill_arrays(context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize, frame_out->video.data_ptr,
-                                 (AVPixelFormat)context->out_stream_video.frame_converted->format,
-                                 context->out_stream_video.frame_converted->width, context->out_stream_video.frame_converted->height, alignment);
-
-            last_error_string=write_video_frame(context->av_format_context, &context->out_stream_video);
-
-            if(!last_error_string.isEmpty()) {
-                stopCoder();
-                emit errorString("write_video_frame error: " + last_error_string);
-                return false;
-            }
+        if(frame_out->d->pts==AV_NOPTS_VALUE) {
+            frame_out->d->pts=context->out_stream_video.next_pts++;
 
         } else {
-            // std::cout << "frame skipped " << frame_out->counter_2 << std::endl << std::flush;
-            context->out_stream_video.next_pts++;
+            if(context->in_start_pts==AV_NOPTS_VALUE)
+                context->in_start_pts=frame_out->d->pts;
+
+            frame_out->d->pts=
+                    context->out_stream_video.next_pts=
+                    av_rescale_q(frame_out->d->pts - context->in_start_pts,
+                                 frame_out->time_base,
+                                 context->out_stream_video.av_codec_context->time_base);
+        }
+
+        AVFrame *frame_orig=context->out_stream_video.frame_converted;
+
+        context->out_stream_video.frame_converted=frame_out->d;
+        context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
+
+        last_error_string=write_video_frame(context->av_format_context, &context->out_stream_video);
+        context->out_stream_video.frame_converted=frame_orig;
+
+        if(!last_error_string.isEmpty()) {
+            stopCoder();
+            emit errorString("write_video_frame error: " + last_error_string);
+            return false;
         }
     }
-
 
     if(QDateTime::currentMSecsSinceEpoch() - context->last_stats_update_time>1000) {
         context->last_stats_update_time=QDateTime::currentMSecsSinceEpoch();

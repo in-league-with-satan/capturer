@@ -39,7 +39,7 @@ AudioLevel::AudioLevel(QObject *parent) :
 
     //
 
-    frame_buffer=FrameBuffer::make();
+    frame_buffer=FrameBuffer<Frame::ptr>::make();
     frame_buffer->setMaxSize(1);
 
     start();
@@ -56,7 +56,7 @@ AudioLevel::~AudioLevel()
     }
 }
 
-FrameBuffer::ptr AudioLevel::frameBuffer()
+FrameBuffer<Frame::ptr>::ptr AudioLevel::frameBuffer()
 {
     return frame_buffer;
 }

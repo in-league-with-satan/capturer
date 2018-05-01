@@ -35,7 +35,7 @@ public:
     FFEncoderThread(FFEncoder::Mode::T mode=FFEncoder::Mode::primary, FFEncoderBaseFilename *base_filename=0, QObject *parent=0);
     ~FFEncoderThread();
 
-    FrameBuffer::ptr frameBuffer();
+    FrameBuffer<Frame::ptr>::ptr frameBuffer();
 
     bool isWorking();
 
@@ -47,7 +47,7 @@ private slots:
     void onStateChanged(bool state);
 
 private:
-    FrameBuffer::ptr frame_buffer;
+    FrameBuffer<Frame::ptr>::ptr frame_buffer;
 
     bool is_working;
 

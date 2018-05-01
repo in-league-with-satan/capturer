@@ -30,7 +30,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "event_waiting.h"
 
-class FrameBuffer;
 class DeckLinkCapture;
 
 class IDeckLinkVideoConversion;
@@ -55,8 +54,8 @@ public:
 
     void addFrame(IDeckLinkVideoFrame *frame, IDeckLinkAudioInputPacket *audio_packet, uint8_t counter, bool reset_counter);
 
-    void subscribe(FrameBuffer::ptr obj);
-    void unsubscribe(FrameBuffer::ptr obj);
+    void subscribe(FrameBuffer<Frame::ptr>::ptr obj);
+    void unsubscribe(FrameBuffer<Frame::ptr>::ptr obj);
 
     void setAudioChannels(int value);
     void setSampleSize(int value);
@@ -77,7 +76,7 @@ private:
 
     QList <Frame::ptr> queue;
 
-    QList <FrameBuffer::ptr> subscription_list;
+    QList <FrameBuffer<Frame::ptr>::ptr> subscription_list;
 
 signals:
     void frameSkipped();

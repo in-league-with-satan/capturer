@@ -34,16 +34,15 @@ public:
     explicit AudioSender(QObject *parent=0);
     ~AudioSender();
 
-    FrameBuffer::ptr frameBuffer();
+    FrameBuffer<Frame::ptr>::ptr frameBuffer();
 
 protected:
     void run();
 
 private:
-    FrameBuffer::ptr frame_buffer;
+    FrameBuffer<Frame::ptr>::ptr frame_buffer;
 
     std::atomic <bool> running;
-
 };
 
 #endif // AUDIO_RESENDER_H

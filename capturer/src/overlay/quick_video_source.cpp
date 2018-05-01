@@ -39,7 +39,7 @@ QuickVideoSource::~QuickVideoSource()
     closeSurface();
 }
 
-FrameBuffer::ptr QuickVideoSource::frameBuffer()
+FrameBuffer<Frame::ptr>::ptr QuickVideoSource::frameBuffer()
 {
     return convert_thread->frameBufferIn();
 }

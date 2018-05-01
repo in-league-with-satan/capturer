@@ -115,7 +115,7 @@ void DeckLinkDummy::run()
                 if(t>0)
                     msleep(t);
 
-                foreach(FrameBuffer::ptr buf, subscription_list)
+                foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
                     buf->append(frame);
 
                 time_last_frame=QDateTime::currentMSecsSinceEpoch();

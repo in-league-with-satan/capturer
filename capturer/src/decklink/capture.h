@@ -65,8 +65,8 @@ public:
 
     virtual void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size, bool source_10bit);
 
-    virtual void subscribe(FrameBuffer::ptr obj);
-    virtual void unsubscribe(FrameBuffer::ptr obj);
+    virtual void subscribe(FrameBuffer<Frame::ptr>::ptr obj);
+    virtual void unsubscribe(FrameBuffer<Frame::ptr>::ptr obj);
 
     virtual bool isRunning() const;
 
@@ -118,7 +118,7 @@ private:
     uint8_t frame_counter;
 
 protected:
-    QList <FrameBuffer::ptr> subscription_list;
+    QList <FrameBuffer<Frame::ptr>::ptr> subscription_list;
 
     std::atomic <bool> running;
     std::atomic <bool> running_thread;

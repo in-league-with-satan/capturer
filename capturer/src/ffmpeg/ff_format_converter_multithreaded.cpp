@@ -34,8 +34,8 @@ FFFormatConverterMt::FFFormatConverterMt(uint8_t thread_count, QObject *parent)
     for(int i=0; i<thread_count; ++i) {
         thread[i]=std::shared_ptr<FFFormatConverterThread>(new FFFormatConverterThread(i, this));
 
-        connect(thread[i]->frameBufferIn().get(), SIGNAL(frameSkipped()), SIGNAL(frameSkipped()), Qt::QueuedConnection);
-        connect(thread[i]->frameBufferOut().get(), SIGNAL(frameSkipped()), SIGNAL(frameSkipped()), Qt::QueuedConnection);
+        connect(&thread[i]->frameBufferIn()->signaler, SIGNAL(frameSkipped()), SIGNAL(frameSkipped()), Qt::QueuedConnection);
+        connect(&thread[i]->frameBufferOut()->signaler, SIGNAL(frameSkipped()), SIGNAL(frameSkipped()), Qt::QueuedConnection);
     }
 }
 
@@ -106,12 +106,17 @@ bool FFFormatConverterMt::compareParams(AVPixelFormat format_src, QSize resoluti
 
 void FFFormatConverterMt::convert(Frame::ptr frame)
 {
+    AVFrameSP::ptr frame_out;
+
     if(!use_multithreading) {
         thread[0]->frameBufferIn()->append(frame);
         thread[0]->convert();
 
-        if(frame=thread[0]->frameBufferOut()->take())
-            queue_converted.enqueue(frame);
+        frame_out=
+                thread[0]->frameBufferOut()->take();
+
+        if(frame_out)
+            queue_converted.enqueue(frame_out);
 
         return;
     }
@@ -138,22 +143,24 @@ void FFFormatConverterMt::convert(Frame::ptr frame)
 
     //
 
-    while(frame=checkReady()) {
-        queue_converted.enqueue(frame);
+    while(frame_out=checkReady()) {
+        queue_converted.enqueue(frame_out);
     }
 }
 
-Frame::ptr FFFormatConverterMt::result()
+AVFrameSP::ptr FFFormatConverterMt::result()
 {
-    if(queue_converted.isEmpty())
-        return Frame::ptr();
+    if(queue_converted.isEmpty()) {
+        return AVFrameSP::ptr();
+    }
 
     return queue_converted.dequeue();
 }
 
-Frame::ptr FFFormatConverterMt::checkReady()
+AVFrameSP::ptr FFFormatConverterMt::checkReady()
 {
-    Frame::ptr frame=thread[index_thread_dst]->frameBufferOut()->take();
+    AVFrameSP::ptr frame=
+            thread[index_thread_dst]->frameBufferOut()->take();
 
     if(frame) {
         index_thread_dst++;

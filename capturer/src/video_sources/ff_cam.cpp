@@ -402,9 +402,10 @@ void FFCam::startCam()
         goto fail;
     }
 
-    qDebug() << "avcodec name:" << avcodec_get_name(d->stream->codecpar->codec_id);
+    qInfo() << "avcodec name:" << avcodec_get_name(d->stream->codecpar->codec_id);
 
     d->codec_context=avcodec_alloc_context3(d->codec);
+
 
     if(!d->codec_context) {
         qCritical() << "avcodec_alloc_context3 err";
@@ -460,13 +461,13 @@ void FFCam::stop()
     d->stream=nullptr;
 }
 
-void FFCam::subscribe(FrameBuffer::ptr obj)
+void FFCam::subscribe(FrameBuffer<Frame::ptr>::ptr obj)
 {
     if(!subscription_list.contains(obj))
         subscription_list.append(obj);
 }
 
-void FFCam::unsubscribe(FrameBuffer::ptr obj)
+void FFCam::unsubscribe(FrameBuffer<Frame::ptr>::ptr obj)
 {
     subscription_list.removeAll(obj);
 }
@@ -511,42 +512,49 @@ void FFCam::run()
 
                     if(frame_finished) {
                         Frame::ptr frame=Frame::make();
-                        int buf_size=av_image_get_buffer_size((AVPixelFormat)d->frame->format, d->frame->width, d->frame->height, alignment);
-
-
-                        QByteArray ba_frame_yuv;
-                        QByteArray ba_frame_rgb;
-
-                        ba_frame_yuv.resize(buf_size);
-
-                        av_image_copy_to_buffer((uint8_t*)ba_frame_yuv.constData(), buf_size, d->frame->data, d->frame->linesize,
-                                                (AVPixelFormat)d->frame->format, d->frame->width, d->frame->height, alignment);
-
 
                         d->converter.setup((AVPixelFormat)d->frame->format, QSize(d->frame->width, d->frame->height),
                                            AV_PIX_FMT_BGRA, QSize(d->frame->width, d->frame->height));
 
-                        d->converter.convert(ba_frame_yuv, &ba_frame_rgb);
+                        AVFrameSP::ptr ptr_frame_rgb=
+                                d->converter.convert(d->frame);
 
-                        if(d->audio_device) {
-                            QByteArray ba_audio=d->audio_device->readAll();
+                        if(ptr_frame_rgb) {
+                            QByteArray ba_frame_rgb;
 
-                            if(d->audio_input->format()!=default_format) {
-                                QByteArray ba_audio_conv;
+                            const int buf_size=
+                                    av_image_get_buffer_size((AVPixelFormat)ptr_frame_rgb->d->format,
+                                                             ptr_frame_rgb->d->width,
+                                                             ptr_frame_rgb->d->height,
+                                                             alignment);
 
-                                d->audio_converter.convert(&ba_audio, &ba_audio_conv);
-                                ba_audio=ba_audio_conv;
-                            }
+                            ba_frame_rgb.resize(buf_size);
 
-                            frame->setData(ba_frame_rgb, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
+                            av_image_copy_to_buffer((uint8_t*)ba_frame_rgb.constData(), buf_size,
+                                                    ptr_frame_rgb->d->data, ptr_frame_rgb->d->linesize,
+                                                    (AVPixelFormat)ptr_frame_rgb->d->format,
+                                                    ptr_frame_rgb->d->width, ptr_frame_rgb->d->height, alignment);
 
-                        } else
-                            frame->setData(ba_frame_rgb, QSize(d->frame->width, d->frame->height), QByteArray(), 0, 0);
+                            if(d->audio_device) {
+                                QByteArray ba_audio=d->audio_device->readAll();
+
+                                if(d->audio_input->format()!=default_format) {
+                                    QByteArray ba_audio_conv;
+
+                                    d->audio_converter.convert(&ba_audio, &ba_audio_conv);
+                                    ba_audio=ba_audio_conv;
+                                }
+
+                                frame->setData(ba_frame_rgb, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
+
+                            } else
+                                frame->setData(ba_frame_rgb, QSize(d->frame->width, d->frame->height), QByteArray(), 0, 0);
+                        }
 
                         frame->video.pts=d->frame->pts - d->stream->start_time;
                         frame->video.time_base=d->stream->time_base;
 
-                        foreach(FrameBuffer::ptr buf, subscription_list)
+                        foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
                             buf->append(frame);
                     }
                 }

@@ -33,10 +33,10 @@ QuickVideoSourceConvertThread::QuickVideoSourceConvertThread(QObject *parent)
     , format_converter_ff(new FFFormatConverter())
     , format_converter_dl(new DecklinkFrameConverter())
 {
-    frame_buffer_in=FrameBuffer::make();
+    frame_buffer_in=FrameBuffer<Frame::ptr>::make();
     frame_buffer_in->setMaxSize(1);
 
-    frame_buffer_out=FrameBuffer::make();
+    frame_buffer_out=FrameBuffer<Frame::ptr>::make();
     frame_buffer_out->setMaxSize(1);
 
     start(QThread::LowPriority);
@@ -61,12 +61,12 @@ QuickVideoSourceConvertThread::~QuickVideoSourceConvertThread()
     delete format_converter_dl;
 }
 
-FrameBuffer::ptr QuickVideoSourceConvertThread::frameBufferIn()
+FrameBuffer<Frame::ptr>::ptr QuickVideoSourceConvertThread::frameBufferIn()
 {
     return frame_buffer_in;
 }
 
-FrameBuffer::ptr QuickVideoSourceConvertThread::frameBufferOut()
+FrameBuffer<Frame::ptr>::ptr QuickVideoSourceConvertThread::frameBufferOut()
 {
     return frame_buffer_out;
 }
@@ -133,7 +133,7 @@ void QuickVideoSourceConvertThread::run()
                 size_yuv422=frame_src->video.data_size;
             }
 
-            if(!format_converter_ff->compareParams(AV_PIX_FMT_UYVY422, frame_src->video.size, AV_PIX_FMT_YUV420P, frame_src->video.size, false)) {
+            if(!format_converter_ff->compareParams(AV_PIX_FMT_UYVY422, frame_src->video.size, AV_PIX_FMT_YUV420P, frame_src->video.size)) {
                 if(yuv_src)
                     av_frame_free(&yuv_src);
 
@@ -145,7 +145,7 @@ void QuickVideoSourceConvertThread::run()
 
                 yuv_src->linesize[0]=DeckLinkVideoFrame::rowSize(frame_src->video.size.width(), frame_src->video_frame->GetPixelFormat());
 
-                format_converter_ff->setup(AV_PIX_FMT_UYVY422, frame_src->video.size, AV_PIX_FMT_YUV420P, frame_src->video.size, false);
+                format_converter_ff->setup(AV_PIX_FMT_UYVY422, frame_src->video.size, AV_PIX_FMT_YUV420P, frame_src->video.size);
             }
 
             if(fast_yuv) {
