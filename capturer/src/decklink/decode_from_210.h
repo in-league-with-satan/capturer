@@ -17,35 +17,37 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
-#ifndef AUDIO_OUTPUT_INTERFACE_H
-#define AUDIO_OUTPUT_INTERFACE_H
+#ifndef DECODE_FROM_210_H
+#define DECODE_FROM_210_H
 
-#include <QThread>
+#include "ff_tools.h"
+#include "frame.h"
 
-#include <atomic>
+class Context;
 
-#include "frame_buffer.h"
-
-class AudioConverter;
-
-class AudioOutputInterface : public QThread
-{
-    Q_OBJECT
-
+class DecodeFrom210 {
 public:
-    AudioOutputInterface(QObject *parent=0);
-    ~AudioOutputInterface();
+    DecodeFrom210();
+    ~DecodeFrom210();
 
-    FrameBuffer<Frame::ptr>::ptr frameBuffer();
+    struct Format {
+        enum T {
+            Disabled,
+            V210,
+            R210
+        };
+    };
 
-protected:
-    QByteArray convert(void *data, size_t size, const int in_channels, int in_sample_size, int out_channels);
+    static AVPixelFormat v210PixelFormat();
+    static AVPixelFormat r210PixelFormat();
 
-    FrameBuffer<Frame::ptr>::ptr frame_buffer;
+    bool convert(Format::T format, uint8_t *data, int size, int width, int height, AVFrame *frame);
+    Frame::ptr convert(Format::T format, Frame::ptr frame);
 
-    std::atomic <bool> running;
+    Format::T format() const;
 
-    AudioConverter *audio_converter;
+private:
+    Context *d;
 };
 
-#endif // AUDIO_OUTPUT_THREAD_H
+#endif // DECODE_FROM_210_H

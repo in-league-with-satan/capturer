@@ -30,7 +30,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 AudioOutputInterface::AudioOutputInterface(QObject *parent) :
     QThread(parent)
 {
-    frame_buffer=FrameBuffer::make();
+    frame_buffer=FrameBuffer<Frame::ptr>::make();
     frame_buffer->setMaxSize(2);
 
     audio_converter=new AudioConverter();
@@ -51,7 +51,7 @@ AudioOutputInterface::~AudioOutputInterface()
     delete audio_converter;
 }
 
-FrameBuffer::ptr AudioOutputInterface::frameBuffer()
+FrameBuffer<Frame::ptr>::ptr AudioOutputInterface::frameBuffer()
 {
     return frame_buffer;
 }

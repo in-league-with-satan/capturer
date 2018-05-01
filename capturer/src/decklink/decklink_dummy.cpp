@@ -71,15 +71,14 @@ bool DeckLinkDummy::gotSignal() const
     return true;
 }
 
-bool DeckLinkDummy::rgbSource() const
+bool DeckLinkDummy::sourceRGB() const
 {
     return true;
 }
 
-bool DeckLinkDummy::rgb10Bit() const
+bool DeckLinkDummy::source10Bit() const
 {
     return false;
-    return rgb_10bit;
 }
 
 void DeckLinkDummy::run()
@@ -105,18 +104,18 @@ void DeckLinkDummy::run()
                 frame->video.size=img.size();
                 frame->video.data_size=DeckLinkVideoFrame::frameSize(frame->video.size, bmdFormat8BitBGRA);
                 frame->video.dummy.resize(frame->video.data_size);
-                frame->video.ptr_data=(char*)frame->video.dummy.constData();
-                frame->video.rgb=true;
-                frame->video.rgb_10bit=false;
+                frame->video.data_ptr=(uint8_t*)frame->video.dummy.constData();
+                frame->video.source_rgb=true;
+                frame->video.source_10bit=false;
 
-                memcpy(frame->video.ptr_data, img.bits(), frame->video.data_size);
+                memcpy(frame->video.data_ptr, img.bits(), frame->video.data_size);
 
                 t=16 - (QDateTime::currentMSecsSinceEpoch() - time_last_frame);
 
                 if(t>0)
                     msleep(t);
 
-                foreach(FrameBuffer::ptr buf, subscription_list)
+                foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
                     buf->append(frame);
 
                 time_last_frame=QDateTime::currentMSecsSinceEpoch();

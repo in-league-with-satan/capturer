@@ -31,7 +31,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 class AVFrame;
 
 class FFFormatConverter;
-
 class DecklinkFrameConverter;
 
 class QuickVideoSourceConvertThread : public QThread
@@ -42,8 +41,8 @@ public:
     explicit QuickVideoSourceConvertThread(QObject *parent=0);
     ~QuickVideoSourceConvertThread();
 
-    FrameBuffer::ptr frameBufferIn();
-    FrameBuffer::ptr frameBufferOut();
+    FrameBuffer<Frame::ptr>::ptr frameBufferIn();
+    FrameBuffer<Frame::ptr>::ptr frameBufferOut();
 
     bool fastYuv() const;
 
@@ -54,8 +53,8 @@ protected:
     virtual void run();
 
 private:
-    FrameBuffer::ptr frame_buffer_in;
-    FrameBuffer::ptr frame_buffer_out;
+    FrameBuffer<Frame::ptr>::ptr frame_buffer_in;
+    FrameBuffer<Frame::ptr>::ptr frame_buffer_out;
 
     std::atomic <bool> running;
     std::atomic <bool> fast_yuv;

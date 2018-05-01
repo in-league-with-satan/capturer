@@ -56,8 +56,8 @@ public:
     QList <int64_t> supportedPixelFormats(QSize size);
     QList <AVRational> supportedFramerates(QSize size, int64_t fmt);
 
-    void subscribe(FrameBuffer::ptr obj);
-    void unsubscribe(FrameBuffer::ptr obj);
+    void subscribe(FrameBuffer<Frame::ptr>::ptr obj);
+    void unsubscribe(FrameBuffer<Frame::ptr>::ptr obj);
 
     bool isActive();
 
@@ -77,7 +77,7 @@ private:
 
     } cfg;
 
-    QList <FrameBuffer::ptr> subscription_list;
+    QList <FrameBuffer<Frame::ptr>::ptr> subscription_list;
 
     int index_device_video=0;
     int index_device_audio=0;

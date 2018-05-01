@@ -105,7 +105,7 @@ bool Settings::load()
     //
 
     QVariantMap map_main=map_root.value(QStringLiteral("main")).toMap();
-    QVariantMap map_device_decklink=map_root.value(QStringLiteral("device")).toMap();
+    QVariantMap map_device_decklink=map_root.value(QStringLiteral("device_decklink")).toMap();
     QVariantMap map_device_cam=map_root.value(QStringLiteral("device_cam")).toMap();
     QVariantMap map_rec=map_root.value(QStringLiteral("rec")).toMap();
     QVariantMap map_http_server=map_root.value(QStringLiteral("http_server")).toMap();
@@ -117,7 +117,7 @@ bool Settings::load()
     device_decklink.index=map_device_decklink.value(QStringLiteral("index"), 0).toInt();
     device_decklink.audio_sample_size=map_device_decklink.value(QStringLiteral("audio_sample_size"), 0).toInt();
     device_decklink.half_fps=map_device_decklink.value(QStringLiteral("half_fps"), 0).toInt();
-    device_decklink.rgb_10bit=map_device_decklink.value(QStringLiteral("rgb_10_bit"), 0).toInt();
+    device_decklink.video_depth_10bit=map_device_decklink.value(QStringLiteral("video_depth_10bit"), 0).toInt();
 
     device_cam.index_video=map_device_cam.value(QStringLiteral("index_video"), 0).toInt();
     device_cam.index_audio=map_device_cam.value(QStringLiteral("index_audio"), 0).toInt();
@@ -184,7 +184,7 @@ bool Settings::save()
     map_device_decklink.insert(QStringLiteral("index"), device_decklink.index);
     map_device_decklink.insert(QStringLiteral("audio_sample_size"), device_decklink.audio_sample_size);
     map_device_decklink.insert(QStringLiteral("half_fps"), device_decklink.half_fps);
-    map_device_decklink.insert(QStringLiteral("rgb_10_bit"), device_decklink.rgb_10bit);
+    map_device_decklink.insert(QStringLiteral("video_depth_10bit"), device_decklink.video_depth_10bit);
 
     map_device_cam.insert(QStringLiteral("index_audio"), device_cam.index_audio);
     map_device_cam.insert(QStringLiteral("index_video"), device_cam.index_video);

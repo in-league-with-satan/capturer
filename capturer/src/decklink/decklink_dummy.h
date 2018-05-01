@@ -34,8 +34,8 @@ public:
 
     bool isRunning() const;
     bool gotSignal() const;
-    bool rgbSource() const;
-    bool rgb10Bit() const;
+    bool sourceRGB() const;
+    bool source10Bit() const;
 
 protected:
     void run();

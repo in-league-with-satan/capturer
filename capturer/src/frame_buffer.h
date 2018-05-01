@@ -22,52 +22,128 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <QObject>
 #include <QMutex>
+#include <QMutexLocker>
 #include <QQueue>
 #include <QSize>
 
 #include "event_waiting.h"
 #include "frame.h"
 
-class FrameBuffer : public QObject
+class Signaler : public QObject
 {
     Q_OBJECT
 
+signals:
+    void frameSkipped();
+};
+
+template <class T>
+class FrameBuffer
+{
 public:
-    typedef std::shared_ptr<FrameBuffer> ptr;
+    typedef std::shared_ptr<FrameBuffer<T>> ptr;
 
-    explicit FrameBuffer(QObject *parent=0);
-    ~FrameBuffer();
+    explicit FrameBuffer() {
+        enabled=true;
 
-    static ptr make() {
-        return ptr(new FrameBuffer());
+        max_size=10;
     }
 
-    void append(Frame::ptr frame);
+    ~FrameBuffer() {
+        event.next();
+    }
 
-    Frame::ptr take();
+    static ptr make() {
+        return ptr(new FrameBuffer<T>());
+    }
 
-    void wait();
+    void append(T frame) {
+        QMutexLocker ml(&mutex);
 
-    void setMaxSize(uint16_t size);
+        if(!enabled)
+            return;
 
-    void setEnabled(bool value);
-    bool isEnabled();
+        if(queue.size()<max_size) {
+            queue.append(frame);
 
-    void clear();
+        } else {
+            emit signaler.frameSkipped();
+        }
 
-    bool isEmpty();
+        event.next();
+    }
 
-    QPair <int, int> size();
+    T take() {
+        QMutexLocker ml(&mutex);
+
+        if(queue.isEmpty())
+            return T();
+
+        return queue.dequeue();
+    }
+
+    void wait() {
+        {
+            QMutexLocker ml(&mutex);
+
+            if(!queue.isEmpty())
+                return;
+        }
+
+        event.wait();
+    }
+
+    void setMaxSize(uint16_t size) {
+        QMutexLocker ml(&mutex);
+
+        max_size=size;
+    }
+
+    void setEnabled(bool value) {
+        QMutexLocker ml(&mutex);
+
+        enabled=value;
+
+        queue.clear();
+
+        event.next();
+    }
+
+    bool isEnabled() {
+        QMutexLocker ml(&mutex);
+
+        return enabled;
+    }
+
+    void clear() {
+        QMutexLocker ml(&mutex);
+
+        queue.clear();
+
+        event.next();
+    }
+
+    bool isEmpty() {
+        QMutexLocker ml(&mutex);
+
+        return queue.isEmpty();
+    }
+
+    QPair <int, int> size() {
+        QMutexLocker ml(&mutex);
+
+        return qMakePair(queue.size(), max_size);
+    }
+
+    Signaler signaler;
 
 private:
-    QQueue <Frame::ptr> queue;
+    QQueue <T> queue;
     QMutex mutex;
     uint16_t max_size;
     EventWaiting event;
     bool enabled;
 
-signals:
-    void frameSkipped();
 };
 
 #endif // FRAME_BUFFER_H

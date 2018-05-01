@@ -119,7 +119,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     decklink_thread->subscribe(ff_enc->frameBuffer());
 
-    connect(ff_enc->frameBuffer().get(), SIGNAL(frameSkipped()), SLOT(encoderBufferOverload()), Qt::QueuedConnection);
+    connect(&ff_enc->frameBuffer()->signaler, SIGNAL(frameSkipped()), SLOT(encoderBufferOverload()), Qt::QueuedConnection);
     connect(ff_enc, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
     connect(ff_enc, SIGNAL(stateChanged(bool)), SLOT(encoderStateChanged(bool)), Qt::QueuedConnection);
     connect(ff_enc, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
@@ -415,11 +415,11 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="rgb depth";
+    set_model_data.name="video depth";
     set_model_data.values << "8 bit" << "10 bit";
     set_model_data.values_data << 0 << 1;
 
-    set_model_data.value=&settings->device_decklink.rgb_10bit;
+    set_model_data.value=&settings->device_decklink.video_depth_10bit;
 
     messenger->settingsModel()->add(set_model_data);
 
@@ -999,13 +999,12 @@ void MainWindow::captureStart()
             return;
         }
 
-
         decklink_thread->setup(model_data_device->values_data[settings->device_decklink.index].value<DeckLinkDevice>(),
                 DeckLinkFormat(),
                 DeckLinkPixelFormat(),
                 8,
                 model_data_audio->values_data[settings->device_decklink.audio_sample_size].toInt(),
-                settings->device_decklink.rgb_10bit
+                settings->device_decklink.video_depth_10bit
                 );
 
         decklink_thread->setHalfFps(settings->device_decklink.half_fps);
@@ -1043,8 +1042,8 @@ void MainWindow::startStopRecording()
             cfg.preset=messenger->settingsModel()->data_p(&settings->rec.preset_current)->values_data[settings->rec.preset_current].toString();
             cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
             cfg.crf=settings->rec.crf;
-            cfg.rgb_source=decklink_thread->rgbSource();
-            cfg.rgb_10bit=decklink_thread->rgb10Bit();
+            cfg.rgb_source=decklink_thread->sourceRGB();
+            cfg.depth_10bit=decklink_thread->source10Bit();
             cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device_decklink.audio_sample_size)->values_data[settings->device_decklink.audio_sample_size].toInt();
             cfg.downscale=settings->rec.downscale;
             cfg.scale_filter=settings->rec.scale_filter;
@@ -1069,7 +1068,7 @@ void MainWindow::startStopRecording()
             cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
             cfg.crf=settings->rec.crf;
             cfg.rgb_source=true;
-            cfg.rgb_10bit=false;
+            cfg.depth_10bit=false;
             cfg.audio_sample_size=16;
             cfg.audio_channels_size=2;
             cfg.downscale=settings->rec.downscale;
@@ -1086,6 +1085,12 @@ void MainWindow::startStopRecording()
 
 void MainWindow::updateEncList()
 {
+    if(settings->rec.supported_enc.isEmpty()) {
+        qCritical() << "supported_enc.isEmpty";
+        exit(1);
+        return;
+    }
+
     SettingsModel::Data *set_model_data=
             messenger->settingsModel()->data_p(&settings->rec.encoder);
 

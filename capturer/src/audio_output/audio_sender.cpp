@@ -31,7 +31,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 AudioSender::AudioSender(QObject *parent)
     : QThread(parent)
 {
-    frame_buffer=FrameBuffer::make();
+    frame_buffer=FrameBuffer<Frame::ptr>::make();
     frame_buffer->setMaxSize(1);
 
     start(QThread::NormalPriority);
@@ -48,7 +48,7 @@ AudioSender::~AudioSender()
     }
 }
 
-FrameBuffer::ptr AudioSender::frameBuffer()
+FrameBuffer<Frame::ptr>::ptr AudioSender::frameBuffer()
 {
     return frame_buffer;
 }
@@ -105,7 +105,7 @@ void AudioSender::run()
                 continue;
             }
 
-            packet.data=QByteArray(frame->audio.ptr_data, frame->audio.data_size);
+            packet.data=QByteArray((char*)frame->audio.data_ptr, frame->audio.data_size);
             packet.channels=frame->audio.channels;
             packet.sample_size=frame->audio.sample_size;
 

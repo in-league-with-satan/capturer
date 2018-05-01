@@ -33,13 +33,13 @@ QuickVideoSourceConvertThread::QuickVideoSourceConvertThread(QObject *parent)
     , format_converter_ff(new FFFormatConverter())
     , format_converter_dl(new DecklinkFrameConverter())
 {
-    frame_buffer_in=FrameBuffer::make();
+    frame_buffer_in=FrameBuffer<Frame::ptr>::make();
     frame_buffer_in->setMaxSize(1);
 
-    frame_buffer_out=FrameBuffer::make();
+    frame_buffer_out=FrameBuffer<Frame::ptr>::make();
     frame_buffer_out->setMaxSize(1);
 
-    start(QThread::NormalPriority);
+    start(QThread::LowPriority);
 }
 
 QuickVideoSourceConvertThread::~QuickVideoSourceConvertThread()
@@ -61,12 +61,12 @@ QuickVideoSourceConvertThread::~QuickVideoSourceConvertThread()
     delete format_converter_dl;
 }
 
-FrameBuffer::ptr QuickVideoSourceConvertThread::frameBufferIn()
+FrameBuffer<Frame::ptr>::ptr QuickVideoSourceConvertThread::frameBufferIn()
 {
     return frame_buffer_in;
 }
 
-FrameBuffer::ptr QuickVideoSourceConvertThread::frameBufferOut()
+FrameBuffer<Frame::ptr>::ptr QuickVideoSourceConvertThread::frameBufferOut()
 {
     return frame_buffer_out;
 }
@@ -88,7 +88,9 @@ void QuickVideoSourceConvertThread::run()
 
     QByteArray ba_dst;
 
-    int frame_size=0;
+    uint8_t *data_yuv422=nullptr;
+    size_t size_yuv422=0;
+    QByteArray ba_yuv422;
 
     running=true;
 
@@ -102,25 +104,36 @@ void QuickVideoSourceConvertThread::run()
 
         frame_dst=Frame::make();
 
-        if(frame_src->video.rgb) {
-            frame_size=DeckLinkVideoFrame::frameSize(frame_src->video.size, bmdFormat8BitBGRA);
+        frame_dst->video.source_rgb=frame_src->video.source_rgb;
 
-            if(ba_dst.size()!=frame_size)
-                ba_dst.resize(frame_size);
+        if(frame_src->video.source_rgb) {
+            ba_dst.resize(DeckLinkVideoFrame::frameSize(frame_src->video.size, bmdFormat8BitBGRA));
 
-            if(frame_src->video.rgb_10bit) {
+            if(frame_src->video.source_10bit) {
                 format_converter_dl->init(bmdFormat10BitRGB, frame_src->video.size, bmdFormat8BitBGRA, frame_src->video.size);
-                format_converter_dl->convert(frame_src->video.ptr_data, (void*)ba_dst.constData());
+                format_converter_dl->convert(frame_src->video.data_ptr, (void*)ba_dst.constData());
 
             } else {
-                memcpy((void*)ba_dst.constData(), frame_src->video.ptr_data, frame_src->video.data_size);
+                memcpy((void*)ba_dst.constData(), frame_src->video.data_ptr, frame_src->video.data_size);
             }
 
         } else {
-            frame_dst->video.rgb=false;
+            if(frame_src->video.source_10bit) {
+                size_yuv422=DeckLinkVideoFrame::frameSize(frame_src->video.size, bmdFormat8BitYUV);
 
-            if(!format_converter_ff->compareParams(AV_PIX_FMT_UYVY422, frame_src->video.size, AV_PIX_FMT_YUV420P, frame_src->video.size, false)) {
+                ba_yuv422.resize(size_yuv422);
 
+                data_yuv422=(uint8_t*)ba_yuv422.constData();
+
+                format_converter_dl->init(bmdFormat10BitYUV, frame_src->video.size, bmdFormat8BitYUV, frame_src->video.size);
+                format_converter_dl->convert(frame_src->video.data_ptr, (void*)ba_yuv422.constData());
+
+            } else {
+                data_yuv422=frame_src->video.data_ptr;
+                size_yuv422=frame_src->video.data_size;
+            }
+
+            if(!format_converter_ff->compareParams(AV_PIX_FMT_UYVY422, frame_src->video.size, AV_PIX_FMT_YUV420P, frame_src->video.size)) {
                 if(yuv_src)
                     av_frame_free(&yuv_src);
 
@@ -132,30 +145,24 @@ void QuickVideoSourceConvertThread::run()
 
                 yuv_src->linesize[0]=DeckLinkVideoFrame::rowSize(frame_src->video.size.width(), frame_src->video_frame->GetPixelFormat());
 
-                format_converter_ff->setup(AV_PIX_FMT_UYVY422, frame_src->video.size, AV_PIX_FMT_YUV420P, frame_src->video.size, false);
+                format_converter_ff->setup(AV_PIX_FMT_UYVY422, frame_src->video.size, AV_PIX_FMT_YUV420P, frame_src->video.size);
             }
 
-            if(fast_yuv)
-                frame_size=frame_src->video.data_size;
-
-            else
-                frame_size=av_image_get_buffer_size(AV_PIX_FMT_YUV420P, frame_src->video.size.width(), frame_src->video.size.height(), 32);
-
-            if(ba_dst.size()!=frame_size)
-                ba_dst.resize(frame_size);
-
             if(fast_yuv) {
-                memcpy((void*)ba_dst.constData(), frame_src->video.ptr_data, frame_src->video.data_size);
+                ba_dst.resize(size_yuv422);
+
+                memcpy((void*)ba_dst.constData(), data_yuv422, size_yuv422);
 
             } else {
-                yuv_src->data[0]=(uint8_t*)frame_src->video.ptr_data;
+                ba_dst.resize(av_image_get_buffer_size(AV_PIX_FMT_YUV420P, frame_src->video.size.width(), frame_src->video.size.height(), alignment));
+
+                av_image_fill_arrays(yuv_src->data, yuv_src->linesize, data_yuv422, AV_PIX_FMT_UYVY422, frame_src->video.size.width(), frame_src->video.size.height(), alignment);
 
                 format_converter_ff->convert(yuv_src, yuv_dst);
 
-                av_image_copy_to_buffer((uint8_t*)ba_dst.constData(), frame_size, yuv_dst->data, yuv_dst->linesize, (AVPixelFormat)yuv_dst->format, yuv_dst->width, yuv_dst->height, 32);
+                av_image_copy_to_buffer((uint8_t*)ba_dst.constData(), ba_dst.size(), yuv_dst->data, yuv_dst->linesize, (AVPixelFormat)yuv_dst->format, yuv_dst->width, yuv_dst->height, alignment);
             }
         }
-
 
         frame_dst->setData(ba_dst, frame_src->video.size, frame_src->audio.dummy, frame_src->audio.channels, frame_src->audio.sample_size);
 

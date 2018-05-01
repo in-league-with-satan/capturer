@@ -29,7 +29,7 @@ FFEncoderThread::FFEncoderThread(FFEncoder::Mode::T mode, FFEncoderBaseFilename 
     , base_filename(base_filename)
     , mode(mode)
 {
-    frame_buffer=FrameBuffer::make();
+    frame_buffer=FrameBuffer<Frame::ptr>::make();
 
     frame_buffer->setMaxSize(120);
 
@@ -57,7 +57,7 @@ FFEncoderThread::~FFEncoderThread()
     }
 }
 
-FrameBuffer::ptr FFEncoderThread::frameBuffer()
+FrameBuffer<Frame::ptr>::ptr FFEncoderThread::frameBuffer()
 {
     return frame_buffer;
 }
@@ -70,13 +70,13 @@ bool FFEncoderThread::isWorking()
 void FFEncoderThread::setConfig(FFEncoder::Config cfg)
 {
     emit sigSetConfig(cfg);
-
-    frame_buffer->clear();
-    frame_buffer->setEnabled(true);
 }
 
 void FFEncoderThread::stopCoder()
 {
+    frame_buffer->setEnabled(false);
+    frame_buffer->clear();
+
     emit sigStopCoder();
 }
 
@@ -84,7 +84,11 @@ void FFEncoderThread::onStateChanged(bool state)
 {
     is_working=state;
 
-    if(!state) {
+    if(state) {
+        frame_buffer->clear();
+        frame_buffer->setEnabled(true);
+
+    } else {
         frame_buffer->setEnabled(false);
         frame_buffer->clear();
     }
@@ -112,9 +116,7 @@ void FFEncoderThread::run()
     while(running) {
         frame_buffer->wait();
 
-        frame=frame_buffer->take();
-
-        if(frame) {
+        while(frame=frame_buffer->take()) {
             ffmpeg->appendFrame(frame);
 
             frame.reset();

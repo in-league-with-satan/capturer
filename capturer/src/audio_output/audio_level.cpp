@@ -39,7 +39,7 @@ AudioLevel::AudioLevel(QObject *parent) :
 
     //
 
-    frame_buffer=FrameBuffer::make();
+    frame_buffer=FrameBuffer<Frame::ptr>::make();
     frame_buffer->setMaxSize(1);
 
     start();
@@ -56,7 +56,7 @@ AudioLevel::~AudioLevel()
     }
 }
 
-FrameBuffer::ptr AudioLevel::frameBuffer()
+FrameBuffer<Frame::ptr>::ptr AudioLevel::frameBuffer()
 {
     return frame_buffer;
 }
@@ -79,14 +79,14 @@ void AudioLevel::run()
 
         if(frame) {
             if(frame->audio.sample_size==16) {
-                int16_t *ptr_data=(int16_t*)frame->audio.ptr_data;
+                int16_t *ptr_data=(int16_t*)frame->audio.data_ptr;
 
                 for(int pos=0, size=frame->audio.data_size/2; pos<size; pos+=8)
                     for(int channel=0; channel<8; ++channel)
                         level[channel]=std::max(level[channel], (int32_t)ptr_data[pos + channel]);
 
             } else {
-                int32_t *ptr_data=(int32_t*)frame->audio.ptr_data;
+                int32_t *ptr_data=(int32_t*)frame->audio.data_ptr;
 
                 for(int pos=0, size=frame->audio.data_size/4; pos<size; pos+=8)
                     for(int channel=0; channel<8; ++channel)

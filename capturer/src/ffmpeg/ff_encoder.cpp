@@ -23,8 +23,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QFile>
 #include <QDir>
 
+#include <iostream>
+
 #include "ff_tools.h"
-#include "ff_format_converter.h"
+#include "ff_format_converter_multithreaded.h"
 #include "decklink_frame_converter.h"
 
 #include "ff_encoder.h"
@@ -341,7 +343,7 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
     }
 
     // c->thread_count=8;
-
+    // c->thread_count=2;
 
     if(c->codec_id==AV_CODEC_ID_MPEG2VIDEO) {
         // just for testing, we also add B-frames
@@ -571,8 +573,23 @@ FFEncoder::FFEncoder(FFEncoder::Mode::T mode, QObject *parent) :
     QObject(parent)
 {
     context=new FFMpegContext();
-    format_converter_ff=new FFFormatConverter();
-    format_converter_dl=new DecklinkFrameConverter();
+
+    int thread_count=QThread::idealThreadCount()/2;
+    // thread_count=QThread::idealThreadCount();
+
+    if(thread_count<1)
+        thread_count=2;
+
+    if(thread_count>4)
+        thread_count=4;
+
+    // thread_count=10;
+
+    format_converter_ff=new FFFormatConverterMt(thread_count);
+    // format_converter_ff->useMultithreading(false);
+    format_converter_ff->useMultithreading(true);
+
+    // connect(format_converter_ff, SIGNAL(frameSkipped()), SLOT(converterFrameSkip()), Qt::QueuedConnection);
 
     context->base_filename=nullptr;
     context->mode=mode;
@@ -583,9 +600,7 @@ FFEncoder::~FFEncoder()
     stopCoder();
 
     delete context;
-
     delete format_converter_ff;
-    delete format_converter_dl;
 }
 
 FFEncoder::Framerate::T FFEncoder::calcFps(int64_t frame_duration, int64_t frame_scale, bool half_fps)
@@ -744,16 +759,45 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     }
 
 
-
+    /*
     if(!format_converter_ff->setup(context->out_stream_video.frame_fmt, cfg.frame_resolution_src, cfg.pixel_format, cfg.frame_resolution_src, false)) {
         emit errorString(last_error_string=QStringLiteral("err init format converter"));
         goto fail;
     }
+    */
 
 
-    if(cfg.rgb_source && cfg.rgb_10bit) {
-        format_converter_dl->init(bmdFormat10BitRGB, cfg.frame_resolution_src, bmdFormat8BitBGRA, cfg.frame_resolution_src);
+    if(cfg.depth_10bit) {
+        // format_converter_dl->init(bmdFormat10BitRGB, cfg.frame_resolution_src, bmdFormat8BitBGRA, cfg.frame_resolution_src);
+
+        bool ret;
+
+        if(cfg.rgb_source)
+            ret=format_converter_ff->setup(DecodeFrom210::r210PixelFormat(), cfg.frame_resolution_src, cfg.pixel_format, cfg.frame_resolution_dst,
+                                           cfg.downscale==DownScale::Disabled ? FFFormatConverter::Filter::cNull : (FFFormatConverter::Filter::T)ScaleFilter::toSws(cfg.scale_filter),
+                                           DecodeFrom210::Format::R210);
+
+        else
+            ret=format_converter_ff->setup(DecodeFrom210::v210PixelFormat(), cfg.frame_resolution_src, cfg.pixel_format, cfg.frame_resolution_dst,
+                                           cfg.downscale==DownScale::Disabled ? FFFormatConverter::Filter::cNull : (FFFormatConverter::Filter::T)ScaleFilter::toSws(cfg.scale_filter),
+                                           DecodeFrom210::Format::V210);
+
+        if(!ret) {
+            emit errorString(last_error_string=QStringLiteral("err init format converter"));
+            goto fail;
+        }
+
+    } else {
+        if(!format_converter_ff->setup(context->out_stream_video.frame_fmt, cfg.frame_resolution_src, cfg.pixel_format, cfg.frame_resolution_dst,
+                                       cfg.downscale==DownScale::Disabled ? FFFormatConverter::Filter::cNull : (FFFormatConverter::Filter::T)ScaleFilter::toSws(cfg.scale_filter),
+                                       DecodeFrom210::Format::Disabled)) {
+            emit errorString(last_error_string=QStringLiteral("err init format converter"));
+            goto fail;
+        }
     }
+
+
+    format_converter_ff->resetQueues();
 
 
     {
@@ -875,6 +919,10 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     if(cfg.downscale!=DownScale::Disabled)
         av_dict_set(&context->av_format_context->metadata, "scale filter", ScaleFilter::toString(cfg.scale_filter).toLatin1().constData(), 0);
 
+    av_dict_set(&context->av_format_context->metadata, "encoder", "test", AV_DICT_DONT_OVERWRITE);
+
+    av_dict_set(&context->opt, "encoder", "test", AV_DICT_DONT_OVERWRITE);
+
 
     // write the stream header, if any
     ret=avformat_write_header(context->av_format_context, &context->opt);
@@ -925,103 +973,53 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
         return false;
 
 
-    // video
-    {
-        switch(context->cfg.framerate) {
-        case Framerate::half_50:
-        case Framerate::half_59:
-        case Framerate::half_60:
-            context->skip_frame=!context->skip_frame;
-            break;
-
-        default:
-            break;
-        }
-
-        if(!context->skip_frame) {
-            uint8_t *ptr_orig=context->out_stream_video.frame->data[0];
-
-            if(frame->video.rgb && frame->video.rgb_10bit) {
-                format_converter_dl->convert(frame->video.ptr_data, context->out_stream_video.frame->data[0]);
-
-            } else {
-                context->out_stream_video.frame->data[0]=(uint8_t*)frame->video.ptr_data;
-
-            }
+    processAudio(frame);
 
 
-            sws_scale(context->out_stream_video.convert_context, context->out_stream_video.frame->data, context->out_stream_video.frame->linesize, 0, context->out_stream_video.frame->height, context->out_stream_video.frame_converted->data, context->out_stream_video.frame_converted->linesize);
+    switch(context->cfg.framerate) {
+    case Framerate::half_50:
+    case Framerate::half_59:
+    case Framerate::half_60:
+        context->skip_frame=!context->skip_frame;
+        break;
 
-            if(frame->video.pts==AV_NOPTS_VALUE) {
-                context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
-
-            } else {
-                if(context->in_start_pts==AV_NOPTS_VALUE)
-                    context->in_start_pts=frame->video.pts;
-
-                context->out_stream_video.frame_converted->pts=
-                        context->out_stream_video.next_pts=
-                        av_rescale_q(frame->video.pts - context->in_start_pts,
-                                     frame->video.time_base,
-                                     context->out_stream_video.av_codec_context->time_base);
-            }
-
-            last_error_string=write_video_frame(context->av_format_context, &context->out_stream_video);
-
-            context->out_stream_video.frame->data[0]=ptr_orig;
-
-            if(!last_error_string.isEmpty()) {
-                stopCoder();
-                emit errorString("write_video_frame error: " + last_error_string);
-                return false;
-            }
-        }
+    default:
+        break;
     }
 
-    // audio
-    {
-        if(frame->audio.data_size) {
-            QByteArray ba_audio=QByteArray(frame->audio.ptr_data, frame->audio.data_size);
+    if(!context->skip_frame) {
+        format_converter_ff->convert(frame);
+    }
 
-            ba_audio.insert(0, context->out_stream_audio.ba_audio_prev_part);
+    AVFrameSP::ptr frame_out;
 
-            AVSampleFormat sample_format=context->cfg.audio_sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32;
+    while(frame_out=format_converter_ff->result()) {
+        if(frame_out->d->pts==AV_NOPTS_VALUE) {
+            frame_out->d->pts=context->out_stream_video.next_pts++;
 
-            int buffer_size=0;
+        } else {
+            if(context->in_start_pts==AV_NOPTS_VALUE)
+                context->in_start_pts=frame_out->d->pts;
 
-            int default_nb_samples=context->out_stream_audio.frame->nb_samples;
+            frame_out->d->pts=
+                    context->out_stream_video.next_pts=
+                    av_rescale_q(frame_out->d->pts - context->in_start_pts,
+                                 frame_out->time_base,
+                                 context->out_stream_video.av_codec_context->time_base);
+        }
 
-            while(true) {
-                buffer_size=av_samples_get_buffer_size(nullptr, context->out_stream_audio.frame->channels, context->out_stream_audio.frame->nb_samples,
-                                                       sample_format, 0);
+        AVFrame *frame_orig=context->out_stream_video.frame_converted;
 
-                if(ba_audio.size()>=buffer_size) {
-                    break;
-                }
+        context->out_stream_video.frame_converted=frame_out->d;
+        context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
 
-                context->out_stream_audio.frame->nb_samples--;
-            }
+        last_error_string=write_video_frame(context->av_format_context, &context->out_stream_video);
+        context->out_stream_video.frame_converted=frame_orig;
 
-            QByteArray ba_audio_tmp=ba_audio.left(buffer_size);
-
-            context->out_stream_audio.ba_audio_prev_part=ba_audio.remove(0, buffer_size);
-
-            int ret=avcodec_fill_audio_frame(context->out_stream_audio.frame, context->out_stream_audio.frame->channels, sample_format,
-                                             (const uint8_t*)ba_audio_tmp.constData(), buffer_size, 0);
-
-            if(ret<0) {
-                stopCoder();
-                emit errorString(last_error_string=QStringLiteral("avcodec_fill_audio_frame error: could not setup audio frame"));
-                return false;
-            }
-
-            context->out_stream_audio.frame->pts=context->out_stream_audio.next_pts;
-
-            context->out_stream_audio.next_pts+=context->out_stream_audio.frame->nb_samples;
-
-            write_audio_frame(context->av_format_context, &context->out_stream_audio);
-
-            context->out_stream_audio.frame->nb_samples=default_nb_samples;
+        if(!last_error_string.isEmpty()) {
+            stopCoder();
+            emit errorString("write_video_frame error: " + last_error_string);
+            return false;
         }
     }
 
@@ -1032,6 +1030,53 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
     }
 
     return true;
+}
+
+void FFEncoder::processAudio(Frame::ptr frame)
+{
+    if(frame->audio.data_size) {
+        QByteArray ba_audio=QByteArray((char*)frame->audio.data_ptr, frame->audio.data_size);
+
+        ba_audio.insert(0, context->out_stream_audio.ba_audio_prev_part);
+
+        AVSampleFormat sample_format=context->cfg.audio_sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32;
+
+        int buffer_size=0;
+
+        int default_nb_samples=context->out_stream_audio.frame->nb_samples;
+
+        while(true) {
+            buffer_size=av_samples_get_buffer_size(nullptr, context->out_stream_audio.frame->channels, context->out_stream_audio.frame->nb_samples,
+                                                   sample_format, 0);
+
+            if(ba_audio.size()>=buffer_size) {
+                break;
+            }
+
+            context->out_stream_audio.frame->nb_samples--;
+        }
+
+        QByteArray ba_audio_tmp=ba_audio.left(buffer_size);
+
+        context->out_stream_audio.ba_audio_prev_part=ba_audio.remove(0, buffer_size);
+
+        int ret=avcodec_fill_audio_frame(context->out_stream_audio.frame, context->out_stream_audio.frame->channels, sample_format,
+                                         (const uint8_t*)ba_audio_tmp.constData(), buffer_size, 0);
+
+        if(ret<0) {
+            stopCoder();
+            emit errorString(last_error_string=QStringLiteral("avcodec_fill_audio_frame error: could not setup audio frame"));
+            return;
+        }
+
+        context->out_stream_audio.frame->pts=context->out_stream_audio.next_pts;
+
+        context->out_stream_audio.next_pts+=context->out_stream_audio.frame->nb_samples;
+
+        write_audio_frame(context->av_format_context, &context->out_stream_audio);
+
+        context->out_stream_audio.frame->nb_samples=default_nb_samples;
+    }
 }
 
 bool FFEncoder::stopCoder()
@@ -1059,6 +1104,11 @@ bool FFEncoder::stopCoder()
     emit stateChanged(false);
 
     return true;
+}
+
+void FFEncoder::converterFrameSkip()
+{
+    // context->out_stream_video.next_pts++;
 }
 
 void FFEncoder::calcStats()
@@ -1095,8 +1145,17 @@ QString FFEncoder::PixelFormat::toString(uint32_t value)
     case RGB24:
         return QLatin1String("rgb24");
 
+    case BGR0:
+        return QLatin1String("bgr0");
+
+    case RGB0:
+        return QLatin1String("rgb0");
+
     case YUV420P:
         return QLatin1String("yuv420p");
+
+    case YUV420P10:
+        return QLatin1String("yuv420p10");
 
     case YUV422P:
         return QLatin1String("yuv422p");
@@ -1104,23 +1163,20 @@ QString FFEncoder::PixelFormat::toString(uint32_t value)
     case UYVY422:
         return QLatin1String("uyvy422p");
 
+    case YUV422P10LE:
+        return QLatin1String("yuv422p10le (v210)");
+
     case YUV444P:
         return QLatin1String("yuv444p");
-
-    case YUV420P10:
-        return QLatin1String("yuv420p10");
-
-    // case YUV422P10:
-    //     return QLatin1String("yuv422p10");
 
     case YUV444P10:
         return QLatin1String("yuv444p10");
 
-    case V210:
-        return QLatin1String("yuv422p10le (v210)");
+    case YUV444P16LE:
+        return QLatin1String("yuv444p16le");
 
-    case R210:
-        return QLatin1String("r210");
+    case RGB48LE:
+        return QLatin1String("rgb48le (r210)");
 
     case P010LE:
         return QLatin1String("p010le");
@@ -1137,8 +1193,17 @@ uint64_t FFEncoder::PixelFormat::fromString(QString value)
     if(value==QLatin1String("rgb24"))
         return RGB24;
 
+    else if(value==QLatin1String("bgr0"))
+        return BGR0;
+
+    else if(value==QLatin1String("rgb0"))
+        return RGB0;
+
     else if(value==QLatin1String("yuv420p"))
         return YUV420P;
+
+    else if(value==QLatin1String("yuv420p10"))
+        return YUV420P10;
 
     else if(value==QLatin1String("yuv422p"))
         return YUV422P;
@@ -1146,23 +1211,20 @@ uint64_t FFEncoder::PixelFormat::fromString(QString value)
     else if(value==QLatin1String("uyvy422p"))
         return UYVY422;
 
+    else if(value==QLatin1String("yuv422p10le (v210)"))
+        return YUV422P10LE;
+
     else if(value==QLatin1String("yuv444p"))
         return YUV444P;
-
-    else if(value==QLatin1String("yuv420p10"))
-        return YUV420P10;
-
-    // else if(value==QLatin1String("yuv422p10"))
-    //     return YUV422P10;
 
     else if(value==QLatin1String("yuv444p10"))
         return YUV444P10;
 
-    else if(value==QLatin1String("yuv422p10le (v210)"))
-        return V210;
+    else if(value==QLatin1String("yuv444p16le"))
+        return YUV444P16LE;
 
-    else if(value==QLatin1String("r210"))
-        return R210;
+    else if(value==QLatin1String("rgb48le (r210)"))
+        return RGB48LE;
 
     else if(value==QLatin1String("p010le"))
         return P010LE;
@@ -1189,13 +1251,13 @@ QList <FFEncoder::PixelFormat::T> FFEncoder::PixelFormat::compatiblePixelFormats
         return QList<T>() << YUV420P << YUV444P;
 
     case VideoEncoder::nvenc_hevc:
-        return QList<T>() << YUV420P;
+        return QList<T>() << YUV420P << NV12 << P010LE << YUV444P << YUV444P16LE << BGR0 << RGB0;
 
     case VideoEncoder::qsv_h264:
         return QList<T>() /*<< P010LE*/ << NV12;
 
     case VideoEncoder::ffvhuff:
-        return QList<T>() << RGB24 << YUV420P << YUV422P << YUV444P << YUV420P10 /*<< YUV422P10*/ << YUV444P10 << V210;
+        return QList<T>() << RGB24 << YUV420P << YUV422P << YUV444P << YUV420P10 /*<< YUV422P10*/ << YUV444P10 << YUV422P10LE;
     }
 
     return QList<T>() << RGB24 << YUV420P << YUV444P << YUV420P10 << YUV444P10;
@@ -1204,8 +1266,8 @@ QList <FFEncoder::PixelFormat::T> FFEncoder::PixelFormat::compatiblePixelFormats
 QList <FFEncoder::PixelFormat::T> FFEncoder::PixelFormat::list()
 {
     static QList <FFEncoder::PixelFormat::T> res=
-            QList <FFEncoder::PixelFormat::T>() << RGB24 << YUV420P << YUV422P << UYVY422 << YUV444P << YUV420P10
-                                                << V210 << YUV444P10 << R210 << P010LE << NV12;
+            QList <FFEncoder::PixelFormat::T>() << RGB24 << BGR0 << RGB0 << YUV420P << YUV420P10 << YUV422P << UYVY422 << YUV444P
+                                                << YUV422P10LE << YUV444P10 << YUV444P16LE << RGB48LE << P010LE << NV12;
 
     return res;
 }

@@ -48,12 +48,12 @@ FFDecoderThread::~FFDecoderThread()
     term();
 }
 
-void FFDecoderThread::subscribeVideo(FrameBuffer::ptr obj)
+void FFDecoderThread::subscribeVideo(FrameBuffer<Frame::ptr>::ptr obj)
 {
     context.out_video_buffer=obj;
 }
 
-void FFDecoderThread::subscribeAudio(FrameBuffer::ptr obj)
+void FFDecoderThread::subscribeAudio(FrameBuffer<Frame::ptr>::ptr obj)
 {
     context.out_audio_buffer=obj;
 }

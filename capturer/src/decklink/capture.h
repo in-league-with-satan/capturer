@@ -63,17 +63,17 @@ public:
     explicit DeckLinkCapture(QObject *parent=0);
     virtual ~DeckLinkCapture();
 
-    virtual void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size, bool rgb_10bit);
+    virtual void setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size, bool source_10bit);
 
-    virtual void subscribe(FrameBuffer::ptr obj);
-    virtual void unsubscribe(FrameBuffer::ptr obj);
+    virtual void subscribe(FrameBuffer<Frame::ptr>::ptr obj);
+    virtual void unsubscribe(FrameBuffer<Frame::ptr>::ptr obj);
 
     virtual bool isRunning() const;
 
     virtual bool gotSignal() const;
 
-    virtual bool rgbSource() const;
-    virtual bool rgb10Bit() const;
+    virtual bool sourceRGB() const;
+    virtual bool source10Bit() const;
 
     virtual void setHalfFps(bool value);
 
@@ -118,15 +118,15 @@ private:
     uint8_t frame_counter;
 
 protected:
-    QList <FrameBuffer::ptr> subscription_list;
+    QList <FrameBuffer<Frame::ptr>::ptr> subscription_list;
 
     std::atomic <bool> running;
     std::atomic <bool> running_thread;
     std::atomic <bool> half_fps;
     std::atomic <bool> signal_lost;
     std::atomic <bool> skip_frame;
-    std::atomic <bool> rgb_source;
-    std::atomic <bool> rgb_10bit;
+    std::atomic <bool> source_rgb;
+    std::atomic <bool> source_10bit;
 
 signals:
     void signalLost(const bool &value);

@@ -49,8 +49,8 @@ public:
     FFDecoderThread(QObject *parent=0);
     ~FFDecoderThread();
 
-    void subscribeVideo(FrameBuffer::ptr obj);
-    void subscribeAudio(FrameBuffer::ptr obj);
+    void subscribeVideo(FrameBuffer<Frame::ptr>::ptr obj);
+    void subscribeAudio(FrameBuffer<Frame::ptr>::ptr obj);
 
     enum States {
         ST_IDLE,
@@ -116,8 +116,8 @@ private:
         SwrContext *convert_context_audio;
         // AudioConverter audio_converter;
 
-        FrameBuffer::ptr out_video_buffer;
-        FrameBuffer::ptr out_audio_buffer;
+        FrameBuffer<Frame::ptr>::ptr out_video_buffer;
+        FrameBuffer<Frame::ptr>::ptr out_audio_buffer;
 
         AVFrame *frame_video;
         AVFrame *frame_audio;

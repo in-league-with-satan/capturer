@@ -36,6 +36,7 @@ extern "C" {
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
 #include <libavdevice/avdevice.h>
+#include <libavutil/bswap.h>
 }
 
 const int alignment=32;
@@ -58,5 +59,6 @@ bool checkEncoder(const QString &encoder_name, const AVPixelFormat &pixel_format
 bool isHighBitDepthBuild();
 
 bool operator==(const AVRational &l, const AVRational &r);
+
 
 #endif // FF_TOOLS_H

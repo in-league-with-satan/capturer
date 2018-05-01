@@ -39,7 +39,7 @@ QuickVideoSource::~QuickVideoSource()
     closeSurface();
 }
 
-FrameBuffer::ptr QuickVideoSource::frameBuffer()
+FrameBuffer<Frame::ptr>::ptr QuickVideoSource::frameBuffer()
 {
     return convert_thread->frameBufferIn();
 }
@@ -78,7 +78,7 @@ void QuickVideoSource::checkFrame()
     if(!frame)
         return;
 
-    if(frame->video.rgb) {
+    if(frame->video.source_rgb) {
         if(frame->video.size!=format.frameSize() || QVideoFrame::Format_ARGB32!=format.pixelFormat()) {
             closeSurface();
 
@@ -97,7 +97,7 @@ void QuickVideoSource::checkFrame()
                                QVideoFrame::Format_ARGB32);
 
         if(last_frame.map(QAbstractVideoBuffer::WriteOnly)) {
-            memcpy(last_frame.bits(), frame->video.ptr_data, frame->video.data_size);
+            memcpy(last_frame.bits(), frame->video.data_ptr, frame->video.data_size);
 
             last_frame.unmap();
 
@@ -113,11 +113,11 @@ void QuickVideoSource::checkFrame()
         if(fast_yuv) {
             fmt=QVideoFrame::Format_UYVY;
 
-            buf_size=av_image_get_buffer_size(AV_PIX_FMT_UYVY422, frame->video.size.width(), frame->video.size.height(), 32);
+            buf_size=av_image_get_buffer_size(AV_PIX_FMT_UYVY422, frame->video.size.width(), frame->video.size.height(), alignment);
             line_size=av_image_get_linesize(AV_PIX_FMT_UYVY422, frame->video.size.width(), 0);
 
         } else {
-            buf_size=av_image_get_buffer_size(AV_PIX_FMT_YUV420P, frame->video.size.width(), frame->video.size.height(), 32);
+            buf_size=av_image_get_buffer_size(AV_PIX_FMT_YUV420P, frame->video.size.width(), frame->video.size.height(), alignment);
             line_size=av_image_get_linesize(AV_PIX_FMT_YUV420P, frame->video.size.width(), 0);
         }
 
@@ -136,7 +136,7 @@ void QuickVideoSource::checkFrame()
         last_frame=QVideoFrame(buf_size, frame->video.size, line_size, fmt);
 
         if(last_frame.map(QAbstractVideoBuffer::WriteOnly)) {
-            memcpy(last_frame.bits(), frame->video.ptr_data, buf_size);
+            memcpy(last_frame.bits(), frame->video.data_ptr, buf_size);
 
             last_frame.unmap();
 

@@ -25,8 +25,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 FFFormatConverter::FFFormatConverter()
     : convert_context(nullptr)
-    , av_frame_src(nullptr)
-    , av_frame_dst(nullptr)
 {
 }
 
@@ -35,14 +33,12 @@ FFFormatConverter::~FFFormatConverter()
     free();
 }
 
-bool FFFormatConverter::setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, bool use_internal_frames, FFFormatConverter::Filter::T filter)
+bool FFFormatConverter::setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, FFFormatConverter::Filter::T filter)
 {
-    if(compareParams(format_src, resolution_src, format_dst, resolution_dst, use_internal_frames, filter))
+    if(compareParams(format_src, resolution_src, format_dst, resolution_dst, filter))
         return true;
 
     free();
-
-    this->use_internal_frames=use_internal_frames;
 
     this->format_src=format_src;
     this->format_dst=format_dst;
@@ -52,79 +48,65 @@ bool FFFormatConverter::setup(AVPixelFormat format_src, QSize resolution_src, AV
 
     this->filter=filter;
 
-    if(use_internal_frames) {
-        av_frame_src=alloc_frame(format_src, resolution_src.width(), resolution_src.height());
-
-        if(!av_frame_src) {
-            qCritical() << "Could not allocate video frame";
-            return false;
-        }
-
-        av_frame_dst=alloc_frame(format_dst, resolution_dst.width(), resolution_dst.height());
-
-        if(!av_frame_dst) {
-            qCritical() << "Could not allocate video frame";
-            return false;
-        }
-    }
-
     convert_context=sws_getContext(resolution_src.width(), resolution_src.height(),
                                    format_src,
                                    resolution_dst.width(), resolution_dst.height(),
                                    format_dst,
                                    filter, nullptr, nullptr, nullptr);
 
-    return true;
+    qInfo().noquote() << "convert_context ptr" << QString::number((quintptr)convert_context, 16);
+
+    return convert_context!=nullptr;
 }
 
-bool FFFormatConverter::compareParams(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, bool use_internal_frames, FFFormatConverter::Filter::T filter)
+bool FFFormatConverter::compareParams(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, FFFormatConverter::Filter::T filter)
 {
     if(this->format_src==format_src && this->format_dst==format_dst
             && this->resolution_src==resolution_src && this->resolution_dst==resolution_dst
-            && this->filter==filter && this->use_internal_frames==use_internal_frames)
+            && this->filter==filter)
         return true;
 
     return false;
 }
 
-void FFFormatConverter::convert(QByteArray *src, QByteArray *dst)
+AVPixelFormat FFFormatConverter::formatSrc() const
 {
-    if(!av_frame_src)
-        return;
-
-     av_image_fill_arrays(av_frame_src->data, av_frame_src->linesize, (const uint8_t*)src->constData(), format_src, resolution_src.width(), resolution_src.height(), alignment);
-
-     convert(av_frame_src, av_frame_dst);
-
-     int buf_size=av_image_get_buffer_size(format_dst, resolution_dst.width(), resolution_dst.height(), alignment);
-
-     if(dst->size()!=buf_size)
-         dst->resize(buf_size);
-
-     av_image_copy_to_buffer((uint8_t*)dst->constData(), dst->size(), av_frame_dst->data, av_frame_dst->linesize, format_dst, resolution_dst.width(), resolution_dst.height(), alignment);
+    return format_src;
 }
 
-void FFFormatConverter::convert(AVFrame *src, AVFrame *dst)
+AVPixelFormat FFFormatConverter::formatDst() const
 {
-    sws_scale(convert_context, src->data, src->linesize, 0, src->height, dst->data, dst->linesize);
+    return format_dst;
+}
+
+bool FFFormatConverter::convert(AVFrame *src, AVFrame *dst)
+{
+    if(!convert_context) {
+        qCritical() << "SwsContext null ptr";
+        return 1;
+    }
+
+    return sws_scale(convert_context, src->data, src->linesize, 0, src->height, dst->data, dst->linesize)>0;
+}
+
+AVFrameSP::ptr FFFormatConverter::convert(AVFrame *src)
+{
+    if(!convert_context) {
+        qCritical() << "SwsContext null ptr";
+        return nullptr;
+    }
+
+    AVFrameSP::ptr result_frame=AVFrameSP::make(format_dst, resolution_dst.width(), resolution_dst.height());
+
+    if(sws_scale(convert_context, src->data, src->linesize, 0, src->height,
+                 result_frame->d->data, result_frame->d->linesize)<=0)
+        return nullptr;
+
+    return result_frame;
 }
 
 void FFFormatConverter::free()
 {
-    if(av_frame_src) {
-        av_frame_unref(av_frame_src);
-        av_freep(&av_frame_src->data[0]);
-        av_frame_free(&av_frame_src);
-        av_frame_src=nullptr;
-    }
-
-    if(av_frame_dst) {
-        av_frame_unref(av_frame_dst);
-        av_freep(&av_frame_dst->data[0]);
-        av_frame_free(&av_frame_dst);
-        av_frame_dst=nullptr;
-    }
-
     if(convert_context) {
         sws_freeContext(convert_context);
         convert_context=nullptr;

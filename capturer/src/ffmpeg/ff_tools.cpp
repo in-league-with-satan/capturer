@@ -19,18 +19,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <QDebug>
 
-extern "C" {
-#include <libavutil/opt.h>
-#include <libavcodec/avcodec.h>
-#include <libavutil/channel_layout.h>
-#include <libavutil/common.h>
-#include <libavutil/imgutils.h>
-#include <libavutil/mathematics.h>
-#include <libavutil/samplefmt.h>
-#include "libswscale/swscale.h"
-}
+#include <mutex>
 
 #include "ff_tools.h"
+
+int ff_lock_callback(void **mutex, enum AVLockOp op);
 
 void av_log_callback(void*, int level, const char *fmt, va_list vl)
 {
@@ -51,8 +44,10 @@ void av_log_callback(void*, int level, const char *fmt, va_list vl)
 
 void initLibAV()
 {
-    // av_register_all();
+    av_register_all();
     avdevice_register_all();
+
+    // av_lockmgr_register(&ff_lock_callback);
 
     av_log_set_callback(av_log_callback);
     // av_log_set_level(AV_LOG_ERROR);
@@ -83,7 +78,8 @@ AVFrame *alloc_frame(AVPixelFormat pix_fmt, int width, int height, bool alloc_bu
 
     // allocate the buffers for the frame data
     if(alloc_buffer) {
-        ret=av_frame_get_buffer(av_frame, alignment);
+        // ret=av_frame_get_buffer(av_frame, alignment);
+        ret=av_frame_get_buffer(av_frame, 0);
 
         if(ret<0) {
             qCritical() << "Could not allocate frame data";
@@ -218,3 +214,31 @@ bool isHighBitDepthBuild()
 
     return result;
 }
+
+int ff_lock_callback(void **mutex, enum AVLockOp op)
+{
+    qInfo() << "ff_lock_callback" << op;
+
+    static std::mutex m;
+
+    switch(op) {
+    case AV_LOCK_CREATE:
+        *mutex=&m;
+        break;
+
+    case AV_LOCK_OBTAIN:
+        ((std::mutex*)(*mutex))->lock();
+        break;
+
+    case AV_LOCK_RELEASE:
+        ((std::mutex*)(*mutex))->unlock();
+        break;
+
+    case AV_LOCK_DESTROY:
+        *mutex=0;
+        break;
+    }
+
+    return 0;
+}
+
