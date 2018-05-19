@@ -69,7 +69,8 @@ public:
             half_60,
             full_50,
             full_59,
-            full_60
+            full_60,
+            unknown
         };
     };
 
@@ -160,6 +161,7 @@ public:
             scale_filter=ScaleFilter::FastBilinear;
             rgb_source=true;
             depth_10bit=false;
+            framerate_force={ 0, 0 };
         }
 
         QSize frame_resolution_src;
@@ -176,6 +178,7 @@ public:
         QString preset;
         bool rgb_source;
         bool depth_10bit;
+        AVRational framerate_force;
     };
 
     struct Stats {

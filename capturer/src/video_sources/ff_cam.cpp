@@ -189,6 +189,8 @@ bool FFCam::setVideoDevice(int index)
 
     index_device_video=index;
 
+    qInfo() << "FFCam::setVideoDevice:" << index_device_video << dev_list[index_device_video].name;
+
     return true;
 }
 
@@ -202,12 +204,18 @@ QList <QSize> FFCam::supportedResolutions()
     if(dev_list.size() - 1<index_device_video)
         return QList<QSize>();
 
+
     QList <QSize> lst;
 
     QMap <int64_t, QList <QSize>> res_per_format;
 
     foreach(Cam::Format format, dev_list.at(index_device_video).format) {
         foreach(Cam::Resolution res, format.resolution) {
+            if(res.framerate.isEmpty()) {
+                qWarning() << "FFCam::supportedResolutions: framerate.isEmpty" << dev_list.at(index_device_video).name << res.size;
+                continue;
+            }
+
             res_per_format[format.pixel_format].append(res.size);
 
             if(!lst.contains(res.size)) {
@@ -216,19 +224,11 @@ QList <QSize> FFCam::supportedResolutions()
         }
     }
 
-    for(int i_resolution=0; i_resolution<lst.size(); ++i_resolution) {
-        for(int i_fmt=0; i_fmt<res_per_format.size(); ++i_fmt) {
-            const int64_t key=res_per_format.keys()[i_fmt];
-
-            if(!res_per_format[key].contains(lst[i_resolution])) {
-                lst.removeAt(i_resolution--);
-            }
-        }
-    }
-
     std::sort(lst.begin(), lst.end(),
               [](const QSize &l, const QSize &r) { return (l.width()==r.width() ? l.height()<r.height() : l.width()<r.width()); }
     );
+
+     qInfo() << "FFCam::supportedResolutions:" << dev_list.at(index_device_video).name << lst;
 
     return lst;
 }
@@ -260,11 +260,14 @@ QList <AVRational> FFCam::supportedFramerates(QSize size, int64_t fmt)
         if(format.pixel_format==fmt) {
             foreach(Cam::Resolution res, format.resolution) {
                 if(res.size==size) {
+                    // qInfo() << "FFCam::supportedFramerates" << size << fmt << res.framerate.size();
                     return res.framerate;
                 }
             }
         }
     }
+
+    qWarning() << "FFCam::supportedFramerates: empty" << dev_list.at(index_device_video).name << size << (fmt==Cam::PixelFormat::YUYV ? "YUYV" : "MJPEG");
 
     return QList<AVRational>();
 }
@@ -274,6 +277,8 @@ void FFCam::setConfig(QSize size, AVRational framerate, int64_t pixel_format)
     cfg.size=size;
     cfg.framerate=framerate;
     cfg.pixel_format=pixel_format;
+
+    qInfo() << "FFCam::setConfig" << size << framerate.den/framerate.den << pixel_format;
 }
 
 void FFCam::startCam()
@@ -321,19 +326,6 @@ void FFCam::startCam()
 
     //
 
-#ifdef __linux__
-
-    if(cfg.pixel_format==1196444237) // mjpeg
-        av_dict_set(&d->dictionary, "pixel_format", "mjpeg", 0);
-
-    else if(cfg.pixel_format==1448695129) // yuv
-        av_dict_set(&d->dictionary, "pixel_format", "yuyv422", 0);
-
-    else
-        av_dict_set(&d->dictionary, "pixel_format", "yuyv422", 0);
-
-#endif
-
     av_dict_set(&d->dictionary, "video_size", QString("%1x%2").arg(cfg.size.width()).arg(cfg.size.height()).toLatin1().constData(), 0);
     av_dict_set(&d->dictionary, "framerate", QString("%1/%2").arg(cfg.framerate.den).arg(cfg.framerate.num).toLatin1().constData(), 0);
     av_dict_set(&d->dictionary, "rtbufsize", "1000M", 0);
@@ -353,6 +345,7 @@ void FFCam::startCam()
 #endif
     }
 
+
     if(!d->input_format) {
         qCritical() << "av_find_input_format return null";
         goto fail;
@@ -362,32 +355,50 @@ void FFCam::startCam()
 
     d->format_context->flags|=AVFMT_FLAG_NONBLOCK;
 
+
+    if(cfg.pixel_format==Cam::PixelFormat::MJPEG) {
+        d->format_context->video_codec_id=AV_CODEC_ID_MJPEG;
+
+    } else if(cfg.pixel_format==Cam::PixelFormat::YUYV) {
+        d->format_context->video_codec_id=AV_CODEC_ID_RAWVIDEO;
+        av_dict_set(&d->dictionary, "pixel_format", "yuyv422", 0);
+    }
+
+
+    d->format_context->video_codec=avcodec_find_decoder(d->format_context->video_codec_id);
+
+
+    qInfo() << "dev name:" << dev_list[index_device_video].name;
+
 #ifdef __linux__
 
-    if(avformat_open_input(&d->format_context, QString("/dev/video%1").arg(index_device_video).toLatin1().constData(), d->input_format, &d->dictionary)!=0) {
-        qCritical() << "Couldn't open input stream";
-        goto fail;
-    }
+    ret=avformat_open_input(&d->format_context, QString("/dev/video%1").arg(index_device_video).toLatin1().constData(), d->input_format, &d->dictionary);
+
 
 #else
 
     ret=avformat_open_input(&d->format_context, QString("video=%1").arg(dev_list[index_device_video].name).toLatin1().constData(), d->input_format, &d->dictionary);
+
+#endif
 
     if(ret!=0) {
         qCritical() << "Couldn't open input stream" << dev_list[index_device_video].name << ffErrorString(ret);
         goto fail;
     }
 
-#endif
 
     av_dump_format(d->format_context, 0, "", 0);
 
     for(unsigned int i=0; i<d->format_context->nb_streams; ++i) {
         if(d->format_context->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_VIDEO) {
+
             d->stream=d->format_context->streams[i];
+            qInfo() << "avcodec name:" << i << d->format_context->nb_streams << avcodec_get_name(d->format_context->streams[i]->codecpar->codec_id);
+
             break;
         }
     }
+
 
     if(!d->stream) {
         qCritical() << "find video stream err";
@@ -411,6 +422,10 @@ void FFCam::startCam()
         qCritical() << "avcodec_alloc_context3 err";
         goto fail;
     }
+
+    d->codec_context->pix_fmt=AV_PIX_FMT_YUYV422;
+    d->codec_context->width=cfg.size.width();
+    d->codec_context->height=cfg.size.height();
 
     ret=avcodec_open2(d->codec_context, d->codec, nullptr);
 
@@ -478,6 +493,11 @@ bool FFCam::isActive()
         return true;
 
     return false;
+}
+
+AVRational FFCam::currentFrameRate()
+{
+    return cfg.framerate;
 }
 
 void FFCam::updateDevList()

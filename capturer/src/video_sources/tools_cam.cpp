@@ -26,6 +26,22 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "tools_cam.h"
 
+double rnd2(const double &value)
+{
+    return round(value*100)/100.;
+}
+
+double rnd3(const double &value)
+{
+    return round(value*1000)/1000.;
+}
+
+double rnd4(const double &value)
+{
+    return round(value*10000)/10000.;
+}
+
+
 QList <Cam::Dev> ToolsCam::devList()
 {
 #ifdef __linux__
@@ -39,24 +55,50 @@ QList <Cam::Dev> ToolsCam::devList()
 #endif
 }
 
-AVRational ToolsCam::framrateToRational(const qreal &fr)
+QList <AVRational> ToolsCam::framerateBuildSequence(const qreal &fr_min, const qreal &fr_max)
 {
-    static const double eps=.0003;
+    QList <AVRational> result;
 
-    static auto rnd2=[](const double &value)->double {
-       return round(value*100)/100.;
+    AVRational framerate[]={
+        { 1, 2 },           // 2
+        { 1, 5 },           // 5
+        { 2, 15 },          // 7.5
+        { 1, 10 },          // 10
+        { 1000, 15000 },    // 15
+        { 1001, 24000 },    // 23.97
+        { 1000, 24000 },    // 24
+        { 1000, 25000 },    // 25
+        { 1001, 30000 },    // 29.97
+        { 1000, 30000 },    // 30
+        { 1000, 50000 },    // 50
+        { 1001, 60000 },    // 59.94
+        { 1000, 60000 },    // 60
+        { 1000, 90000 },    // 90
+        { 1000, 120000 }    // 120
     };
 
-    static auto rnd3=[](const double &value)->double {
-       return round(value*1000)/1000.;
-    };
+    for(size_t i=0; i<sizeof(framerate)/sizeof(*framerate); ++i) {
+        double fr_tmp=rnd2((double)framerate[i].den/(double)framerate[i].num);
 
-    static auto rnd4=[](const double &value)->double {
-       return round(value*10000)/10000.;
-    };
+        if(rnd2(fr_min)<=fr_tmp && rnd2(fr_max)>=fr_tmp)
+            result << framerate[i];
+    }
+
+    return result;
+}
+
+AVRational ToolsCam::framerateToRational(const qreal &fr)
+{
+    static const double eps=.003;
 
     if(std::abs(fr - 2.)<eps)
         return { 1, 2 };
+
+    if(std::abs(fr - 5.)<eps)
+        return { 1, 5 };
+
+    if(std::abs(fr - 7.5)<eps)
+        return { 2, 15 };
 
     if(std::abs(fr - 10.)<eps)
         return { 1, 10 };
@@ -91,79 +133,35 @@ AVRational ToolsCam::framrateToRational(const qreal &fr)
     if(std::abs(fr - 60.)<eps)
         return { 1000, 60000 };
 
-    qWarning() << "framrateToRational unknown fr:" << fr;
+    if(std::abs(fr - 90.)<eps)
+        return { 1000, 90000 };
 
-    return { 1000, 30000 };
+    if(std::abs(fr - 120.)<eps)
+        return { 1000, 120000 };
+
+    qWarning() << "framerateToRational unknown fr:" << fr;
+
+    return { 1000, int(fr*1000) };
 }
 
 double ToolsCam::rationalToFramerate(const AVRational &value)
 {
-    if(value.num==1 && value.den==2)
-        return 2.;
-
-    if(value.num==1 && value.den==10)
-        return 10.;
-
-    if(value.num==1000 && value.den==15000)
-        return 15.;
-
-    if(value.num==1001 && value.den==24000)
-        return 23.976;
-
-    if(value.num==1000 && value.den==24000)
-        return 24.;
-
-    if(value.num==1000 && value.den==25000)
-        return 25.;
-
-    if(value.num==100 && value.den==2997)
-        return 29.97;
-
-    if(value.num==1001 && value.den==30000)
-        return 29.97;
-
-    if(value.num==1 && value.den==30)
-        return 30.;
-
-    if(value.num==1000 && value.den==30000)
-        return 30.;
-
-    if(value.num==1 && value.den==50)
-        return 50.;
-
-    if(value.num==1000 && value.den==50000)
-        return 50.;
-
-    if(value.num==83 && value.den==4975)
-        return 59.9398;
-
-    if(value.num==1001 && value.den==60000)
-        return 59.9398;
-
-    if(value.num==1 && value.den==60)
-        return 60.;
-
-    if(value.num==1000 && value.den==60000)
-        return 60.;
-
-    qWarning() << "rationalToFramerate unknown:" << value.num << value.den;
-
-    return 30.;
+    return rnd2(double(value.den)/double(value.num));
 }
 
 void ToolsCam::testDevList(const QList <Cam::Dev> &list)
 {
     foreach(Cam::Dev dev, list) {
-        qInfo() << "dev name:" << dev.name << dev.dev;
+        qInfo() << "dev name:" << dev.name << dev.dev << dev.format.size();
 
         foreach(Cam::Format fmt, dev.format) {
-            qInfo() << "pixel_format:" << Cam::PixelFormat::toString(fmt.pixel_format);
+            qInfo() << "  pixel_format:" << Cam::PixelFormat::toString(fmt.pixel_format);
 
             foreach(Cam::Resolution res, fmt.resolution) {
-                qInfo() << "resolution:" << res.size;
+                qInfo() << "    resolution:" << res.size;
 
                 foreach(AVRational fr, res.framerate) {
-                    qInfo() << "framerate:" << fr.den/(double)fr.num << fr.num << fr.den;
+                    qInfo() << "      framerate:" << fr.den/(double)fr.num << fr.num << fr.den;
                 }
             }
         }

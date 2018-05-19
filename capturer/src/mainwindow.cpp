@@ -288,11 +288,17 @@ MainWindow::MainWindow(QWidget *parent)
     if(!supported_pix_fmts.isEmpty())
         cam_pix_fmt=supported_pix_fmts[settings->device_cam.pixel_format];
 
+    foreach(qint64 val, supported_pix_fmts) {
+        set_model_data.values << Cam::PixelFormat::toString(val);
+        set_model_data.values_data << val;
+    }
+
     set_model_data.value=&settings->device_cam.pixel_format;
 
     messenger->settingsModel()->add(set_model_data);
 
     set_model_data.values.clear();
+    set_model_data.values_data.clear();
 
     //
 
@@ -301,7 +307,14 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.name="framerate";
 
 
-    if(settings->device_cam.framerate>=cam_device->supportedFramerates(cam_resolution, cam_pix_fmt).size())
+    QList <AVRational> framerate=cam_device->supportedFramerates(cam_resolution, cam_pix_fmt);
+
+    foreach(AVRational val, framerate) {
+        set_model_data.values << QString::number(ToolsCam::rationalToFramerate(val));
+        set_model_data.values_data << QSize(val.num, val.den);
+    }
+
+    if(settings->device_cam.framerate>=framerate.size())
         settings->device_cam.framerate=0;
 
     set_model_data.value=&settings->device_cam.framerate;
@@ -792,6 +805,16 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
     //     cam_device->setAudioDevice(settings->device_cam.index_audio);
     // }
 
+    static bool ignore_event=false;
+
+    if(ignore_event)
+        return;
+
+    struct Tmp {  Tmp() { ignore_event=true; }  ~Tmp() { ignore_event=false; }  } tmp;
+
+    Q_UNUSED(tmp);
+
+
     if(data->value==&settings->device_cam.index_video) {
         cam_device->setVideoDevice(settings->device_cam.index_video);
 
@@ -803,20 +826,28 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             list_values_data << val;
         }
 
+        if(settings->device_cam.resolution>=list_values.size()) {
+            settings->device_cam.resolution=0;
+        }
+
         model->setData(&settings->device_cam.resolution, SettingsModel::Role::values, list_values);
         model->setData(&settings->device_cam.resolution, SettingsModel::Role::values_data, list_values_data);
 
         if(!list_values_data.isEmpty()) {
-            QSize size=list_values_data.value(settings->device_cam.resolution).toSize();
+            const QSize size=list_values_data.value(settings->device_cam.resolution).toSize();
 
             list_values.clear();
             list_values_data.clear();
 
-            if(!messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data.isEmpty())
+            if(!messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data.isEmpty()) {
                 foreach(AVRational val, cam_device->supportedFramerates(size, messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data[settings->device_cam.pixel_format].toLongLong())) {
                     list_values << QString::number(ToolsCam::rationalToFramerate(val));
                     list_values_data << QSize(val.num, val.den);
                 }
+
+            } else {
+                qWarning() << "model no data. pixel_format" << settings->device_cam.pixel_format;
+            }
 
             model->setData(&settings->device_cam.framerate, SettingsModel::Role::values, list_values);
             model->setData(&settings->device_cam.framerate, SettingsModel::Role::values_data, list_values_data);
@@ -833,6 +864,9 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
             model->setData(&settings->device_cam.pixel_format, SettingsModel::Role::values, list_values);
             model->setData(&settings->device_cam.pixel_format, SettingsModel::Role::values_data, list_values_data);
+
+        } else {
+            qInfo() << "list_values_data is empty!!!!1";
         }
     }
 
@@ -842,6 +876,25 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
         QStringList list_values;
         QVariantList list_values_data;
 
+        //
+
+        foreach(qint64 val, cam_device->supportedPixelFormats(size)) {
+            list_values << Cam::PixelFormat::toString(val);
+            list_values_data << val;
+        }
+
+        if(settings->device_cam.pixel_format>=list_values.size()) {
+            settings->device_cam.pixel_format=0;
+        }
+
+        model->setData(&settings->device_cam.pixel_format, SettingsModel::Role::values, list_values);
+        model->setData(&settings->device_cam.pixel_format, SettingsModel::Role::values_data, list_values_data);
+
+        //
+
+        list_values.clear();
+        list_values_data.clear();
+
         if(!messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data.isEmpty())
             foreach(AVRational val, cam_device->supportedFramerates(size, messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data[settings->device_cam.pixel_format].toLongLong())) {
                 list_values << QString::number(ToolsCam::rationalToFramerate(val));
@@ -850,20 +903,29 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
         model->setData(&settings->device_cam.framerate, SettingsModel::Role::values, list_values);
         model->setData(&settings->device_cam.framerate, SettingsModel::Role::values_data, list_values_data);
+    }
 
-        //
+    if(data->value==&settings->device_cam.pixel_format) {
+        const QSize size=
+                messenger->settingsModel()->data_p(&settings->device_cam.resolution)->values_data[settings->device_cam.resolution].toSize();
 
-        list_values.clear();
-        list_values_data.clear();
+        const int64_t pixel_format=
+                messenger->settingsModel()->data_p(&settings->device_cam.pixel_format)->values_data[settings->device_cam.pixel_format].toLongLong();
 
-        foreach(qint64 val, cam_device->supportedPixelFormats(size)) {
-            list_values << Cam::PixelFormat::toString(val);
-            list_values_data << val;
+        QStringList list_values;
+        QVariantList list_values_data;
+
+        foreach(AVRational val, cam_device->supportedFramerates(size, pixel_format)) {
+            list_values << QString::number(ToolsCam::rationalToFramerate(val));
+            list_values_data << QSize(val.num, val.den);
+
         }
 
-        model->setData(&settings->device_cam.pixel_format, SettingsModel::Role::values, list_values);
-        model->setData(&settings->device_cam.pixel_format, SettingsModel::Role::values_data, list_values_data);
+        model->setData(&settings->device_cam.framerate, SettingsModel::Role::values, list_values);
+        model->setData(&settings->device_cam.framerate, SettingsModel::Role::values_data, list_values_data);
     }
+
+    //
 
     if(data->value==&settings->rec.encoder) {
         // pix_fmt
@@ -1061,6 +1123,11 @@ void MainWindow::startStopRecording()
             FFEncoder::Config cfg;
 
             cfg.framerate=FFEncoder::calcFps(framerate.width(), framerate.height(), false);
+
+            if(cfg.framerate==FFEncoder::Framerate::unknown) {
+                cfg.framerate_force=cam_device->currentFrameRate();
+            }
+
             cfg.frame_resolution_src=resolution;
 
             cfg.pixel_format=(AVPixelFormat)messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();

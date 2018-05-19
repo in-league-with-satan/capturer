@@ -103,7 +103,7 @@ linux {
     LIBS += -lz -lbz2 -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
     LIBS +=-lxcb -lxcb-xfixes -lxcb-shape
     # -libxcb1
-    # -llzma
+    LIBS += -llzma
 }
 
 windows {

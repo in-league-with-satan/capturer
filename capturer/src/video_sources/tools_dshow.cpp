@@ -92,7 +92,7 @@ QList <Cam::Format> getDeviceCapabilities(const QString &dev_name)
 {
     QList <Cam::Format> capabilities;
 
-    QMap <quint64, Cam::Resolution> resolution;
+    QMap <quint64, Cam::Resolution> resolution[2];
 
     IBaseFilter *dev_filter=getDevFilter(dev_name);
 
@@ -154,10 +154,21 @@ QList <Cam::Format> getDeviceCapabilities(const QString &dev_name)
                 {
                     quint64 res_key=QString("%1%2").arg(vcaps->MaxOutputSize.cx).arg(vcaps->MaxOutputSize.cy).toULongLong();
 
-                    resolution[res_key].size=QSize(vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy);
+                    if(IsEqualGUID(type->subtype, MEDIASUBTYPE_YUY2)) {
+                        resolution[Cam::PixelFormat::YUYV][res_key].size=QSize(vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy);
 
-                    if(!resolution[res_key].framerate.contains(ToolsCam::framrateToRational(1e7/vcaps->MinFrameInterval)))
-                        resolution[res_key].framerate << ToolsCam::framrateToRational(1e7/vcaps->MinFrameInterval);
+                        if(!resolution[Cam::PixelFormat::YUYV][res_key].framerate.contains(ToolsCam::framerateToRational(1e7/vcaps->MinFrameInterval)))
+                            resolution[Cam::PixelFormat::YUYV][res_key].framerate
+                                    << ToolsCam::framerateBuildSequence(1e7/vcaps->MaxFrameInterval, 1e7/vcaps->MinFrameInterval);
+
+                    } else if(IsEqualGUID(type->subtype, MEDIASUBTYPE_MJPG)) {
+                        resolution[Cam::PixelFormat::MJPEG][res_key].size=QSize(vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy);
+
+                        if(!resolution[Cam::PixelFormat::MJPEG][res_key].framerate.contains(ToolsCam::framerateToRational(1e7/vcaps->MinFrameInterval))) {
+                            resolution[Cam::PixelFormat::MJPEG][res_key].framerate
+                                    << ToolsCam::framerateBuildSequence(1e7/vcaps->MaxFrameInterval, 1e7/vcaps->MinFrameInterval);
+                        }
+                    }
                 }
 
 next_format:
@@ -181,12 +192,21 @@ next_pin:
     }
 
 
-    Cam::Format fmt;
+    for(int i_pf=0; i_pf<Cam::PixelFormat::size; i_pf++) {
+        if(!resolution[i_pf].isEmpty()) {
+            Cam::Format fmt;
 
-    fmt.pixel_format=Cam::PixelFormat::YUYV;
-    fmt.resolution=resolution.values();
+            foreach(Cam::Resolution res, resolution[i_pf].values()) {
+                if(!res.framerate.isEmpty()) {
+                    fmt.pixel_format=i_pf;
+                    fmt.resolution=resolution[i_pf].values();
+                }
+            }
 
-    capabilities.append(fmt);
+            if(!fmt.resolution.isEmpty())
+                capabilities.append(fmt);
+        }
+    }
 
 
     return capabilities;

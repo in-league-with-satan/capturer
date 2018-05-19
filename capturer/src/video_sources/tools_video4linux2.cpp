@@ -151,10 +151,12 @@ QList <Cam::Dev> ToolsV4L2::devList()
                 frmsizeenum.index++;
             }
 
-            dev.format << format;
+            if(!format.resolution.isEmpty())
+                dev.format << format;
         }
 
-        list << dev;
+        if(!dev.format.isEmpty())
+            list << dev;
 
         close(fd);
 

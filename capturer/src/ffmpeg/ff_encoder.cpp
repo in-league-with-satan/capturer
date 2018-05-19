@@ -296,6 +296,10 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
         out_stream->av_stream->time_base={ 1000, 60000 };
         break;
 
+    case FFEncoder::Framerate::unknown:
+        out_stream->av_stream->time_base=cfg.framerate_force;
+        break;
+
     default:
         out_stream->av_stream->time_base={ 1000, 30000 };
         break;
@@ -674,7 +678,7 @@ FFEncoder::Framerate::T FFEncoder::calcFps(int64_t frame_duration, int64_t frame
         }
     }
 
-    return Framerate::full_30;
+    return Framerate::unknown;
 }
 
 QString FFEncoder::presetVisualNameToParamName(const QString &str)
@@ -1011,7 +1015,6 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
         AVFrame *frame_orig=context->out_stream_video.frame_converted;
 
         context->out_stream_video.frame_converted=frame_out->d;
-        context->out_stream_video.frame_converted->pts=context->out_stream_video.next_pts++;
 
         last_error_string=write_video_frame(context->av_format_context, &context->out_stream_video);
         context->out_stream_video.frame_converted=frame_orig;

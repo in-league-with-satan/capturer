@@ -45,7 +45,6 @@ public:
 
     static QStringList availableCameras();
     static QStringList availableAudioInput();
-    static QString pixelFormatToString(int64_t fmt);
 
     static void updateDevList();
 
@@ -60,6 +59,8 @@ public:
     void unsubscribe(FrameBuffer<Frame::ptr>::ptr obj);
 
     bool isActive();
+
+    AVRational currentFrameRate();
 
 public slots:
     void setConfig(QSize size, AVRational framerate, int64_t pixel_format);

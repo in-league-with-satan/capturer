@@ -54,14 +54,16 @@ struct Cam {
 #ifdef __linux__
 
             YUYV=V4L2_PIX_FMT_YUYV,
-            MJPEG=V4L2_PIX_FMT_MJPEG
+            MJPEG=V4L2_PIX_FMT_MJPEG,
 
 #else
 
             YUYV,
-            MJPEG
+            MJPEG,
 
 #endif
+
+            size
         };
 
         static QString toString(const uint64_t &pix_fmt) {
@@ -82,7 +84,8 @@ struct ToolsCam
 {
     static QList <Cam::Dev> devList();
 
-    static AVRational framrateToRational(const qreal &fr);
+    static QList <AVRational> framerateBuildSequence(const qreal &fr_min, const qreal &fr_max);
+    static AVRational framerateToRational(const qreal &fr);
     static double rationalToFramerate(const AVRational &value);
 
     static void testDevList(const QList <Cam::Dev> &list);
