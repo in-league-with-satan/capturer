@@ -143,7 +143,6 @@ private:
     uint16_t max_size;
     EventWaiting event;
     bool enabled;
-
 };
 
 #endif // FRAME_BUFFER_H

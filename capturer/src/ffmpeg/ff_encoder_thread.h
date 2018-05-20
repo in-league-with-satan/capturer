@@ -35,7 +35,7 @@ public:
     FFEncoderThread(FFEncoder::Mode::T mode=FFEncoder::Mode::primary, FFEncoderBaseFilename *base_filename=0, QObject *parent=0);
     ~FFEncoderThread();
 
-    FrameBuffer<Frame::ptr>::ptr frameBuffer();
+    FrameBuffer <Frame::ptr>::ptr frameBuffer();
 
     bool isWorking();
 

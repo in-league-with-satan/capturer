@@ -46,7 +46,7 @@ Settings *Settings::instance()
 
 QString filename()
 {
-    QString store_path;
+    QString store_path=qApp->applicationDirPath();
 
 #if defined(Q_OS_ANDROID)
 
@@ -56,7 +56,7 @@ QString filename()
 
 #endif
 
-    return store_path.isEmpty() ? "capturer.json" : store_path + "/capturer.json";
+    return store_path.isEmpty() ? "capturer_ctrl.json" : store_path + "/capturer_ctrl.json";
 }
 
 //
