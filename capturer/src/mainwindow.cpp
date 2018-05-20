@@ -628,6 +628,14 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
         }
     }
 
+    if(event->type()==QEvent::HoverEnter) {
+        QApplication::setOverrideCursor(Qt::BlankCursor);
+    }
+
+    if(event->type()==QEvent::HoverLeave) {
+        QApplication::setOverrideCursor(Qt::ArrowCursor);
+    }
+
     return QObject::eventFilter(object, event);
 }
 

@@ -7,24 +7,19 @@ QT += \
 
 
 TARGET = remote_audio_output
+
+DEFINES += STATIC_WIN_FF
+
+
 TEMPLATE = app
 
 CONFIG += c++14
 
 DESTDIR = $$PWD/../bin
 
-GIT_VERSION = $$system(git --git-dir $$PWD/../.git --work-tree $$PWD describe --always)
 
-linux {
-    DATE_VERSION = $$system(date +%y.%-m.%-d)
-    DEFINES += VERSION_STRING=\\\"$$DATE_VERSION-$$GIT_VERSION\\\"
-}
-
-windows {
-    DATE_VERSION = $$system(echo '%date:~8,2%.%date:~3,2%.%date:~0,2%')
-    DEFINES += VERSION_STRING=QString(\\\"$$DATE_VERSION-$$GIT_VERSION\\\").replace(\\\".0\\\",\\\".\\\")
-}
-
+GIT_VERSION = $$system(git --git-dir $$PWD/../.git --work-tree $$PWD describe --always --tags)
+DEFINES += VERSION_STRING=\\\"$$GIT_VERSION\\\"
 
 
 LINK_OPT=shared
@@ -53,20 +48,7 @@ MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/moc
 RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/rcc
 
 
-linux {
-    INCLUDEPATH += $$PWD/../externals/3rdparty/ffmpeg/8bit/include
-    LIBS += -L$$PWD/../externals/3rdparty/ffmpeg/8bit/lib
-
-    LIBS += -lavformat -lavcodec -lavutil -lswscale -lswresample
-    LIBS += -lz -lbz2 -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
-}
-
-windows {
-    INCLUDEPATH += $$PWD/../externals/3rdparty/ffmpeg/include
-    LIBS += -L$$PWD/../externals/3rdparty/ffmpeg/lib
-
-    LIBS += -lswresample -lavformat -lavutil
-}
+include($$PWD/../externals/3rdparty/ffmpeg/ffmpeg.pri)
 
 
 INCLUDEPATH += \
