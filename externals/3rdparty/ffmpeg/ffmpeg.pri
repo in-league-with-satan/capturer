@@ -11,10 +11,7 @@ linux {
     }
 
     LIBS += -lavdevice -lavfilter -lpostproc -lavformat -lavcodec -lavutil -lswscale -lswresample
-    LIBS += -lz -lbz2 -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
-    LIBS +=-lxcb -lxcb-xfixes -lxcb-shape
-    # -libxcb1
-    LIBS += -llzma
+    LIBS += -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
 }
 
 windows {
@@ -34,4 +31,3 @@ windows {
         LIBS += -lavdevice -lswresample -lavformat -lavcodec -lavutil -lswscale
     }
 }
-
