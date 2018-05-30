@@ -23,6 +23,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QObject>
 #include <QVariantMap>
 
+#include "ff_encoder.h"
+
 #define settings Settings::instance()
 
 class Settings : public QObject
@@ -86,6 +88,8 @@ public:
         int check_encoders;
 
     } rec;
+
+    FFEncoder::Config::NVEnc nvenc;
 
     struct HttpServer {
         quint16 port;

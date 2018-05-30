@@ -192,7 +192,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     SettingsModel::Data set_model_data;
 
-    //
+    // { cam
 
     set_model_data.type=SettingsModel::Type::title;
     set_model_data.value=&settings->main.dummy;
@@ -364,13 +364,13 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.values.clear();
     set_model_data.values_data.clear();
 
-    //
+    // } cam
 
     set_model_data.type=SettingsModel::Type::divider;
     set_model_data.value=&settings->main.dummy;
     messenger->settingsModel()->add(set_model_data);
 
-    //
+    // { decklink
 
     set_model_data.type=SettingsModel::Type::title;
     set_model_data.value=&settings->main.dummy;
@@ -461,13 +461,13 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.values.clear();
     set_model_data.values_data.clear();
 
-    //
+    // } decklink
 
     set_model_data.type=SettingsModel::Type::divider;
     set_model_data.value=&settings->main.dummy;
     messenger->settingsModel()->add(set_model_data);
 
-    //
+    // { rec
 
     set_model_data.type=SettingsModel::Type::title;
     set_model_data.value=&settings->main.dummy;
@@ -586,7 +586,205 @@ MainWindow::MainWindow(QWidget *parent)
 
     messenger->settingsModel()->add(set_model_data);
 
+    // } rec
+
+    set_model_data.type=SettingsModel::Type::divider;
+    set_model_data.value=&settings->main.dummy;
+    messenger->settingsModel()->add(set_model_data);
+
+    // { nvenc
+
+    set_model_data.type=SettingsModel::Type::title;
+    set_model_data.value=&settings->main.dummy;
+    set_model_data.name="nvenc";
+
+    messenger->settingsModel()->add(set_model_data);
+
     //
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.group="nvenc";
+    set_model_data.name="enabled";
+    set_model_data.value=&settings->nvenc.enabled;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="b frames (h264 only)";
+    set_model_data.value=&settings->nvenc.b_frames;
+
+    for(int i=0; i<5; i++)
+        set_model_data.values << QString::number(i);
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="ref frames";
+    set_model_data.value=&settings->nvenc.ref_frames;
+
+    for(int i=0; i<5; i++)
+        set_model_data.values << QString::number(i);
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="gop size";
+    set_model_data.value=&settings->nvenc.gop_size;
+
+    for(int i=0; i<301; i++)
+        set_model_data.values << QString::number(i);
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    for(int i=0; i<52; i++)
+        set_model_data.values << QString::number(i);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="qpI";
+    set_model_data.value=&settings->nvenc.qp_i;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
+    set_model_data.name="qpP";
+    set_model_data.value=&settings->nvenc.qp_p;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
+    set_model_data.name="qpB (h264 only)";
+    set_model_data.value=&settings->nvenc.qp_b;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="aq mode";
+    set_model_data.value=&settings->nvenc.aq_mode;
+    set_model_data.values << "disabled" << "spatial" << "temporal. not working with constqp?";
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="aq strength";
+    set_model_data.value=&settings->nvenc.aq_strength;
+
+    for(int i=0; i<16; i++)
+        set_model_data.values << QString::number(i);
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="rc lookahead";
+    set_model_data.value=&settings->nvenc.rc_lookahead;
+
+    for(int i=0; i<33; i++)
+        set_model_data.values << QString::number(i);
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="surfaces";
+    set_model_data.value=&settings->nvenc.surfaces;
+
+    for(int i=0; i<65; i++)
+        set_model_data.values << QString::number(i);
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="no scenecut";
+    set_model_data.value=&settings->nvenc.no_scenecut;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="forced idr";
+    set_model_data.value=&settings->nvenc.forced_idr;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="b adapt (h264 only)";
+    set_model_data.value=&settings->nvenc.b_adapt;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="nonref p";
+    set_model_data.value=&settings->nvenc.nonref_p;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="strict gop";
+    set_model_data.value=&settings->nvenc.strict_gop;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="weighted pred (disables bframes)";
+    set_model_data.value=&settings->nvenc.weighted_pred;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="bluray compatibility workarounds";
+    set_model_data.value=&settings->nvenc.bluray_compat;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    //
+
+    // } nvenc
 
     setCentralWidget(overlay_view);
 
@@ -1117,6 +1315,7 @@ void MainWindow::startStopRecording()
             cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device_decklink.audio_sample_size)->values_data[settings->device_decklink.audio_sample_size].toInt();
             cfg.downscale=settings->rec.downscale;
             cfg.scale_filter=settings->rec.scale_filter;
+            cfg.nvenc=settings->nvenc;
 
             ff_enc->setConfig(cfg);
         }

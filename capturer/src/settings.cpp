@@ -24,7 +24,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QKeySequence>
 #include <qcoreapplication.h>
 
-#include "ff_encoder.h"
 #include "data_types.h"
 #include "dialog_keyboard_shortcuts.h"
 
@@ -110,6 +109,8 @@ bool Settings::load()
     QVariantMap map_rec=map_root.value(QStringLiteral("rec")).toMap();
     QVariantMap map_http_server=map_root.value(QStringLiteral("http_server")).toMap();
     QVariantMap map_keyboard_shortcuts=map_root.value(QStringLiteral("keyboard_shortcuts")).toMap();
+    QVariantMap map_nvenc=map_root.value(QStringLiteral("nvenc")).toMap();
+
 
     main.preview=map_main.value(QStringLiteral("preview"), 1).toInt();
     main.smooth_transform=map_main.value(QStringLiteral("smooth_transform"), 0).toInt();
@@ -159,6 +160,25 @@ bool Settings::load()
                                        KeyCodeC::fromString(map_keyboard_shortcuts.keys()[i]));
     }
 
+    nvenc.enabled=map_nvenc.value(QStringLiteral("enabled"), 0).toInt();
+    nvenc.b_frames=map_nvenc.value(QStringLiteral("b_frames"), 0).toInt();
+    nvenc.ref_frames=map_nvenc.value(QStringLiteral("ref_frames"), 0).toInt();
+    nvenc.gop_size=map_nvenc.value(QStringLiteral("gop_size"), 0).toInt();
+    nvenc.qp_i=map_nvenc.value(QStringLiteral("qp_i"), 0).toInt();
+    nvenc.qp_p=map_nvenc.value(QStringLiteral("qp_p"), 0).toInt();
+    nvenc.qp_b=map_nvenc.value(QStringLiteral("qp_b"), 0).toInt();
+    nvenc.aq_mode=map_nvenc.value(QStringLiteral("aq_mode"), 0).toInt();
+    nvenc.aq_strength=map_nvenc.value(QStringLiteral("aq_strength"), 0).toInt();
+    nvenc.rc_lookahead=map_nvenc.value(QStringLiteral("rc_lookahead"), 0).toInt();
+    nvenc.surfaces=map_nvenc.value(QStringLiteral("surfaces"), 0).toInt();
+    nvenc.no_scenecut=map_nvenc.value(QStringLiteral("no_scenecut"), 0).toInt();
+    nvenc.forced_idr=map_nvenc.value(QStringLiteral("forced_idr"), 0).toInt();
+    nvenc.b_adapt=map_nvenc.value(QStringLiteral("b_adapt"), 0).toInt();
+    nvenc.nonref_p=map_nvenc.value(QStringLiteral("nonref_p"), 0).toInt();
+    nvenc.strict_gop=map_nvenc.value(QStringLiteral("strict_gop"), 0).toInt();
+    nvenc.weighted_pred=map_nvenc.value(QStringLiteral("weighted_pred"), 0).toInt();
+    nvenc.bluray_compat=map_nvenc.value(QStringLiteral("bluray_compat"), 0).toInt();
+
 
     if(rec.supported_enc.isEmpty())
         checkEncoders();
@@ -176,6 +196,7 @@ bool Settings::save()
     QVariantMap map_rec;
     QVariantMap map_http_server;
     QVariantMap map_keyboard_shortcuts;
+    QVariantMap map_nvenc;
 
 
     map_main.insert(QStringLiteral("preview"), (bool)main.preview);
@@ -215,11 +236,32 @@ bool Settings::save()
                     QKeySequence(keyboard_shortcuts.code.key(i, DialogKeyboardShortcuts::defaultQtKey(i))).toString()
                     );
 
+    map_nvenc.insert(QStringLiteral("enabled"), (bool)nvenc.enabled);
+    map_nvenc.insert(QStringLiteral("b_frames"), nvenc.b_frames);
+    map_nvenc.insert(QStringLiteral("ref_frames"), nvenc.ref_frames);
+    map_nvenc.insert(QStringLiteral("gop_size"), nvenc.gop_size);
+    map_nvenc.insert(QStringLiteral("qp_i"), nvenc.qp_i);
+    map_nvenc.insert(QStringLiteral("qp_p"), nvenc.qp_p);
+    map_nvenc.insert(QStringLiteral("qp_b"), nvenc.qp_b);
+    map_nvenc.insert(QStringLiteral("aq_mode"), nvenc.aq_mode);
+    map_nvenc.insert(QStringLiteral("aq_strength"), nvenc.aq_strength);
+    map_nvenc.insert(QStringLiteral("rc_lookahead"), nvenc.rc_lookahead);
+    map_nvenc.insert(QStringLiteral("surfaces"), nvenc.surfaces);
+    map_nvenc.insert(QStringLiteral("no_scenecut"), (bool)nvenc.no_scenecut);
+    map_nvenc.insert(QStringLiteral("forced_idr"), (bool)nvenc.forced_idr);
+    map_nvenc.insert(QStringLiteral("b_adapt"), (bool)nvenc.b_adapt);
+    map_nvenc.insert(QStringLiteral("nonref_p"), (bool)nvenc.nonref_p);
+    map_nvenc.insert(QStringLiteral("strict_gop"), (bool)nvenc.strict_gop);
+    map_nvenc.insert(QStringLiteral("bluray_compat"), (bool)nvenc.bluray_compat);
+    map_nvenc.insert(QStringLiteral("weighted_pred"), (bool)nvenc.weighted_pred);
+
+
     map_root.insert(QStringLiteral("main"), map_main);
     map_root.insert(QStringLiteral("device_decklink"), map_device_decklink);
     map_root.insert(QStringLiteral("device_cam"), map_device_cam);
     map_root.insert(QStringLiteral("rec"), map_rec);
     map_root.insert(QStringLiteral("keyboard_shortcuts"), map_keyboard_shortcuts);
+    map_root.insert(QStringLiteral("nvenc"), map_nvenc);
 
 
     QByteArray ba=QJsonDocument::fromVariant(map_root).toJson();

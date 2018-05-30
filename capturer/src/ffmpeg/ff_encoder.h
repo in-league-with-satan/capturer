@@ -153,32 +153,43 @@ public:
     };
 
     struct Config {
-        Config() {
-            audio_channels_size=8;
-            audio_sample_size=16;
-            audio_dalay=0;
-            downscale=DownScale::Disabled;
-            scale_filter=ScaleFilter::FastBilinear;
-            rgb_source=true;
-            depth_10bit=false;
-            framerate_force={ 0, 0 };
-        }
-
         QSize frame_resolution_src;
         QSize frame_resolution_dst;
         Framerate::T framerate;
-        uint8_t audio_channels_size;
-        uint8_t audio_sample_size;
-        int audio_dalay;
+        uint8_t audio_channels_size=8;
+        uint8_t audio_sample_size=16;
+        int audio_dalay=0;
         uint8_t crf;
-        uint8_t downscale;
-        int scale_filter;
+        uint8_t downscale=DownScale::Disabled;
+        int scale_filter=ScaleFilter::FastBilinear;
         AVPixelFormat pixel_format;
         VideoEncoder::T video_encoder;
         QString preset;
-        bool rgb_source;
-        bool depth_10bit;
-        AVRational framerate_force;
+        bool rgb_source=true;
+        bool depth_10bit=false;
+        AVRational framerate_force={ 0, 0 };
+
+        struct NVEnc {
+            int enabled=false;
+            int b_frames=0;
+            int ref_frames=0;
+            int gop_size=12;
+            int qp_i=0;
+            int qp_p=0;
+            int qp_b=0;
+            int aq_mode=0;
+            int aq_strength=0;
+            int rc_lookahead=0;
+            int surfaces=0;
+            int no_scenecut=false;
+            int forced_idr=false;
+            int b_adapt=false;
+            int nonref_p=false;
+            int strict_gop=false;
+            int weighted_pred=false;
+            int bluray_compat=false;
+
+        } nvenc;
     };
 
     struct Stats {

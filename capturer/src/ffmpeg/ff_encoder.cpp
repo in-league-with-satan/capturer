@@ -311,8 +311,6 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
 
     c->time_base=out_stream->av_stream->time_base;
 
-    c->gop_size=12; // emit one intra frame every twelve frames at most
-
     c->pix_fmt=cfg.pixel_format;
 
     if(cfg.video_encoder==FFEncoder::VideoEncoder::libx264 || cfg.video_encoder==FFEncoder::VideoEncoder::libx264rgb) {
@@ -320,8 +318,61 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
         av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().constData(), 0);
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::nvenc_h264) {
-        if(cfg.crf==0) {
-            av_opt_set(c->priv_data, "preset", "lossless", 0);
+        if(cfg.nvenc.enabled) {
+            av_opt_set(c->priv_data, "rc", "constqp", 0);
+            av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+
+            if(cfg.nvenc.weighted_pred==0)
+                c->max_b_frames=cfg.nvenc.b_frames;
+
+            c->refs=cfg.nvenc.ref_frames;
+
+            c->gop_size=cfg.nvenc.gop_size;
+
+
+            av_opt_set(c->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i).toLatin1().constData(), 0);
+            av_opt_set(c->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p).toLatin1().constData(), 0);
+            av_opt_set(c->priv_data, "init_qpB", QString::number(cfg.nvenc.qp_b).toLatin1().constData(), 0);
+
+            switch(cfg.nvenc.aq_mode) {
+            case 1:
+                av_opt_set(c->priv_data, "spatial-aq", "1", 0);
+                av_opt_set(c->priv_data, "aq-strength", QString::number(cfg.nvenc.aq_strength).toLatin1().constData(), 0);
+                break;
+
+            case 2:
+                av_opt_set(c->priv_data, "temporal-aq", "1", 0);
+                av_opt_set(c->priv_data, "aq-strength", QString::number(cfg.nvenc.aq_strength).toLatin1().constData(), 0);
+                break;
+
+            case 0:
+            default:
+                break;
+            }
+
+            av_opt_set(c->priv_data, "rc-lookahead", QString::number(cfg.nvenc.rc_lookahead).toLatin1().constData(), 0);
+            av_opt_set(c->priv_data, "surfaces", QString::number(cfg.nvenc.surfaces).toLatin1().constData(), 0);
+
+            if(cfg.nvenc.no_scenecut!=0)
+                av_opt_set(c->priv_data, "no-scenecut", "1", 0);
+
+            if(cfg.nvenc.forced_idr!=0)
+                av_opt_set(c->priv_data, "forced-idr", "1", 0);
+
+            if(cfg.nvenc.b_adapt!=0)
+                av_opt_set(c->priv_data, "b_adapt", "1", 0);
+
+            if(cfg.nvenc.nonref_p!=0)
+                av_opt_set(c->priv_data, "nonref_p", "1", 0);
+
+            if(cfg.nvenc.strict_gop!=0)
+                av_opt_set(c->priv_data, "strict_gop", "1", 0);
+
+            if(cfg.nvenc.weighted_pred!=0)
+                av_opt_set(c->priv_data, "weighted_pred", "1", 0);
+
+            if(cfg.nvenc.bluray_compat!=0)
+                av_opt_set(c->priv_data, "bluray-compat", "1", 0);
 
         } else {
             av_opt_set(c->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
@@ -330,9 +381,60 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
         }
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::nvenc_hevc) {
-        av_opt_set(c->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
-        av_opt_set(c->priv_data, "rc", "constqp", 0);
-        av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+        if(cfg.nvenc.enabled) {
+            av_opt_set(c->priv_data, "rc", "constqp", 0);
+            av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+
+            c->refs=cfg.nvenc.ref_frames;
+
+            c->gop_size=cfg.nvenc.gop_size;
+
+
+            av_opt_set(c->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i).toLatin1().constData(), 0);
+            av_opt_set(c->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p).toLatin1().constData(), 0);
+
+            switch(cfg.nvenc.aq_mode) {
+            case 1:
+                av_opt_set(c->priv_data, "spatial_aq", "1", 0);
+                av_opt_set(c->priv_data, "aq-strength", QString::number(cfg.nvenc.aq_strength).toLatin1().constData(), 0);
+                break;
+
+            case 2:
+                av_opt_set(c->priv_data, "temporal_aq", "1", 0);
+                av_opt_set(c->priv_data, "aq-strength", QString::number(cfg.nvenc.aq_strength).toLatin1().constData(), 0);
+                break;
+
+            case 0:
+            default:
+                break;
+            }
+
+            av_opt_set(c->priv_data, "rc-lookahead", QString::number(cfg.nvenc.rc_lookahead).toLatin1().constData(), 0);
+            av_opt_set(c->priv_data, "surfaces", QString::number(cfg.nvenc.surfaces).toLatin1().constData(), 0);
+
+            if(cfg.nvenc.no_scenecut!=0)
+                av_opt_set(c->priv_data, "no-scenecut", "1", 0);
+
+            if(cfg.nvenc.forced_idr!=0)
+                av_opt_set(c->priv_data, "forced-idr", "1", 0);
+
+            if(cfg.nvenc.nonref_p!=0)
+                av_opt_set(c->priv_data, "nonref_p", "1", 0);
+
+            if(cfg.nvenc.strict_gop!=0)
+                av_opt_set(c->priv_data, "strict_gop", "1", 0);
+
+            if(cfg.nvenc.weighted_pred!=0)
+                av_opt_set(c->priv_data, "weighted_pred", "1", 0);
+
+            if(cfg.nvenc.bluray_compat!=0)
+                av_opt_set(c->priv_data, "bluray-compat", "1", 0);
+
+        } else {
+            av_opt_set(c->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
+            av_opt_set(c->priv_data, "rc", "constqp", 0);
+            av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+        }
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::qsv_h264) {
         c->flags|=AV_CODEC_FLAG_QSCALE;
@@ -695,7 +797,8 @@ QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
     case VideoEncoder::nvenc_hevc:
         return QStringList() << QLatin1String("high quality") << QLatin1String("high performance") << QLatin1String("bluray disk") << QLatin1String("low latency")
                              << QLatin1String("low latency high quality") << QLatin1String("low latency high performance")
-                             << QLatin1String("slow") << QLatin1String("medium") << QLatin1String("fast") << QLatin1String("default");
+                             << QLatin1String("slow") << QLatin1String("medium") << QLatin1String("fast") << QLatin1String("default")
+                             << QLatin1String("lossless");
 
     case VideoEncoder::qsv_h264:
         return QStringList() << QLatin1String("veryfast") << QLatin1String("faster") << QLatin1String("fast")
