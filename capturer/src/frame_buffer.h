@@ -25,6 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QMutexLocker>
 #include <QQueue>
 #include <QSize>
+#include <type_traits>
 
 #include "event_waiting.h"
 #include "frame.h"
@@ -44,6 +45,8 @@ public:
     typedef std::shared_ptr<FrameBuffer<T>> ptr;
 
     explicit FrameBuffer() {
+        is_pointer=std::is_pointer<T>::value;
+
         enabled=true;
 
         max_size=10;
@@ -77,7 +80,7 @@ public:
         QMutexLocker ml(&mutex);
 
         if(queue.isEmpty())
-            return T();
+            return is_pointer ? nullptr : T();
 
         return queue.dequeue();
     }
@@ -143,6 +146,7 @@ private:
     uint16_t max_size;
     EventWaiting event;
     bool enabled;
+    bool is_pointer;
 };
 
 #endif // FRAME_BUFFER_H

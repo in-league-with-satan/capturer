@@ -37,10 +37,9 @@ FFEncoderThread::FFEncoderThread(FFEncoder::Mode::T mode, FFEncoderBaseFilename 
 
     is_working=false;
 
-    start(QThread::LowestPriority);
-
+    // start(QThread::LowestPriority);
     // start(QThread::NormalPriority);
-    // start(QThread::HighPriority);
+    start(QThread::HighPriority);
     // start(QThread::HighestPriority);
     // start(QThread::TimeCriticalPriority);
 }
@@ -120,6 +119,10 @@ void FFEncoderThread::run()
             ffmpeg->appendFrame(frame);
 
             frame.reset();
+
+            while(frame_buffer->size().first>=50) {
+                ffmpeg->appendFrame(frame_buffer->take()->copyFrameSoundOnly());
+            }
         }
 
         QCoreApplication::processEvents();

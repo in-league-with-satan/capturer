@@ -48,7 +48,7 @@ struct Frame
     ptr copyFrameSoundOnly() {
         ptr p=make();
 
-        if(p->audio.data_ptr) {
+        if(audio.data_ptr) {
             p->audio.dummy=QByteArray((char*)audio.data_ptr, audio.data_size);
             p->audio.data_ptr=(uint8_t*)p->audio.dummy.constData();
             p->audio.data_size=audio.data_size;

@@ -141,7 +141,7 @@ void FFFormatConverterThread::work(Frame::ptr *frame_src, AVFrameSP::ptr *frame_
         if((*frame_src)) {
             AVFrameSP::ptr av_frame_src;
 
-            if(cnv_ff->formatSrc()==AV_PIX_FMT_YUV422P10LE) {
+            if(cnv_ff->formatSrc()==AV_PIX_FMT_YUV422P10LE || cnv_ff->formatSrc()==AV_PIX_FMT_GBRP10LE) {
                 av_frame_src=
                         AVFrameSP::make(cnv_ff->formatSrc(),
                                         (*frame_src)->video.size.width(),

@@ -43,13 +43,14 @@ public:
         frame=nullptr;
         frame_converted=nullptr;
 
+        pkt=nullptr;
+
         convert_context=nullptr;
     }
 
     AVStream *av_stream;
     AVCodecContext *av_codec_context;
 
-    // pts of the next frame
     int64_t next_pts;
 
     QByteArray ba_audio_prev_part;
@@ -58,6 +59,8 @@ public:
 
     AVFrame *frame;
     AVFrame *frame_converted;
+
+    AVPacket *pkt;
 
     SwsContext *convert_context;
 
@@ -306,7 +309,6 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
     }
 
 
-
     c->time_base=out_stream->av_stream->time_base;
 
     c->gop_size=12; // emit one intra frame every twelve frames at most
@@ -344,21 +346,6 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
 
         if(c->thread_count<=0)
             c->thread_count=1;
-    }
-
-    // c->thread_count=8;
-    // c->thread_count=2;
-
-    if(c->codec_id==AV_CODEC_ID_MPEG2VIDEO) {
-        // just for testing, we also add B-frames
-        c->max_b_frames=2;
-    }
-
-    if(c->codec_id==AV_CODEC_ID_MPEG1VIDEO) {
-        // needed to avoid using macroblocks in which some coeffs overflow.
-        // this does not happen with normal video, it just happens here as
-        // the motion of the chroma plane does not match the luma plane
-        c->mb_decision=2;
     }
 
     // some formats want stream headers to be separate
@@ -432,6 +419,9 @@ static QString open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost
     if(ret<0)
         return QStringLiteral("could not copy the stream parameters");
 
+   if(!ost->pkt)
+        ost->pkt=av_packet_alloc();
+
     return QStringLiteral("");
 }
 
@@ -439,24 +429,20 @@ static QString write_audio_frame(AVFormatContext *oc, OutputStream *ost)
 {
     int ret;
 
-    AVPacket *pkt=av_packet_alloc();
-
     ret=avcodec_send_frame(ost->av_codec_context, ost->frame);
 
     if(ret<0)
         return QStringLiteral("error encoding audio frame: ") + ffErrorString(ret);
 
     while(!ret) {
-        ret=avcodec_receive_packet(ost->av_codec_context, pkt);
+        ret=avcodec_receive_packet(ost->av_codec_context, ost->pkt);
 
         if(!ret) {
-            ost->size_total+=pkt->size;
+            ost->size_total+=ost->pkt->size;
 
-            write_frame(oc, &ost->av_codec_context->time_base, ost->av_stream, pkt);
+            write_frame(oc, &ost->av_codec_context->time_base, ost->av_stream, ost->pkt);
         }
     }
-
-    av_packet_free(&pkt);
 
     return QStringLiteral("");
 }
@@ -493,7 +479,6 @@ QString open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDic
         return QStringLiteral("could not allocate video frame");
 
 
-
     // allocate and init a re-usable frame
     ost->frame_converted=alloc_frame(cfg.pixel_format, cfg.frame_resolution_dst.width(), cfg.frame_resolution_dst.height());
 
@@ -507,6 +492,8 @@ QString open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDic
     if(ret<0)
         return QStringLiteral("could not copy the stream parameters");
 
+    if(!ost->pkt)
+        ost->pkt=av_packet_alloc();
 
     return QStringLiteral("");
 }
@@ -516,34 +503,28 @@ static QString write_video_frame(AVFormatContext *oc, OutputStream *ost)
     int ret;
     int ret_2;
 
-    AVPacket *pkt=av_packet_alloc();
-
     ret=avcodec_send_frame(ost->av_codec_context, ost->frame_converted);
 
     if(ret<0) {
-        qCritical() << "write_video_frame err1";
+        qCritical() << "write_video_frame err" << ret << ffErrorString(ret);
         return QStringLiteral("error encoding video frame: ") + ffErrorString(ret);
     }
 
 
     while(!ret) {
-        ret=avcodec_receive_packet(ost->av_codec_context, pkt);
+        ret=avcodec_receive_packet(ost->av_codec_context, ost->pkt);
 
         if(!ret) {
-            ost->size_total+=pkt->size;
+            ost->size_total+=ost->pkt->size;
 
-            ret_2=write_frame(oc, &ost->av_codec_context->time_base, ost->av_stream, pkt);
+            ret_2=write_frame(oc, &ost->av_codec_context->time_base, ost->av_stream, ost->pkt);
 
             if(ret_2!=0) {
-                av_packet_free(&pkt);
-
                 qCritical() << "write_video_frame err2";
                 return ffErrorString(ret_2);
             }
         }
     }
-
-    av_packet_free(&pkt);
 
     return QStringLiteral("");
 }
@@ -586,8 +567,6 @@ FFEncoder::FFEncoder(FFEncoder::Mode::T mode, QObject *parent) :
 
     if(thread_count>4)
         thread_count=4;
-
-    // thread_count=10;
 
     format_converter_ff=new FFFormatConverterMt(thread_count);
     // format_converter_ff->useMultithreading(false);
@@ -762,18 +741,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
         }
     }
 
-
-    /*
-    if(!format_converter_ff->setup(context->out_stream_video.frame_fmt, cfg.frame_resolution_src, cfg.pixel_format, cfg.frame_resolution_src, false)) {
-        emit errorString(last_error_string=QStringLiteral("err init format converter"));
-        goto fail;
-    }
-    */
-
-
     if(cfg.depth_10bit) {
-        // format_converter_dl->init(bmdFormat10BitRGB, cfg.frame_resolution_src, bmdFormat8BitBGRA, cfg.frame_resolution_src);
-
         bool ret;
 
         if(cfg.rgb_source)
@@ -833,7 +801,6 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
 
     // allocate the output media context
-    // avformat_alloc_output_context2(&context->av_format_context, nullptr, nullptr, context->filename.toLatin1().constData());
     avformat_alloc_output_context2(&context->av_format_context, nullptr, "matroska", nullptr);
 
     if(!context->av_format_context) {
@@ -849,23 +816,16 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     last_error_string=add_stream_video(&context->out_stream_video, context->av_format_context, &context->av_codec_video, cfg);
 
     if(!last_error_string.isEmpty()) {
-//        close_stream(context->av_format_context, &context->out_stream_video);
-//        context->av_format_context=nullptr;
         emit errorString(last_error_string);
         goto fail;
-//        return false;
     }
 
 
     last_error_string=add_stream_audio(&context->out_stream_audio, context->av_format_context, &context->av_codec_audio, cfg);
 
     if(!last_error_string.isEmpty()) {
-//        close_stream(context->av_format_context, &context->out_stream_video);
-//        close_stream(context->av_format_context, &context->out_stream_audio);
-//        context->av_format_context=nullptr;
         emit errorString(last_error_string);
         goto fail;
-//        return false;
     }
 
     // now that all the parameters are set, we can open the audio and
@@ -873,24 +833,16 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     last_error_string=open_video(context->av_format_context, context->av_codec_video, &context->out_stream_video, context->opt, cfg);
 
     if(!last_error_string.isEmpty()) {
-//        close_stream(context->av_format_context, &context->out_stream_video);
-//        close_stream(context->av_format_context, &context->out_stream_audio);
-//        context->av_format_context=nullptr;
         emit errorString(last_error_string);
         goto fail;
-//        return false;
     }
 
 
     last_error_string=open_audio(context->av_format_context, context->av_codec_audio, &context->out_stream_audio, context->opt);
 
     if(!last_error_string.isEmpty()) {
-//        close_stream(context->av_format_context, &context->out_stream_video);
-//        close_stream(context->av_format_context, &context->out_stream_audio);
-//        context->av_format_context=nullptr;
         emit errorString(last_error_string);
         goto fail;
-//        return false;
     }
 
 
@@ -908,12 +860,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     ret=avio_open(&context->av_format_context->pb, context->filename.toLatin1().constData(), AVIO_FLAG_WRITE);
 
     if(ret<0) {
-//        close_stream(context->av_format_context, &context->out_stream_video);
-//        close_stream(context->av_format_context, &context->out_stream_audio);
-//        context->av_format_context=nullptr;
         emit errorString(last_error_string=QString(QStringLiteral("could not open %1: %2")).arg(context->filename).arg(ffErrorString(ret)));
         goto fail;
-//        return false;
     }
 
 
@@ -932,12 +880,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     ret=avformat_write_header(context->av_format_context, &context->opt);
 
     if(ret<0) {
-//        close_stream(context->av_format_context, &context->out_stream_video);
-//        close_stream(context->av_format_context, &context->out_stream_audio);
-//        context->av_format_context=nullptr;
         emit errorString(last_error_string=QStringLiteral("error occurred when opening output file: ") + ffErrorString(ret));
         goto fail;
-//        return false;
     }
 
 
@@ -979,6 +923,11 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
     processAudio(frame);
 
+
+    if(frame->video.data_ptr==nullptr) {
+        context->out_stream_video.next_pts++;
+        return true;
+    }
 
     switch(context->cfg.framerate) {
     case Framerate::half_50:
