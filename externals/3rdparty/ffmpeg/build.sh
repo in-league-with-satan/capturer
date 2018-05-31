@@ -381,7 +381,10 @@ build_ff() {
     --disable-libfreetype \
     --disable-crystalhd \
     --disable-vaapi \
-    --disable-vdpau
+    --disable-vdpau \
+    --disable-zlib \
+    --disable-bzlib \
+    --disable-lzma
   make -j$cpu_count
   make install
 }
