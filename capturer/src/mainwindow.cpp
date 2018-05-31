@@ -115,7 +115,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    ff_enc=new FFEncoderThread(FFEncoder::Mode::primary, &enc_base_filename, this);
+    ff_enc=new FFEncoderThread(FFEncoder::Mode::primary, &enc_base_filename, QString("capturer %1").arg(VERSION_STRING), this);
 
     decklink_thread->subscribe(ff_enc->frameBuffer());
 
@@ -126,7 +126,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
-    ff_enc_cam=new FFEncoderThread(FFEncoder::Mode::webcam, &enc_base_filename, this);
+    ff_enc_cam=new FFEncoderThread(FFEncoder::Mode::webcam, &enc_base_filename, QString("capturer %1").arg(VERSION_STRING), this);
 
     cam_device->subscribe(ff_enc_cam->frameBuffer());
 

@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QThread>
 #include <QFile>
 #include <QDir>
+#include <QJsonDocument>
 
 #include <iostream>
 
@@ -242,69 +243,14 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
     c->width=cfg.frame_resolution_dst.width();
     c->height=cfg.frame_resolution_dst.height();
 
-    // timebase: This is the fundamental unit of time (in seconds) in terms
-    // of which frame timestamps are represented. For fixed-fps content,
-    // timebase should be 1/framerate and timestamp increments should be
-    // identical to 1
 
     switch(cfg.framerate) {
-    case FFEncoder::Framerate::full_11:
-        out_stream->av_stream->time_base={ 1001, 12000 };
-        break;
-
-    case FFEncoder::Framerate::full_12:
-        out_stream->av_stream->time_base={ 1000, 12000 };
-        break;
-
-    case FFEncoder::Framerate::full_14:
-        out_stream->av_stream->time_base={ 1001, 15000 };
-        break;
-
-    case FFEncoder::Framerate::full_15:
-        out_stream->av_stream->time_base={ 1000, 15000 };
-        break;
-
-    case FFEncoder::Framerate::full_23:
-        out_stream->av_stream->time_base={ 1001, 24000 };
-        break;
-
-    case FFEncoder::Framerate::full_24:
-        out_stream->av_stream->time_base={ 1000, 24000 };
-        break;
-
-    case FFEncoder::Framerate::full_25:
-    case FFEncoder::Framerate::half_50:
-        out_stream->av_stream->time_base={ 1000, 25000 };
-        break;
-
-    case FFEncoder::Framerate::full_29:
-    case FFEncoder::Framerate::half_59:
-        out_stream->av_stream->time_base={ 1001, 30000 };
-        break;
-
-    case FFEncoder::Framerate::full_30:
-    case FFEncoder::Framerate::half_60:
-        out_stream->av_stream->time_base={ 1000, 30000 };
-        break;
-
-    case FFEncoder::Framerate::full_50:
-        out_stream->av_stream->time_base={ 1000, 50000 };
-        break;
-
-    case FFEncoder::Framerate::full_59:
-        out_stream->av_stream->time_base={ 1001, 60000 };
-        break;
-
-    case FFEncoder::Framerate::full_60:
-        out_stream->av_stream->time_base={ 1000, 60000 };
-        break;
-
     case FFEncoder::Framerate::unknown:
         out_stream->av_stream->time_base=cfg.framerate_force;
         break;
 
     default:
-        out_stream->av_stream->time_base={ 1000, 30000 };
+        out_stream->av_stream->time_base=FFEncoder::Framerate::toRational(cfg.framerate);
         break;
     }
 
@@ -811,9 +757,88 @@ QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
     return QStringList() << QLatin1String("--");
 }
 
+void FFEncoder::setEncodingToolName(const QString &encoding_tool)
+{
+    this->encoding_tool=encoding_tool;
+}
+
 void FFEncoder::setBaseFilename(FFEncoderBaseFilename *bf)
 {
     context->base_filename=bf;
+}
+
+QString FFEncoder::configString(const FFEncoder::Config &cfg)
+{
+    QVariantMap map;
+
+    if(cfg.rgb_source) {
+        if(cfg.depth_10bit)
+            map.insert("src_pix_fmt", PixelFormat::toString(PixelFormat::GBRP10LE));
+
+        else
+            map.insert("src_pix_fmt", PixelFormat::toString(PixelFormat::BGRA));
+
+    } else {
+        if(cfg.depth_10bit)
+            map.insert("src_pix_fmt", PixelFormat::toString(PixelFormat::YUV422P10LE));
+
+        else
+            map.insert("src_pix_fmt", PixelFormat::toString(PixelFormat::UYVY422));
+    }
+
+    map.insert("dst_pix_fmt", PixelFormat::toString(cfg.pixel_format));
+
+
+    if(cfg.frame_resolution_src==cfg.frame_resolution_dst) {
+        map.insert("resolution", QString("%1x%2").arg(cfg.frame_resolution_src.width()).arg(cfg.frame_resolution_src.height()));
+
+    } else {
+        map.insert("src_resolution", QString("%1x%2").arg(cfg.frame_resolution_src.width()).arg(cfg.frame_resolution_src.height()));
+        map.insert("dst_resolution", QString("%1x%2").arg(cfg.frame_resolution_dst.width()).arg(cfg.frame_resolution_src.height()));
+        map.insert("scale_filter", ScaleFilter::toString(cfg.scale_filter));
+    }
+
+    map.insert("crf", cfg.crf);
+    map.insert("video_encoder", VideoEncoder::toString(cfg.video_encoder));
+    map.insert("preset", cfg.preset);
+
+
+    AVRational fr=Framerate::toRational(cfg.framerate);
+
+    if(cfg.framerate==Framerate::unknown)
+        fr=cfg.framerate_force;
+
+    map.insert("framerate", QString("%1/%2").arg(fr.den).arg(fr.num));
+
+
+    if((cfg.video_encoder==VideoEncoder::nvenc_h264 || cfg.video_encoder==VideoEncoder::nvenc_hevc)
+            && cfg.nvenc.enabled) {
+        switch(cfg.nvenc.aq_mode) {
+        case 1:
+            map.insert("aq_mode", "spatial");
+            map.insert("aq_strength", cfg.nvenc.aq_strength);
+            break;
+
+        case 2:
+            map.insert("aq_mode", "temporal");
+            map.insert("aq_strength", cfg.nvenc.aq_strength);
+            break;
+
+        default:
+            break;
+        }
+
+        map.insert("b_frames", cfg.nvenc.b_frames);
+        map.insert("ref_frames", cfg.nvenc.ref_frames);
+        map.insert("gop_size", cfg.nvenc.gop_size);
+        map.insert("qp_i", cfg.nvenc.qp_i);
+        map.insert("qp_p", cfg.nvenc.qp_p);
+        map.insert("qp_b", cfg.nvenc.qp_b);
+        map.insert("rc_lookahead", cfg.nvenc.rc_lookahead);
+        map.insert("surfaces", cfg.nvenc.surfaces);
+    }
+
+    return QString(QJsonDocument::fromVariant(map).toJson(QJsonDocument::Compact)).remove("{").remove("}").remove("\"").replace(":", "=").replace(",", ", ");
 }
 
 bool FFEncoder::setConfig(FFEncoder::Config cfg)
@@ -968,15 +993,10 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     }
 
 
-    if(cfg.video_encoder!=VideoEncoder::ffvhuff)
-        av_dict_set(&context->av_format_context->metadata, "crf/quality", QString::number(cfg.crf).toLatin1().constData(), 0);
+    av_dict_set(&context->av_format_context->metadata, "encoding_params", configString(cfg).toLatin1().constData(), 0);
 
-    if(cfg.downscale!=DownScale::Disabled)
-        av_dict_set(&context->av_format_context->metadata, "scale filter", ScaleFilter::toString(cfg.scale_filter).toLatin1().constData(), 0);
-
-    av_dict_set(&context->av_format_context->metadata, "encoder", "test", AV_DICT_DONT_OVERWRITE);
-
-    av_dict_set(&context->opt, "encoder", "test", AV_DICT_DONT_OVERWRITE);
+    if(!encoding_tool.isEmpty())
+        av_dict_set(&context->av_format_context->metadata, "encoding_tool", encoding_tool.toLatin1().constData(), 0);
 
 
     // write the stream header, if any
@@ -1206,6 +1226,12 @@ QString FFEncoder::PixelFormat::toString(uint32_t value)
     case RGB0:
         return QLatin1String("rgb0");
 
+    case BGRA:
+        return QLatin1String("bgra");
+
+    case GBRP10LE:
+        return QLatin1String("gbrp10le");
+
     case YUV420P:
         return QLatin1String("yuv420p");
 
@@ -1253,6 +1279,12 @@ uint64_t FFEncoder::PixelFormat::fromString(QString value)
 
     else if(value==QLatin1String("rgb0"))
         return RGB0;
+
+    else if(value==QLatin1String("bgra"))
+        return BGRA;
+
+    else if(value==QLatin1String("gbrp10le"))
+        return GBRP10LE;
 
     else if(value==QLatin1String("yuv420p"))
         return YUV420P;
@@ -1524,4 +1556,57 @@ QString FFEncoder::ScaleFilter::toString(uint32_t value)
     }
 
     return QLatin1String("unknown?!!");
+}
+
+AVRational FFEncoder::Framerate::toRational(FFEncoder::Framerate::T value)
+{
+    switch(value) {
+    case full_11:
+        return { 1001, 12000 };
+
+    case full_12:
+        return { 1000, 12000 };
+
+    case full_12_5:
+        return { 1000, 12500 };
+
+    case full_14:
+        return { 1001, 15000 };
+
+    case full_15:
+        return { 1000, 15000 };
+
+    case full_23:
+        return { 1001, 24000 };
+
+    case full_24:
+        return { 1000, 24000 };
+
+    case full_25:
+    case half_50:
+        return { 1000, 25000 };
+
+    case full_29:
+    case half_59:
+        return { 1001, 30000 };
+
+    case full_30:
+    case half_60:
+        return { 1000, 30000 };
+
+    case full_50:
+        return { 1000, 50000 };
+
+    case full_59:
+        return { 1001, 60000 };
+
+    case full_60:
+        return { 1000, 60000 };
+
+    case unknown:
+    default:
+        break;
+    }
+
+    return { 1000, 30000 };
 }

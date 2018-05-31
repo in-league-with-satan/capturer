@@ -24,9 +24,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "ff_encoder_thread.h"
 
-FFEncoderThread::FFEncoderThread(FFEncoder::Mode::T mode, FFEncoderBaseFilename *base_filename, QObject *parent)
+FFEncoderThread::FFEncoderThread(FFEncoder::Mode::T mode, FFEncoderBaseFilename *base_filename, QString encoding_tool_name, QObject *parent)
     : QThread(parent)
     , base_filename(base_filename)
+    , encoding_tool_name(encoding_tool_name)
     , mode(mode)
 {
     frame_buffer=FrameBuffer<Frame::ptr>::make();
@@ -107,6 +108,7 @@ void FFEncoderThread::run()
     connect(ffmpeg, SIGNAL(errorString(QString)), SIGNAL(errorString(QString)), Qt::QueuedConnection);
 
     ffmpeg->setBaseFilename(base_filename);
+    ffmpeg->setEncodingToolName(encoding_tool_name);
 
     Frame::ptr frame;
 

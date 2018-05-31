@@ -72,6 +72,8 @@ public:
             full_60,
             unknown
         };
+
+        static AVRational toRational(Framerate::T value);
     };
 
     struct VideoEncoder {
@@ -98,6 +100,8 @@ public:
             RGB24=AV_PIX_FMT_RGB24,
             BGR0=AV_PIX_FMT_BGR0,
             RGB0=AV_PIX_FMT_RGB0,
+            BGRA=AV_PIX_FMT_BGRA,               // dummy
+            GBRP10LE=AV_PIX_FMT_GBRP10LE,       // dummy
             YUV420P=AV_PIX_FMT_YUV420P,
             YUV420P10=AV_PIX_FMT_YUV420P10,
             YUV422P=AV_PIX_FMT_YUV422P,
@@ -203,6 +207,7 @@ public:
     static QString presetVisualNameToParamName(const QString &str);
     static QStringList compatiblePresets(VideoEncoder::T encoder);
 
+    void setEncodingToolName(const QString &encoding_tool);
     void setBaseFilename(FFEncoderBaseFilename *bf);
 
     QString lastErrorString() const;
@@ -221,6 +226,7 @@ private slots:
 
 private:
     void calcStats();
+    QString configString(const FFEncoder::Config &cfg);
 
     FFMpegContext *context;
     FFFormatConverterMt *format_converter_ff;
@@ -228,6 +234,8 @@ private:
     QSize last_frame_size;
 
     QString last_error_string;
+
+    QString encoding_tool;
 
 signals:
     void stats(FFEncoder::Stats s);
