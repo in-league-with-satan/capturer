@@ -161,6 +161,7 @@ bool Settings::load()
     }
 
     nvenc.enabled=map_nvenc.value(QStringLiteral("enabled"), 0).toInt();
+    nvenc.device=map_nvenc.value(QStringLiteral("device"), 0).toInt();
     nvenc.b_frames=map_nvenc.value(QStringLiteral("b_frames"), 0).toInt();
     nvenc.ref_frames=map_nvenc.value(QStringLiteral("ref_frames"), 0).toInt();
     nvenc.gop_size=map_nvenc.value(QStringLiteral("gop_size"), 0).toInt();
@@ -237,6 +238,7 @@ bool Settings::save()
                     );
 
     map_nvenc.insert(QStringLiteral("enabled"), (bool)nvenc.enabled);
+    map_nvenc.insert(QStringLiteral("device"), nvenc.device);
     map_nvenc.insert(QStringLiteral("b_frames"), nvenc.b_frames);
     map_nvenc.insert(QStringLiteral("ref_frames"), nvenc.ref_frames);
     map_nvenc.insert(QStringLiteral("gop_size"), nvenc.gop_size);

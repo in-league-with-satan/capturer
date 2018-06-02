@@ -268,6 +268,9 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
             av_opt_set(c->priv_data, "rc", "constqp", 0);
             av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
+            if(cfg.nvenc.device!=0)
+                av_opt_set(c->priv_data, "gpu", QString::number(cfg.nvenc.device - 1).toLatin1().constData(), 0);
+
             if(cfg.nvenc.weighted_pred==0)
                 c->max_b_frames=cfg.nvenc.b_frames;
 
@@ -275,10 +278,14 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
 
             c->gop_size=cfg.nvenc.gop_size;
 
+            if(cfg.nvenc.qp_i==0) {
+                av_opt_set(c->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
 
-            av_opt_set(c->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i).toLatin1().constData(), 0);
-            av_opt_set(c->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p).toLatin1().constData(), 0);
-            av_opt_set(c->priv_data, "init_qpB", QString::number(cfg.nvenc.qp_b).toLatin1().constData(), 0);
+            } else {
+                av_opt_set(c->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i - 1).toLatin1().constData(), 0);
+                av_opt_set(c->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p - 1).toLatin1().constData(), 0);
+                av_opt_set(c->priv_data, "init_qpB", QString::number(cfg.nvenc.qp_b - 1).toLatin1().constData(), 0);
+            }
 
             switch(cfg.nvenc.aq_mode) {
             case 1:
@@ -296,8 +303,11 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
                 break;
             }
 
-            av_opt_set(c->priv_data, "rc-lookahead", QString::number(cfg.nvenc.rc_lookahead).toLatin1().constData(), 0);
-            av_opt_set(c->priv_data, "surfaces", QString::number(cfg.nvenc.surfaces).toLatin1().constData(), 0);
+            if(cfg.nvenc.rc_lookahead>0)
+                av_opt_set(c->priv_data, "rc-lookahead", QString::number(cfg.nvenc.rc_lookahead - 1).toLatin1().constData(), 0);
+
+            if(cfg.nvenc.surfaces>0)
+                av_opt_set(c->priv_data, "surfaces", QString::number(cfg.nvenc.surfaces - 1).toLatin1().constData(), 0);
 
             if(cfg.nvenc.no_scenecut!=0)
                 av_opt_set(c->priv_data, "no-scenecut", "1", 0);
@@ -331,13 +341,20 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
             av_opt_set(c->priv_data, "rc", "constqp", 0);
             av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
+            if(cfg.nvenc.device!=0)
+                av_opt_set(c->priv_data, "gpu", QString::number(cfg.nvenc.device - 1).toLatin1().constData(), 0);
+
             c->refs=cfg.nvenc.ref_frames;
 
             c->gop_size=cfg.nvenc.gop_size;
 
+            if(cfg.nvenc.qp_i==0) {
+                av_opt_set(c->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
 
-            av_opt_set(c->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i).toLatin1().constData(), 0);
-            av_opt_set(c->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p).toLatin1().constData(), 0);
+            } else {
+                av_opt_set(c->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i - 1).toLatin1().constData(), 0);
+                av_opt_set(c->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p - 1).toLatin1().constData(), 0);
+            }
 
             switch(cfg.nvenc.aq_mode) {
             case 1:
@@ -345,18 +362,17 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
                 av_opt_set(c->priv_data, "aq-strength", QString::number(cfg.nvenc.aq_strength).toLatin1().constData(), 0);
                 break;
 
-            case 2:
-                av_opt_set(c->priv_data, "temporal_aq", "1", 0);
-                av_opt_set(c->priv_data, "aq-strength", QString::number(cfg.nvenc.aq_strength).toLatin1().constData(), 0);
-                break;
-
             case 0:
+            case 2:
             default:
                 break;
             }
 
-            av_opt_set(c->priv_data, "rc-lookahead", QString::number(cfg.nvenc.rc_lookahead).toLatin1().constData(), 0);
-            av_opt_set(c->priv_data, "surfaces", QString::number(cfg.nvenc.surfaces).toLatin1().constData(), 0);
+            if(cfg.nvenc.rc_lookahead>0)
+                av_opt_set(c->priv_data, "rc-lookahead", QString::number(cfg.nvenc.rc_lookahead - 1).toLatin1().constData(), 0);
+
+            if(cfg.nvenc.surfaces>0)
+                av_opt_set(c->priv_data, "surfaces", QString::number(cfg.nvenc.surfaces - 1).toLatin1().constData(), 0);
 
             if(cfg.nvenc.no_scenecut!=0)
                 av_opt_set(c->priv_data, "no-scenecut", "1", 0);
@@ -794,7 +810,7 @@ QString FFEncoder::configString(const FFEncoder::Config &cfg)
 
     } else {
         map.insert("src_resolution", QString("%1x%2").arg(cfg.frame_resolution_src.width()).arg(cfg.frame_resolution_src.height()));
-        map.insert("dst_resolution", QString("%1x%2").arg(cfg.frame_resolution_dst.width()).arg(cfg.frame_resolution_src.height()));
+        map.insert("dst_resolution", QString("%1x%2").arg(cfg.frame_resolution_dst.width()).arg(cfg.frame_resolution_dst.height()));
         map.insert("scale_filter", ScaleFilter::toString(cfg.scale_filter));
     }
 
@@ -828,14 +844,30 @@ QString FFEncoder::configString(const FFEncoder::Config &cfg)
             break;
         }
 
-        map.insert("b_frames", cfg.nvenc.b_frames);
+        map.remove("crf");
+
+        if(cfg.video_encoder==VideoEncoder::nvenc_h264)
+            map.insert("b_frames", cfg.nvenc.b_frames);
+
         map.insert("ref_frames", cfg.nvenc.ref_frames);
         map.insert("gop_size", cfg.nvenc.gop_size);
-        map.insert("qp_i", cfg.nvenc.qp_i);
-        map.insert("qp_p", cfg.nvenc.qp_p);
-        map.insert("qp_b", cfg.nvenc.qp_b);
-        map.insert("rc_lookahead", cfg.nvenc.rc_lookahead);
-        map.insert("surfaces", cfg.nvenc.surfaces);
+
+        if(cfg.nvenc.rc_lookahead>0)
+            map.insert("rc_lookahead", cfg.nvenc.rc_lookahead - 1);
+
+        if(cfg.nvenc.surfaces>0)
+            map.insert("surfaces", cfg.nvenc.surfaces - 1);
+
+        if(cfg.nvenc.qp_i>0) {
+            map.insert("qp_i", cfg.nvenc.qp_i - 1);
+            map.insert("qp_p", cfg.nvenc.qp_p - 1);
+
+            if(cfg.video_encoder==VideoEncoder::nvenc_h264)
+                map.insert("qp_b", cfg.nvenc.qp_b - 1);
+
+        } else {
+            map.insert("qp", cfg.crf);
+        }
     }
 
     return QString(QJsonDocument::fromVariant(map).toJson(QJsonDocument::Compact)).remove("{").remove("}").remove("\"").replace(":", "=").replace(",", ", ");
@@ -867,6 +899,16 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             cfg.frame_resolution_dst.setWidth(cfg.frame_resolution_dst.height()*(16./9.));
             sws_flags|=ScaleFilter::toSws(cfg.scale_filter);
         }
+    }
+
+    if(cfg.video_encoder==VideoEncoder::nvenc_h264) {
+        if(cfg.nvenc.ref_frames>5)
+            cfg.nvenc.ref_frames=5;
+    }
+
+    if(cfg.video_encoder==VideoEncoder::nvenc_hevc) {
+        if(cfg.nvenc.aq_mode==2)
+            cfg.nvenc.aq_mode=0;
     }
 
     if(cfg.depth_10bit) {

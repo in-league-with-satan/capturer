@@ -49,6 +49,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "tools_cam.h"
 #include "ff_cam.h"
 #include "decklink_dummy.h"
+#include "cuda_tools.h"
 
 #include "mainwindow.h"
 
@@ -73,6 +74,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(decklink_thread, SIGNAL(formatChanged(int,int,quint64,quint64,bool,QString)),
             SLOT(formatChanged(int,int,quint64,quint64,bool,QString)), Qt::QueuedConnection);
     connect(decklink_thread, SIGNAL(frameSkipped()), SLOT(frameSkipped()), Qt::QueuedConnection);
+
+    //
+
+    QStringList cuda_devices=cuda::availableDevices();
 
     //
 
@@ -593,196 +598,215 @@ MainWindow::MainWindow(QWidget *parent)
     messenger->settingsModel()->add(set_model_data);
 
     // { nvenc
+    if(!cuda_devices.isEmpty()) {
+        set_model_data.type=SettingsModel::Type::title;
+        set_model_data.value=&settings->main.dummy;
+        set_model_data.name="nvenc";
 
-    set_model_data.type=SettingsModel::Type::title;
-    set_model_data.value=&settings->main.dummy;
-    set_model_data.name="nvenc";
+        messenger->settingsModel()->add(set_model_data);
 
-    messenger->settingsModel()->add(set_model_data);
+        //
 
-    //
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.group="nvenc";
+        set_model_data.name="enabled";
+        set_model_data.value=&settings->nvenc.enabled;
 
-    set_model_data.type=SettingsModel::Type::checkbox;
-    set_model_data.group="nvenc";
-    set_model_data.name="enabled";
-    set_model_data.value=&settings->nvenc.enabled;
+        messenger->settingsModel()->add(set_model_data);
 
-    messenger->settingsModel()->add(set_model_data);
+        //
 
-    //
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="device";
+        set_model_data.value=&settings->nvenc.device;
 
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="b frames (h264 only)";
-    set_model_data.value=&settings->nvenc.b_frames;
+        set_model_data.values << "any";
 
-    for(int i=0; i<5; i++)
-        set_model_data.values << QString::number(i);
+        foreach(QString val, cuda_devices)
+            set_model_data.values << val;
 
-    messenger->settingsModel()->add(set_model_data);
+        messenger->settingsModel()->add(set_model_data);
 
-    set_model_data.values.clear();
+        set_model_data.values.clear();
 
-    //
+        //
 
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="ref frames";
-    set_model_data.value=&settings->nvenc.ref_frames;
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="b frames (h264 only)";
+        set_model_data.value=&settings->nvenc.b_frames;
 
-    for(int i=0; i<5; i++)
-        set_model_data.values << QString::number(i);
+        for(int i=0; i<5; i++)
+            set_model_data.values << QString::number(i);
 
-    messenger->settingsModel()->add(set_model_data);
+        messenger->settingsModel()->add(set_model_data);
 
-    set_model_data.values.clear();
+        set_model_data.values.clear();
 
-    //
+        //
 
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="gop size";
-    set_model_data.value=&settings->nvenc.gop_size;
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="ref frames";
+        set_model_data.value=&settings->nvenc.ref_frames;
 
-    for(int i=0; i<301; i++)
-        set_model_data.values << QString::number(i);
+        for(int i=0; i<16; i++) {
+            if(i>5)
+                set_model_data.values << QString("%1 hevc only").arg(i);
 
-    messenger->settingsModel()->add(set_model_data);
+            else
+                set_model_data.values << QString::number(i);
+        }
 
-    set_model_data.values.clear();
+        messenger->settingsModel()->add(set_model_data);
 
-    //
+        set_model_data.values.clear();
 
-    for(int i=0; i<52; i++)
-        set_model_data.values << QString::number(i);
+        //
 
-    //
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="gop size";
+        set_model_data.value=&settings->nvenc.gop_size;
 
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="qpI";
-    set_model_data.value=&settings->nvenc.qp_i;
+        for(int i=0; i<301; i++)
+            set_model_data.values << QString::number(i);
 
-    messenger->settingsModel()->add(set_model_data);
+        messenger->settingsModel()->add(set_model_data);
 
-    //
+        set_model_data.values.clear();
 
-    set_model_data.name="qpP";
-    set_model_data.value=&settings->nvenc.qp_p;
+        //
 
-    messenger->settingsModel()->add(set_model_data);
+        for(int i=-1; i<52; i++)
+            set_model_data.values << QString::number(i);
 
-    //
+        //
 
-    set_model_data.name="qpB (h264 only)";
-    set_model_data.value=&settings->nvenc.qp_b;
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="qpI";
+        set_model_data.value=&settings->nvenc.qp_i;
 
-    messenger->settingsModel()->add(set_model_data);
+        messenger->settingsModel()->add(set_model_data);
 
-    set_model_data.values.clear();
+        //
 
-    //
+        set_model_data.name="qpP";
+        set_model_data.value=&settings->nvenc.qp_p;
 
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="aq mode";
-    set_model_data.value=&settings->nvenc.aq_mode;
-    set_model_data.values << "disabled" << "spatial" << "temporal. not working with constqp?";
-    messenger->settingsModel()->add(set_model_data);
+        messenger->settingsModel()->add(set_model_data);
 
-    set_model_data.values.clear();
+        //
 
-    //
+        set_model_data.name="qpB (h264 only)";
+        set_model_data.value=&settings->nvenc.qp_b;
 
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="aq strength";
-    set_model_data.value=&settings->nvenc.aq_strength;
+        messenger->settingsModel()->add(set_model_data);
 
-    for(int i=0; i<16; i++)
-        set_model_data.values << QString::number(i);
+        set_model_data.values.clear();
 
-    messenger->settingsModel()->add(set_model_data);
+        //
 
-    set_model_data.values.clear();
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="aq mode";
+        set_model_data.value=&settings->nvenc.aq_mode;
+        set_model_data.values << "disabled" << "spatial" << "temporal. not working with constqp?";
+        messenger->settingsModel()->add(set_model_data);
 
-    //
+        set_model_data.values.clear();
 
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="rc lookahead";
-    set_model_data.value=&settings->nvenc.rc_lookahead;
+        //
 
-    for(int i=0; i<33; i++)
-        set_model_data.values << QString::number(i);
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="aq strength";
+        set_model_data.value=&settings->nvenc.aq_strength;
 
-    messenger->settingsModel()->add(set_model_data);
+        for(int i=0; i<16; i++)
+            set_model_data.values << QString::number(i);
 
-    set_model_data.values.clear();
+        messenger->settingsModel()->add(set_model_data);
 
-    //
+        set_model_data.values.clear();
 
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="surfaces";
-    set_model_data.value=&settings->nvenc.surfaces;
+        //
 
-    for(int i=0; i<65; i++)
-        set_model_data.values << QString::number(i);
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="rc lookahead";
+        set_model_data.value=&settings->nvenc.rc_lookahead;
 
-    messenger->settingsModel()->add(set_model_data);
+        for(int i=-1; i<33; i++)
+            set_model_data.values << QString::number(i);
 
-    set_model_data.values.clear();
+        messenger->settingsModel()->add(set_model_data);
 
-    //
+        set_model_data.values.clear();
 
-    set_model_data.type=SettingsModel::Type::checkbox;
-    set_model_data.name="no scenecut";
-    set_model_data.value=&settings->nvenc.no_scenecut;
+        //
 
-    messenger->settingsModel()->add(set_model_data);
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="surfaces";
+        set_model_data.value=&settings->nvenc.surfaces;
 
-    //
+        for(int i=-1; i<65; i++)
+            set_model_data.values << QString::number(i);
 
-    set_model_data.type=SettingsModel::Type::checkbox;
-    set_model_data.name="forced idr";
-    set_model_data.value=&settings->nvenc.forced_idr;
+        messenger->settingsModel()->add(set_model_data);
 
-    messenger->settingsModel()->add(set_model_data);
+        set_model_data.values.clear();
 
-    //
+        //
 
-    set_model_data.type=SettingsModel::Type::checkbox;
-    set_model_data.name="b adapt (h264 only)";
-    set_model_data.value=&settings->nvenc.b_adapt;
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="no scenecut";
+        set_model_data.value=&settings->nvenc.no_scenecut;
 
-    messenger->settingsModel()->add(set_model_data);
+        messenger->settingsModel()->add(set_model_data);
 
-    //
+        //
 
-    set_model_data.type=SettingsModel::Type::checkbox;
-    set_model_data.name="nonref p";
-    set_model_data.value=&settings->nvenc.nonref_p;
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="forced idr";
+        set_model_data.value=&settings->nvenc.forced_idr;
 
-    messenger->settingsModel()->add(set_model_data);
+        messenger->settingsModel()->add(set_model_data);
 
-    //
+        //
 
-    set_model_data.type=SettingsModel::Type::checkbox;
-    set_model_data.name="strict gop";
-    set_model_data.value=&settings->nvenc.strict_gop;
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="b adapt (h264 only)";
+        set_model_data.value=&settings->nvenc.b_adapt;
 
-    messenger->settingsModel()->add(set_model_data);
+        messenger->settingsModel()->add(set_model_data);
 
-    //
+        //
 
-    set_model_data.type=SettingsModel::Type::checkbox;
-    set_model_data.name="weighted pred (disables bframes)";
-    set_model_data.value=&settings->nvenc.weighted_pred;
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="nonref p";
+        set_model_data.value=&settings->nvenc.nonref_p;
 
-    messenger->settingsModel()->add(set_model_data);
+        messenger->settingsModel()->add(set_model_data);
 
-    //
+        //
 
-    set_model_data.type=SettingsModel::Type::checkbox;
-    set_model_data.name="bluray compatibility workarounds";
-    set_model_data.value=&settings->nvenc.bluray_compat;
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="strict gop";
+        set_model_data.value=&settings->nvenc.strict_gop;
 
-    messenger->settingsModel()->add(set_model_data);
+        messenger->settingsModel()->add(set_model_data);
 
-    //
+        //
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="weighted pred (disables bframes)";
+        set_model_data.value=&settings->nvenc.weighted_pred;
+
+        messenger->settingsModel()->add(set_model_data);
+
+        //
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="bluray compatibility workarounds";
+        set_model_data.value=&settings->nvenc.bluray_compat;
+
+        messenger->settingsModel()->add(set_model_data);
+    }
 
     // } nvenc
 

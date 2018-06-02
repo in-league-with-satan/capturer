@@ -384,7 +384,8 @@ build_ff() {
     --disable-vdpau \
     --disable-zlib \
     --disable-bzlib \
-    --disable-lzma
+    --disable-lzma \
+    --disable-libxcb
   make -j$cpu_count
   make install
 }

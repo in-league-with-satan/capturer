@@ -175,6 +175,7 @@ public:
 
         struct NVEnc {
             int enabled=false;
+            int device=0;
             int b_frames=0;
             int ref_frames=0;
             int gop_size=12;
