@@ -1198,22 +1198,20 @@ void FFEncoder::processAudio(Frame::ptr frame)
 
 bool FFEncoder::stopCoder()
 {
-    if(!context->canAcceptFrame())
-        return false;
-
-    if(context->av_format_context->pb)
-        av_write_trailer(context->av_format_context);
+    if(context->av_format_context)
+        if(context->av_format_context->pb)
+            av_write_trailer(context->av_format_context);
 
     // close each codec.
     close_stream(&context->out_stream_video);
     close_stream(&context->out_stream_audio);
 
-    // close the output file.
-    if(context->av_format_context->pb)
-        avio_closep(&context->av_format_context->pb);
-
-    // free the stream
     if(context->av_format_context) {
+        // close the output file.
+        if(context->av_format_context->pb)
+            avio_closep(&context->av_format_context->pb);
+
+        // free the stream
         avformat_free_context(context->av_format_context);
         context->av_format_context=nullptr;
     }

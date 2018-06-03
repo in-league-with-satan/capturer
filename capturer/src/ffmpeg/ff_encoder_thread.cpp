@@ -74,8 +74,8 @@ void FFEncoderThread::setConfig(FFEncoder::Config cfg)
 
 void FFEncoderThread::stopCoder()
 {
-    frame_buffer->setEnabled(false);
-    frame_buffer->clear();
+    // frame_buffer->setEnabled(false);
+    // frame_buffer->clear();
 
     emit sigStopCoder();
 }
