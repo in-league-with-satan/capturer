@@ -1339,6 +1339,9 @@ void MainWindow::startStopRecording()
             cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device_decklink.audio_sample_size)->values_data[settings->device_decklink.audio_sample_size].toInt();
             cfg.downscale=settings->rec.downscale;
             cfg.scale_filter=settings->rec.scale_filter;
+            cfg.color_primaries=settings->rec.color_primaries;
+            cfg.color_space=settings->rec.color_space;
+            cfg.color_transfer_characteristic=settings->rec.color_transfer_characteristic;
             cfg.nvenc=settings->nvenc;
 
             ff_enc->setConfig(cfg);

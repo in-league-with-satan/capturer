@@ -86,6 +86,9 @@ public:
         int downscale;
         int scale_filter;
         int check_encoders;
+        int color_primaries;
+        int color_space;
+        int color_transfer_characteristic;
 
     } rec;
 

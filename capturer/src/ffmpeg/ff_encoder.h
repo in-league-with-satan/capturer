@@ -173,6 +173,10 @@ public:
         bool depth_10bit=false;
         AVRational framerate_force={ 0, 0 };
 
+        int color_primaries=-1;
+        int color_space=-1;
+        int color_transfer_characteristic=-1;
+
         struct NVEnc {
             int enabled=false;
             int device=0;

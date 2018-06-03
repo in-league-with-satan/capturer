@@ -412,6 +412,15 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
             c->thread_count=1;
     }
 
+    if(cfg.color_primaries>-1)
+        c->color_primaries=(AVColorPrimaries)cfg.color_primaries;
+
+    if(cfg.color_space>-1)
+        c->colorspace=(AVColorSpace)cfg.color_space;
+
+    if(cfg.color_transfer_characteristic>-1)
+        c->color_trc=(AVColorTransferCharacteristic)cfg.color_transfer_characteristic;
+
     // some formats want stream headers to be separate
     if(format_context->oformat->flags & AVFMT_GLOBALHEADER)
         c->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
