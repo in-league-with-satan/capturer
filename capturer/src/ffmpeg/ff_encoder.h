@@ -163,6 +163,7 @@ public:
         uint8_t audio_channels_size=8;
         uint8_t audio_sample_size=16;
         int audio_dalay=0;
+        bool audio_flac=false;
         uint8_t crf;
         uint8_t downscale=DownScale::Disabled;
         int scale_filter=ScaleFilter::FastBilinear;

@@ -501,10 +501,25 @@ MainWindow::MainWindow(QWidget *parent)
 
     set_model_data.type=SettingsModel::Type::combobox;
     set_model_data.group="rec";
+    set_model_data.name="audio encoder";
+
+    set_model_data.values << "pcm" << "flac";
+
+    set_model_data.value=&settings->rec.encoder_audio;
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.group="rec";
     set_model_data.name="video encoder";
 
 
-    set_model_data.value=&settings->rec.encoder;
+    set_model_data.value=&settings->rec.encoder_video;
 
     messenger->settingsModel()->add(set_model_data);
 
@@ -1157,9 +1172,9 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
     //
 
-    if(data->value==&settings->rec.encoder) {
+    if(data->value==&settings->rec.encoder_video) {
         // pix_fmt
-        const int index_encoder=data->values_data[settings->rec.encoder].toInt();
+        const int index_encoder=data->values_data[settings->rec.encoder_video].toInt();
 
         QList <FFEncoder::PixelFormat::T> fmts;
 
@@ -1179,7 +1194,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             if(model->data_p(i)->value==&settings->rec.pixel_format_current) {
                 model->setData(i, SettingsModel::Role::values_data, list_values_data);
                 model->setData(i, SettingsModel::Role::values, list_values);
-                model->setData(i, SettingsModel::Role::value, settings->rec.pixel_format.value(QString::number(settings->rec.encoder), 0));
+                model->setData(i, SettingsModel::Role::value, settings->rec.pixel_format.value(QString::number(settings->rec.encoder_video), 0));
 
                 break;
             }
@@ -1189,7 +1204,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
         list_values.clear();
         list_values_data.clear();
 
-        QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)data->values_data.value(settings->rec.encoder, 0).toInt());
+        QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)data->values_data.value(settings->rec.encoder_video, 0).toInt());
 
         foreach(const QString &preset, presets) {
             list_values << preset;
@@ -1200,7 +1215,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             if(model->data_p(i)->value==&settings->rec.preset_current) {
                 model->setData(i, SettingsModel::Role::values_data, list_values_data);
                 model->setData(i, SettingsModel::Role::values, list_values);
-                model->setData(i, SettingsModel::Role::value, settings->rec.preset.value(QString::number(settings->rec.encoder), 0));
+                model->setData(i, SettingsModel::Role::value, settings->rec.preset.value(QString::number(settings->rec.encoder_video), 0));
 
                 break;
             }
@@ -1210,12 +1225,12 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
     if(data->value==&settings->rec.pixel_format_current)
         if(role==SettingsModel::Role::value)
-            settings->rec.pixel_format[QString::number(settings->rec.encoder)]=settings->rec.pixel_format_current;
+            settings->rec.pixel_format[QString::number(settings->rec.encoder_video)]=settings->rec.pixel_format_current;
 
 
     if(data->value==&settings->rec.preset_current)
         if(role==SettingsModel::Role::value)
-            settings->rec.preset[QString::number(settings->rec.encoder)]=settings->rec.preset_current;
+            settings->rec.preset[QString::number(settings->rec.encoder_video)]=settings->rec.preset_current;
 
 
     if(data->value==&settings->device_decklink.restart) {
@@ -1332,7 +1347,7 @@ void MainWindow::startStopRecording()
             cfg.frame_resolution_src=current_frame_size;
             cfg.pixel_format=(AVPixelFormat)messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();
             cfg.preset=messenger->settingsModel()->data_p(&settings->rec.preset_current)->values_data[settings->rec.preset_current].toString();
-            cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
+            cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder_video)->values_data[settings->rec.encoder_video].toInt();
             cfg.crf=settings->rec.crf;
             cfg.rgb_source=decklink_thread->sourceRGB();
             cfg.depth_10bit=decklink_thread->source10Bit();
@@ -1343,6 +1358,7 @@ void MainWindow::startStopRecording()
             cfg.color_space=settings->rec.color_space;
             cfg.color_transfer_characteristic=settings->rec.color_transfer_characteristic;
             cfg.nvenc=settings->nvenc;
+            cfg.audio_flac=settings->rec.encoder_audio==1;
 
             ff_enc->setConfig(cfg);
         }
@@ -1366,7 +1382,7 @@ void MainWindow::startStopRecording()
 
             cfg.pixel_format=(AVPixelFormat)messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();
             cfg.preset=messenger->settingsModel()->data_p(&settings->rec.preset_current)->values_data[settings->rec.preset_current].toString();
-            cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder)->values_data[settings->rec.encoder].toInt();
+            cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder_video)->values_data[settings->rec.encoder_video].toInt();
             cfg.crf=settings->rec.crf;
             cfg.rgb_source=true;
             cfg.depth_10bit=false;
@@ -1393,7 +1409,7 @@ void MainWindow::updateEncList()
     }
 
     SettingsModel::Data *set_model_data=
-            messenger->settingsModel()->data_p(&settings->rec.encoder);
+            messenger->settingsModel()->data_p(&settings->rec.encoder_video);
 
     if(!set_model_data) {
         qCritical() << "set_model_data null pointer";
@@ -1408,7 +1424,7 @@ void MainWindow::updateEncList()
         set_model_data->values_data << (quint64)FFEncoder::VideoEncoder::fromString(settings->rec.supported_enc.keys()[i]);
     }
 
-    settingsModelDataChanged(messenger->settingsModel()->data_p_index(&settings->rec.encoder), 0, false);
+    settingsModelDataChanged(messenger->settingsModel()->data_p_index(&settings->rec.encoder_video), 0, false);
 }
 
 void MainWindow::frameSkipped()

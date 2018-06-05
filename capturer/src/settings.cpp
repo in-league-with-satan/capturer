@@ -127,7 +127,8 @@ bool Settings::load()
     device_cam.pixel_format=map_device_cam.value(QStringLiteral("pixel_format"), 0).toInt();
 
     rec.supported_enc=map_rec.value(QStringLiteral("supported_enc")).toMap();
-    rec.encoder=map_rec.value(QStringLiteral("encoder"), 0).toInt();
+    rec.encoder_audio=map_rec.value(QStringLiteral("encoder_audio"), 0).toInt();
+    rec.encoder_video=map_rec.value(QStringLiteral("encoder_video"), 0).toInt();
     rec.pixel_format=map_rec.value(QStringLiteral("pixel_format")).toMap();
     rec.preset=map_rec.value(QStringLiteral("preset")).toMap();
     rec.crf=map_rec.value(QStringLiteral("crf"), 0).toInt();
@@ -146,8 +147,8 @@ bool Settings::load()
 #endif
     http_server.port=map_http_server.value(QStringLiteral("port"), 8080).toUInt();
 
-    rec.pixel_format_current=rec.pixel_format.value(QString::number(rec.encoder), 0).toInt();
-    rec.preset_current=rec.preset.value(QString::number(rec.encoder), 0).toInt();
+    rec.pixel_format_current=rec.pixel_format.value(QString::number(rec.encoder_video), 0).toInt();
+    rec.preset_current=rec.preset.value(QString::number(rec.encoder_video), 0).toInt();
 
 
     keyboard_shortcuts.need_setup=map_keyboard_shortcuts.isEmpty();
@@ -218,7 +219,8 @@ bool Settings::save()
     map_device_cam.insert(QStringLiteral("pixel_format"), device_cam.pixel_format);
 
     map_rec.insert(QStringLiteral("supported_enc"), rec.supported_enc);
-    map_rec.insert(QStringLiteral("encoder"), rec.encoder);
+    map_rec.insert(QStringLiteral("encoder_audio"), rec.encoder_audio);
+    map_rec.insert(QStringLiteral("encoder_video"), rec.encoder_video);
     map_rec.insert(QStringLiteral("pixel_format"), rec.pixel_format);
     map_rec.insert(QStringLiteral("preset"), rec.preset);
     map_rec.insert(QStringLiteral("crf"), rec.crf);

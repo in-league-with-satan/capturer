@@ -137,6 +137,8 @@ static QString add_stream_audio(OutputStream *out_stream, AVFormatContext *forma
 
     (*codec)=avcodec_find_encoder(codec_id);
 
+    if(cfg.audio_flac)
+        (*codec)=avcodec_find_encoder_by_name("flac");
 
     if(!(*codec))
         return QStringLiteral("could not find encoder for ") + avcodec_get_name(codec_id);
@@ -156,7 +158,16 @@ static QString add_stream_audio(OutputStream *out_stream, AVFormatContext *forma
         return QStringLiteral("could not alloc an encoding context");
 
 
-    out_stream->av_codec_context->sample_fmt=(*codec)->sample_fmts ? (*codec)->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
+    out_stream->av_codec_context->compression_level=8;
+
+
+    // out_stream->av_codec_context->sample_fmt=(*codec)->sample_fmts ? (*codec)->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
+
+    if(cfg.audio_sample_size==16)
+        out_stream->av_codec_context->sample_fmt=AV_SAMPLE_FMT_S16;
+
+    else
+        out_stream->av_codec_context->sample_fmt=AV_SAMPLE_FMT_S32;
 
     out_stream->av_codec_context->sample_rate=48000;
 
