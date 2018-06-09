@@ -19,6 +19,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <QApplication>
 #include <QProcess>
+#include <QMutex>
+#include <QMutexLocker>
+#include <QFile>
+#include <QDateTime>
 
 #include "decklink_tools.h"
 #include "data_types.h"
@@ -50,6 +54,45 @@ int main(int argc, char *argv[])
 
     application.setApplicationName(QString("capturer (%1)").arg(QString(VERSION_STRING).split("-").first()));
     application.setApplicationVersion(QString(VERSION_STRING));
+
+    if(application.arguments().contains("--log-file", Qt::CaseInsensitive)) {
+        qInstallMessageHandler([](QtMsgType, const QMessageLogContext &context, const QString &msg) {
+            static QMutex mutex;
+
+            QMutexLocker ml(&mutex);
+
+            static QFile file;
+
+            if(!file.isOpen()) {
+                file.setFileName(QApplication::applicationDirPath() + QString("/capturer_%1.log").arg(QDateTime::currentDateTime().toString(Qt::ISODate).replace("T", "_").replace(":", "-")));
+                file.open(QFile::ReadWrite);
+            }
+
+            if(!file.isOpen())
+                return;
+
+            QTextStream stream(&file);
+
+#ifdef QT_NO_MESSAGELOGCONTEXT
+
+            stream << QString("%1: %2")
+                      .arg(QDateTime::currentDateTime().toString(Qt::ISODateWithMs))
+                      .arg(msg);
+
+#else
+
+            stream << QString("%1 %2(%3) %4: %5")
+                      .arg(QDateTime::currentDateTime().toString(Qt::ISODateWithMs))
+                      .arg(context.file)
+                      .arg(context.line)
+                      .arg(context.function)
+                      .arg(msg);
+
+#endif
+
+            endl(stream);
+        });
+    }
 
 #ifndef __linux__
 
