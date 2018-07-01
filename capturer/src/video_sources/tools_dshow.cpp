@@ -224,16 +224,15 @@ QList <Cam::Dev> ToolsDirectShow::devList()
 
     HRESULT hr=CoCreateInstance(CLSID_SystemDeviceEnum, 0, CLSCTX_INPROC_SERVER, IID_ICreateDevEnum, (void**)&dev_enum);
 
-    if(FAILED(hr))
+    if(hr!=S_OK)
         return list;
 
     IEnumMoniker *enum_moniker;
 
     hr=dev_enum->CreateClassEnumerator(CLSID_VideoInputDeviceCategory, &enum_moniker, 0);
 
-    if(FAILED(hr)) {
+    if(hr!=S_OK)
         return list;
-    }
 
     IMoniker *moniker=nullptr;
 

@@ -555,13 +555,13 @@ void FFDecoderThread::_play()
             DeckLinkAudioInputPacket *audio_packet=new DeckLinkAudioInputPacket(2, 16);
             audio_packet->append(context.ba_audio);
 
-                        context.ba_audio.clear();
-                        context.audio_buf_size=0;
+            context.ba_audio.clear();
+            context.audio_buf_size=0;
 
-                                    if(context.reset_audio) {
-                                        f->reset_counter=true;
-                                        context.reset_audio=false;
-                                    }
+            if(context.reset_audio) {
+                f->reset_counter=true;
+                context.reset_audio=false;
+            }
 
 
             f->setData(nullptr, audio_packet, audio_packet->audio_channels, audio_packet->audio_sample_size);
