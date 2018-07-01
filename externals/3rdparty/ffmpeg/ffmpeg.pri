@@ -1,17 +1,12 @@
 linux {
-    GCCFLAGS += -lz
+    # GCCFLAGS += -lz
 
-    contains(DEFINES, USE_X264_10B) {
-        INCLUDEPATH += $$PWD/10bit/include
-        LIBS += -L$$PWD/10bit/lib
-
-    } else {
-        INCLUDEPATH += $$PWD/8bit/include
-        LIBS += -L$$PWD/8bit/lib
-    }
+    INCLUDEPATH += $$PWD/include
+    LIBS += -L$$PWD/lib
 
     LIBS += -lavdevice -lavfilter -lpostproc -lavformat -lavcodec -lavutil -lswscale -lswresample
-    LIBS += -ldl -lvorbis -lvorbisenc -logg -lspeex -lfdk-aac -lmp3lame -lopus -lvpx -lx264 -lx265
+    LIBS += -ldl -lx264 -lx265 -lnuma
+    # LIBS += -lmfx -lva -lva-drm
 }
 
 windows {
