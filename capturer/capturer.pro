@@ -1,4 +1,4 @@
-#install mesa-common-dev libgl-dev libpulse-dev libsdl2-dev libbz2-dev liblzma-dev
+#install mesa-common-dev libgl-dev libpulse-dev libsdl2-dev libbz2-dev liblzma-dev libnuma-dev
 
 QT += \
     core \
@@ -19,7 +19,6 @@ TARGET = capturer
 DEFINES += QT_DEPRECATED_WARNINGS
 DEFINES += QT_MESSAGELOGCONTEXT
 
-#DEFINES += USE_X264_10B
 DEFINES += USE_PULSE_AUDIO
 #DEFINES += USE_SDL2
 DEFINES += STATIC_WIN_FF
@@ -57,17 +56,9 @@ CONFIG(debug, debug|release):{
 }
 
 
-OBJECTS_DIR = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-obj
-MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-moc
-RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/8bit-rcc
-
-contains(DEFINES, USE_X264_10B) {
-    TARGET = capturer_10bit
-
-    OBJECTS_DIR = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-obj
-    MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-moc
-    RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/10bit-rcc
-}
+OBJECTS_DIR = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/obj
+MOC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/moc
+RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/rcc
 
 
 linux {
@@ -87,7 +78,6 @@ linux {
 }
 
 windows {
-    DEFINES -= USE_X264_10B
     DEFINES -= USE_PULSE_AUDIO
     DEFINES -= USE_SDL2
 

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#sudo apt-get -y install autoconf automake libtool build-essential cmake git subversion mercurial pkg-config
+#sudo apt-get -y install autoconf automake libtool libtool-bin build-essential cmake git subversion mercurial pkg-config
 #numactl libnuma-dev
 
 
@@ -15,6 +15,7 @@ test_cmd() {
 test_cmd autoconf autoconf
 test_cmd automake automake
 test_cmd libtoolize libtool
+# test_cmd libtool libtool-bin
 test_cmd make build-essential
 test_cmd cmake cmake
 test_cmd git git
@@ -33,12 +34,12 @@ str_opt="-march=native -O3"
 
 PATH_ROOT=`pwd`
 
-PATH_BASE=$PATH_ROOT/8bit
+PATH_BASE=$PATH_ROOT
 
 PATH_BUILD=$PATH_ROOT/tmp
 
 PATH_ORIG=$PATH
-PATH=$PATH_ROOT/8bit/lib:$PATH_ROOT/8bit/include:$PATH_ROOT/8bit/bin:$PATH_ORIG
+PATH=$PATH_ROOT/lib:$PATH_ROOT/include:$PATH_ROOT/bin:$PATH_ORIG
 
 DECKLINK_INCLUDE=""
 DECKLINK_FF_OPT=""
@@ -55,15 +56,6 @@ do
   if [ "${i}" == "--decklink" ]; then
     DECKLINK_INCLUDE=-I`dirname $PATH_ROOT`/blackmagic_decklink_sdk/Linux/include
     DECKLINK_FF_OPT=--enable-decklink
-  fi
-
-  if [ "${i}" == "--high_bit_depth" ]; then
-    PATH=$PATH_ROOT/10bit/lib:$PATH_ROOT/10bit/include:$PATH_ROOT/10bit/bin:$PATH_ORIG
-    PATH_BASE=$PATH_ROOT/10bit
-
-    export PKG_CONFIG_PATH="$PATH_BASE/lib/pkgconfig"
-
-    HIGH_BIT_DEPTH=true
   fi
 done
 
@@ -99,37 +91,18 @@ build_nasm() {
   if [ ! -e nasm ]; then
     git clone git://repo.or.cz/nasm.git
     cd nasm
+    git checkout nasm-2.13.03
 
   else
     cd nasm
     git reset --hard
     git clean -dfx
-    git pull
+    # git pull
   fi
 
   autoreconf -fiv
   CFLAGS="$str_opt" ./configure --prefix="$PATH_BASE" --bindir="$PATH_BASE/bin"
   make everything -j$cpu_count
-  make install
-}
-
-build_numa() {
-  cd $PATH_BUILD
-
-  if [ ! -e numactl ]; then
-    git clone https://github.com/numactl/numactl
-    cd numactl
-
-  else
-    cd numactl
-    git reset --hard
-    git clean -dfx
-    git pull
-  fi
-
-  autoreconf -fiv
-  CFLAGS="$str_opt" ./configure --prefix="$PATH_BASE" --bindir="$PATH_BASE/bin"
-  make -j$cpu_count
   make install
 }
 
@@ -149,12 +122,7 @@ build_x264() {
 
   # git checkout stable
 
-  if $HIGH_BIT_DEPTH; then
-    ./configure --prefix="$PATH_BASE" --bindir="$PATH_BASE/bin" --enable-pic --enable-static --bit-depth=10 --extra-cflags="$str_opt"
-
-  else
-    ./configure --prefix="$PATH_BASE" --bindir="$PATH_BASE/bin" --enable-pic --enable-static                --extra-cflags="$str_opt"
-  fi
+  ./configure --prefix="$PATH_BASE" --bindir="$PATH_BASE/bin" --enable-pic --enable-static --extra-cflags="$str_opt"
 
   make -j$cpu_count
   make install
@@ -178,15 +146,26 @@ build_x265() {
 
   export CFLAGS="$str_opt"
 
-  if $HIGH_BIT_DEPTH; then
-    cmake -G "Unix Makefiles" -DHIGH_BIT_DEPTH=ON -DMAIN12=OFF -DCMAKE_INSTALL_PREFIX="$PATH_BASE" -DENABLE_SHARED:bool=off ../../source
+  mkdir -p 8bit 10bit
 
-  else
-    cmake -G "Unix Makefiles"                                  -DCMAKE_INSTALL_PREFIX="$PATH_BASE" -DENABLE_SHARED:bool=off ../../source
-  fi
-
-  sed -i 's/static char\* strtok_r/char* strtok_r/g' ../../source/common/param.cpp
+  cd 10bit
+  cmake -G "Unix Makefiles" -DHIGH_BIT_DEPTH=ON -DEXPORT_C_API=OFF -DENABLE_CLI=OFF -DENABLE_SHARED=OFF -DNATIVE_BUILD=ON ../../../source
   make -j$cpu_count
+  rm -f *.o
+  ar -x libx265.a
+
+  cd ../8bit
+  ln -sf ../10bit/libx265.a libx265_main10.a
+  cmake -G "Unix Makefiles" -DEXTRA_LIB="x265_main10.a" -DEXTRA_LINK_FLAGS=-L. -DLINKED_10BIT=ON -DENABLE_SHARED=OFF -DNATIVE_BUILD=ON -DCMAKE_INSTALL_PREFIX="$PATH_BASE" ../../../source
+  make -j$cpu_count
+  mv libx265.a libx265_main8.a
+  rm -f *.o
+  ar -x libx265_main8.a
+
+  ar -r libx265.a *.o ../10bit/*.o
+
+  # libtool --tag=CC --mode=link cc -static -o libx265.a libx265_main.a libx265_main10.a
+
   make install
 }
 
@@ -204,13 +183,7 @@ build_vpx() {
     git pull
   fi
 
-  if $HIGH_BIT_DEPTH; then
-    ./configure --prefix="$PATH_BASE" --enable-pic --enable-vp9-highbitdepth --disable-examples
-
-  else
-    ./configure --prefix="$PATH_BASE" --enable-pic                           --disable-examples
-  fi
-
+  ./configure --prefix="$PATH_BASE" --enable-pic --enable-vp9-highbitdepth --disable-examples
 
   make -j$cpu_count
   make install
@@ -333,8 +306,31 @@ build_aac() {
   make install
 }
 
-build_ff() {
+build_mfx_dispatch() {
   cd $PATH_BUILD
+
+  if [ ! -e mfx_dispatch ]; then
+    git clone https://github.com/lu-zero/mfx_dispatch.git
+    cd mfx_dispatch
+
+  else
+    cd mfx_dispatch
+    git reset --hard
+    git clean -dfx
+    git pull
+  fi
+
+  autoreconf -fiv
+  automake --add-missing
+  ./configure --prefix="$PATH_BASE" --disable-shared --enable-static --with-libva_x11 --with-libva_drm
+  make -j$cpu_count
+  make install
+
+  pkg-config --exists --print-errors libmfx
+}
+
+build_nv_headers() {
+ cd $PATH_BUILD
 
   if [ ! -e nv-codec-headers ]; then
     git clone https://github.com/FFmpeg/nv-codec-headers.git
@@ -347,9 +343,10 @@ build_ff() {
 
   cp -rf include/ffnvcodec "$PATH_BASE/include"
   cp -f ffnvcodec.pc.in "$PATH_BASE/lib/pkgconfig/ffnvcodec.pc"
+}
 
-  #
 
+build_ff() {
   cd $PATH_BUILD
 
   if [ ! -e ffmpeg ]; then
@@ -364,19 +361,20 @@ build_ff() {
   fi
 
   make distclean
-  ./configure --prefix="$PATH_BASE" --extra-libs=-lpthread --extra-cflags="-I$PATH_BASE/include $DECKLINK_INCLUDE $str_opt" --extra-ldflags="-L$PATH_BASE/lib" --bindir="$PATH_BASE/bin" --pkg-config-flags="--static" \
+  ./configure --prefix="$PATH_BASE" --extra-libs="-lpthread -lstdc++" --extra-cflags="-I$PATH_BASE/include $DECKLINK_INCLUDE $str_opt" --extra-ldflags="-L$PATH_BASE/lib" --bindir="$PATH_BASE/bin" --pkg-config-flags="--static" \
     --enable-pic \
     --enable-gpl \
     --enable-nonfree \
     --enable-nvenc \
+    `#--enable-libmfx` \
     --enable-libx264 \
     --enable-libx265 \
-    --enable-libvpx \
-    --enable-libopus \
-    --enable-libvorbis \
-    --enable-libspeex \
-    --enable-libmp3lame \
-    --enable-libfdk-aac \
+    `#--enable-libvpx` \
+    `#--enable-libopus` \
+    `#--enable-libvorbis` \
+    `#--enable-libspeex` \
+    `#--enable-libmp3lame` \
+    `#--enable-libfdk-aac` \
     $DECKLINK_FF_OPT \
     --disable-libfreetype \
     --disable-crystalhd \
@@ -386,6 +384,7 @@ build_ff() {
     --disable-bzlib \
     --disable-lzma \
     --disable-libxcb
+
   make -j$cpu_count
   make install
 }
@@ -393,14 +392,15 @@ build_ff() {
 
 build_yasm
 build_nasm
-#build_numa
 build_x264
 build_x265
-build_vpx
-build_opus
-build_ogg
-build_vorbis
-build_speex
-build_lame
-build_aac
+#build_vpx
+#build_opus
+#build_ogg
+#build_vorbis
+#build_speex
+#build_lame
+#build_aac
+build_nv_headers
+#build_mfx_dispatch
 build_ff
