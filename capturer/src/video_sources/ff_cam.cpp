@@ -20,10 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDebug>
 #include <QTimer>
 #include <QAudioInput>
+#include <QMessageBox>
 #include <qcoreapplication.h>
 
 #include <assert.h>
 #include <cmath>
+#include <future>
+#include <thread>
+#include <chrono>
 
 #include "ff_format_converter.h"
 #include "ff_audio_converter.h"
@@ -173,13 +177,27 @@ QStringList FFCam::availableCameras()
 
 QStringList FFCam::availableAudioInput()
 {
-    QStringList list;
+    auto future=std::async(std::launch::async, []()->QStringList {
+        QStringList list;
 
-    foreach(QAudioDeviceInfo di, QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
-        list << di.deviceName();
+        foreach(const QAudioDeviceInfo &device_info, QAudioDeviceInfo::availableDevices(QAudio::AudioInput))
+            list << device_info.deviceName();
+
+        return list;
+    });
+
+    if(future.wait_for(std::chrono::seconds(2))!=std::future_status::ready) {
+        QMessageBox mb;
+        mb.setWindowTitle("critical error");
+        mb.setText("QAudioDeviceInfo::availableDevices function doesn't return control");
+        mb.setIcon(QMessageBox::Critical);
+
+        mb.exec();
+
+        std::exit(1);
     }
 
-    return list;
+    return future.get();
 }
 
 bool FFCam::setVideoDevice(int index)
