@@ -199,8 +199,6 @@ static QString add_stream_audio(OutputStream *out_stream, AVFormatContext *forma
 
 static QString add_stream_video(OutputStream *out_stream, AVFormatContext *format_context, AVCodec **codec, const FFEncoder::Config &cfg)
 {
-    AVCodecContext *c;
-
     switch(cfg.video_encoder) {
     case FFEncoder::VideoEncoder::libx264:
         *codec=avcodec_find_encoder_by_name("libx264");
@@ -242,71 +240,83 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
 
     out_stream->av_stream->id=format_context->nb_streams - 1;
 
-    c=avcodec_alloc_context3(*codec);
 
-    if(!c)
+    out_stream->av_codec_context=avcodec_alloc_context3(*codec);
+
+    if(!out_stream->av_codec_context)
         return QStringLiteral("could not allocate an encoding context");
 
-    out_stream->av_codec_context=c;
 
-    c->codec_id=(*codec)->id;
 
-    c->width=cfg.frame_resolution_dst.width();
-    c->height=cfg.frame_resolution_dst.height();
+    out_stream->av_codec_context->codec_id=(*codec)->id;
 
+    out_stream->av_codec_context->width=cfg.frame_resolution_dst.width();
+    out_stream->av_codec_context->height=cfg.frame_resolution_dst.height();
+
+    AVRational target_framerate;
 
     switch(cfg.framerate) {
     case FFEncoder::Framerate::unknown:
-        out_stream->av_stream->time_base=cfg.framerate_force;
+        target_framerate=cfg.framerate_force;
         break;
 
     default:
-        out_stream->av_stream->time_base=FFEncoder::Framerate::toRational(cfg.framerate);
+        target_framerate=FFEncoder::Framerate::toRational(cfg.framerate);
         break;
     }
 
+    // tbr?
+    // out_stream->av_stream->r_frame_rate;
 
-    c->time_base=out_stream->av_stream->time_base;
+    // tbn?
+    // out_stream->av_stream->time_base;
 
-    c->pix_fmt=cfg.pixel_format;
+    // tbc?
+    out_stream->av_codec_context->time_base=target_framerate;
+
+    out_stream->av_stream->avg_frame_rate=av_inv_q(target_framerate);
+    // out_stream->av_codec_context->framerate;
+
+
+    out_stream->av_codec_context->pix_fmt=cfg.pixel_format;
 
     if(cfg.video_encoder==FFEncoder::VideoEncoder::libx264 || cfg.video_encoder==FFEncoder::VideoEncoder::libx264rgb) {
-        av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
-        av_opt_set(c->priv_data, "crf", QString::number(cfg.crf).toLatin1().constData(), 0);
+        av_opt_set(out_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+        av_opt_set(out_stream->av_codec_context->priv_data, "crf", QString::number(cfg.crf).toLatin1().constData(), 0);
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::nvenc_h264) {
         if(cfg.nvenc.enabled) {
-            av_opt_set(c->priv_data, "rc", "constqp", 0);
-            av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+            av_opt_set(out_stream->av_codec_context->priv_data, "rc", "constqp", 0);
+            av_opt_set(out_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
             if(cfg.nvenc.device!=0)
-                av_opt_set(c->priv_data, "gpu", QString::number(cfg.nvenc.device - 1).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "gpu", QString::number(cfg.nvenc.device - 1).toLatin1().constData(), 0);
 
             if(cfg.nvenc.weighted_pred==0)
-                c->max_b_frames=cfg.nvenc.b_frames;
+                out_stream->av_codec_context->max_b_frames=cfg.nvenc.b_frames;
 
-            c->refs=cfg.nvenc.ref_frames;
+            out_stream->av_codec_context->refs=cfg.nvenc.ref_frames;
 
-            c->gop_size=cfg.nvenc.gop_size;
+            out_stream->av_codec_context->gop_size=cfg.nvenc.gop_size;
 
             if(cfg.nvenc.qp_i==0) {
-                av_opt_set(c->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
 
             } else {
-                av_opt_set(c->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i - 1).toLatin1().constData(), 0);
-                av_opt_set(c->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p - 1).toLatin1().constData(), 0);
-                av_opt_set(c->priv_data, "init_qpB", QString::number(cfg.nvenc.qp_b - 1).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i - 1).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p - 1).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "init_qpB", QString::number(cfg.nvenc.qp_b - 1).toLatin1().constData(), 0);
             }
 
             switch(cfg.nvenc.aq_mode) {
             case 1:
-                av_opt_set(c->priv_data, "spatial-aq", "1", 0);
-                av_opt_set(c->priv_data, "aq-strength", QString::number(cfg.nvenc.aq_strength).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "spatial-aq", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "aq-strength", QString::number(cfg.nvenc.aq_strength).toLatin1().constData(), 0);
                 break;
 
             case 2:
-                av_opt_set(c->priv_data, "temporal-aq", "1", 0);
-                av_opt_set(c->priv_data, "aq-strength", QString::number(cfg.nvenc.aq_strength).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "temporal-aq", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "aq-strength", QString::number(cfg.nvenc.aq_strength).toLatin1().constData(), 0);
                 break;
 
             case 0:
@@ -315,62 +325,62 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
             }
 
             if(cfg.nvenc.rc_lookahead>0)
-                av_opt_set(c->priv_data, "rc-lookahead", QString::number(cfg.nvenc.rc_lookahead - 1).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "rc-lookahead", QString::number(cfg.nvenc.rc_lookahead - 1).toLatin1().constData(), 0);
 
             if(cfg.nvenc.surfaces>0)
-                av_opt_set(c->priv_data, "surfaces", QString::number(cfg.nvenc.surfaces - 1).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "surfaces", QString::number(cfg.nvenc.surfaces - 1).toLatin1().constData(), 0);
 
             if(cfg.nvenc.no_scenecut!=0)
-                av_opt_set(c->priv_data, "no-scenecut", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "no-scenecut", "1", 0);
 
             if(cfg.nvenc.forced_idr!=0)
-                av_opt_set(c->priv_data, "forced-idr", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "forced-idr", "1", 0);
 
             if(cfg.nvenc.b_adapt!=0)
-                av_opt_set(c->priv_data, "b_adapt", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "b_adapt", "1", 0);
 
             if(cfg.nvenc.nonref_p!=0)
-                av_opt_set(c->priv_data, "nonref_p", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "nonref_p", "1", 0);
 
             if(cfg.nvenc.strict_gop!=0)
-                av_opt_set(c->priv_data, "strict_gop", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "strict_gop", "1", 0);
 
             if(cfg.nvenc.weighted_pred!=0)
-                av_opt_set(c->priv_data, "weighted_pred", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "weighted_pred", "1", 0);
 
             if(cfg.nvenc.bluray_compat!=0)
-                av_opt_set(c->priv_data, "bluray-compat", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "bluray-compat", "1", 0);
 
         } else {
-            av_opt_set(c->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
-            av_opt_set(c->priv_data, "rc", "constqp", 0);
-            av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+            av_opt_set(out_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
+            av_opt_set(out_stream->av_codec_context->priv_data, "rc", "constqp", 0);
+            av_opt_set(out_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
         }
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::nvenc_hevc) {
         if(cfg.nvenc.enabled) {
-            av_opt_set(c->priv_data, "rc", "constqp", 0);
-            av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+            av_opt_set(out_stream->av_codec_context->priv_data, "rc", "constqp", 0);
+            av_opt_set(out_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
             if(cfg.nvenc.device!=0)
-                av_opt_set(c->priv_data, "gpu", QString::number(cfg.nvenc.device - 1).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "gpu", QString::number(cfg.nvenc.device - 1).toLatin1().constData(), 0);
 
-            c->refs=cfg.nvenc.ref_frames;
+            out_stream->av_codec_context->refs=cfg.nvenc.ref_frames;
 
-            c->gop_size=cfg.nvenc.gop_size;
+            out_stream->av_codec_context->gop_size=cfg.nvenc.gop_size;
 
             if(cfg.nvenc.qp_i==0) {
-                av_opt_set(c->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
 
             } else {
-                av_opt_set(c->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i - 1).toLatin1().constData(), 0);
-                av_opt_set(c->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p - 1).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i - 1).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p - 1).toLatin1().constData(), 0);
             }
 
             switch(cfg.nvenc.aq_mode) {
             case 1:
-                av_opt_set(c->priv_data, "spatial_aq", "1", 0);
-                av_opt_set(c->priv_data, "aq-strength", QString::number(cfg.nvenc.aq_strength).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "spatial_aq", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "aq-strength", QString::number(cfg.nvenc.aq_strength).toLatin1().constData(), 0);
                 break;
 
             case 0:
@@ -380,61 +390,61 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
             }
 
             if(cfg.nvenc.rc_lookahead>0)
-                av_opt_set(c->priv_data, "rc-lookahead", QString::number(cfg.nvenc.rc_lookahead - 1).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "rc-lookahead", QString::number(cfg.nvenc.rc_lookahead - 1).toLatin1().constData(), 0);
 
             if(cfg.nvenc.surfaces>0)
-                av_opt_set(c->priv_data, "surfaces", QString::number(cfg.nvenc.surfaces - 1).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "surfaces", QString::number(cfg.nvenc.surfaces - 1).toLatin1().constData(), 0);
 
             if(cfg.nvenc.no_scenecut!=0)
-                av_opt_set(c->priv_data, "no-scenecut", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "no-scenecut", "1", 0);
 
             if(cfg.nvenc.forced_idr!=0)
-                av_opt_set(c->priv_data, "forced-idr", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "forced-idr", "1", 0);
 
             if(cfg.nvenc.nonref_p!=0)
-                av_opt_set(c->priv_data, "nonref_p", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "nonref_p", "1", 0);
 
             if(cfg.nvenc.strict_gop!=0)
-                av_opt_set(c->priv_data, "strict_gop", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "strict_gop", "1", 0);
 
             if(cfg.nvenc.weighted_pred!=0)
-                av_opt_set(c->priv_data, "weighted_pred", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "weighted_pred", "1", 0);
 
             if(cfg.nvenc.bluray_compat!=0)
-                av_opt_set(c->priv_data, "bluray-compat", "1", 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "bluray-compat", "1", 0);
 
         } else {
-            av_opt_set(c->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
-            av_opt_set(c->priv_data, "rc", "constqp", 0);
-            av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+            av_opt_set(out_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
+            av_opt_set(out_stream->av_codec_context->priv_data, "rc", "constqp", 0);
+            av_opt_set(out_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
         }
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::qsv_h264) {
-        c->flags|=AV_CODEC_FLAG_QSCALE;
-        c->global_quality=FF_QP2LAMBDA*cfg.crf;
+        out_stream->av_codec_context->flags|=AV_CODEC_FLAG_QSCALE;
+        out_stream->av_codec_context->global_quality=FF_QP2LAMBDA*cfg.crf;
 
-        av_opt_set(c->priv_data, "look_ahead", "0", 0);
-        av_opt_set(c->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+        av_opt_set(out_stream->av_codec_context->priv_data, "look_ahead", "0", 0);
+        av_opt_set(out_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::ffvhuff) {
-        c->thread_count=QThread::idealThreadCount() - 1;
+        out_stream->av_codec_context->thread_count=QThread::idealThreadCount() - 1;
 
-        if(c->thread_count<=0)
-            c->thread_count=1;
+        if(out_stream->av_codec_context->thread_count<=0)
+            out_stream->av_codec_context->thread_count=1;
     }
 
     if(cfg.color_primaries>-1)
-        c->color_primaries=(AVColorPrimaries)cfg.color_primaries;
+        out_stream->av_codec_context->color_primaries=(AVColorPrimaries)cfg.color_primaries;
 
     if(cfg.color_space>-1)
-        c->colorspace=(AVColorSpace)cfg.color_space;
+        out_stream->av_codec_context->colorspace=(AVColorSpace)cfg.color_space;
 
     if(cfg.color_transfer_characteristic>-1)
-        c->color_trc=(AVColorTransferCharacteristic)cfg.color_transfer_characteristic;
+        out_stream->av_codec_context->color_trc=(AVColorTransferCharacteristic)cfg.color_transfer_characteristic;
 
     // some formats want stream headers to be separate
     if(format_context->oformat->flags & AVFMT_GLOBALHEADER)
-        c->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
+        out_stream->av_codec_context->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
 
     return QStringLiteral("");
 }
