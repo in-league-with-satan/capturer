@@ -388,12 +388,11 @@ void FFCam::startCam()
     d->format_context->video_codec=avcodec_find_decoder(d->format_context->video_codec_id);
 
 
-    qInfo() << "dev name:" << dev_list[index_device_video].name;
+    qInfo() << "dev name:" << dev_list[index_device_video].name << dev_list[index_device_video].dev;
 
 #ifdef __linux__
 
-    ret=avformat_open_input(&d->format_context, QString("/dev/video%1").arg(index_device_video).toLatin1().constData(), d->input_format, &d->dictionary);
-
+    ret=avformat_open_input(&d->format_context, dev_list[index_device_video].dev.toLatin1().constData(), d->input_format, &d->dictionary);
 
 #else
 
