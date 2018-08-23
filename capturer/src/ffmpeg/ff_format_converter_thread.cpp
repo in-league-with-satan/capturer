@@ -141,7 +141,8 @@ void FFFormatConverterThread::work(Frame::ptr *frame_src, AVFrameSP::ptr *frame_
         if((*frame_src)) {
             AVFrameSP::ptr av_frame_src;
 
-            if(cnv_ff->formatSrc()==AV_PIX_FMT_YUV422P10LE || cnv_ff->formatSrc()==AV_PIX_FMT_GBRP10LE) {
+            if(cnv_ff->formatSrc()==AV_PIX_FMT_YUV422P10LE || cnv_ff->formatSrc()==AV_PIX_FMT_GBRP10LE
+                    || cnv_ff->formatSrc()==AV_PIX_FMT_NV12) {
                 av_frame_src=
                         AVFrameSP::make(cnv_ff->formatSrc(),
                                         (*frame_src)->video.size.width(),
@@ -167,11 +168,16 @@ void FFFormatConverterThread::work(Frame::ptr *frame_src, AVFrameSP::ptr *frame_
             (*frame_dst)=
                     cnv_ff->convert(av_frame_src->d);
 
-            (*frame_dst)->d->pts=
-                    (*frame_src)->video.pts;
+            if((*frame_dst)) {
+                (*frame_dst)->d->pts=
+                        (*frame_src)->video.pts;
 
-            (*frame_dst)->time_base=
-                    (*frame_src)->video.time_base;
+                (*frame_dst)->time_base=
+                        (*frame_src)->video.time_base;
+
+            } else {
+                qCritical() << "FFFormatConverterThread::work: convert ret nullptr" << PixelFormat(cnv_ff->formatSrc()).toString();
+            }
 
         } else {
             // qCritical() << "FFFormatConverterThread::run frame_src nullptr";

@@ -114,6 +114,7 @@ Frame::ptr DecodeFrom210::convert(Format::T format, Frame::ptr frame)
     if(format==Format::R210) {
         Frame::ptr frame_result=frame->copyFrameSoundOnly();
 
+        frame_result->video.pixel_format=frame->video.pixel_format;
         frame_result->video.data_size=av_image_get_buffer_size(r210PixelFormat(), d->width, d->height, alignment);
         frame_result->video.dummy.resize(frame_result->video.data_size);
         frame_result->video.data_ptr=(uint8_t*)frame_result->video.dummy.constData();
@@ -156,6 +157,7 @@ Frame::ptr DecodeFrom210::convert(Format::T format, Frame::ptr frame)
 
         Frame::ptr frame_result=frame->copyFrameSoundOnly();
 
+        frame_result->video.pixel_format=frame->video.pixel_format;
         frame_result->video.data_size=av_image_get_buffer_size((AVPixelFormat)d->av_frame->format, d->width, d->height, alignment);
         frame_result->video.dummy.resize(frame_result->video.data_size);
         frame_result->video.data_ptr=(uint8_t*)frame_result->video.dummy.constData();

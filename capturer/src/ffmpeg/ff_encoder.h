@@ -95,35 +95,6 @@ public:
         static QList <FFEncoder::VideoEncoder::T> list();
     };
 
-    struct PixelFormat {
-        enum T {
-            RGB24=AV_PIX_FMT_RGB24,
-            BGR0=AV_PIX_FMT_BGR0,
-            RGB0=AV_PIX_FMT_RGB0,
-            BGRA=AV_PIX_FMT_BGRA,               // dummy
-            GBRP10LE=AV_PIX_FMT_GBRP10LE,       // dummy
-            YUV420P=AV_PIX_FMT_YUV420P,
-            YUV420P10=AV_PIX_FMT_YUV420P10,
-            YUV422P=AV_PIX_FMT_YUV422P,
-            UYVY422=AV_PIX_FMT_UYVY422,
-            YUV444P=AV_PIX_FMT_YUV444P,
-            YUV422P10LE=AV_PIX_FMT_YUV422P10LE,
-            YUV444P10=AV_PIX_FMT_YUV444P10,
-            YUV444P16LE=AV_PIX_FMT_YUV444P16LE,
-            RGB48LE=AV_PIX_FMT_RGB48LE,
-            P010LE=AV_PIX_FMT_P010LE,
-            NV12=AV_PIX_FMT_NV12
-        };
-
-        static QString toString(uint32_t value);
-
-        static uint64_t fromString(QString value);
-
-        static QList <FFEncoder::PixelFormat::T> compatiblePixelFormats(VideoEncoder::T encoder);
-
-        static QList <FFEncoder::PixelFormat::T> list();
-    };
-
     struct DownScale {
         enum T {
             Disabled,
@@ -167,11 +138,10 @@ public:
         uint8_t crf;
         uint8_t downscale=DownScale::Disabled;
         int scale_filter=ScaleFilter::FastBilinear;
-        AVPixelFormat pixel_format;
+        PixelFormat pixel_format_src;
+        PixelFormat pixel_format_dst;
         VideoEncoder::T video_encoder;
         QString preset;
-        bool rgb_source=true;
-        bool depth_10bit=false;
         AVRational framerate_force={ 0, 0 };
 
         int color_primaries=-1;

@@ -314,9 +314,9 @@ void Settings::checkEncoders()
     foreach(FFEncoder::VideoEncoder::T enc, FFEncoder::VideoEncoder::list()) {
         QStringList lst_fmt;
 
-        foreach(FFEncoder::PixelFormat::T fmt, FFEncoder::PixelFormat::list()) {
-            if(checkEncoder(FFEncoder::VideoEncoder::toEncName(enc), (AVPixelFormat)fmt))
-                lst_fmt << FFEncoder::PixelFormat::toString(fmt);
+        foreach(PixelFormat fmt, PixelFormat::list()) {
+            if(checkEncoder(FFEncoder::VideoEncoder::toEncName(enc), fmt.toAVPixelFormat()))
+                lst_fmt << fmt.toString();
         }
 
         if(!lst_fmt.isEmpty())

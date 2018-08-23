@@ -77,6 +77,8 @@ public:
 
     virtual void setHalfFps(bool value);
 
+    BMDPixelFormat pixelFormat();
+
 protected:
     virtual void run();
 
@@ -103,17 +105,12 @@ private:
 
     DeckLinkDevice device;
     DeckLinkFormat format;
-    DeckLinkPixelFormat pixel_format;
+    BMDPixelFormat pixel_format;
     int audio_channels;
     int audio_sample_size;
 
     int64_t frame_scale;
     int64_t frame_time_prev;
-
-    // DlConvertThreadContainer *conv_thread;
-
-    // IDeckLinkVideoConversion *video_converter;
-
 
     uint8_t frame_counter;
 

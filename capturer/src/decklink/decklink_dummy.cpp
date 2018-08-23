@@ -105,8 +105,7 @@ void DeckLinkDummy::run()
                 frame->video.data_size=DeckLinkVideoFrame::frameSize(frame->video.size, bmdFormat8BitBGRA);
                 frame->video.dummy.resize(frame->video.data_size);
                 frame->video.data_ptr=(uint8_t*)frame->video.dummy.constData();
-                frame->video.source_rgb=true;
-                frame->video.source_10bit=false;
+                frame->video.pixel_format=PixelFormat::bgra;
 
                 memcpy(frame->video.data_ptr, img.bits(), frame->video.data_size);
 

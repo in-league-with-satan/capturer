@@ -41,8 +41,8 @@ public:
     explicit QuickVideoSourceConvertThread(QObject *parent=0);
     ~QuickVideoSourceConvertThread();
 
-    FrameBuffer<Frame::ptr>::ptr frameBufferIn();
-    FrameBuffer<Frame::ptr>::ptr frameBufferOut();
+    FrameBuffer <Frame::ptr>::ptr frameBufferIn();
+    FrameBuffer <Frame::ptr>::ptr frameBufferOut();
 
     bool fastYuv() const;
 
@@ -53,14 +53,14 @@ protected:
     virtual void run();
 
 private:
-    FrameBuffer<Frame::ptr>::ptr frame_buffer_in;
-    FrameBuffer<Frame::ptr>::ptr frame_buffer_out;
+    FrameBuffer <Frame::ptr>::ptr frame_buffer_in;
+    FrameBuffer <Frame::ptr>::ptr frame_buffer_out;
 
     std::atomic <bool> running;
     std::atomic <bool> fast_yuv;
 
-    AVFrame *yuv_src;
-    AVFrame *yuv_dst;
+    AVFrame *conv_src;
+    AVFrame *conv_dst;
 
     FFFormatConverter *format_converter_ff;
     DecklinkFrameConverter *format_converter_dl;
