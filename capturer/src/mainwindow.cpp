@@ -938,13 +938,8 @@ void MainWindow::keyPressed(int code)
         previewCamOnOff();
         break;
 
-
     case KeyCodeC::PreviewCamChangePosition:
         messenger->camPreviewChangePosition();
-        break;
-
-    case KeyCodeC::SmoothTransform:
-        settings->main.smooth_transform=!settings->main.smooth_transform;
         break;
 
     case KeyCodeC::FullScreen:

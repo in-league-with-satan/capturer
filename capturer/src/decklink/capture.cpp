@@ -38,6 +38,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "convert_thread.h"
 #include "audio_tools.h"
 #include "decklink_tools.h"
+#include "frame_decklink.h"
 
 #include "capture.h"
 
@@ -366,43 +367,9 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
         //
 
-        Frame::ptr frame=Frame::make();
+        Frame::ptr frame=FrameDecklink::make(video_frame, audio_packet, audio_channels, audio_sample_size);
 
-
-        const bool is_rgb=video_frame->GetPixelFormat()!=bmdFormat8BitYUV && video_frame->GetPixelFormat()!=bmdFormat10BitYUV;
-        const bool is_10bit=video_frame->GetPixelFormat()==bmdFormat10BitRGB || video_frame->GetPixelFormat()==bmdFormat10BitYUV || video_frame->GetPixelFormat()==bmdFormat10BitRGBXLE;
-
-        if(is_rgb) {
-            if(is_10bit) {
-                frame->video.pixel_format=PixelFormat::gbrp10le;
-
-            } else {
-                frame->video.pixel_format=PixelFormat::bgra;
-            }
-
-        } else {
-            if(is_10bit) {
-                frame->video.pixel_format=PixelFormat::yuv422p10le;
-
-            } else {
-                frame->video.pixel_format=PixelFormat::uyvy422;
-            }
-        }
-
-
-        QSize frame_size=QSize(video_frame->GetWidth(), video_frame->GetHeight());
-
-        char *data_ptr=nullptr;
-
-        video_frame->GetBytes((void**)&data_ptr);
-
-        frame->setDataVideo(QByteArray(data_ptr, DeckLinkVideoFrame::frameSize(frame_size, video_frame->GetPixelFormat())), frame_size);
-
-
-        audio_packet->GetBytes((void**)&data_ptr);
-
-        frame->setDataAudio(QByteArray(data_ptr, audio_packet->GetSampleFrameCount()*audio_channels*(audio_sample_size/8)), audio_channels, audio_sample_size);
-
+        //
 
         if(audio_channels==8) {
             if(audio_sample_size==16)

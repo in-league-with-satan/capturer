@@ -109,9 +109,6 @@ Qt::Key DialogKeyboardShortcuts::defaultQtKey(int code)
     case KeyCodeC::FileBrowser:
         return Qt::Key_F2;
 
-    case KeyCodeC::SmoothTransform:
-        return Qt::Key_F3;
-
     case KeyCodeC::Rec:
         return Qt::Key_F4;
 

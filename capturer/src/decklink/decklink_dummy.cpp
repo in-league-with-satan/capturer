@@ -20,6 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDebug>
 #include <QDateTime>
 
+#include "decklink_video_frame.h"
+
 #include "decklink_dummy.h"
 
 DeckLinkDummy::DeckLinkDummy(bool frame_counter, int frame_height, QObject *parent)

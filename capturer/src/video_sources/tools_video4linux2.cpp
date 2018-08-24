@@ -52,7 +52,7 @@ QList <Cam::Dev> ToolsV4L2::devList()
         dev.dev=QString("/dev/video%1").arg(i);
 
         if(-1==(fd=open(dev.dev.toLatin1().data(), O_RDONLY))) {
-            goto end;
+            continue;
         }
 
         struct v4l2_capability capability={};

@@ -27,14 +27,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <memory>
 
 #include "ff_tools.h"
-#include "decklink_video_frame.h"
 #include "pixel_format.h"
 
 struct Frame
 {
     typedef std::shared_ptr<Frame> ptr;
 
-    ~Frame() {
+    virtual ~Frame() {
     }
 
     static ptr make() {

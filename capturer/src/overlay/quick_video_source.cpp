@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "ff_tools.h"
 #include "quick_video_source_convert_thread.h"
+#include "decklink_video_frame.h"
 
 #include "quick_video_source.h"
 
