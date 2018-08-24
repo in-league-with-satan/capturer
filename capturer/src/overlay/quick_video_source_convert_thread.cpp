@@ -183,7 +183,7 @@ void QuickVideoSourceConvertThread::run()
                 conv_src=alloc_frame(AV_PIX_FMT_UYVY422, frame_src->video.size.width(), frame_src->video.size.height(), false);
                 conv_dst=alloc_frame(AV_PIX_FMT_YUV420P, frame_src->video.size.width(), frame_src->video.size.height(), true);
 
-                conv_src->linesize[0]=DeckLinkVideoFrame::rowSize(frame_src->video.size.width(), frame_src->video.pixel_format.toBMDPixelFormat());
+                conv_src->linesize[0]=DeckLinkVideoFrame::rowSize(frame_src->video.size.width(), (BMDPixelFormat)frame_src->video.pixel_format.toBMDPixelFormat());
 
                 format_converter_ff->setup(AV_PIX_FMT_UYVY422, frame_src->video.size, AV_PIX_FMT_YUV420P, frame_src->video.size);
             }

@@ -141,29 +141,13 @@ void FFFormatConverterThread::work(Frame::ptr *frame_src, AVFrameSP::ptr *frame_
         if((*frame_src)) {
             AVFrameSP::ptr av_frame_src;
 
-            if(cnv_ff->formatSrc()==AV_PIX_FMT_YUV422P10LE || cnv_ff->formatSrc()==AV_PIX_FMT_GBRP10LE
-                    || cnv_ff->formatSrc()==AV_PIX_FMT_NV12) {
-                av_frame_src=
-                        AVFrameSP::make(cnv_ff->formatSrc(),
-                                        (*frame_src)->video.size.width(),
-                                        (*frame_src)->video.size.height(), true);
+            av_frame_src=
+                    AVFrameSP::make(cnv_ff->formatSrc(),
+                                    (*frame_src)->video.size.width(),
+                                    (*frame_src)->video.size.height(), false);
 
-                av_image_fill_arrays(av_frame_src->d->data, av_frame_src->d->linesize, (*frame_src)->video.data_ptr, cnv_ff->formatSrc(),
-                                     (*frame_src)->video.size.width(), (*frame_src)->video.size.height(), alignment);
-
-            } else {
-                av_frame_src=
-                        AVFrameSP::make(cnv_ff->formatSrc(),
-                                        (*frame_src)->video.size.width(),
-                                        (*frame_src)->video.size.height(), false);
-
-                for(int i=0; i<AV_NUM_DATA_POINTERS; ++i)
-                    av_frame_src->d->linesize[i]=
-                            av_image_get_linesize(cnv_ff->formatSrc(), (*frame_src)->video.size.width(), i);
-
-                av_frame_src->d->data[0]=
-                        (*frame_src)->video.data_ptr;
-            }
+            av_image_fill_arrays(av_frame_src->d->data, av_frame_src->d->linesize, (*frame_src)->video.data_ptr, cnv_ff->formatSrc(),
+                                 (*frame_src)->video.size.width(), (*frame_src)->video.size.height(), alignment);
 
             (*frame_dst)=
                     cnv_ff->convert(av_frame_src->d);

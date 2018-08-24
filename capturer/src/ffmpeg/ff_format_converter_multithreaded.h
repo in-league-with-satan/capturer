@@ -43,6 +43,8 @@ public:
                        FFFormatConverter::Filter::T filter=FFFormatConverter::Filter::cNull,
                        DecodeFrom210::Format::T format_210=DecodeFrom210::Format::Disabled);
 
+    bool isInAndOutEqual() const;
+
     void convert(Frame::ptr frame);
 
     AVFrameSP::ptr result();

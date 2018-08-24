@@ -522,6 +522,9 @@ AVRational FFCam::currentFrameRate() const
 
 PixelFormat FFCam::pixelFormat() const
 {
+    if(cfg.pixel_format==PixelFormat::mjpeg)
+        return PixelFormat(AV_PIX_FMT_YUV422P);
+
     return cfg.pixel_format;
 }
 

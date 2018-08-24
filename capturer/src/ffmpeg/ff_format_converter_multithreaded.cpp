@@ -72,6 +72,8 @@ bool FFFormatConverterMt::setup(AVPixelFormat format_src, QSize resolution_src, 
     if(compareParams(format_src, resolution_src, format_dst, resolution_dst, filter, format_210))
         return true;
 
+    qInfo() << "FFFormatConverterMt::setup: pix formats:" << av_get_pix_fmt_name(format_src) << av_get_pix_fmt_name(format_dst);
+
     this->format_src=format_src;
     this->format_dst=format_dst;
 
@@ -104,9 +106,33 @@ bool FFFormatConverterMt::compareParams(AVPixelFormat format_src, QSize resoluti
     return false;
 }
 
+bool FFFormatConverterMt::isInAndOutEqual() const
+{
+    return format_src==format_dst && resolution_src==resolution_dst;
+}
+
 void FFFormatConverterMt::convert(Frame::ptr frame)
 {
     AVFrameSP::ptr frame_out;
+
+    if(isInAndOutEqual()) {
+        frame_out=AVFrameSP::make(frame->video.pixel_format.toAVPixelFormat(),
+                                  frame->video.size.width(),
+                                  frame->video.size.height(), false);
+
+        av_image_fill_arrays(frame_out->d->data, frame_out->d->linesize, frame->video.data_ptr, (AVPixelFormat)frame_out->d->format,
+                             frame_out->d->width, frame_out->d->height, alignment);
+
+        frame_out->d->pts=
+                frame->video.pts;
+
+        frame_out->time_base=
+                frame->video.time_base;
+
+        queue_converted.enqueue(frame_out);
+
+        return;
+    }
 
     if(!use_multithreading) {
         thread[0]->frameBufferIn()->append(frame);
