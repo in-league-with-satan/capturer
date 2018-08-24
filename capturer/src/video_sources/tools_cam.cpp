@@ -107,9 +107,6 @@ QList <QSize> ToolsCam::resBuildSequence(const QSize &res_min, const QSize &res_
     };
 
     foreach(const QSize &r, res) {
-        qInfo() << "bbb" << res_min.width() << r.width() << res_min.height() << r.height()
-                << res_max.width() << r.width() <<  res_max.height() << r.height();
-
         if(res_min.width()<=r.width() && res_min.height()<=r.height()
                 && res_max.width()>=r.width() && res_max.height()>=r.height())
             result << r;
@@ -136,6 +133,9 @@ AVRational ToolsCam::framerateToRational(const qreal &fr)
 
     if(std::abs(fr - 15.)<eps)
         return { 1000, 15000 };
+
+    if(std::abs(fr - 20.)<eps)
+        return { 1000, 20000 };
 
     if(std::abs(rnd3(fr) - 23.976)<eps)
         return { 1001, 24000 };
