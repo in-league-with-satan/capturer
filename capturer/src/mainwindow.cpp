@@ -187,11 +187,18 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     http_server=new HttpServer(settings->http_server.enabled ? settings->http_server.port : 0, this);
+    http_server->setSettingsModel(messenger->settingsModel());
     connect(http_server, SIGNAL(keyPressed(int)), SLOT(keyPressed(int)));
+    connect(http_server, SIGNAL(deviceCamRestart()), SLOT(deviceCamRestart()), Qt::DirectConnection);
+    connect(http_server, SIGNAL(deviceCamStop()), SLOT(deviceCamStop()), Qt::DirectConnection);
+    connect(http_server, SIGNAL(deviceDecklinkRestart()), SLOT(deviceDecklinkRestart()), Qt::DirectConnection);
+    connect(http_server, SIGNAL(checkEncoders()), SLOT(checkEncoders()), Qt::DirectConnection);
     connect(http_server, SIGNAL(playerSeek(qint64)), ff_dec, SLOT(seek(qint64)));
     connect(ff_dec, SIGNAL(durationChanged(qint64)), http_server, SLOT(setPlayerDuration(qint64)), Qt::QueuedConnection);
     connect(ff_dec, SIGNAL(positionChanged(qint64)), http_server, SLOT(setPlayerPosition(qint64)), Qt::QueuedConnection);
     connect(messenger, SIGNAL(freeSpace(qint64)), http_server, SLOT(setFreeSpace(qint64)), Qt::QueuedConnection);
+    connect(decklink_thread, SIGNAL(formatChanged(int,int,quint64,quint64,bool,QString)),
+            http_server, SLOT(formatChanged(int,int,quint64,quint64,bool,QString)), Qt::QueuedConnection);
 
     //
 
@@ -201,7 +208,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     set_model_data.type=SettingsModel::Type::title;
     set_model_data.value=&settings->main.dummy;
+    set_model_data.priority=SettingsModel::Priority::low;
     set_model_data.name="camera";
+
     messenger->settingsModel()->add(set_model_data);
 
     //
@@ -209,7 +218,7 @@ MainWindow::MainWindow(QWidget *parent)
     QStringList cam_devices=FFCam::availableAudioInput();
 
     set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.group="cam device";
+    set_model_data.group="device cam";
     set_model_data.name="audio device";
 
 
@@ -233,8 +242,8 @@ MainWindow::MainWindow(QWidget *parent)
     cam_devices=FFCam::availableCameras();
 
     set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.group="cam device";
     set_model_data.name="video device";
+    set_model_data.priority=SettingsModel::Priority::high;
 
     if(cam_devices.isEmpty()) {
         set_model_data.values << "null";
@@ -258,7 +267,6 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.group="cam device";
     set_model_data.name="resolution";
 
     QList <QSize> supported_resolutions=cam_device->supportedResolutions();
@@ -280,7 +288,6 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.group="cam device";
     set_model_data.name="pixel format";
 
     QList <int64_t> supported_pix_fmts=cam_device->supportedPixelFormats(cam_resolution);
@@ -308,9 +315,8 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.group="cam device";
     set_model_data.name="framerate";
-
+    set_model_data.priority=SettingsModel::Priority::low;
 
     QList <AVRational> framerate=cam_device->supportedFramerates(cam_resolution, cam_pix_fmt);
 
@@ -339,10 +345,9 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.values_data.clear();
 
     set_model_data.type=SettingsModel::Type::button;
-    set_model_data.group="cam device";
-    set_model_data.name.clear();
-    set_model_data.values << "restart device";
-    set_model_data.values_data << 0;
+    set_model_data.name="restart device";
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
 
     set_model_data.value=&settings->device_cam.restart;
 
@@ -357,10 +362,9 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.values_data.clear();
 
     set_model_data.type=SettingsModel::Type::button;
-    set_model_data.group="cam device";
-    set_model_data.name.clear();
-    set_model_data.values << "stop device";
-    set_model_data.values_data << 0;
+    set_model_data.name="stop device";
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
 
     set_model_data.value=&settings->device_cam.stop;
 
@@ -372,6 +376,7 @@ MainWindow::MainWindow(QWidget *parent)
     // } cam
 
     set_model_data.type=SettingsModel::Type::divider;
+    set_model_data.name="dummy";
     set_model_data.value=&settings->main.dummy;
     messenger->settingsModel()->add(set_model_data);
 
@@ -386,7 +391,7 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.group="device";
+    set_model_data.group="device decklink";
     set_model_data.name="name";
 
     DeckLinkDevices devices;
@@ -455,9 +460,9 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     set_model_data.type=SettingsModel::Type::button;
-    set_model_data.name.clear();
-    set_model_data.values << "restart device";
-    set_model_data.values_data << 0;
+    set_model_data.name="restart device";
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
 
     set_model_data.value=&settings->device_decklink.restart;
 
@@ -469,6 +474,7 @@ MainWindow::MainWindow(QWidget *parent)
     // } decklink
 
     set_model_data.type=SettingsModel::Type::divider;
+    set_model_data.name="dummy";
     set_model_data.value=&settings->main.dummy;
     messenger->settingsModel()->add(set_model_data);
 
@@ -486,9 +492,10 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.values_data.clear();
 
     set_model_data.type=SettingsModel::Type::button;
-    set_model_data.name.clear();
-    set_model_data.values << "check encoders";
-    set_model_data.values_data << 0;
+    set_model_data.name="check encoders";
+    set_model_data.group="rec";
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
 
     set_model_data.value=&settings->rec.check_encoders;
 
@@ -517,6 +524,7 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.type=SettingsModel::Type::combobox;
     set_model_data.group="rec";
     set_model_data.name="video encoder";
+    set_model_data.priority=SettingsModel::Priority::high;
 
 
     set_model_data.value=&settings->rec.encoder_video;
@@ -528,6 +536,7 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.type=SettingsModel::Type::combobox;
     set_model_data.group="rec";
     set_model_data.name="preset";
+    set_model_data.priority=SettingsModel::Priority::low;
 
     set_model_data.values.clear();
     set_model_data.values_data.clear();
@@ -609,6 +618,7 @@ MainWindow::MainWindow(QWidget *parent)
     // } rec
 
     set_model_data.type=SettingsModel::Type::divider;
+    set_model_data.name="dummy";
     set_model_data.value=&settings->main.dummy;
     messenger->settingsModel()->add(set_model_data);
 
@@ -1038,6 +1048,40 @@ void MainWindow::formatChanged(int width, int height, quint64 frame_duration, qu
     current_frame_scale=frame_scale;
 }
 
+void MainWindow::deviceCamRestart()
+{
+    SettingsModel::Data *model_data_resolution=messenger->settingsModel()->data_p(&settings->device_cam.resolution);
+    SettingsModel::Data *model_data_framerate=messenger->settingsModel()->data_p(&settings->device_cam.framerate);
+    SettingsModel::Data *model_data_pixel_format=messenger->settingsModel()->data_p(&settings->device_cam.pixel_format);
+
+    QSize framerate=model_data_framerate->values_data.value(settings->device_cam.framerate).toSize();
+    int64_t pixel_format=model_data_pixel_format->values_data.value(settings->device_cam.pixel_format).toLongLong();
+
+    cam_device->setAudioDevice(settings->device_cam.index_audio);
+    cam_device->setVideoDevice(settings->device_cam.index_video);
+
+    cam_device->setConfig(model_data_resolution->values_data.value(settings->device_cam.resolution).toSize(), { framerate.width(), framerate.height() }, pixel_format);
+
+    QMetaObject::invokeMethod(cam_device, "startCam", Qt::QueuedConnection);
+}
+
+void MainWindow::deviceCamStop()
+{
+    cam_device->stop();
+}
+
+void MainWindow::deviceDecklinkRestart()
+{
+    captureRestart();
+}
+
+void MainWindow::checkEncoders()
+{
+    settings->checkEncoders();
+
+    updateEncList();
+}
+
 void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 {
     Q_UNUSED(qml)
@@ -1234,34 +1278,23 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
 
     if(data->value==&settings->device_decklink.restart) {
-        captureRestart();
+        deviceDecklinkRestart();
     }
 
     if(data->value==&settings->device_cam.restart) {
-        SettingsModel::Data *model_data_resolution=messenger->settingsModel()->data_p(&settings->device_cam.resolution);
-        SettingsModel::Data *model_data_framerate=messenger->settingsModel()->data_p(&settings->device_cam.framerate);
-        SettingsModel::Data *model_data_pixel_format=messenger->settingsModel()->data_p(&settings->device_cam.pixel_format);
-
-        QSize framerate=model_data_framerate->values_data.value(settings->device_cam.framerate).toSize();
-        int64_t pixel_format=model_data_pixel_format->values_data.value(settings->device_cam.pixel_format).toLongLong();
-
-        cam_device->setAudioDevice(settings->device_cam.index_audio);
-        cam_device->setVideoDevice(settings->device_cam.index_video);
-
-        cam_device->setConfig(model_data_resolution->values_data.value(settings->device_cam.resolution).toSize(), { framerate.width(), framerate.height() }, pixel_format);
-
-        QMetaObject::invokeMethod(cam_device, "startCam", Qt::QueuedConnection);
+        deviceCamRestart();
     }
 
     if(data->value==&settings->device_cam.stop) {
-        cam_device->stop();
+        deviceCamStop();
     }
 
     if(data->value==&settings->rec.check_encoders) {
-        settings->checkEncoders();
-
-        updateEncList();
+        checkEncoders();
     }
+
+
+    messenger->settingsModel()->updateQml();
 }
 
 void MainWindow::startStopCapture()

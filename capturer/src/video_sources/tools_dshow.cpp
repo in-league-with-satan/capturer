@@ -155,6 +155,9 @@ QList <Cam::Format> getDeviceCapabilities(const QString &dev_name)
                     quint64 res_key=QString("%1%2").arg(vcaps->MaxOutputSize.cx).arg(vcaps->MaxOutputSize.cy).toULongLong();
 
                     if(IsEqualGUID(type->subtype, MEDIASUBTYPE_YUY2)) {
+                        if(resolution[Cam::PixelFormat::YUYV].contains(res_key))
+                            continue;
+
                         resolution[Cam::PixelFormat::YUYV][res_key].size=QSize(vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy);
 
                         if(!resolution[Cam::PixelFormat::YUYV][res_key].framerate.contains(ToolsCam::framerateToRational(1e7/vcaps->MinFrameInterval)))
@@ -162,6 +165,9 @@ QList <Cam::Format> getDeviceCapabilities(const QString &dev_name)
                                     << ToolsCam::framerateBuildSequence(1e7/vcaps->MaxFrameInterval, 1e7/vcaps->MinFrameInterval);
 
                     } else if(IsEqualGUID(type->subtype, MEDIASUBTYPE_MJPG)) {
+                        if(resolution[Cam::PixelFormat::MJPEG].contains(res_key))
+                            continue;
+
                         resolution[Cam::PixelFormat::MJPEG][res_key].size=QSize(vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy);
 
                         if(!resolution[Cam::PixelFormat::MJPEG][res_key].framerate.contains(ToolsCam::framerateToRational(1e7/vcaps->MinFrameInterval))) {

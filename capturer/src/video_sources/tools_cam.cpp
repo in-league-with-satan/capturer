@@ -74,7 +74,8 @@ QList <AVRational> ToolsCam::framerateBuildSequence(const qreal &fr_min, const q
         { 1001, 60000 },    // 59.94
         { 1000, 60000 },    // 60
         { 1000, 90000 },    // 90
-        { 1000, 120000 }    // 120
+        { 1000, 120000 },   // 120
+        { 1000, 240000 }    // 240
     };
 
     for(size_t i=0; i<sizeof(framerate)/sizeof(*framerate); ++i) {
@@ -138,6 +139,9 @@ AVRational ToolsCam::framerateToRational(const qreal &fr)
 
     if(std::abs(fr - 120.)<eps)
         return { 1000, 120000 };
+
+    if(std::abs(fr - 240.)<eps)
+        return { 1000, 240000 };
 
     qWarning() << "framerateToRational unknown fr:" << fr;
 

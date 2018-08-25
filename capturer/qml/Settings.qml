@@ -69,10 +69,12 @@ ShowHideRect {
 
         property int role_type: 0
         property int role_group: 1
-        property int role_values: 2
-        property int role_values_data: 3
-        property int role_value: 4
-        property int role_name: 5
+        property int role_priority: 2
+        property int role_values: 3
+        property int role_values_data: 4
+        property int role_value: 5
+        property int role_name: 6
+
 
         property int type_title: 0
         property int type_divider: 1
@@ -118,16 +120,22 @@ ShowHideRect {
                         combobox.currentIndex=index
 
                         messenger.settingsModel.setData(list.currentIndex, list.role_value, index, true)
+
+                        return
                     }
 
                     if(item_type==list.type_checkbox) {
                         checkbox.checked=!checkbox.checked
 
                         messenger.settingsModel.setData(list.currentIndex, list.role_value, checkbox.checked, true)
+
+                        return
                     }
 
                     if(item_type==list.type_button) {
                         messenger.settingsModel.setData(list.currentIndex, list.role_value, 0, true)
+
+                        return
                     }
                 }
 
@@ -141,16 +149,22 @@ ShowHideRect {
                         combobox.currentIndex=index
 
                         messenger.settingsModel.setData(list.currentIndex, list.role_value, index, true)
+
+                        return
                     }
 
                     if(item_type==list.type_checkbox) {
                         checkbox.checked=!checkbox.checked
 
                         messenger.settingsModel.setData(list.currentIndex, list.role_value, checkbox.checked, true)
+
+                        return
                     }
 
                     if(item_type==list.type_button) {
                         messenger.settingsModel.setData(list.currentIndex, list.role_value, 0, true)
+
+                        return
                     }
                 }
 
@@ -201,11 +215,13 @@ ShowHideRect {
                         return ""
                     }
 
-//                     Rectangle {
-//                         anchors.fill: parent
-//                         color: "#4400ff00"
-//                         z: parent.z - 1
-//                     }
+                    /*
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "#4400ff00"
+                        z: parent.z - 1
+                    }
+                    */
                 }
 
                 Rectangle {
@@ -251,7 +267,7 @@ ShowHideRect {
                         font.pixelSize: m_delegate.height*.5
                         text: {
                             if(m_delegate.item_type==list.type_button)
-                                return m_delegate.item_values[0]
+                                return m_delegate.item_name
 
                             return ""
                         }
@@ -341,23 +357,6 @@ ShowHideRect {
                 default:
                     break
                 }
-            }
-        }
-
-        Connections {
-            target: messenger.settingsModel
-
-            onDataChanged: {
-//                if(!qml)
-//                    return
-
-                if(role==list.role_values)
-                    if(list.contentItem.children[row]!==undefined)
-                        list.contentItem.children[row].combobox.model=messenger.settingsModel.data(row, list.role_values)
-
-                if(!qml && role==list.role_value)
-                    if(list.contentItem.children[row]!==undefined)
-                        list.contentItem.children[row].combobox.currentIndex=messenger.settingsModel.data(row, list.role_value)
             }
         }
     }

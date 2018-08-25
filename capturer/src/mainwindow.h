@@ -106,6 +106,11 @@ private slots:
     void playerStateChanged(int state);
 
     void updateStats(FFEncoder::Stats s);
+
+    void deviceCamRestart();
+    void deviceCamStop();
+    void deviceDecklinkRestart();
+    void checkEncoders();
 };
 
 #endif // MAINWINDOW_H

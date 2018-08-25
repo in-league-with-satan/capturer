@@ -146,5 +146,9 @@ void HttpClient::voidGet()
     if(QDateTime::currentMSecsSinceEpoch() - last_reply_time<get_interval)
         return;
 
-    network_access_manager->get(QNetworkRequest((base_url)));
+    QUrl url(base_url);
+
+    url.setPath("/data");
+
+    network_access_manager->get(QNetworkRequest(url));
 }
