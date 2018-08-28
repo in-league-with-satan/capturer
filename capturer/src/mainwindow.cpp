@@ -294,7 +294,7 @@ MainWindow::MainWindow(QWidget *parent)
         cam_pix_fmt=supported_pix_fmts[settings->device_cam.pixel_format];
 
     foreach(qint64 val, supported_pix_fmts) {
-        set_model_data.values << Cam::PixelFormat::toString(val);
+        set_model_data.values << PixelFormat::toStringView(val);
         set_model_data.values_data << val;
     }
 
@@ -938,13 +938,8 @@ void MainWindow::keyPressed(int code)
         previewCamOnOff();
         break;
 
-
     case KeyCodeC::PreviewCamChangePosition:
         messenger->camPreviewChangePosition();
-        break;
-
-    case KeyCodeC::SmoothTransform:
-        settings->main.smooth_transform=!settings->main.smooth_transform;
         break;
 
     case KeyCodeC::FullScreen:
@@ -1103,7 +1098,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             list_values_data.clear();
 
             foreach(qint64 val, cam_device->supportedPixelFormats(size)) {
-                list_values << Cam::PixelFormat::toString(val);
+                list_values << PixelFormat::toStringView(val);
                 list_values_data << val;
             }
 
@@ -1124,7 +1119,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
         //
 
         foreach(qint64 val, cam_device->supportedPixelFormats(size)) {
-            list_values << Cam::PixelFormat::toString(val);
+            list_values << PixelFormat::toStringView(val);
             list_values_data << val;
         }
 
@@ -1176,18 +1171,20 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
         // pix_fmt
         const int index_encoder=data->values_data[settings->rec.encoder_video].toInt();
 
-        QList <FFEncoder::PixelFormat::T> fmts;
+        QList <PixelFormat> fmts;
+        PixelFormat pf;
 
         foreach(const QString &fmt_str, settings->rec.supported_enc[FFEncoder::VideoEncoder::toString(index_encoder)].toStringList()) {
-            fmts << (FFEncoder::PixelFormat::T)FFEncoder::PixelFormat::fromString(fmt_str);
+            if(pf.fromString(fmt_str))
+                fmts << pf;
         }
 
         QStringList list_values;
         QVariantList list_values_data;
 
         for(int i=0; i<fmts.size(); ++i) {
-            list_values << FFEncoder::PixelFormat::toString(fmts[i]);
-            list_values_data << fmts[i];
+            list_values << fmts[i].toStringView();
+            list_values_data << (int)fmts[i];
         }
 
         for(int i=0; i<model->rowCount(); ++i) {
@@ -1345,12 +1342,11 @@ void MainWindow::startStopRecording()
 
             cfg.framerate=FFEncoder::calcFps(current_frame_duration, current_frame_scale, settings->rec.half_fps);
             cfg.frame_resolution_src=current_frame_size;
-            cfg.pixel_format=(AVPixelFormat)messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();
+            cfg.pixel_format_dst=messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();
             cfg.preset=messenger->settingsModel()->data_p(&settings->rec.preset_current)->values_data[settings->rec.preset_current].toString();
             cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder_video)->values_data[settings->rec.encoder_video].toInt();
             cfg.crf=settings->rec.crf;
-            cfg.rgb_source=decklink_thread->sourceRGB();
-            cfg.depth_10bit=decklink_thread->source10Bit();
+            cfg.pixel_format_src.fromBMDPixelFormat(decklink_thread->pixelFormat());
             cfg.audio_sample_size=messenger->settingsModel()->data_p(&settings->device_decklink.audio_sample_size)->values_data[settings->device_decklink.audio_sample_size].toInt();
             cfg.downscale=settings->rec.downscale;
             cfg.scale_filter=settings->rec.scale_filter;
@@ -1380,12 +1376,11 @@ void MainWindow::startStopRecording()
 
             cfg.frame_resolution_src=resolution;
 
-            cfg.pixel_format=(AVPixelFormat)messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();
+            cfg.pixel_format_dst=messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();
             cfg.preset=messenger->settingsModel()->data_p(&settings->rec.preset_current)->values_data[settings->rec.preset_current].toString();
             cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder_video)->values_data[settings->rec.encoder_video].toInt();
             cfg.crf=settings->rec.crf;
-            cfg.rgb_source=true;
-            cfg.depth_10bit=false;
+            cfg.pixel_format_src=cam_device->pixelFormat();
             cfg.audio_sample_size=16;
             cfg.audio_channels_size=2;
             cfg.downscale=settings->rec.downscale;

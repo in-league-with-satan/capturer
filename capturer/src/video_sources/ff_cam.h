@@ -25,7 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <atomic>
 
-
+#include "pixel_format.h"
 #include "ff_tools.h"
 #include "frame_buffer.h"
 
@@ -60,7 +60,8 @@ public:
 
     bool isActive();
 
-    AVRational currentFrameRate();
+    AVRational currentFrameRate() const;
+    PixelFormat pixelFormat() const;
 
 public slots:
     void setConfig(QSize size, AVRational framerate, int64_t pixel_format);
@@ -74,7 +75,7 @@ private:
     struct Cfg {
         QSize size;
         AVRational framerate;
-        int64_t pixel_format;
+        PixelFormat pixel_format;
 
     } cfg;
 

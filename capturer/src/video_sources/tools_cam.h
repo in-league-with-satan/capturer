@@ -25,6 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QVector>
 
 #include "ff_tools.h"
+#include "pixel_format.h"
 
 #ifdef __linux__
 
@@ -39,7 +40,7 @@ struct Cam {
     };
 
     struct Format {
-        int64_t pixel_format;
+        PixelFormat pixel_format;
         QList <Resolution> resolution;
     };
 
@@ -48,12 +49,21 @@ struct Cam {
         QString dev;
         QList <Format> format;
     };
-
+/*
     struct PixelFormat {
         enum {
 #ifdef __linux__
 
             YUYV=V4L2_PIX_FMT_YUYV,
+            UYVY=V4L2_PIX_FMT_UYVY,
+            NV12=V4L2_PIX_FMT_NV12,
+            YVU420=V4L2_PIX_FMT_YVU420,
+            YUV420=V4L2_PIX_FMT_YUV420,
+            RGB24=V4L2_PIX_FMT_RGB24,
+            RGB32=V4L2_PIX_FMT_RGB32,
+            BGR24=V4L2_PIX_FMT_BGR24,
+            BGR32=V4L2_PIX_FMT_BGR32,
+            YUV32=V4L2_PIX_FMT_YUV32,
             MJPEG=V4L2_PIX_FMT_MJPEG,
 
 #else
@@ -71,6 +81,33 @@ struct Cam {
             case YUYV:
                 return QStringLiteral("YUYV");
 
+            case UYVY:
+                return QStringLiteral("UYVY");
+
+            case NV12:
+                return QStringLiteral("NV12");
+
+            case YVU420:
+                return QStringLiteral("YVU420");
+
+            case YUV420:
+                return QStringLiteral("YUV420");
+
+            case RGB24:
+                return QStringLiteral("RGB24");
+
+            case RGB32:
+                return QStringLiteral("RGB32");
+
+            case BGR24:
+                return QStringLiteral("BGR24");
+
+            case BGR32:
+                return QStringLiteral("BGR32");
+
+            case YUV32:
+                return QStringLiteral("YUV32");
+
             case MJPEG:
                 return QStringLiteral("MJPEG");
             }
@@ -78,6 +115,7 @@ struct Cam {
             return QStringLiteral("unknown");
         }
     };
+*/
 };
 
 struct ToolsCam
@@ -85,6 +123,7 @@ struct ToolsCam
     static QList <Cam::Dev> devList();
 
     static QList <AVRational> framerateBuildSequence(const qreal &fr_min, const qreal &fr_max);
+    static QList <QSize> resBuildSequence(const QSize &res_min, const QSize &res_max);
     static AVRational framerateToRational(const qreal &fr);
     static double rationalToFramerate(const AVRational &value);
 

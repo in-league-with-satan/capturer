@@ -39,8 +39,7 @@ public:
     bool save();
 
     struct Main {
-        int preview;
-        int smooth_transform;
+        int preview=1;
         int dummy;
 
     } main;

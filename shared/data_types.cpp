@@ -38,7 +38,6 @@ QString KeyCodeC::key_title[KeyCodeC::enm_size]={
     QStringLiteral("File Browser"),
     QStringLiteral("Rec"),
     QStringLiteral("Rec State"),
-    QStringLiteral("Smooth Transform"),
     QStringLiteral("Exit")
 };
 

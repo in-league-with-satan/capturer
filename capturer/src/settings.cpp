@@ -112,9 +112,6 @@ bool Settings::load()
     QVariantMap map_nvenc=map_root.value(QStringLiteral("nvenc")).toMap();
 
 
-    main.preview=map_main.value(QStringLiteral("preview"), 1).toInt();
-    main.smooth_transform=map_main.value(QStringLiteral("smooth_transform"), 0).toInt();
-
     device_decklink.index=map_device_decklink.value(QStringLiteral("index"), 0).toInt();
     device_decklink.audio_sample_size=map_device_decklink.value(QStringLiteral("audio_sample_size"), 0).toInt();
     device_decklink.half_fps=map_device_decklink.value(QStringLiteral("half_fps"), 0).toInt();
@@ -203,9 +200,6 @@ bool Settings::save()
     QVariantMap map_keyboard_shortcuts;
     QVariantMap map_nvenc;
 
-
-    map_main.insert(QStringLiteral("preview"), (bool)main.preview);
-    map_main.insert(QStringLiteral("smooth_transform"), (bool)main.smooth_transform);
 
     map_device_decklink.insert(QStringLiteral("index"), device_decklink.index);
     map_device_decklink.insert(QStringLiteral("audio_sample_size"), device_decklink.audio_sample_size);
@@ -314,9 +308,9 @@ void Settings::checkEncoders()
     foreach(FFEncoder::VideoEncoder::T enc, FFEncoder::VideoEncoder::list()) {
         QStringList lst_fmt;
 
-        foreach(FFEncoder::PixelFormat::T fmt, FFEncoder::PixelFormat::list()) {
-            if(checkEncoder(FFEncoder::VideoEncoder::toEncName(enc), (AVPixelFormat)fmt))
-                lst_fmt << FFEncoder::PixelFormat::toString(fmt);
+        foreach(PixelFormat fmt, PixelFormat::list()) {
+            if(checkEncoder(FFEncoder::VideoEncoder::toEncName(enc), fmt.toAVPixelFormat()))
+                lst_fmt << fmt.toString();
         }
 
         if(!lst_fmt.isEmpty())

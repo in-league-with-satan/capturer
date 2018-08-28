@@ -28,8 +28,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 QuickVideoSourceConvertThread::QuickVideoSourceConvertThread(QObject *parent)
     : QThread(parent)
     , fast_yuv(false)
-    , yuv_src(nullptr)
-    , yuv_dst(nullptr)
+    , conv_src(nullptr)
+    , conv_dst(nullptr)
     , format_converter_ff(new FFFormatConverter())
     , format_converter_dl(new DecklinkFrameConverter())
 {
@@ -51,11 +51,11 @@ QuickVideoSourceConvertThread::~QuickVideoSourceConvertThread()
         msleep(30);
     }
 
-    if(yuv_src)
-        av_frame_free(&yuv_src);
+    if(conv_src)
+        av_frame_free(&conv_src);
 
-    if(yuv_dst)
-        av_frame_free(&yuv_dst);
+    if(conv_dst)
+        av_frame_free(&conv_dst);
 
     delete format_converter_ff;
     delete format_converter_dl;
@@ -88,9 +88,9 @@ void QuickVideoSourceConvertThread::run()
 
     QByteArray ba_dst;
 
-    uint8_t *data_yuv422=nullptr;
-    size_t size_yuv422=0;
-    QByteArray ba_yuv422;
+    uint8_t *data_conv=nullptr;
+    size_t size_conv=0;
+    QByteArray ba_conv;
 
     running=true;
 
@@ -102,67 +102,108 @@ void QuickVideoSourceConvertThread::run()
         if(!frame_src)
             continue;
 
+        if(frame_src->video.pixel_format.isDirect()
+                && frame_src->video.pixel_format!=PixelFormat::rgb24
+                && frame_src->video.pixel_format!=PixelFormat::bgr24) {
+            frame_buffer_out->append(frame_src);
+            emit gotFrame();
+            continue;
+        }
+
         frame_dst=Frame::make();
 
-        frame_dst->video.source_rgb=frame_src->video.source_rgb;
+        if(frame_src->video.pixel_format.isRgb()) {
+            ba_dst.resize(frameBufSize(frame_src->video.size, frame_src->video.pixel_format));
+            frame_dst->video.pixel_format=PixelFormat::bgra;
 
-        if(frame_src->video.source_rgb) {
-            ba_dst.resize(DeckLinkVideoFrame::frameSize(frame_src->video.size, bmdFormat8BitBGRA));
-
-            if(frame_src->video.source_10bit) {
+            if(frame_src->video.pixel_format.is10bit() && frame_src->video.pixel_format.is210()) {
                 format_converter_dl->init(bmdFormat10BitRGB, frame_src->video.size, bmdFormat8BitBGRA, frame_src->video.size);
                 format_converter_dl->convert(frame_src->video.data_ptr, (void*)ba_dst.constData());
+
+            } else if(frame_src->video.pixel_format!=PixelFormat::bgra) {
+
+                if(!format_converter_ff->compareParams(frame_src->video.pixel_format.toAVPixelFormat(), frame_src->video.size, AV_PIX_FMT_BGRA, frame_src->video.size)) {
+                    if(conv_src)
+                        av_frame_free(&conv_src);
+
+                    if(conv_dst)
+                        av_frame_free(&conv_dst);
+
+                    conv_src=alloc_frame(frame_src->video.pixel_format.toAVPixelFormat(), frame_src->video.size.width(), frame_src->video.size.height(), false);
+                    conv_dst=alloc_frame(AV_PIX_FMT_BGRA, frame_src->video.size.width(), frame_src->video.size.height(), true);
+
+                    conv_src->linesize[0]=DeckLinkVideoFrame::rowSize(frame_src->video.size.width(), bmdFormat8BitBGRA);
+
+                    format_converter_ff->setup(frame_src->video.pixel_format.toAVPixelFormat(), frame_src->video.size, AV_PIX_FMT_BGRA, frame_src->video.size);
+                }
+
+                data_conv=frame_src->video.data_ptr;
+                size_conv=frame_src->video.data_size;
+
+
+                ba_dst.resize(frameBufSize(frame_src->video.size, PixelFormat::bgra));
+
+                av_image_fill_arrays(conv_src->data, conv_src->linesize, data_conv, frame_src->video.pixel_format.toAVPixelFormat(),
+                                     frame_src->video.size.width(), frame_src->video.size.height(), alignment);
+
+                format_converter_ff->convert(conv_src, conv_dst);
+
+                av_image_copy_to_buffer((uint8_t*)ba_dst.constData(), ba_dst.size(), conv_dst->data, conv_dst->linesize, (AVPixelFormat)conv_dst->format, conv_dst->width, conv_dst->height, alignment);
+
 
             } else {
                 memcpy((void*)ba_dst.constData(), frame_src->video.data_ptr, frame_src->video.data_size);
             }
 
         } else {
-            if(frame_src->video.source_10bit) {
-                size_yuv422=DeckLinkVideoFrame::frameSize(frame_src->video.size, bmdFormat8BitYUV);
+            frame_dst->video.pixel_format.fromAVPixelFormat(AV_PIX_FMT_YUV420P);
 
-                ba_yuv422.resize(size_yuv422);
+            if(frame_src->video.pixel_format.is10bit() && frame_src->video.pixel_format.is210()) {
+                size_conv=frameBufSize(frame_src->video.size, frame_src->video.pixel_format);
 
-                data_yuv422=(uint8_t*)ba_yuv422.constData();
+                ba_conv.resize(size_conv);
+
+                data_conv=(uint8_t*)ba_conv.constData();
 
                 format_converter_dl->init(bmdFormat10BitYUV, frame_src->video.size, bmdFormat8BitYUV, frame_src->video.size);
-                format_converter_dl->convert(frame_src->video.data_ptr, (void*)ba_yuv422.constData());
+                format_converter_dl->convert(frame_src->video.data_ptr, (void*)ba_conv.constData());
 
             } else {
-                data_yuv422=frame_src->video.data_ptr;
-                size_yuv422=frame_src->video.data_size;
+                data_conv=frame_src->video.data_ptr;
+                size_conv=frame_src->video.data_size;
             }
 
             if(!format_converter_ff->compareParams(AV_PIX_FMT_UYVY422, frame_src->video.size, AV_PIX_FMT_YUV420P, frame_src->video.size)) {
-                if(yuv_src)
-                    av_frame_free(&yuv_src);
+                if(conv_src)
+                    av_frame_free(&conv_src);
 
-                if(yuv_dst)
-                    av_frame_free(&yuv_dst);
+                if(conv_dst)
+                    av_frame_free(&conv_dst);
 
-                yuv_src=alloc_frame(AV_PIX_FMT_UYVY422, frame_src->video.size.width(), frame_src->video.size.height(), false);
-                yuv_dst=alloc_frame(AV_PIX_FMT_YUV420P, frame_src->video.size.width(), frame_src->video.size.height(), true);
+                conv_src=alloc_frame(AV_PIX_FMT_UYVY422, frame_src->video.size.width(), frame_src->video.size.height(), false);
+                conv_dst=alloc_frame(AV_PIX_FMT_YUV420P, frame_src->video.size.width(), frame_src->video.size.height(), true);
 
-                yuv_src->linesize[0]=DeckLinkVideoFrame::rowSize(frame_src->video.size.width(), frame_src->video_frame->GetPixelFormat());
+                conv_src->linesize[0]=DeckLinkVideoFrame::rowSize(frame_src->video.size.width(), (BMDPixelFormat)frame_src->video.pixel_format.toBMDPixelFormat());
 
                 format_converter_ff->setup(AV_PIX_FMT_UYVY422, frame_src->video.size, AV_PIX_FMT_YUV420P, frame_src->video.size);
             }
 
             if(fast_yuv) {
-                ba_dst.resize(size_yuv422);
+                ba_dst.resize(size_conv);
 
-                memcpy((void*)ba_dst.constData(), data_yuv422, size_yuv422);
+                memcpy((void*)ba_dst.constData(), data_conv, size_conv);
 
             } else {
                 ba_dst.resize(av_image_get_buffer_size(AV_PIX_FMT_YUV420P, frame_src->video.size.width(), frame_src->video.size.height(), alignment));
 
-                av_image_fill_arrays(yuv_src->data, yuv_src->linesize, data_yuv422, AV_PIX_FMT_UYVY422, frame_src->video.size.width(), frame_src->video.size.height(), alignment);
+                av_image_fill_arrays(conv_src->data, conv_src->linesize, data_conv, AV_PIX_FMT_UYVY422, frame_src->video.size.width(), frame_src->video.size.height(), alignment);
 
-                format_converter_ff->convert(yuv_src, yuv_dst);
+                format_converter_ff->convert(conv_src, conv_dst);
 
-                av_image_copy_to_buffer((uint8_t*)ba_dst.constData(), ba_dst.size(), yuv_dst->data, yuv_dst->linesize, (AVPixelFormat)yuv_dst->format, yuv_dst->width, yuv_dst->height, alignment);
+                av_image_copy_to_buffer((uint8_t*)ba_dst.constData(), ba_dst.size(), conv_dst->data, conv_dst->linesize, (AVPixelFormat)conv_dst->format, conv_dst->width, conv_dst->height, alignment);
             }
         }
+
 
         frame_dst->setData(ba_dst, frame_src->video.size, frame_src->audio.dummy, frame_src->audio.channels, frame_src->audio.sample_size);
 

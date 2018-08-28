@@ -71,7 +71,6 @@ public:
         FileBrowser,
         Rec,
         RecState,
-        SmoothTransform,
         Exit,
 
         enm_size

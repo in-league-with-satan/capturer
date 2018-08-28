@@ -59,7 +59,7 @@ QList <AVRational> ToolsCam::framerateBuildSequence(const qreal &fr_min, const q
 {
     QList <AVRational> result;
 
-    AVRational framerate[]={
+    static AVRational framerate[]={
         { 1, 2 },           // 2
         { 1, 5 },           // 5
         { 2, 15 },          // 7.5
@@ -87,6 +87,34 @@ QList <AVRational> ToolsCam::framerateBuildSequence(const qreal &fr_min, const q
     return result;
 }
 
+QList <QSize> ToolsCam::resBuildSequence(const QSize &res_min, const QSize &res_max)
+{
+    QList <QSize> result;
+
+    static QList <QSize> res={
+        QSize(640, 480),
+        QSize(800, 600),
+        QSize(1024, 768),
+        QSize(1280, 720),
+        QSize(1280, 800),
+        QSize(1600, 900),
+        QSize(1680, 1050),
+        QSize(1920, 1080),
+        QSize(1920, 1200),
+        QSize(2560, 1440),
+        QSize(3840, 2160),
+        QSize(4096, 2160)
+    };
+
+    foreach(const QSize &r, res) {
+        if(res_min.width()<=r.width() && res_min.height()<=r.height()
+                && res_max.width()>=r.width() && res_max.height()>=r.height())
+            result << r;
+    }
+
+    return result;
+}
+
 AVRational ToolsCam::framerateToRational(const qreal &fr)
 {
     static const double eps=.003;
@@ -105,6 +133,9 @@ AVRational ToolsCam::framerateToRational(const qreal &fr)
 
     if(std::abs(fr - 15.)<eps)
         return { 1000, 15000 };
+
+    if(std::abs(fr - 20.)<eps)
+        return { 1000, 20000 };
 
     if(std::abs(rnd3(fr) - 23.976)<eps)
         return { 1001, 24000 };
@@ -155,7 +186,7 @@ void ToolsCam::testDevList(const QList <Cam::Dev> &list)
         qInfo() << "dev name:" << dev.name << dev.dev << dev.format.size();
 
         foreach(Cam::Format fmt, dev.format) {
-            qInfo() << "  pixel_format:" << Cam::PixelFormat::toString(fmt.pixel_format);
+            qInfo() << "  pixel_format:" << fmt.pixel_format.toString();
 
             foreach(Cam::Resolution res, fmt.resolution) {
                 qInfo() << "    resolution:" << res.size;

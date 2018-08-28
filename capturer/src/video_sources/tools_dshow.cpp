@@ -33,6 +33,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #ifdef __WIN32__
 
+QString guidToStr(const GUID &guid)
+{
+    char buf[42]={};
+
+    snprintf(buf, sizeof(buf), "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+             (uint32_t)guid.Data1, guid.Data2, guid.Data3,
+             guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+
+    return QString(buf);
+}
+
 IBaseFilter *getDevFilter(const QString &device_name)
 {
     IBaseFilter *base_filter=nullptr;
@@ -92,7 +103,7 @@ QList <Cam::Format> getDeviceCapabilities(const QString &dev_name)
 {
     QList <Cam::Format> capabilities;
 
-    QMap <quint64, Cam::Resolution> resolution[2];
+    QMap <quint64, Cam::Resolution> resolution[PixelFormat::size];
 
     IBaseFilter *dev_filter=getDevFilter(dev_name);
 
@@ -154,20 +165,19 @@ QList <Cam::Format> getDeviceCapabilities(const QString &dev_name)
                 {
                     quint64 res_key=QString("%1%2").arg(vcaps->MaxOutputSize.cx).arg(vcaps->MaxOutputSize.cy).toULongLong();
 
-                    if(IsEqualGUID(type->subtype, MEDIASUBTYPE_YUY2)) {
-                        resolution[Cam::PixelFormat::YUYV][res_key].size=QSize(vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy);
+                    PixelFormat tmp_pix_fmt;
 
-                        if(!resolution[Cam::PixelFormat::YUYV][res_key].framerate.contains(ToolsCam::framerateToRational(1e7/vcaps->MinFrameInterval)))
-                            resolution[Cam::PixelFormat::YUYV][res_key].framerate
+                    if(tmp_pix_fmt.fromDshowPixelFormat(type->subtype)) {
+                        // qInfo() << "tmp_pix_fmt" << tmp_pix_fmt.toString() << tmp_pix_fmt;
+
+                        resolution[tmp_pix_fmt][res_key].size=QSize(vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy);
+
+                        if(!resolution[tmp_pix_fmt][res_key].framerate.contains(ToolsCam::framerateToRational(1e7/vcaps->MinFrameInterval)))
+                            resolution[tmp_pix_fmt][res_key].framerate
                                     << ToolsCam::framerateBuildSequence(1e7/vcaps->MaxFrameInterval, 1e7/vcaps->MinFrameInterval);
 
-                    } else if(IsEqualGUID(type->subtype, MEDIASUBTYPE_MJPG)) {
-                        resolution[Cam::PixelFormat::MJPEG][res_key].size=QSize(vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy);
-
-                        if(!resolution[Cam::PixelFormat::MJPEG][res_key].framerate.contains(ToolsCam::framerateToRational(1e7/vcaps->MinFrameInterval))) {
-                            resolution[Cam::PixelFormat::MJPEG][res_key].framerate
-                                    << ToolsCam::framerateBuildSequence(1e7/vcaps->MaxFrameInterval, 1e7/vcaps->MinFrameInterval);
-                        }
+                    } else {
+                        qInfo() << "unknown pix fmt" << guidToStr(type->formattype);
                     }
                 }
 
@@ -192,7 +202,7 @@ next_pin:
     }
 
 
-    for(int i_pf=0; i_pf<Cam::PixelFormat::size; i_pf++) {
+    for(int i_pf=0; i_pf<PixelFormat::size; i_pf++) {
         if(!resolution[i_pf].isEmpty()) {
             Cam::Format fmt;
 

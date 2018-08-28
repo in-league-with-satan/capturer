@@ -20,10 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDebug>
 #include <QTimer>
 #include <QAudioInput>
+#include <QMessageBox>
 #include <qcoreapplication.h>
 
 #include <assert.h>
 #include <cmath>
+#include <future>
+#include <thread>
+#include <chrono>
 
 #include "ff_format_converter.h"
 #include "ff_audio_converter.h"
@@ -173,13 +177,29 @@ QStringList FFCam::availableCameras()
 
 QStringList FFCam::availableAudioInput()
 {
-    QStringList list;
+    // return QStringList();
 
-    foreach(QAudioDeviceInfo di, QAudioDeviceInfo::availableDevices(QAudio::AudioInput)) {
-        list << di.deviceName();
+    auto future=std::async(std::launch::async, []()->QStringList {
+        QStringList list;
+
+        foreach(const QAudioDeviceInfo &device_info, QAudioDeviceInfo::availableDevices(QAudio::AudioInput))
+            list << device_info.deviceName();
+
+        return list;
+    });
+
+    if(future.wait_for(std::chrono::seconds(2))!=std::future_status::ready) {
+        QMessageBox mb;
+        mb.setWindowTitle("critical error");
+        mb.setText("QAudioDeviceInfo::availableDevices function doesn't return control");
+        mb.setIcon(QMessageBox::Critical);
+
+        mb.exec();
+
+        std::exit(1);
     }
 
-    return list;
+    return future.get();
 }
 
 bool FFCam::setVideoDevice(int index)
@@ -228,7 +248,7 @@ QList <QSize> FFCam::supportedResolutions()
               [](const QSize &l, const QSize &r) { return (l.width()==r.width() ? l.height()<r.height() : l.width()<r.width()); }
     );
 
-     qInfo() << "FFCam::supportedResolutions:" << dev_list.at(index_device_video).name << lst;
+    qInfo() << "FFCam::supportedResolutions:" << dev_list.at(index_device_video).name << lst;
 
     return lst;
 }
@@ -260,14 +280,14 @@ QList <AVRational> FFCam::supportedFramerates(QSize size, int64_t fmt)
         if(format.pixel_format==fmt) {
             foreach(Cam::Resolution res, format.resolution) {
                 if(res.size==size) {
-                    // qInfo() << "FFCam::supportedFramerates" << size << fmt << res.framerate.size();
+                    // qInfo() << "FFCam::supportedFramerates" << size << PixelFormat(fmt).toString() << res.framerate.size();
                     return res.framerate;
                 }
             }
         }
     }
 
-    qWarning() << "FFCam::supportedFramerates: empty" << dev_list.at(index_device_video).name << size << (fmt==Cam::PixelFormat::YUYV ? "YUYV" : "MJPEG");
+    qWarning() << "FFCam::supportedFramerates: empty" << dev_list.at(index_device_video).name << size << PixelFormat(fmt).toString();
 
     return QList<AVRational>();
 }
@@ -356,24 +376,23 @@ void FFCam::startCam()
     d->format_context->flags|=AVFMT_FLAG_NONBLOCK;
 
 
-    if(cfg.pixel_format==Cam::PixelFormat::MJPEG) {
+    if(cfg.pixel_format==PixelFormat::mjpeg) {
         d->format_context->video_codec_id=AV_CODEC_ID_MJPEG;
 
-    } else if(cfg.pixel_format==Cam::PixelFormat::YUYV) {
+    } else {
         d->format_context->video_codec_id=AV_CODEC_ID_RAWVIDEO;
-        av_dict_set(&d->dictionary, "pixel_format", "yuyv422", 0);
+        av_dict_set(&d->dictionary, "pixel_format", cfg.pixel_format.toString().toLatin1().data(), 0);
     }
 
 
     d->format_context->video_codec=avcodec_find_decoder(d->format_context->video_codec_id);
 
 
-    qInfo() << "dev name:" << dev_list[index_device_video].name;
+    qInfo() << "dev name:" << dev_list[index_device_video].name << dev_list[index_device_video].dev;
 
 #ifdef __linux__
 
-    ret=avformat_open_input(&d->format_context, QString("/dev/video%1").arg(index_device_video).toLatin1().constData(), d->input_format, &d->dictionary);
-
+    ret=avformat_open_input(&d->format_context, dev_list[index_device_video].dev.toLatin1().constData(), d->input_format, &d->dictionary);
 
 #else
 
@@ -423,7 +442,7 @@ void FFCam::startCam()
         goto fail;
     }
 
-    d->codec_context->pix_fmt=AV_PIX_FMT_YUYV422;
+    d->codec_context->pix_fmt=cfg.pixel_format.toAVPixelFormat();
     d->codec_context->width=cfg.size.width();
     d->codec_context->height=cfg.size.height();
 
@@ -495,9 +514,17 @@ bool FFCam::isActive()
     return false;
 }
 
-AVRational FFCam::currentFrameRate()
+AVRational FFCam::currentFrameRate() const
 {
     return cfg.framerate;
+}
+
+PixelFormat FFCam::pixelFormat() const
+{
+    if(cfg.pixel_format==PixelFormat::mjpeg)
+        return PixelFormat(AV_PIX_FMT_YUV422P);
+
+    return cfg.pixel_format;
 }
 
 void FFCam::updateDevList()
@@ -533,27 +560,25 @@ void FFCam::run()
                     if(frame_finished) {
                         Frame::ptr frame=Frame::make();
 
-                        d->converter.setup((AVPixelFormat)d->frame->format, QSize(d->frame->width, d->frame->height),
-                                           AV_PIX_FMT_BGRA, QSize(d->frame->width, d->frame->height));
+                        PixelFormat tmp_fmt;
+                        tmp_fmt.fromAVPixelFormat((AVPixelFormat)d->frame->format);
 
-                        AVFrameSP::ptr ptr_frame_rgb=
-                                d->converter.convert(d->frame);
-
-                        if(ptr_frame_rgb) {
-                            QByteArray ba_frame_rgb;
+                        if(tmp_fmt.isDirect()) {
+                            QByteArray ba_frame;
 
                             const int buf_size=
-                                    av_image_get_buffer_size((AVPixelFormat)ptr_frame_rgb->d->format,
-                                                             ptr_frame_rgb->d->width,
-                                                             ptr_frame_rgb->d->height,
+                                    av_image_get_buffer_size((AVPixelFormat)d->frame->format,
+                                                             d->frame->width,
+                                                             d->frame->height,
                                                              alignment);
 
-                            ba_frame_rgb.resize(buf_size);
+                            ba_frame.resize(buf_size);
 
-                            av_image_copy_to_buffer((uint8_t*)ba_frame_rgb.constData(), buf_size,
-                                                    ptr_frame_rgb->d->data, ptr_frame_rgb->d->linesize,
-                                                    (AVPixelFormat)ptr_frame_rgb->d->format,
-                                                    ptr_frame_rgb->d->width, ptr_frame_rgb->d->height, alignment);
+                            av_image_copy_to_buffer((uint8_t*)ba_frame.constData(), buf_size,
+                                                    d->frame->data, d->frame->linesize,
+                                                    (AVPixelFormat)d->frame->format,
+                                                    d->frame->width, d->frame->height, alignment);
+
 
                             if(d->audio_device) {
                                 QByteArray ba_audio=d->audio_device->readAll();
@@ -565,17 +590,67 @@ void FFCam::run()
                                     ba_audio=ba_audio_conv;
                                 }
 
-                                frame->setData(ba_frame_rgb, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
+                                frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
 
                             } else
-                                frame->setData(ba_frame_rgb, QSize(d->frame->width, d->frame->height), QByteArray(), 0, 0);
+                                frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), QByteArray(), 0, 0);
+
+
+                            frame->video.pts=d->frame->pts - d->stream->start_time;
+                            frame->video.time_base=d->stream->time_base;
+
+                            if(!frame->video.pixel_format.fromAVPixelFormat((AVPixelFormat)d->frame->format)) {
+                                frame.reset();
+                            }
+
+                        } else {
+                            d->converter.setup((AVPixelFormat)d->frame->format, QSize(d->frame->width, d->frame->height),
+                                               AV_PIX_FMT_BGRA, QSize(d->frame->width, d->frame->height));
+
+                            AVFrameSP::ptr ptr_frame_rgb=
+                                    d->converter.convert(d->frame);
+
+                            if(ptr_frame_rgb) {
+                                QByteArray ba_frame_rgb;
+
+                                const int buf_size=
+                                        av_image_get_buffer_size((AVPixelFormat)ptr_frame_rgb->d->format,
+                                                                 ptr_frame_rgb->d->width,
+                                                                 ptr_frame_rgb->d->height,
+                                                                 alignment);
+
+                                ba_frame_rgb.resize(buf_size);
+
+                                av_image_copy_to_buffer((uint8_t*)ba_frame_rgb.constData(), buf_size,
+                                                        ptr_frame_rgb->d->data, ptr_frame_rgb->d->linesize,
+                                                        (AVPixelFormat)ptr_frame_rgb->d->format,
+                                                        ptr_frame_rgb->d->width, ptr_frame_rgb->d->height, alignment);
+
+                                if(d->audio_device) {
+                                    QByteArray ba_audio=d->audio_device->readAll();
+
+                                    if(d->audio_input->format()!=default_format) {
+                                        QByteArray ba_audio_conv;
+
+                                        d->audio_converter.convert(&ba_audio, &ba_audio_conv);
+                                        ba_audio=ba_audio_conv;
+                                    }
+
+                                    frame->setData(ba_frame_rgb, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
+
+                                } else
+                                    frame->setData(ba_frame_rgb, QSize(d->frame->width, d->frame->height), QByteArray(), 0, 0);
+                            }
+
+                            frame->video.pts=d->frame->pts - d->stream->start_time;
+                            frame->video.time_base=d->stream->time_base;
+                            frame->video.pixel_format.fromAVPixelFormat(AV_PIX_FMT_BGRA);
                         }
 
-                        frame->video.pts=d->frame->pts - d->stream->start_time;
-                        frame->video.time_base=d->stream->time_base;
-
-                        foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
-                            buf->append(frame);
+                        if(frame) {
+                            foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
+                                buf->append(frame);
+                        }
                     }
                 }
 

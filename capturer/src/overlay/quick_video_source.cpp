@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "ff_tools.h"
 #include "quick_video_source_convert_thread.h"
+#include "decklink_video_frame.h"
 
 #include "quick_video_source.h"
 
@@ -39,7 +40,7 @@ QuickVideoSource::~QuickVideoSource()
     closeSurface();
 }
 
-FrameBuffer<Frame::ptr>::ptr QuickVideoSource::frameBuffer()
+FrameBuffer <Frame::ptr>::ptr QuickVideoSource::frameBuffer()
 {
     return convert_thread->frameBufferIn();
 }
@@ -78,7 +79,46 @@ void QuickVideoSource::checkFrame()
     if(!frame)
         return;
 
-    if(frame->video.source_rgb) {
+    if(!frame->video.pixel_format.isValid()) {
+        qCritical() << "QuickVideoSource::checkFrame: pixel format err";
+        return;
+    }
+
+    const QVideoFrame::PixelFormat q_pix_fmt=
+            frame->video.pixel_format.toQPixelFormat();
+
+    if(q_pix_fmt!=QVideoFrame::Format_Invalid
+            && q_pix_fmt!=QVideoFrame::Format_RGB24
+            && q_pix_fmt!=QVideoFrame::Format_BGR24) {
+        if(frame->video.size!=format.frameSize() || q_pix_fmt!=format.pixelFormat()) {
+            closeSurface();
+
+            format=QVideoSurfaceFormat(frame->video.size, q_pix_fmt);
+
+            surface->stop();
+
+            if(!surface->start(format)) {
+                qCritical() << "surface->start error" << surface->error() << frame->video.size << q_pix_fmt;
+                format=QVideoSurfaceFormat();
+                return;
+            }
+        }
+
+        last_frame=QVideoFrame(frame->video.data_size,
+                               frame->video.size,
+                               av_image_get_linesize(frame->video.pixel_format.toAVPixelFormat(), frame->video.size.width(), 0),
+                               q_pix_fmt);
+
+        if(last_frame.map(QAbstractVideoBuffer::WriteOnly)) {
+            memcpy(last_frame.bits(), frame->video.data_ptr, frame->video.data_size);
+
+            last_frame.unmap();
+
+        } else {
+            qCritical() << "err frame.map write";
+        }
+
+    } else if(frame->video.pixel_format.isRgb()) {
         if(frame->video.size!=format.frameSize() || QVideoFrame::Format_ARGB32!=format.pixelFormat()) {
             closeSurface();
 
@@ -107,6 +147,7 @@ void QuickVideoSource::checkFrame()
 
     } else {
         QVideoFrame::PixelFormat fmt=QVideoFrame::Format_YUV420P;
+
         int buf_size;
         int line_size;
 

@@ -38,11 +38,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "convert_thread.h"
 #include "audio_tools.h"
 #include "decklink_tools.h"
+#include "frame_decklink.h"
 
 #include "capture.h"
-
-//const bool ext_converter=false;
-//const bool ext_converter=true;
 
 class DeckLinkCaptureDelegate : public IDeckLinkInputCallback
 {
@@ -132,7 +130,7 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
 
     device.index=0;
     format.index=0;
-    pixel_format.fmt=bmdFormat10BitRGB;
+    pixel_format=bmdFormat8BitYUV;
 
     running=false;
     running_thread=false;
@@ -140,18 +138,6 @@ DeckLinkCapture::DeckLinkCapture(QObject *parent) :
     source_rgb=true;
 
     half_fps=false;
-
-    //
-
-    //video_converter=nullptr;
-
-    // if(ext_converter) {
-    //     conv_thread=new DlConvertThreadContainer(4, this);
-
-    //     connect(conv_thread, SIGNAL(frameSkipped()), this, SIGNAL(frameSkipped()));
-
-    // } else
-    //     video_converter=CreateVideoConversionInstance();
 
     //
 
@@ -170,44 +156,29 @@ DeckLinkCapture::~DeckLinkCapture()
     while(running_thread) {
         msleep(30);
     }
-
-
-    // if(ext_converter)
-    //     conv_thread->stopThreads();
 }
 
 void DeckLinkCapture::setup(DeckLinkDevice device, DeckLinkFormat format, DeckLinkPixelFormat pixel_format, int audio_channels, int audio_sample_size, bool rgb_10bit)
 {
+    Q_UNUSED(pixel_format);
+
     this->device=device;
     this->format=format;
-    this->pixel_format=pixel_format;
+    this->pixel_format=bmdFormat8BitYUV;
     this->audio_channels=audio_channels;
     this->audio_sample_size=audio_sample_size;
     this->source_10bit=rgb_10bit;
-
-    // if(ext_converter) {
-    //     conv_thread->setAudioChannels(audio_channels);
-    //     conv_thread->setSampleSize(audio_sample_size);
-    // }
 }
 
 void DeckLinkCapture::subscribe(FrameBuffer<Frame::ptr>::ptr obj)
 {
-    // if(ext_converter)
-    //     conv_thread->subscribe(obj);
-
-    // else
     if(!subscription_list.contains(obj))
         subscription_list.append(obj);
 }
 
 void DeckLinkCapture::unsubscribe(FrameBuffer<Frame::ptr>::ptr obj)
 {
-    // if(ext_converter)
-    //     conv_thread->unsubscribe(obj);
-
-    // else
-        subscription_list.removeAll(obj);
+    subscription_list.removeAll(obj);
 }
 
 bool DeckLinkCapture::isRunning() const
@@ -236,6 +207,11 @@ bool DeckLinkCapture::source10Bit() const
 void DeckLinkCapture::setHalfFps(bool value)
 {
     half_fps=value;
+}
+
+BMDPixelFormat DeckLinkCapture::pixelFormat()
+{
+    return pixel_format;
 }
 
 void DeckLinkCapture::run()
@@ -304,8 +280,6 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
 
     HRESULT result;
 
-
-    BMDPixelFormat pixel_format=bmdFormat10BitYUV;
 
     pixel_format=bmdFormat8BitYUV;
 
@@ -393,10 +367,9 @@ void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fra
 
         //
 
-        Frame::ptr frame=Frame::make();
+        Frame::ptr frame=FrameDecklink::make(video_frame, audio_packet, audio_channels, audio_sample_size);
 
-        frame->setData(video_frame, audio_packet, audio_channels, audio_sample_size);
-
+        //
 
         if(audio_channels==8) {
             if(audio_sample_size==16)
@@ -503,7 +476,7 @@ void DeckLinkCapture::init()
 
 
         // Check display mode is supported with given options
-        result=decklink_input->DoesSupportVideoMode(decklink_display_mode->GetDisplayMode(), (BMDPixelFormat)pixel_format.fmt, bmdVideoInputFlagDefault, &display_mode_supported, nullptr);
+        result=decklink_input->DoesSupportVideoMode(decklink_display_mode->GetDisplayMode(), pixel_format, bmdVideoInputFlagDefault, &display_mode_supported, nullptr);
 
         if(result!=S_OK) {
             qCritical() << "DoesSupportVideoMode err" << result;
@@ -519,7 +492,7 @@ void DeckLinkCapture::init()
         decklink_input->SetCallback(decklink_capture_delegate);
 
         // Start capturing
-        result=decklink_input->EnableVideoInput(decklink_display_mode->GetDisplayMode(), (BMDPixelFormat)pixel_format.fmt, bmdVideoInputEnableFormatDetection);
+        result=decklink_input->EnableVideoInput(decklink_display_mode->GetDisplayMode(), pixel_format, bmdVideoInputEnableFormatDetection);
 
         if(result!=S_OK) {
             qCritical() << "Failed to enable video input. Is another application using the card?" << result;

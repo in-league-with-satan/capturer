@@ -33,28 +33,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 #include "ff_tools.h"
+#include "pixel_format.h"
 
 #include "tools_video4linux2.h"
 
-
-bool supportedPixelFormat(uint64_t pix_fmt)
-{
-#ifdef __linux__
-
-    switch(pix_fmt) {
-    case V4L2_PIX_FMT_MJPEG:
-    case V4L2_PIX_FMT_YUYV:
-        return true;
-    }
-
-#else
-
-    Q_UNUSED(pix_fmt)
-
-#endif
-
-    return false;
-}
 
 QList <Cam::Dev> ToolsV4L2::devList()
 {
@@ -70,7 +52,7 @@ QList <Cam::Dev> ToolsV4L2::devList()
         dev.dev=QString("/dev/video%1").arg(i);
 
         if(-1==(fd=open(dev.dev.toLatin1().data(), O_RDONLY))) {
-            goto end;
+            continue;
         }
 
         struct v4l2_capability capability={};
@@ -88,67 +70,78 @@ QList <Cam::Dev> ToolsV4L2::devList()
         while(!ioctl(fd, VIDIOC_ENUM_FMT, &fmtdesc)) {
             fmtdesc.index++;
 
-            if(!supportedPixelFormat(fmtdesc.pixelformat))
-                continue;
-
-            Cam::Resolution resolution={};
+            // qInfo() << "fmtdesc.description" << fmtdesc.pixelformat << QString((char*)fmtdesc.description);
 
             Cam::Format format;
-            format.pixel_format=fmtdesc.pixelformat;
 
+            if(!format.pixel_format.fromV4L2PixelFormat(fmtdesc.pixelformat))
+                continue;
+
+
+            Cam::Resolution resolution={};
             v4l2_frmsizeenum frmsizeenum={};
+
             frmsizeenum.pixel_format=fmtdesc.pixelformat;
 
             while(!ioctl(fd, VIDIOC_ENUM_FRAMESIZES, &frmsizeenum)) {
+                frmsizeenum.index++;
+
+                QList <QSize> res;
+
                 switch(frmsizeenum.type) {
                 case V4L2_FRMSIZE_TYPE_DISCRETE:
-                    resolution.size.setWidth(frmsizeenum.discrete.width);
-                    resolution.size.setHeight(frmsizeenum.discrete.height);
+                    res << QSize(frmsizeenum.discrete.width, frmsizeenum.discrete.height);
                     break;
 
                 case V4L2_FRMSIZE_TYPE_CONTINUOUS:
                 case V4L2_FRMSIZE_TYPE_STEPWISE:
-                    resolution.size.setWidth(frmsizeenum.stepwise.max_width);
-                    resolution.size.setHeight(frmsizeenum.stepwise.max_height);
+                    res=ToolsCam::resBuildSequence(QSize(frmsizeenum.stepwise.min_width, frmsizeenum.stepwise.min_height),
+                                                   QSize(frmsizeenum.stepwise.max_width, frmsizeenum.stepwise.max_height));
                     break;
 
                 default:
                     continue;
                 }
 
-                v4l2_frmivalenum frmivalenum={};
-                frmivalenum.pixel_format=fmtdesc.pixelformat;
-                frmivalenum.width=resolution.size.width();
-                frmivalenum.height=resolution.size.height();
+                foreach(QSize size, res) {
+                    resolution.size=size;
+                    resolution.framerate.clear();
 
-                while(!ioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmivalenum)) {
-                    AVRational framerate={};
+                    v4l2_frmivalenum frmivalenum={};
+                    frmivalenum.pixel_format=fmtdesc.pixelformat;
+                    frmivalenum.width=resolution.size.width();
+                    frmivalenum.height=resolution.size.height();
 
-                    switch(frmivalenum.type) {
-                    case V4L2_FRMSIZE_TYPE_DISCRETE:
-                        framerate.den=frmivalenum.discrete.denominator;
-                        framerate.num=frmivalenum.discrete.numerator;
-                        break;
+                    while(!ioctl(fd, VIDIOC_ENUM_FRAMEINTERVALS, &frmivalenum)) {
+                        frmivalenum.index++;
 
-                    case V4L2_FRMSIZE_TYPE_CONTINUOUS:
-                    case V4L2_FRMSIZE_TYPE_STEPWISE:
-                        framerate.den=frmivalenum.stepwise.min.denominator;
-                        framerate.num=frmivalenum.stepwise.min.numerator;
-                        break;
+                        QList <AVRational> framerate;
 
-                    default:
-                        ;
+                        switch(frmivalenum.type) {
+                        case V4L2_FRMSIZE_TYPE_DISCRETE:
+                            framerate.append(ToolsCam::framerateToRational((double)frmivalenum.discrete.denominator/(double)frmivalenum.discrete.numerator));
+                            break;
+
+                        case V4L2_FRMSIZE_TYPE_CONTINUOUS:
+                        case V4L2_FRMSIZE_TYPE_STEPWISE:
+                            // framerate << AVRational({ frmivalenum.stepwise.min.numerator, frmivalenum.stepwise.min.denominator });
+                            framerate=ToolsCam::framerateBuildSequence(25., (double)frmivalenum.stepwise.min.denominator/(double)frmivalenum.stepwise.min.numerator);
+                            break;
+
+                        default:
+                            ;
+                        }
+
+                        foreach(const AVRational &rational, framerate) {
+                            if(!resolution.framerate.contains(rational))
+                                resolution.framerate << rational;
+                        }
                     }
 
-                    if(!resolution.framerate.contains(framerate) && framerate.den!=0 && framerate.num!=0)
-                        resolution.framerate << framerate;
+                    std::sort(resolution.framerate.begin(), resolution.framerate.end(), [](const AVRational &l, const AVRational &r) { return ToolsCam::rationalToFramerate(l)<ToolsCam::rationalToFramerate(r); });
 
-                    frmivalenum.index++;
+                    format.resolution << resolution;
                 }
-
-                format.resolution << resolution;
-
-                frmsizeenum.index++;
             }
 
             if(!format.resolution.isEmpty())

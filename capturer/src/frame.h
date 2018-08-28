@@ -27,18 +27,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <memory>
 
 #include "ff_tools.h"
-#include "decklink_video_frame.h"
+#include "pixel_format.h"
 
 struct Frame
 {
     typedef std::shared_ptr<Frame> ptr;
 
-    ~Frame() {
-        if(video_frame)
-            video_frame->Release();
-
-        if(audio_packet)
-            audio_packet->Release();
+    virtual ~Frame() {
     }
 
     static ptr make() {
@@ -58,34 +53,6 @@ struct Frame
         }
 
         return p;
-    }
-
-    void setData(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet, int audio_channels, int audio_sample_size) {
-        if(video_frame) {
-            video_frame->AddRef();
-
-            this->video_frame=video_frame;
-
-            video.source_rgb=video_frame->GetPixelFormat()!=bmdFormat8BitYUV && video_frame->GetPixelFormat()!=bmdFormat10BitYUV;
-            video.source_10bit=video_frame->GetPixelFormat()==bmdFormat10BitRGB || video_frame->GetPixelFormat()==bmdFormat10BitYUV || video_frame->GetPixelFormat()==bmdFormat10BitRGBXLE;
-            video.size=QSize(video_frame->GetWidth(), video_frame->GetHeight());
-            video.data_size=DeckLinkVideoFrame::frameSize(video.size, video_frame->GetPixelFormat());
-
-            video_frame->GetBytes((void**)&video.data_ptr);
-        }
-
-        //
-
-        if(audio_packet) {
-            audio_packet->AddRef();
-            this->audio_packet=audio_packet;
-
-            audio.channels=audio_channels;
-            audio.sample_size=audio_sample_size;
-            audio.data_size=audio_packet->GetSampleFrameCount()*audio_channels*(audio_sample_size/8);
-
-            audio_packet->GetBytes((void**)&audio.data_ptr);
-        }
     }
 
     void setData(const QByteArray &video_frame, QSize size, const QByteArray &audio_packet, int audio_channels, int audio_sample_size) {
@@ -116,13 +83,9 @@ struct Frame
         uint8_t *data_ptr=nullptr;
         size_t data_size=0;
         QSize size;
-
         AVRational time_base={};
         int64_t pts=AV_NOPTS_VALUE;
-
-        bool source_rgb=true;
-        bool source_10bit=false;
-
+        PixelFormat pixel_format;
         QByteArray dummy;
 
     } video;
@@ -138,10 +101,6 @@ struct Frame
 
     } audio;
 
-    IDeckLinkVideoInputFrame *video_frame=nullptr;
-    IDeckLinkAudioInputPacket *audio_packet=nullptr;
-
-    // uint8_t counter;
     uint16_t counter=0;
     bool reset_counter=false;
 };
