@@ -144,6 +144,7 @@ QVariantMap Status::toExt()
 {
     QVariantMap map_root;
 
+    map_root.insert(QStringLiteral("input_format"), input_format.toExt());
     map_root.insert(QStringLiteral("rec_stats"), rec_stats.toExt());
     map_root.insert(QStringLiteral("player_state"), player_state.toExt());
     map_root.insert(QStringLiteral("free_space"), free_space);
@@ -153,9 +154,36 @@ QVariantMap Status::toExt()
 
 Status &Status::fromExt(const QVariantMap &map_root)
 {
+    input_format.fromExt(map_root.value(QStringLiteral("input_format")).toMap());
     rec_stats.fromExt(map_root.value(QStringLiteral("rec_stats")).toMap());
     player_state.fromExt(map_root.value(QStringLiteral("player_state")).toMap());
     free_space=map_root.value(QStringLiteral("free_space"), 0).toULongLong();
+
+    return *this;
+}
+
+QVariantMap InputFormat::toExt()
+{
+    QVariantMap map_root;
+
+    map_root.insert(QStringLiteral("width"), width);
+    map_root.insert(QStringLiteral("height"), height);
+    map_root.insert(QStringLiteral("frame_duration"), frame_duration);
+    map_root.insert(QStringLiteral("frame_scale"), frame_scale);
+    map_root.insert(QStringLiteral("progressive_frame"), progressive_frame);
+    map_root.insert(QStringLiteral("pixel_format"), pixel_format);
+
+    return map_root;
+}
+
+InputFormat &InputFormat::fromExt(const QVariantMap &map_root)
+{
+    width=map_root.value(QStringLiteral("width")).toInt();
+    height=map_root.value(QStringLiteral("height")).toInt();
+    frame_duration=map_root.value(QStringLiteral("frame_duration")).toULongLong();
+    frame_scale=map_root.value(QStringLiteral("frame_scale")).toULongLong();
+    progressive_frame=map_root.value(QStringLiteral("progressive_frame")).toBool();
+    pixel_format=map_root.value(QStringLiteral("pixel_format")).toString();
 
     return *this;
 }

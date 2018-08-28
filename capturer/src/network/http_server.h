@@ -26,6 +26,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "data_types.h"
 
+class SettingsModel;
+
 class HttpServer : public QObject
 {
     Q_OBJECT
@@ -34,7 +36,11 @@ public:
     HttpServer(quint16 port=0, QObject *parent=0);
     ~HttpServer();
 
+    void setSettingsModel(SettingsModel *mdl);
+
 public slots:
+    void formatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format);
+
     void setRecState(const bool &value);
     void setRecStats(const NRecStats &value);
     void setPlayerDuration(const qint64 &value);
@@ -42,15 +48,30 @@ public slots:
     void setFreeSpace(const qint64 &value);
 
 private:
+    QByteArray pageIndex();
+    QByteArray pageSettings();
+
+    QByteArray favicon();
+    QByteArray cssIndex();
+
+    void checkSettings(QMap <QString, QString> new_settings);
+
     QByteArray ba_buffer;
 
     qint64 last_buf_update;
 
     Status status;
 
+    SettingsModel *settings_model;
+
 signals:
     void keyPressed(int code);
     void playerSeek(qint64 pos);
+
+    void deviceCamRestart();
+    void deviceCamStop();
+    void deviceDecklinkRestart();
+    void checkEncoders();
 };
 
 #endif // HTTP_SERVER_H

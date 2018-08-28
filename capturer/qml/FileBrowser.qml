@@ -75,8 +75,8 @@ ShowHideRect {
 
                 color : "transparent"
 
-                property string file_path: filePath
-                property string file_name: fileName
+                property string file_path: filePath ? filePath : ""
+                property string file_name: fileName ? fileName : ""
                 property string file_size: messenger.fileSystemModel.fileSize(fs_model.modelIndex(index))
                 property bool is_dir: messenger.fileSystemModel.isDir(fs_model.modelIndex(index))
                 property string ext: messenger.fileSystemModel.ext(fs_model.modelIndex(index))

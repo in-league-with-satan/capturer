@@ -56,6 +56,9 @@ QVariant SettingsModel::data(const int &index, int role) const
     case Role::group:
         return d[index].group;
 
+    case Role::priority:
+        return d[index].priority;
+
     case Role::values:
         return d[index].values;
 
@@ -210,6 +213,11 @@ QHash <int, QByteArray> SettingsModel::roleNames() const
     }
 
     return roles;
+}
+
+void SettingsModel::updateQml()
+{
+    endResetModel();
 }
 
 int SettingsModel::add(const SettingsModel::Data &data)

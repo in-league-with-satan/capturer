@@ -34,15 +34,18 @@ public:
         Data() {
             type=0;
             value=0;
+            priority=Priority::low;
         }
 
         int type;
+        int priority;
         QStringList values;
         QVariantList values_data;
         int *value;
         QString group;
         QString name;
     };
+
 
     virtual int rowCount(const QModelIndex &parent=QModelIndex()) const;
     virtual QVariant data(const QModelIndex &index, int role) const;
@@ -61,6 +64,8 @@ public:
     virtual int data_p_index(int *value);
     virtual QHash <int, QByteArray> roleNames() const;
 
+    void updateQml();
+
     int add(const SettingsModel::Data &data);
 
     struct Type {
@@ -73,10 +78,18 @@ public:
         };
     };
 
+    struct Priority {
+        enum {
+            high,
+            low
+        };
+    };
+
     struct Role {
         enum {
             type, // =Qt::UserRole + 1
             group,
+            priority,
             values,
             values_data,
             value,

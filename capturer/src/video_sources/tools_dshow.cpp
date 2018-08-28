@@ -170,6 +170,9 @@ QList <Cam::Format> getDeviceCapabilities(const QString &dev_name)
                     if(tmp_pix_fmt.fromDshowPixelFormat(type->subtype)) {
                         // qInfo() << "tmp_pix_fmt" << tmp_pix_fmt.toString() << tmp_pix_fmt;
 
+                        if(resolution[tmp_pix_fmt].contains(res_key))
+                            continue;
+
                         resolution[tmp_pix_fmt][res_key].size=QSize(vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy);
 
                         if(!resolution[tmp_pix_fmt][res_key].framerate.contains(ToolsCam::framerateToRational(1e7/vcaps->MinFrameInterval)))

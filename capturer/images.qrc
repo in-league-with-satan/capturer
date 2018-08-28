@@ -2,5 +2,6 @@
     <qresource prefix="/">
         <file>images/folder.svg</file>
         <file>images/mkv.svg</file>
+        <file alias="images/capturer.svg">../icon/capturer.svg</file>
     </qresource>
 </RCC>

@@ -84,6 +84,18 @@ public:
     static QString key_title[enm_size];
 };
 
+struct InputFormat {
+    int width=0;
+    int height=0;
+    quint64 frame_duration=0;
+    quint64 frame_scale=0;
+    bool progressive_frame=true;
+    QString pixel_format;
+
+    QVariantMap toExt();
+    InputFormat &fromExt(const QVariantMap &map_root);
+};
+
 struct NRecStats {
     QTime time;
     double avg_bitrate;
@@ -120,6 +132,7 @@ struct PlayerState {
 };
 
 struct Status {
+    InputFormat input_format;
     NRecStats rec_stats;
     PlayerState player_state;
     qint64 free_space;
