@@ -17,65 +17,64 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
-#ifndef FF_CAM_H
-#define FF_CAM_H
+#ifndef FF_CAM_WORKER_H
+#define FF_CAM_WORKER_H
 
-#include <QThread>
+#include <QAudioFormat>
 
-#include <atomic>
-
+#include "tools_cam.h"
 #include "pixel_format.h"
 #include "ff_tools.h"
 #include "frame_buffer.h"
 
-class FFCamWorker;
+class FFCamContext;
 
-class FFCam : public QThread
+class FFCamWorker : public QObject
 {
     Q_OBJECT
 
 public:
-    FFCam(QObject *parent=0);
-    ~FFCam();
+    FFCamWorker(QObject *parent=0);
+    ~FFCamWorker();
 
-    static QStringList availableCameras();
-    static QStringList availableAudioInput();
+    static QString formatString(const QAudioFormat &format);
+    static AVSampleFormat qAudioFormatToAV(const int &depth, const QAudioFormat::SampleType &sample_format);
 
-    static void updateDevList();
-
-    bool setVideoDevice(int index);
+    void setVideoDevice(Cam::Dev video_device);
     void setAudioDevice(int index);
-
-    QList <QSize> supportedResolutions();
-    QList <int64_t> supportedPixelFormats(QSize size);
-    QList <AVRational> supportedFramerates(QSize size, int64_t fmt);
 
     void subscribe(FrameBuffer<Frame::ptr>::ptr obj);
     void unsubscribe(FrameBuffer<Frame::ptr>::ptr obj);
 
     bool isActive();
 
-    AVRational currentFrameRate();
-    PixelFormat pixelFormat();
+    AVRational currentFrameRate() const;
+    PixelFormat pixelFormat() const;
+
+    bool step();
 
 public slots:
-
-protected:
-    void run();
-
-private:
-    int index_device_video=0;
-
-    FFCamWorker *d;
-
-    std::atomic <bool> running;
-
-    QMutex mutex;
-
-signals:
     void setConfig(QSize size, AVRational framerate, int64_t pixel_format);
     void startCam();
     void stop();
+
+private:
+    struct Cfg {
+        QSize size;
+        AVRational framerate;
+        PixelFormat pixel_format;
+
+    } cfg;
+
+    QList <FrameBuffer<Frame::ptr>::ptr> subscription_list;
+
+    int index_device_audio=0;
+
+    QAudioFormat default_format;
+
+    Cam::Dev video_device;
+
+    FFCamContext *d;
 };
 
-#endif // FF_CAM_H
+#endif // FF_CAM_WORKER_H

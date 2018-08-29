@@ -24,6 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 FFFormatConverterThread::FFFormatConverterThread(int thread_index, QObject *parent)
     : QThread(parent)
     , thread_index(thread_index)
+    , running(false)
     , in_progress(false)
 {
     cnv_ff=new FFFormatConverter();

@@ -111,6 +111,9 @@ int main(int argc, char *argv[])
     qRegisterMetaType<int64_t>("int64_t");
     qRegisterMetaType<size_t>("size_t");
     qRegisterMetaType<qintptr>("qintptr");
+
+    qRegisterMetaType<AVRational>("AVRational");
+
     qRegisterMetaType<NRecStats>("NRecStats");
 
     qRegisterMetaType<FFEncoder::Config>("FFEncoder::Config");

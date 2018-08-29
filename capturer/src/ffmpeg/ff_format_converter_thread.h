@@ -63,10 +63,10 @@ private:
     FrameBuffer<Frame::ptr>::ptr frame_buffer_in;
     FrameBuffer<AVFrameSP::ptr>::ptr frame_buffer_out;
 
+    int thread_index;
+
     std::atomic <bool> running;
     std::atomic <bool> in_progress;
-
-    int thread_index;
 };
 
 #endif // FF_FORMAT_CONVERTER_THREAD_H
