@@ -112,6 +112,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     //
 
+    QStringList cam_devices=FFCam::availableAudioInput();
+
+    //
+
     audio_output=newAudioOutput(this);
 
     decklink_thread->subscribe(audio_output->frameBuffer());
@@ -214,8 +218,6 @@ MainWindow::MainWindow(QWidget *parent)
     messenger->settingsModel()->add(set_model_data);
 
     //
-
-    QStringList cam_devices=FFCam::availableAudioInput();
 
     set_model_data.type=SettingsModel::Type::combobox;
     set_model_data.group="device cam";
