@@ -155,7 +155,7 @@ void FFCamWorker::setConfig(QSize size, AVRational framerate, int64_t pixel_form
     cfg.framerate=framerate;
     cfg.pixel_format=pixel_format;
 
-    qInfo() << "FFCam::setConfig" << size << framerate.den/framerate.den << pixel_format;
+    qDebug() << size << framerate.den/framerate.num << pixel_format;
 }
 
 void FFCamWorker::startCam()
@@ -224,7 +224,7 @@ void FFCamWorker::startCam()
 
 
     if(!d->input_format) {
-        qCritical() << "av_find_input_format return null";
+        qCritical() << "av_find_input_format nullptr";
         goto fail;
     }
 
@@ -245,7 +245,7 @@ void FFCamWorker::startCam()
     d->format_context->video_codec=avcodec_find_decoder(d->format_context->video_codec_id);
 
 
-    qInfo() << "dev name:" << video_device.name << video_device.dev;
+    qDebug() << "dev name:" << video_device.name << video_device.dev;
 
 #ifdef __linux__
 
@@ -258,7 +258,7 @@ void FFCamWorker::startCam()
 #endif
 
     if(ret!=0) {
-        qCritical() << "Couldn't open input stream" << video_device.name << ffErrorString(ret);
+        qCritical() << "avformat_open_input err:" << ffErrorString(ret) << video_device.name;
         goto fail;
     }
 
@@ -269,7 +269,7 @@ void FFCamWorker::startCam()
         if(d->format_context->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_VIDEO) {
 
             d->stream=d->format_context->streams[i];
-            qInfo() << "avcodec name:" << i << d->format_context->nb_streams << avcodec_get_name(d->format_context->streams[i]->codecpar->codec_id);
+            qDebug() << "avcodec name:" << i << d->format_context->nb_streams << avcodec_get_name(d->format_context->streams[i]->codecpar->codec_id);
 
             break;
         }
@@ -295,7 +295,7 @@ void FFCamWorker::startCam()
 
 
     if(!d->codec_context) {
-        qCritical() << "avcodec_alloc_context3 err";
+        qCritical() << "avcodec_alloc_context3 nullptr";
         goto fail;
     }
 
@@ -306,7 +306,7 @@ void FFCamWorker::startCam()
     ret=avcodec_open2(d->codec_context, d->codec, nullptr);
 
     if(ret<0) {
-        qCritical() << "Cannot open video decoder for webcam" << ffErrorString(ret);
+        qCritical() << "avcodec_open2 err:" << ffErrorString(ret);
         goto fail;
     }
 
@@ -398,7 +398,7 @@ bool FFCamWorker::step()
                     int ret=avcodec_receive_frame(d->codec_context, d->frame);
 
                     if(ret<0 && ret!=AVERROR(EAGAIN)) {
-                        qCritical() << "avcodec_receive_frame";
+                        qCritical() << "avcodec_receive_frame err:" << ffErrorString(ret);
                     }
 
                     if(ret>=0)

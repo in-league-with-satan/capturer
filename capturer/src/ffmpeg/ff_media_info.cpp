@@ -41,14 +41,14 @@ FFMediaInfo::Info FFMediaInfo::getInfo(QString filename)
     err=avformat_open_input(&format_context, filename.toUtf8().constData(), nullptr, nullptr);
 
     if(err!=0) {
-        qCritical() << "FFMediaInfo: Unable to open input file" << err << filename;
+        qCritical() << "avformat_open_input err:" << ffErrorString(err);
         return info;
     }
 
     err=avformat_find_stream_info(format_context, nullptr);
 
     if(err<0) {
-        qCritical() << "FFMediaInfo: Unable to find stream info";
+        qCritical() << "avformat_find_stream_info err:" << ffErrorString(err);
 
         avformat_close_input(&format_context);
 
@@ -72,7 +72,7 @@ FFMediaInfo::Info FFMediaInfo::getInfo(QString filename)
             err=avcodec_parameters_to_context(codec_context, stream->codecpar);
 
             if(err<0) {
-                qCritical() << "FFMediaInfo: avcodec_parameters_to_context" << err;
+                qCritical() << "avcodec_parameters_to_context err:" << ffErrorString(err);
 
                 avformat_close_input(&format_context);
                 avcodec_free_context(&codec_context);
@@ -106,7 +106,7 @@ FFMediaInfo::Info FFMediaInfo::getInfo(QString filename)
               err=avcodec_parameters_to_context(codec_context, stream->codecpar);
 
             if(err<0) {
-                qCritical() << "FFMediaInfo: avcodec_parameters_to_context" << err;
+                qCritical() << "avcodec_parameters_to_context err:" << ffErrorString(err);
 
                 avformat_close_input(&format_context);
                 avcodec_free_context(&codec_context);
@@ -133,7 +133,7 @@ FFMediaInfo::Info FFMediaInfo::getInfo(QString filename)
 
     avformat_close_input(&format_context);
 
-    qInfo().noquote() << QString("FFMediaInfo time: %1 ms (%2)").arg(timer.elapsed()).arg(filename);
+    qDebug().noquote() << QString("time: %1 ms (%2)").arg(timer.elapsed()).arg(filename);
 
     return info;
 }

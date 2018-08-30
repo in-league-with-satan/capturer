@@ -93,7 +93,7 @@ fail:
     enum_moniker->Release();
 
     if(!base_filter) {
-        qCritical() << "Could't find the device " << device_name;
+        qCritical() << "could't find the device " << device_name;
     }
 
     return base_filter;
@@ -168,7 +168,7 @@ QList <Cam::Format> getDeviceCapabilities(const QString &dev_name)
                     PixelFormat tmp_pix_fmt;
 
                     if(tmp_pix_fmt.fromDshowPixelFormat(type->subtype)) {
-                        // qInfo() << "tmp_pix_fmt" << tmp_pix_fmt.toString() << tmp_pix_fmt;
+                        // qDebug() << "tmp_pix_fmt" << tmp_pix_fmt.toString() << tmp_pix_fmt;
 
                         if(resolution[tmp_pix_fmt].contains(res_key))
                             continue;
@@ -180,7 +180,7 @@ QList <Cam::Format> getDeviceCapabilities(const QString &dev_name)
                                     << ToolsCam::framerateBuildSequence(1e7/vcaps->MaxFrameInterval, 1e7/vcaps->MinFrameInterval);
 
                     } else {
-                        qInfo() << "unknown pix fmt" << guidToStr(type->formattype);
+                        qWarning() << "unknown pix fmt" << guidToStr(type->formattype);
                     }
                 }
 

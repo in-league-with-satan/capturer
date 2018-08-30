@@ -174,7 +174,7 @@ AVRational ToolsCam::framerateToRational(const qreal &fr)
     if(std::abs(fr - 240.)<eps)
         return { 1000, 240000 };
 
-    qWarning() << "framerateToRational unknown fr:" << fr;
+    qWarning() << "unknown:" << fr;
 
     return { 1000, int(fr*1000) };
 }

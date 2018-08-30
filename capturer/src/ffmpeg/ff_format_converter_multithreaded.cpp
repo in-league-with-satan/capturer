@@ -24,7 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 FFFormatConverterMt::FFFormatConverterMt(uint8_t thread_count, QObject *parent)
     : QObject(parent)
 {
-    // qInfo() << "FFFormatConverterMt: thread_count" << thread_count;
+    // qDebug() << "thread_count" << thread_count;
 
     thread.resize(thread_count);
 
@@ -72,7 +72,7 @@ bool FFFormatConverterMt::setup(AVPixelFormat format_src, QSize resolution_src, 
     if(compareParams(format_src, resolution_src, format_dst, resolution_dst, filter, format_210))
         return true;
 
-    qInfo() << "FFFormatConverterMt::setup: pix formats:" << av_get_pix_fmt_name(format_src) << av_get_pix_fmt_name(format_dst);
+    qDebug() << "formats:" << av_get_pix_fmt_name(format_src) << av_get_pix_fmt_name(format_dst);
 
     this->format_src=format_src;
     this->format_dst=format_dst;

@@ -54,7 +54,7 @@ bool FFFormatConverter::setup(AVPixelFormat format_src, QSize resolution_src, AV
                                    format_dst,
                                    filter, nullptr, nullptr, nullptr);
 
-    qInfo().noquote() << "convert_context ptr" << QString::number((quintptr)convert_context, 16);
+    qDebug().noquote() << "convert_context ptr" << QString::number((quintptr)convert_context, 16);
 
     return convert_context!=nullptr;
 }
@@ -82,7 +82,7 @@ AVPixelFormat FFFormatConverter::formatDst() const
 bool FFFormatConverter::convert(AVFrame *src, AVFrame *dst)
 {
     if(!convert_context) {
-        qCritical() << "SwsContext null ptr";
+        qCritical() << "SwsContext nullptr";
         return 1;
     }
 
@@ -92,7 +92,7 @@ bool FFFormatConverter::convert(AVFrame *src, AVFrame *dst)
 AVFrameSP::ptr FFFormatConverter::convert(AVFrame *src)
 {
     if(!convert_context) {
-        qCritical() << "SwsContext null ptr";
+        qCritical() << "SwsContext nullptr";
         return nullptr;
     }
 

@@ -106,7 +106,7 @@ bool FFCam::setVideoDevice(int index)
 
     d->setVideoDevice(dev_list[index_device_video]);
 
-    qInfo() << "FFCam::setVideoDevice:" << index_device_video << dev_list[index_device_video].name;
+    qDebug() << index_device_video << dev_list[index_device_video].name;
 
     return true;
 }
@@ -131,7 +131,7 @@ QList <QSize> FFCam::supportedResolutions()
     foreach(Cam::Format format, dev_list.at(index_device_video).format) {
         foreach(Cam::Resolution res, format.resolution) {
             if(res.framerate.isEmpty()) {
-                qWarning() << "FFCam::supportedResolutions: framerate.isEmpty" << dev_list.at(index_device_video).name << res.size;
+                qWarning() << "framerate.isEmpty" << dev_list.at(index_device_video).name << res.size;
                 continue;
             }
 
@@ -147,7 +147,7 @@ QList <QSize> FFCam::supportedResolutions()
               [](const QSize &l, const QSize &r) { return (l.width()==r.width() ? l.height()<r.height() : l.width()<r.width()); }
     );
 
-    qInfo() << "FFCam::supportedResolutions:" << dev_list.at(index_device_video).name << lst;
+    qDebug() << dev_list.at(index_device_video).name << lst;
 
     return lst;
 }
@@ -179,14 +179,14 @@ QList <AVRational> FFCam::supportedFramerates(QSize size, int64_t fmt)
         if(format.pixel_format==fmt) {
             foreach(Cam::Resolution res, format.resolution) {
                 if(res.size==size) {
-                    // qInfo() << "FFCam::supportedFramerates" << size << PixelFormat(fmt).toString() << res.framerate.size();
+                    // qDebug() << size << PixelFormat(fmt).toString() << res.framerate.size();
                     return res.framerate;
                 }
             }
         }
     }
 
-    qWarning() << "FFCam::supportedFramerates: empty" << dev_list.at(index_device_video).name << size << PixelFormat(fmt).toString();
+    qWarning() << "empty" << dev_list.at(index_device_video).name << size << PixelFormat(fmt).toString();
 
     return QList<AVRational>();
 }

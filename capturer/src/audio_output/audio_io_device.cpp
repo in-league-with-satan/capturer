@@ -27,13 +27,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 AudioIODevice::AudioIODevice(QObject *parent)
     : QIODevice(parent)
 {
-//    QFile f;
-
-//    f.setFileName(qApp->applicationDirPath() + "/audio_3.raw");
-//    f.open(QFile::ReadOnly);
-
-//    ba_data=f.readAll();
-
     QIODevice::open(QIODevice::ReadWrite);
 }
 
@@ -41,14 +34,11 @@ bool AudioIODevice::open(QIODevice::OpenMode mode)
 {
     Q_UNUSED(mode)
 
-    qWarning() << "AudioIODevice::open";
-
     return true;
 }
 
 void AudioIODevice::close()
 {
-    qWarning() << "AudioIODevice::close";
 }
 
 qint64 AudioIODevice::pos() const
@@ -75,8 +65,6 @@ bool AudioIODevice::atEnd() const
 
 bool AudioIODevice::reset()
 {
-    qWarning() << "AudioIODevice::reset";
-
     return true;
 }
 
@@ -97,8 +85,6 @@ void AudioIODevice::clear()
 
 bool AudioIODevice::canReadLine() const
 {
-    qWarning() << "AudioIODevice::canReadLine";
-
     return false;
 }
 
@@ -122,4 +108,3 @@ qint64 AudioIODevice::writeData(const char *data, qint64 len)
 
     return len;
 }
-

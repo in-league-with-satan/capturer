@@ -47,8 +47,8 @@ bool AudioConverter::init(uint64_t in_channels_layout, int64_t in_sample_rate, i
 {
     free();
 
-    qInfo() << "AudioConverter::init" << in_channels_layout << in_sample_rate << in_sample_format
-            << out_channels_layout << out_sample_rate << out_sample_format;
+    qDebug() << in_channels_layout << in_sample_rate << in_sample_format
+             << out_channels_layout << out_sample_rate << out_sample_format;
 
     this->in_channels_layout=in_channels_layout;
     this->in_channels=av_get_channel_layout_nb_channels(in_channels_layout);
@@ -65,7 +65,7 @@ bool AudioConverter::init(uint64_t in_channels_layout, int64_t in_sample_rate, i
     context=swr_alloc();
 
     if(!context) {
-        qCritical() << "AudioConverter: swr_alloc err";
+        qCritical() << "swr_alloc err";
         return false;
     }
 
@@ -110,7 +110,7 @@ bool AudioConverter::init(uint64_t in_channels_layout, int64_t in_sample_rate, i
 
 err:
 
-    qCritical() << "AudioConverter: err" << ffErrorString(ret);
+    qCritical() << "err" << ffErrorString(ret);
 
     free();
 
@@ -120,7 +120,7 @@ err:
 bool AudioConverter::convert(void *src, size_t size, QByteArray *dst)
 {
     if(!context) {
-        qCritical() << "AudioConverter::convert: context null pointer";
+        qCritical() << "context null pointer";
         return false;
     }
 

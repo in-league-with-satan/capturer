@@ -107,8 +107,6 @@ void FFFormatConverterThread::pauseWaiting()
 
 void FFFormatConverterThread::run()
 {
-    // qInfo() << "FFFormatConverterThread::run" << QThread::currentThreadId();
-
     running=true;
     in_progress=false;
 
@@ -161,11 +159,11 @@ void FFFormatConverterThread::work(Frame::ptr *frame_src, AVFrameSP::ptr *frame_
                         (*frame_src)->video.time_base;
 
             } else {
-                qCritical() << "FFFormatConverterThread::work: convert ret nullptr" << PixelFormat(cnv_ff->formatSrc()).toString();
+                qCritical() << "convert ret nullptr" << PixelFormat(cnv_ff->formatSrc()).toString();
             }
 
         } else {
-            // qCritical() << "FFFormatConverterThread::run frame_src nullptr";
+            // qCritical() << "frame_src nullptr";
         }
     }
 }

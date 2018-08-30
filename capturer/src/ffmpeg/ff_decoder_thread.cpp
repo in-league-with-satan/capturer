@@ -155,13 +155,13 @@ void FFDecoderThread::_open()
     unsigned int stream_video_pos;
     unsigned int stream_audio_pos;
 
-    qInfo() << "filename" << filename;
+    qDebug() << "filename" << filename;
 
     int err=
             avformat_open_input(&context.format_context, QString(filename).toLatin1().constData(), nullptr, nullptr);
 
     if(err<0) {
-        qCritical() << "ffmpeg: Unable to open input file" << filename;
+        qCritical() << "avformat_open_input err:" << filename << ffErrorString(err);
         freeContext();
         return;
     }
@@ -170,7 +170,7 @@ void FFDecoderThread::_open()
     err=avformat_find_stream_info(context.format_context, nullptr);
 
     if(err<0) {
-        qCritical() << "ffmpeg: Unable to find stream info";
+        qCritical() << "avformat_find_stream_info err:" << ffErrorString(err);
         freeContext();
         return;
     }
@@ -184,7 +184,7 @@ void FFDecoderThread::_open()
     }
 
     if(stream_video_pos==context.format_context->nb_streams) {
-        qCritical() << "ffmpeg: Unable to find video stream";
+        qCritical() << "unable to find video stream";
         freeContext();
         return;
     }
@@ -202,7 +202,7 @@ void FFDecoderThread::_open()
     err=avcodec_parameters_to_context(context.codec_context_video, context.stream_video->codecpar);
 
     if(err<0) {
-        qCritical() << "ffmpeg: avcodec_parameters_to_context" << err;
+        qCritical() << "avcodec_parameters_to_context err:" << ffErrorString(err);
         freeContext();
         state=ST_STOPPED;
     }
@@ -221,7 +221,7 @@ void FFDecoderThread::_open()
     err=avcodec_open2(context.codec_context_video, context.codec_video, nullptr);
 
     if(err<0) {
-        qCritical() << "ffmpeg: Unable to open codec";
+        qCritical() << "avcodec_open2 err:" << ffErrorString(err);
         freeContext();
         return;
     }
@@ -241,7 +241,7 @@ void FFDecoderThread::_open()
     } else
         context.target_size=QSize(context.codec_context_video->width, context.codec_context_video->height);
 
-    qInfo() << "target_size" << context.target_size;
+    qDebug() << "target_size" << context.target_size;
 
     context.convert_context_video=sws_getContext(context.codec_context_video->width, context.codec_context_video->height,
                                                  context.codec_context_video->pix_fmt,
@@ -250,7 +250,7 @@ void FFDecoderThread::_open()
                                                  nullptr, nullptr, nullptr);
 
     if(!context.convert_context_video) {
-        qCritical() << "Cannot initialize the conversion context";
+        qCritical() << "sws_getContext nullptr";
         freeContext();
         return;
     }
@@ -266,7 +266,7 @@ void FFDecoderThread::_open()
     }
 
     if(stream_audio_pos==context.format_context->nb_streams) {
-        qCritical() << "ffmpeg: Unable to find audio stream";
+        qCritical() << "unable to find audio stream";
         freeContext();
         return;
     }
@@ -281,7 +281,7 @@ void FFDecoderThread::_open()
     err=avcodec_parameters_to_context(context.codec_context_audio, context.stream_audio->codecpar);
 
     if(err<0) {
-        qCritical() << "ffmpeg: avcodec_parameters_to_context" << err;
+        qCritical() << "avcodec_parameters_to_context err:" << ffErrorString(err);
         freeContext();
         return;
     }
@@ -289,7 +289,7 @@ void FFDecoderThread::_open()
     err=avcodec_open2(context.codec_context_audio, context.codec_audio, nullptr);
 
     if(err<0) {
-        qCritical() << "ffmpeg: Unable to open codec";
+        qCritical() << "avcodec_open2 err:" << ffErrorString(err);
         freeContext();
         return;
     }
@@ -297,7 +297,7 @@ void FFDecoderThread::_open()
     context.convert_context_audio=swr_alloc();
 
     if(!context.convert_context_audio) {
-        qCritical() << "ffmpeg: swr_alloc err";
+        qCritical() << "swr_alloc nullptr";
         freeContext();
         return;
     }
@@ -307,7 +307,7 @@ void FFDecoderThread::_open()
 
     // if(!context.audio_converter.init(context.codec_context_audio->channel_layout, context.codec_context_audio->sample_rate, context.codec_context_audio->sample_fmt,
     //                                  AV_CH_LAYOUT_STEREO, 48000, AV_SAMPLE_FMT_S16)) {
-    //     qCritical() << "ffmpeg: audio_converter.init err";
+    //     qCritical() << "audio_converter.init err";
     //     freeContext();
     //     return;
     // }
@@ -322,7 +322,7 @@ void FFDecoderThread::_open()
     err=swr_init(context.convert_context_audio);
 
     if(err<0) {
-        qCritical() << "ffmpeg: swr_init err" << err;
+        qCritical() << "swr_init err:" << ffErrorString(err);
         freeContext();
         return;
     }
@@ -352,7 +352,7 @@ void FFDecoderThread::_open()
     if(context.stream_audio->start_time!=AV_NOPTS_VALUE)
         context.start_time_audio=context.stream_audio->start_time;
 
-    qInfo() << "start_time" << context.start_time_video << context.start_time_audio << context.stream_video->start_time << context.stream_audio->start_time;
+    qDebug() << "start_time" << context.start_time_video << context.start_time_audio << context.stream_video->start_time << context.stream_audio->start_time;
 
     //
 
@@ -398,7 +398,7 @@ void FFDecoderThread::_play()
                     int ret=avcodec_receive_frame(context.codec_context_video, context.frame_video);
 
                     if(ret<0 && ret!=AVERROR(EAGAIN)) {
-                        qCritical() << "avcodec_receive_frame";
+                        qCritical() << "avcodec_receive_frame err:" << ffErrorString(ret);
                     }
 
                     if(ret>=0)
@@ -486,7 +486,7 @@ void FFDecoderThread::_play()
                     int ret=avcodec_receive_frame(context.codec_context_audio, context.frame_audio);
 
                     if(ret<0 && ret!=AVERROR(EAGAIN)) {
-                        qCritical() << "avcodec_receive_frame";
+                        qCritical() << "avcodec_receive_frame err:" << ffErrorString(ret);
                     }
 
                     if(ret>=0)
@@ -582,7 +582,7 @@ void FFDecoderThread::_seek()
     ret=av_seek_frame(context.format_context, context.stream_video->index, seek_pos/1000./av_q2d(context.stream_video->time_base), AVSEEK_FLAG_BACKWARD);
 
     if(ret<0) {
-        qCritical() << "ffmpeg: av_seek_frame err";
+        qCritical() << "av_seek_frame err:" << ffErrorString(ret);
     }
 
     avcodec_flush_buffers(context.codec_context_video);

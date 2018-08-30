@@ -50,6 +50,8 @@ void checkRoot()
 
 int main(int argc, char *argv[])
 {
+    qSetMessagePattern("%{time hh:mm:ss.zzz}:%{qthreadptr}: %{file}(%{line}) %{function}: %{message}");
+
     QApplication application(argc, argv);
 
     application.setApplicationName(QString("capturer (%1)").arg(QString(VERSION_STRING).split("-").first()));

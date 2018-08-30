@@ -80,7 +80,7 @@ void QuickVideoSource::checkFrame()
         return;
 
     if(!frame->video.pixel_format.isValid()) {
-        qCritical() << "QuickVideoSource::checkFrame: pixel format err";
+        qCritical() << "pixel format err";
         return;
     }
 

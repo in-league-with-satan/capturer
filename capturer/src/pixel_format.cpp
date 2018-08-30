@@ -199,7 +199,7 @@ bool PixelFormat::fromAVPixelFormat(AVPixelFormat value)
         return true;
     }
 
-    qCritical() << "PixelFormat::fromAVPixelFormat: unhandled format" << av_get_pix_fmt_name(value);
+    qCritical() << "unhandled format:" << av_get_pix_fmt_name(value);
 
     return false;
 }

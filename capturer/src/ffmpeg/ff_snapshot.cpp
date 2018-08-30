@@ -180,7 +180,6 @@ void FFSnapshot::checkQueue()
             filename=queue.dequeue();
         }
 
-        // qInfo() << "FFSnapshot:" << filename;
 
         QList <QImage> images;
 
@@ -200,8 +199,6 @@ void FFSnapshot::checkQueue()
                 }
 
                 QApplication::processEvents();
-
-                // qInfo().noquote() << QStringLiteral("snapshots from db time:") << t.elapsed() << QStringLiteral("ms");
 
                 continue;
             }
@@ -232,7 +229,7 @@ void FFSnapshot::checkQueue()
         ret=avformat_open_input(&format_context, filename.toUtf8().constData(), nullptr, nullptr);
 
         if(ret<0) {
-            qCritical() << "ffmpeg: Unable to open input file" << ffErrorString(ret);
+            qCritical() << "avformat_open_input err:" << ffErrorString(ret);
             goto end;
         }
 
@@ -240,7 +237,7 @@ void FFSnapshot::checkQueue()
         ret=avformat_find_stream_info(format_context, nullptr);
 
         if(ret<0) {
-            qCritical() << "ffmpeg: Unable to find stream info" << ffErrorString(ret);
+            qCritical() << "avformat_find_stream_info err:" << ffErrorString(ret);
             goto end;
         }
 
@@ -253,7 +250,7 @@ void FFSnapshot::checkQueue()
         }
 
         if(stream_video_index==format_context->nb_streams) {
-            qCritical() << "ffmpeg: Unable to find video stream";
+            qCritical() << "unable to find video stream";
             goto end;
         }
 
@@ -264,19 +261,19 @@ void FFSnapshot::checkQueue()
         codec_context_video=avcodec_alloc_context3(codec_video);
 
         if(!codec_context_video) {
-            qCritical() << "Could not allocate a decoding context";
+            qCritical() << "avcodec_alloc_context3 nullptr";
             goto end;
         }
 
         ret=avcodec_parameters_to_context(codec_context_video, format_context->streams[stream_video_index]->codecpar);
 
         if(ret<0) {
-            qCritical() << "ffmpeg: avcodec_parameters_to_context" << ffErrorString(ret);
+            qCritical() << "avcodec_parameters_to_context err" << ffErrorString(ret);
             goto end;
         }
 
         if(codec_context_video->pix_fmt==AV_PIX_FMT_NONE) {
-            qCritical() << "pix format err";
+            qCritical() << "pix_fmt err";
             goto end;
         }
 
@@ -294,7 +291,7 @@ void FFSnapshot::checkQueue()
         ret=avcodec_open2(codec_context_video, codec_video, nullptr);
 
         if(ret<0) {
-            qCritical() << "ffmpeg: Unable to open codec" << ffErrorString(ret);
+            qCritical() << "avcodec_open2 err:" << ffErrorString(ret);
             goto end;
         }
 
@@ -306,7 +303,7 @@ void FFSnapshot::checkQueue()
                                        nullptr, nullptr, nullptr);
 
         if(convert_context==nullptr) {
-            qCritical() << "Cannot initialize the conversion context";
+            qCritical() << "sws_getContext nullptr";
             goto end;
         }
 
@@ -345,7 +342,7 @@ void FFSnapshot::checkQueue()
             while(on_pause)
                 sleep(1);
 
-            qInfo().nospace() << "frame: " << i_frame << "/" << shots_count - 1;
+            qDebug().nospace() << "frame: " << i_frame << "/" << shots_count - 1;
 
             timestamp=av_rescale_q(i_frame*step*AV_TIME_BASE, av_get_time_base_q(), stream_video->time_base);
 
@@ -359,7 +356,7 @@ void FFSnapshot::checkQueue()
                 ret=av_seek_frame(format_context, stream_video_index, timestamp, AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_ANY);
 
             if(ret<0) {
-                qCritical() << "ffmpeg: av_seek_frame err";
+                qCritical() << "av_seek_frame err:" << ffErrorString(ret);
                 goto end;
             }
 
@@ -373,7 +370,7 @@ void FFSnapshot::checkQueue()
                         ret=avcodec_send_packet(codec_context_video, &packet);
 
                         if(ret<0) {
-                            qCritical() << "ffmpeg: avcodec_send_packet" << ffErrorString(ret);
+                            qCritical() << "avcodec_send_packet err:" << ffErrorString(ret);
                             goto end;
                         }
 
@@ -385,7 +382,7 @@ void FFSnapshot::checkQueue()
                             if(pts==AV_NOPTS_VALUE)
                                 pts=packet.dts;
 
-                            // qInfo() << i_frame << shots_count << timestamp << pts << packet.duration;
+                            // qDebug() << i_frame << shots_count << timestamp << pts << packet.duration;
 
                             if(i_frame>1 && pts<1) {
                                 qCritical() << "seek err";
@@ -429,7 +426,7 @@ void FFSnapshot::checkQueue()
                     }
 
                 } else {
-                    qCritical() << "av_read_frame" << ffErrorString(ret);
+                    qCritical() << "av_read_frame err:" << ffErrorString(ret);
 
                     goto end;
                 }

@@ -168,7 +168,7 @@ SnapshotListModel *FileSystemModel::snapshotListModel(const QModelIndex &index)
 
 QVariant FileSystemModel::data(const QModelIndex &index, int role) const
 {
-    // qInfo() << "FileSystemModel::data" << role;
+    // qDebug() << "role" << role;
 
     return QSortFilterProxyModel::data(index, role);
 }

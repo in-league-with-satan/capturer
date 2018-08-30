@@ -107,7 +107,7 @@ Frame::ptr DecodeFrom210::convert(Format::T format, Frame::ptr frame)
     }
 
     if(format==Format::Disabled) {
-        qCritical() << "DecodeFrom210::convert: Disabled";
+        qCritical() << "Disabled";
         return Frame::ptr();
     }
 
@@ -151,7 +151,7 @@ Frame::ptr DecodeFrom210::convert(Format::T format, Frame::ptr frame)
         const int ret=avcodec_receive_frame(d->codec_context, d->av_frame);
 
         if(ret<0 && ret!=AVERROR(EAGAIN)) {
-            qCritical() << "DecodeFrom210::convert: avcodec_receive_frame err" << ffErrorString(ret);
+            qCritical() << "avcodec_receive_frame err" << ffErrorString(ret);
             return Frame::ptr();
         }
 
@@ -171,7 +171,7 @@ Frame::ptr DecodeFrom210::convert(Format::T format, Frame::ptr frame)
         return frame_result;
     }
 
-    qCritical() << "DecodeFrom210::convert: avcodec_send_packet err";
+    qCritical() << "avcodec_send_packet err";
 
     return Frame::ptr();
 }

@@ -598,7 +598,7 @@ static QString write_video_frame(AVFormatContext *oc, OutputStream *ost)
     ret=avcodec_send_frame(ost->av_codec_context, ost->frame_converted);
 
     if(ret<0) {
-        qCritical() << "write_video_frame err" << ret << ffErrorString(ret);
+        qCritical() << "write_video_frame err:" << ffErrorString(ret);
         return QStringLiteral("error encoding video frame: ") + ffErrorString(ret);
     }
 
@@ -612,7 +612,7 @@ static QString write_video_frame(AVFormatContext *oc, OutputStream *ost)
             ret_2=write_frame(oc, &ost->av_codec_context->time_base, ost->av_stream, ost->pkt);
 
             if(ret_2!=0) {
-                qCritical() << "write_video_frame err2";
+                qCritical() << "write_video_frame err:" << ffErrorString(ret_2);
                 return ffErrorString(ret_2);
             }
         }

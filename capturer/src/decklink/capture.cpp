@@ -223,7 +223,7 @@ void DeckLinkCapture::run()
 
 #endif
 
-    qInfo() << "DeckLinkCapture::run: priority" << priority();
+    qDebug() << "priority" << priority();
 
     // Get the DeckLink device
     IDeckLinkIterator *decklink_iterator=CreateDeckLinkIteratorInstance();
@@ -240,8 +240,6 @@ void DeckLinkCapture::run()
 
     decklink_capture_delegate=new DeckLinkCaptureDelegate(this);
 
-    qInfo() << "DeckLinkCapture thread started";
-
     running_thread=true;
 
     exec();
@@ -249,8 +247,6 @@ void DeckLinkCapture::run()
     decklink_capture_delegate->Release();
 
     running_thread=false;
-
-    qInfo() << "DeckLinkCapture thread stopped";
 }
 
 void DeckLinkCapture::captureStart()
@@ -320,13 +316,13 @@ void DeckLinkCapture::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayM
                        BMDPixelFormatToString(pixel_format) // rgb_source ? "RGB" : "YUV"
                        );
 
-    qInfo().noquote() << "InputFormatChanged:"
-                      << QString("%1x%2@%3%4 %5")
-                         .arg(mode->GetWidth())
-                         .arg(mode->GetHeight())
-                         .arg(frame_scale/frame_duration)
-                         .arg(mode->GetFieldDominance()==bmdProgressiveFrame || mode->GetFieldDominance()==bmdProgressiveSegmentedFrame ? "p" : "i")
-                         .arg(source_rgb ? "RGB" : "YUV");
+    qDebug().noquote() << "InputFormatChanged:"
+                       << QString("%1x%2@%3%4 %5")
+                          .arg(mode->GetWidth())
+                          .arg(mode->GetHeight())
+                          .arg(frame_scale/frame_duration)
+                          .arg(mode->GetFieldDominance()==bmdProgressiveFrame || mode->GetFieldDominance()==bmdProgressiveSegmentedFrame ? "p" : "i")
+                          .arg(source_rgb ? "RGB" : "YUV");
 }
 
 void DeckLinkCapture::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet)
@@ -503,13 +499,13 @@ void DeckLinkCapture::init()
         switch(audio_channels) {
         case 6:
         case 8:
-            qInfo() << "decklink_input->EnableAudioInput 8";
+            qDebug() << "decklink_input->EnableAudioInput 8";
             result=decklink_input->EnableAudioInput(bmdAudioSampleRate48kHz, audio_sample_size==16 ? bmdAudioSampleType16bitInteger : bmdAudioSampleType32bitInteger, 8);
             break;
 
         case 2:
         default:
-            qInfo() << "decklink_input->EnableAudioInput 2";
+            qDebug() << "decklink_input->EnableAudioInput 2";
             result=decklink_input->EnableAudioInput(bmdAudioSampleRate48kHz, audio_sample_size==16 ? bmdAudioSampleType16bitInteger : bmdAudioSampleType32bitInteger, 2);
             break;
         }
@@ -529,7 +525,7 @@ void DeckLinkCapture::init()
 
     running=true;
 
-    qInfo() << "DeckLinkCapture: started";
+    qDebug() << "started";
 
     return;
 
@@ -558,6 +554,4 @@ void DeckLinkCapture::release()
         decklink->Release();
         decklink=nullptr;
     }
-
-    // qInfo() << "DeckLinkCapture: released";
 }
