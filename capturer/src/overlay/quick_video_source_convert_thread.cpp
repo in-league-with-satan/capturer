@@ -102,6 +102,9 @@ void QuickVideoSourceConvertThread::run()
         if(!frame_src)
             continue;
 
+        if(!frame_src->video.data_ptr)
+            continue;
+
         if(frame_src->video.pixel_format.isDirect()
                 && frame_src->video.pixel_format!=PixelFormat::rgb24
                 && frame_src->video.pixel_format!=PixelFormat::bgr24) {

@@ -88,7 +88,7 @@ ShowHideRect {
     Connections {
         target: messenger
 
-        onFormatChanged: input_format.text="input format: " + height + (progressive_frame ? "p" : "i") + "@" + (frame_scale/frame_duration).toFixed(2) + " " + pixel_format
+        onFormatChanged: input_format.text="input format: " + format
         onFreeSpaceStr: free_space.text="free space: " + size
     }
 }

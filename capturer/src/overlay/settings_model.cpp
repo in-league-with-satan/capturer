@@ -79,7 +79,7 @@ QVariant SettingsModel::data(const int &index, int role) const
     return QVariant();
 }
 
-void SettingsModel::setData(const int &index, int role, QVariant data, bool qml)
+void SettingsModel::setData(const int &index, int role, QVariant data, bool qml, bool block_signal)
 {
     if(index<0 || index>=d.size())
         return;
@@ -114,14 +114,16 @@ void SettingsModel::setData(const int &index, int role, QVariant data, bool qml)
         ;
     }
 
-    emit dataChanged(index, role, qml);
+    if(!block_signal) {
+        emit dataChanged(index, role, qml);
+    }
 }
 
-void SettingsModel::setData(int *ptr_value, int role, QVariant data, bool qml)
+void SettingsModel::setData(int *ptr_value, int role, QVariant data, bool qml, bool block_signal)
 {
     for(int i=0; i<rowCount(); ++i) {
         if(data_p(i)->value==ptr_value) {
-            setData(i, role, data, qml);
+            setData(i, role, data, qml, block_signal);
             break;
         }
     }
@@ -229,5 +231,48 @@ int SettingsModel::add(const SettingsModel::Data &data)
     endInsertRows();
 
     return d.size() - 1;
+}
+
+int SettingsModel::insert(int *ptr_value_pos, const SettingsModel::Data &data)
+{
+    for(int i=0; i<d.size(); ++i) {
+        if(d[i].value==ptr_value_pos) {
+            beginInsertRows(QModelIndex(), i + 1, i + 1);
+
+            d.insert(i + 1, data);
+
+            endInsertRows();
+
+            return i + 1;
+        }
+    }
+}
+
+void SettingsModel::removeRow(int *ptr_value)
+{
+    for(int i=0; i<d.size(); ++i) {
+        if(d[i].value==ptr_value) {
+            beginRemoveRows(QModelIndex(), i, i);
+
+            d.removeAt(i);
+
+            endRemoveRows();
+
+            return;
+        }
+    }
+}
+
+void SettingsModel::removeGroup(QString group)
+{
+    for(int i=0; i<d.size(); ++i) {
+        if(d[i].group==group) {
+            beginRemoveRows(QModelIndex(), i, i);
+
+            d.removeAt(i--);
+
+            endRemoveRows();
+        }
+    }
 }
 

@@ -26,14 +26,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "ff_encoder_thread.h"
 #include "ff_decoder_thread.h"
 
-class DeckLinkCapture;
+#include "source_interface.h"
+
+
+class SourceInterface;
 class AudioOutputInterface;
 class AudioLevel;
+class AudioSender;
 class QmlMessenger;
 class OverlayView;
 class Server;
 class HttpServer;
-class FFCam;
 
 class QMessageBox;
 
@@ -46,8 +49,9 @@ public:
     ~MainWindow();
 
 private:
-    DeckLinkCapture *decklink_thread;
-    FFCam *cam_device;
+    void setDevicePrimary(SourceInterface::Type::T type);
+
+    SourceInterface *device_primary=nullptr;
 
     FFEncoderThread *ff_enc;
     FFEncoderThread *ff_enc_cam;
@@ -60,13 +64,11 @@ private:
 
     AudioOutputInterface *audio_output;
 
+    AudioSender *audio_sender;
+
     QMessageBox *mb_rec_stopped;
 
     HttpServer *http_server;
-
-    QSize current_frame_size;
-    int64_t current_frame_duration;
-    int64_t current_frame_scale;
 
     uint32_t dropped_frames_counter;
 
@@ -84,14 +86,10 @@ protected:
 private slots:
     void keyPressed(int code);
 
-    void formatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format);
-
     void settingsModelDataChanged(int index, int role, bool qml);
 
-    void startStopCapture();
-    void captureRestart();
-    void captureStart();
-    void captureStop();
+    void deviceStart();
+    void deviceStop();
 
     void startStopRecording();
     void updateEncList();
@@ -107,9 +105,6 @@ private slots:
 
     void updateStats(FFEncoder::Stats s);
 
-    void deviceCamRestart();
-    void deviceCamStop();
-    void deviceDecklinkRestart();
     void checkEncoders();
 };
 

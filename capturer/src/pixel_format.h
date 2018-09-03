@@ -108,6 +108,10 @@ private:
     T d=undefined;
 };
 
+typedef QList<PixelFormat> PixelFormats;
+
+Q_DECLARE_METATYPE(PixelFormats)
+
 int frameBufSize(QSize size, PixelFormat pixel_format);
 
 #endif // PIXEL_FORMAT_H

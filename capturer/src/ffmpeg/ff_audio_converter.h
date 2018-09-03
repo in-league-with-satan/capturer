@@ -37,6 +37,7 @@ public:
 
     bool convert(void *src, size_t size, QByteArray *dst);
     bool convert(QByteArray *src, QByteArray *dst);
+    bool convert(QByteArray *data);
 
     void free();
 

@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDebug>
 #include <qcoreapplication.h>
 
-#include "capture.h"
+#include "decklink_thread.h"
 
 #include "ff_encoder_thread.h"
 

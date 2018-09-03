@@ -44,33 +44,44 @@ public:
 
     } main;
 
-    struct DeviceDecklink {
-        int index;
-        int audio_sample_size;
-        int half_fps;
-        int video_depth_10bit;
-        int restart;
-
-        struct {
-            bool enabled=false;
-            bool frame_counter=false;
-            int frame_height=1080;
-
-        } dummy;
-
-    } device_decklink;
-
-
-    struct DeviceCam {
-        int index_video;
-        int index_audio;
-        int resolution;
-        int framerate;
-        int pixel_format;
-        int restart;
+    struct SourceDevice {
+        QString group;
+        QString group_settings;
+        int dummy;
+        int index=0;
+        int start;
         int stop;
 
-    } device_cam;
+        struct DummyDevice {
+            int framesize=0;
+            int show_frame_counter=0;
+
+        } dummy_device;
+
+        struct FFDevice {
+            int index_video=0;
+            int index_audio=0;
+            int framesize=0;
+            int framerate=0;
+            int pixel_format=0;
+
+        } ff_device;
+
+        struct Magewell {
+            int index=0;
+            int pixel_format=0;
+
+        } magewell;
+
+        struct Decklink {
+            int index=0;
+            int audio_sample_size=0;
+            int video_bitdepth=0;
+
+        } decklink;
+
+    } primary_device, secondary_device;
+
 
     struct Rec {
         QVariantMap pixel_format;

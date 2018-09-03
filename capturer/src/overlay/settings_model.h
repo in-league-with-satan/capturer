@@ -50,8 +50,8 @@ public:
     virtual int rowCount(const QModelIndex &parent=QModelIndex()) const;
     virtual QVariant data(const QModelIndex &index, int role) const;
     Q_INVOKABLE QVariant data(const int &index, int role) const;
-    Q_INVOKABLE void setData(const int &index, int role, QVariant data, bool qml=false);
-    Q_INVOKABLE void setData(int *ptr_value, int role, QVariant data, bool qml=false);
+    Q_INVOKABLE void setData(const int &index, int role, QVariant data, bool qml=false, bool block_signal=false);
+    Q_INVOKABLE void setData(int *ptr_value, int role, QVariant data, bool qml=false, bool block_signal=false);
 
     Q_INVOKABLE int focusPrev(int index) const;
     Q_INVOKABLE int focusNext(int index) const;
@@ -67,6 +67,10 @@ public:
     void updateQml();
 
     int add(const SettingsModel::Data &data);
+    int insert(int *ptr_value_pos, const SettingsModel::Data &data);
+    void removeRow(int *ptr_value);
+    void removeGroup(QString group);
+
 
     struct Type {
         enum {

@@ -193,9 +193,9 @@ void HttpServer::setSettingsModel(SettingsModel *mdl)
     settings_model=mdl;
 }
 
-void HttpServer::formatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format)
+void HttpServer::formatChanged(QString format)
 {
-    status.input_format={ width, height, frame_duration, frame_scale, progressive_frame, pixel_format };
+    status.input_format=format;
 }
 
 void HttpServer::setRecState(const bool &value)
@@ -579,6 +579,7 @@ void HttpServer::checkSettings(QMap <QString, QString> new_settings)
         key=nameToMarker(settings_model->data(row, SettingsModel::Role::group).toString() + "_" + settings_model->data(row, SettingsModel::Role::name).toString());
 
         if(new_settings.contains(key)) {
+/*
             if(settings_model->data_p(row)->value==&settings->device_cam.restart) {
                 qInfo() << "device_cam.restart";
                 emit deviceCamRestart();
@@ -610,6 +611,7 @@ void HttpServer::checkSettings(QMap <QString, QString> new_settings)
 
                 data_changed=true;
             }
+*/
         }
     }
 

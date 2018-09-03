@@ -148,6 +148,15 @@ bool AudioConverter::convert(QByteArray *src, QByteArray *dst)
     return convert((void*)src->constData(), src->size(), dst);
 }
 
+bool AudioConverter::convert(QByteArray *data)
+{
+    QByteArray ba_tmp;
+
+    return convert((void*)data->constData(), data->size(), &ba_tmp);
+
+    (*data)=ba_tmp;
+}
+
 void AudioConverter::free()
 {
     if(context) {
