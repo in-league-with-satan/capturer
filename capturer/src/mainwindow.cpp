@@ -192,8 +192,10 @@ MainWindow::MainWindow(QWidget *parent)
     set_model_data.name="source type";
 
     for(int i=0; i<SourceInterface::Type::size; ++i) {
-        set_model_data.values << SourceInterface::title(i);
-        set_model_data.values_data << i;
+        if(SourceInterface::isImplemented(i)) {
+            set_model_data.values << SourceInterface::title(i);
+            set_model_data.values_data << i;
+        }
     }
 
     set_model_data.value=&settings->primary_device.index;
@@ -1191,7 +1193,8 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
 
     if(data->value==&settings->primary_device.index) {
-        setDevicePrimary((SourceInterface::Type::T)settings->primary_device.index);
+        setDevicePrimary((SourceInterface::Type::T)messenger->settingsModel()->data_p(
+                             &settings->primary_device.index)->values_data[settings->primary_device.index].toInt());
         deviceStart();
     }
 

@@ -21,10 +21,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDebug>
 #include <QElapsedTimer>
 
+#ifdef __linux__
 #include "win-types.h"
 #include "mw-common.h"
 #include "mw-fourcc.h"
 #include "lib-mw-capture.h"
+#endif
 
 #include "framerate.h"
 
@@ -39,6 +41,8 @@ const int mw_timeout=300;
 
 PixelFormat fromMagewellPixelFormat(uint32_t fmt)
 {
+#ifdef __linux__
+
     switch(fmt) {
     case MWFOURCC_RGB24:
         return PixelFormat::rgb24;
@@ -77,11 +81,15 @@ PixelFormat fromMagewellPixelFormat(uint32_t fmt)
         break;
     }
 
+#endif
+
     return PixelFormat::undefined;
 }
 
 uint32_t toMagewellPixelFormat(PixelFormat fmt)
 {
+#ifdef __linux__
+
     switch((int)fmt) {
     case PixelFormat::rgb24:
         return MWFOURCC_RGB24;
@@ -122,9 +130,15 @@ uint32_t toMagewellPixelFormat(PixelFormat fmt)
     }
 
     return MWFOURCC_UNK;
+
+#endif
+
+    return 0;
 }
 
 struct MagewellDeviceWorkerContext {
+#ifdef __linux__
+
     MWCAP_PTR event_capture=0;
     MWCAP_PTR event_notify_buffering=0;
 
@@ -136,6 +150,9 @@ struct MagewellDeviceWorkerContext {
 
 
     DWORD fourcc=MWFOURCC_NV12;
+
+#endif
+
     PixelFormat pixel_format=PixelFormat::nv12;
 
     QByteArray ba_buffer;
@@ -180,7 +197,13 @@ void MagewellDeviceWorker::unsubscribe(FrameBuffer<Frame::ptr>::ptr obj)
 
 bool MagewellDeviceWorker::isActive()
 {
+#ifdef __linux__
+
     return d->event_capture!=0;
+
+#endif
+
+    return false;
 }
 
 bool MagewellDeviceWorker::gotSignal()
@@ -215,6 +238,8 @@ SourceInterface::AudioChannels::T MagewellDeviceWorker::currentAudioChannels()
 
 bool MagewellDeviceWorker::step()
 {
+#ifdef __linux__
+
     if(d->event_capture==0) {
         qDebug() << "d->hEventCapture nullptr";
         return false;
@@ -317,21 +342,29 @@ bool MagewellDeviceWorker::step()
         qDebug() << "!MWCAP_NOTIFY_VIDEO_FRAME_BUFFERED";
     }
 
+#endif
+
     return true;
 }
 
 void MagewellDeviceWorker::setDevice(QString path)
 {
+#ifdef __linux__
+
     if(current_channel>=0)
         MWCloseChannel(current_channel);
 
     current_channel=MWOpenChannelByPath(path.toLatin1().data());
 
     emit channelChanged(current_channel);
+
+#endif
 }
 
 void MagewellDeviceWorker::deviceStart()
 {
+#ifdef __linux__
+
     deviceStop();
 
     qDebug() << "current_channel" << current_channel;
@@ -376,10 +409,14 @@ void MagewellDeviceWorker::deviceStart()
     //
 
     qDebug() << "ok";
+
+#endif
 }
 
 void MagewellDeviceWorker::deviceStop()
 {
+#ifdef __linux__
+
     MWStopVideoCapture(current_channel);
 
     if(d->event_notify_buffering) {
@@ -393,18 +430,26 @@ void MagewellDeviceWorker::deviceStop()
     }
 
     emit signalLost(signal_lost=true);
+
+#endif
 }
 
 void MagewellDeviceWorker::setPixelFormat(PixelFormat fmt)
 {
+#ifdef __linux__
+
     d->pixel_format=fmt;
     d->fourcc=toMagewellPixelFormat(fmt);
 
     updateVideoSignalInfo();
+
+#endif
 }
 
 void MagewellDeviceWorker::updateVideoSignalInfo()
 {
+#ifdef __linux__
+
     MWCAP_VIDEO_SIGNAL_STATUS signal_status;
 
     if(MWGetVideoSignalStatus(current_channel, &signal_status)!=MW_SUCCEEDED)
@@ -483,4 +528,6 @@ void MagewellDeviceWorker::updateVideoSignalInfo()
                        .arg(Framerate::rnd2(Framerate::fromRational(d->framerate))).arg(str_pixel_format));
 
     qDebug() << d->framesize << buf_size << Framerate::fromRational(d->framerate);
+
+#endif
 }

@@ -1,10 +1,12 @@
-INCLUDEPATH += \
-    $$PWD/inc \
-    $$PWD/lib
+linux {
+    INCLUDEPATH += \
+        $$PWD/inc \
+        $$PWD/lib
 
-HEADERS += \
-    $$PWD/inc/*.h \
-    $$PWD/lib/*.h
+    HEADERS += \
+        $$PWD/inc/*.h \
+        $$PWD/lib/*.h
 
-SOURCES += \
-    $$PWD/lib/*.c
+    SOURCES += \
+        $$PWD/lib/*.c
+}

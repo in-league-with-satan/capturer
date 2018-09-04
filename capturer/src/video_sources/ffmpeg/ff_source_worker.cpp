@@ -52,9 +52,9 @@ struct FFSourceContext
     AudioConverter audio_converter;
 };
 
-FFSourceWorker::FFSourceWorker(SourceInterface *interface, QObject *parent)
+FFSourceWorker::FFSourceWorker(SourceInterface *parent_interface, QObject *parent)
     : QObject(parent)
-    , interface(interface)
+    , parent_interface(parent_interface)
 {
     default_format.setSampleRate(48000);
     default_format.setChannelCount(2);
@@ -317,11 +317,12 @@ void FFSourceWorker::deviceStart()
 
     {
         PixelFormat pf;
+
         pf.fromAVPixelFormat(d->codec_context->pix_fmt);
 
-        interface->setPixelFormat(pf);
-        interface->setFramerate(cfg.framerate);
-        interface->setFramesize(QSize(d->codec_context->width, d->codec_context->height));
+        parent_interface->setPixelFormat(pf);
+        parent_interface->setFramerate(cfg.framerate);
+        parent_interface->setFramesize(QSize(d->codec_context->width, d->codec_context->height));
 
         emit signalLost(false);
         emit formatChanged(QString("%1p@%2 %3").arg(d->codec_context->height).arg(Framerate::fromRational(cfg.framerate)).arg(pf.toStringView()));

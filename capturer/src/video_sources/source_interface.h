@@ -76,6 +76,37 @@ public:
         return Type::disabled;
     }
 
+    bool isImplemented() const {
+        return isImplemented(type());
+    }
+
+    static bool isImplemented(int type) {
+        switch(type) {
+        case Type::disabled:
+            return true;
+
+        case Type::dummy:
+            return true;
+
+        case Type::ffmpeg:
+            return true;
+
+        case Type::magewell:
+#ifdef __linux__
+            return true;
+#endif
+            return false;
+
+        case Type::decklink:
+            return true;
+
+        default:
+            break;
+        }
+
+        return false;
+    }
+
     QString title() const {
         return title(type());
     }

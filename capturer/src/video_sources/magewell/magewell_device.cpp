@@ -20,9 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDebug>
 #include <qcoreapplication.h>
 
+#ifdef __linux__
 #include "win-types.h"
 #include "mw-common.h"
 #include "lib-mw-capture.h"
+#endif
 
 #include "magewell_device_worker.h"
 
@@ -60,13 +62,17 @@ SourceInterface::Type::T MagewellDevice::type() const
 
 void MagewellDevice::init()
 {
+#ifdef __linux__
     MWCaptureInitInstance();
     MWRefreshDevice();
+#endif
 }
 
 MagewellDevice::Devices MagewellDevice::availableDevices()
 {
     Devices list;
+
+#ifdef __linux__
 
     const int channel_count=MWGetChannelCount();
 
@@ -122,6 +128,8 @@ ad_close:
 
         MWCloseChannel(dev.channel);
     }
+
+#endif
 
     return list;
 }
@@ -199,7 +207,6 @@ void MagewellDevice::setFramesize(QSize r)
 {
     if(sender()!=d)
         return;
-qInfo() << r;
 
     framesize=r;
 }
@@ -241,20 +248,14 @@ void MagewellDevice::run()
     connect(d, SIGNAL(errorString(QString)), SIGNAL(errorString(QString)), Qt::QueuedConnection);
     connect(d, SIGNAL(formatChanged(QString)), SIGNAL(formatChanged(QString)), Qt::QueuedConnection);
 
-//    connect(d, static_cast<void(MagewellDeviceWorker::*)(bool)>(&MagewellDeviceWorker::signalLost), [this](bool value){ this->signal_lost=value; });
     connect(d, &MagewellDeviceWorker::signalLost, [this](bool value){ signal_lost=value; });
-    connect(d, &MagewellDeviceWorker::audioSampleSizeChanged, [this](AudioSampleSize::T value){
-        qInfo() << "audioSampleSizeChanged" << value;
-        audio_sample_size=value; });
+    connect(d, &MagewellDeviceWorker::audioSampleSizeChanged, [this](AudioSampleSize::T value){ audio_sample_size=value; });
 
 
     connect(d, SIGNAL(framerateChanged(AVRational)), SLOT(setFramerate(AVRational)), Qt::QueuedConnection);
     connect(d, SIGNAL(framesizeChanged(QSize)), SLOT(setFramesize(QSize)), Qt::QueuedConnection);
 
     connect(d, SIGNAL(audioSampleSizeChanged(SourceInterface::AudioSampleSize::T)), SLOT(setAudioSampleSize(AudioSampleSize::T)), Qt::QueuedConnection);
-
-//    void setAudioSampleSize(AudioSampleSize::T value);
-//    void setAudioChannels(AudioChannels::T value);
 
 
     bool is_active;

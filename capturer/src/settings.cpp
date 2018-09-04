@@ -61,7 +61,7 @@ Settings::Settings(QObject *parent) :
     primary_device.group_settings="primary device setup";
 
     secondary_device.group="secondary device";
-    primary_device.group_settings="secondary device setup";
+    secondary_device.group_settings="secondary device setup";
 }
 
 bool Settings::load()

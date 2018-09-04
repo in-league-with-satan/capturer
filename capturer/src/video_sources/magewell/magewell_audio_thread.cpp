@@ -22,10 +22,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QElapsedTimer>
 #include <qcoreapplication.h>
 
+#ifdef __linux__
 #include "win-types.h"
 #include "mw-common.h"
 #include "mw-fourcc.h"
 #include "lib-mw-capture.h"
+#endif
 
 #include "audio_tools.h"
 
@@ -35,10 +37,12 @@ const int mw_timeout=300;
 
 
 struct MagewellAudioContext {
+#ifdef __linux__
     MWCAP_PTR event_capture=0;
     MWCAP_PTR event_notify_buffering=0;
 
     HNOTIFY notify_buffering=0;
+#endif
 
     ULONGLONG status_bits=0;
 
@@ -98,6 +102,8 @@ void MagewellAudioThread::run()
     running=true;
 
     int ret;
+
+#ifdef __linux__
 
     while(running) {
         if(d->event_capture==0) {
@@ -177,6 +183,8 @@ void MagewellAudioThread::run()
     }
 
     captureStop();
+
+#endif
 }
 
 void MagewellAudioThread::setChannel(int channel)
@@ -189,6 +197,8 @@ void MagewellAudioThread::setChannel(int channel)
 
 void MagewellAudioThread::captureStart()
 {
+#ifdef __linux__
+
     captureStop();
 
     qDebug() << "current_channel" << current_channel;
@@ -228,10 +238,14 @@ void MagewellAudioThread::captureStart()
     //
 
     updateAudioSignalInfo();
+
+#endif
 }
 
 void MagewellAudioThread::captureStop()
 {
+#ifdef __linux__
+
     MWStopAudioCapture(current_channel);
 
     if(d->event_notify_buffering) {
@@ -243,10 +257,14 @@ void MagewellAudioThread::captureStop()
         MWCloseEvent(d->event_capture);
         d->event_capture=0;
     }
+
+#endif
 }
 
 void MagewellAudioThread::updateAudioSignalInfo()
 {
+#ifdef __linux__
+
     MWCAP_AUDIO_SIGNAL_STATUS signal_status;
 
     if(MWGetAudioSignalStatus(current_channel, &signal_status)!=MW_SUCCEEDED)
@@ -270,4 +288,6 @@ void MagewellAudioThread::updateAudioSignalInfo()
     emit audioSampleSizeChnanged(d->sample_size==16 ? SourceInterface::AudioSampleSize::bitdepth_16 : SourceInterface::AudioSampleSize::bitdepth_32);
 
     qDebug() << signal_status.dwSampleRate << d->sample_size << d->channels;
+
+#endif
 }

@@ -116,6 +116,7 @@ AVPixelFormat PixelFormat::toAVPixelFormat() const
         return AV_PIX_FMT_NV12;
 
     case mjpeg:
+        return AV_PIX_FMT_YUV422P;
         return AV_PIX_FMT_NONE;
     }
 
@@ -199,7 +200,7 @@ bool PixelFormat::fromAVPixelFormat(AVPixelFormat value)
         return true;
     }
 
-    qCritical() << "unhandled format:" << av_get_pix_fmt_name(value);
+    qCritical() << "unhandled format:" << value << QString(av_get_pix_fmt_name(value));
 
     return false;
 }
@@ -616,6 +617,8 @@ QString PixelFormat::toString(int value)
     case mjpeg:
         return QStringLiteral("mjpeg");
     }
+
+    qWarning() << "unknown" << value;
 
     return QStringLiteral("unknown");
 }

@@ -27,6 +27,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #endif
 
+#include "framerate.h"
 #include "ff_tools.h"
 
 #include "tools_dshow.h"
@@ -99,11 +100,11 @@ fail:
     return base_filter;
 }
 
-QList <Cam::Format> getDeviceCapabilities(const QString &dev_name)
+QList <FFDevice::Format> getDeviceCapabilities(const QString &dev_name)
 {
-    QList <Cam::Format> capabilities;
+    QList <FFDevice::Format> capabilities;
 
-    QMap <quint64, Cam::Resolution> resolution[PixelFormat::size];
+    QMap <quint64, FFDevice::Resolution> resolution[PixelFormat::size];
 
     IBaseFilter *dev_filter=getDevFilter(dev_name);
 
@@ -175,12 +176,12 @@ QList <Cam::Format> getDeviceCapabilities(const QString &dev_name)
 
                         resolution[tmp_pix_fmt][res_key].size=QSize(vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy);
 
-                        if(!resolution[tmp_pix_fmt][res_key].framerate.contains(ToolsCam::framerateToRational(1e7/vcaps->MinFrameInterval)))
+                        if(!resolution[tmp_pix_fmt][res_key].framerate.contains(Framerate::toRational(1e7/vcaps->MinFrameInterval)))
                             resolution[tmp_pix_fmt][res_key].framerate
-                                    << ToolsCam::framerateBuildSequence(1e7/vcaps->MaxFrameInterval, 1e7/vcaps->MinFrameInterval);
+                                    << ToolsFFSource::framerateBuildSequence(1e7/vcaps->MaxFrameInterval, 1e7/vcaps->MinFrameInterval);
 
                     } else {
-                        qWarning() << "unknown pix fmt" << guidToStr(type->formattype);
+                        qDebug() << "unknown pix fmt" << guidToStr(type->formattype);
                     }
                 }
 
@@ -207,9 +208,9 @@ next_pin:
 
     for(int i_pf=0; i_pf<PixelFormat::size; i_pf++) {
         if(!resolution[i_pf].isEmpty()) {
-            Cam::Format fmt;
+            FFDevice::Format fmt;
 
-            foreach(Cam::Resolution res, resolution[i_pf].values()) {
+            foreach(FFDevice::Resolution res, resolution[i_pf].values()) {
                 if(!res.framerate.isEmpty()) {
                     fmt.pixel_format=i_pf;
                     fmt.resolution=resolution[i_pf].values();
@@ -259,7 +260,7 @@ QList <FFDevice::Dev> ToolsDirectShow::devList()
             hr=moniker->BindToStorage(0, 0, IID_IPropertyBag, (void**)&property_bag);
 
             if(SUCCEEDED(hr)) {
-                Cam::Dev dev;
+                FFDevice::Dev dev;
 
                 VARIANT var;
 

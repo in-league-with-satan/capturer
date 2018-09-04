@@ -35,7 +35,7 @@ class FFSourceWorker : public QObject
     Q_OBJECT
 
 public:
-    FFSourceWorker(SourceInterface *interface, QObject *parent=0);
+    FFSourceWorker(SourceInterface *parent_interface, QObject *parent=0);
     ~FFSourceWorker();
 
     static QString formatString(const QAudioFormat &format);
@@ -76,7 +76,7 @@ private:
     FFDevice::Dev video_device;
 
     FFSourceContext *d;
-    SourceInterface *interface;
+    SourceInterface *parent_interface;
 
 signals:
     void signalLost(bool value);
