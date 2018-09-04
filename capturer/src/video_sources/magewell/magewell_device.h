@@ -26,8 +26,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <atomic>
 
+#include "magewell_global.h"
 #include "source_interface.h"
 #include "frame_buffer.h"
+
 
 class MagewellDeviceWorker;
 
@@ -48,7 +50,7 @@ public:
         QString name;
         QString path;
         PixelFormat pixel_format;
-        int channel=-1;
+        MGHCHANNEL channel=0; //nullptr;
     };
 
     typedef QList <Device> Devices;
@@ -69,8 +71,8 @@ private slots:
     void setFramerate(AVRational fr);
     void setFramesize(QSize r);
 
-    void setAudioSampleSize(AudioSampleSize::T value);
-    void setAudioChannels(AudioChannels::T value);
+    void setAudioSampleSize(SourceInterface::AudioSampleSize::T value);
+    void setAudioChannels(SourceInterface::AudioChannels::T value);
 
 protected:
     virtual void run();

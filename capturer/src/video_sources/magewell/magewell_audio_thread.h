@@ -26,8 +26,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <atomic>
 
+#include "magewell_global.h"
 #include "source_interface.h"
 #include "frame_buffer.h"
+
 
 class MagewellAudioContext;
 
@@ -45,7 +47,7 @@ public:
     QByteArray getData();
 
 public slots:
-    void setChannel(int channel);
+    void setChannel(MGHCHANNEL channel);
 
 protected:
     void run();
@@ -55,7 +57,7 @@ private:
     void captureStop();
     void updateAudioSignalInfo();
 
-    std::atomic <int> current_channel;
+    std::atomic <MGHCHANNEL> current_channel;
     std::atomic <bool> running;
 
     MagewellAudioContext *d;

@@ -151,6 +151,43 @@ typedef struct _HDMI_AVI_INFOFRAME_PAYLOAD {
 	WORD								wStartOfRightBar;
 } HDMI_AVI_INFOFRAME_PAYLOAD;
 
+typedef struct _HDMI_HDR_INFOFRAME_PAYLOAD {
+	BYTE								byEOTF;
+	BYTE								byMetadataDescriptorID;
+
+	BYTE								display_primaries_lsb_x0;
+	BYTE								display_primaries_msb_x0;
+	BYTE								display_primaries_lsb_y0;
+	BYTE								display_primaries_msb_y0;
+
+	BYTE								display_primaries_lsb_x1;
+	BYTE								display_primaries_msb_x1;
+	BYTE								display_primaries_lsb_y1;
+	BYTE								display_primaries_msb_y1;
+
+	BYTE								display_primaries_lsb_x2;
+	BYTE								display_primaries_msb_x2;
+	BYTE								display_primaries_lsb_y2;
+	BYTE								display_primaries_msb_y2;
+
+	BYTE								white_point_lsb_x;
+	BYTE								white_point_msb_x;
+	BYTE								white_point_lsb_y;
+	BYTE								white_point_msb_y;
+
+	BYTE								max_display_mastering_lsb_luminance;
+	BYTE								max_display_mastering_msb_luminance;
+	BYTE								min_display_mastering_lsb_luminance;
+	BYTE								min_display_mastering_msb_luminance;
+
+	BYTE								maximum_content_light_level_lsb;
+	BYTE								maximum_content_light_level_msb;
+
+	BYTE								maximum_frame_average_light_level_lsb;
+	BYTE								maximum_frame_average_light_level_msb;
+} HDMI_HDR_INFOFRAME_PAYLOAD;
+
+
 // Audio infoframe
 #define HDMI_AUDIO_CODING_TYPE_STREAM	0x00
 #define HDMI_AUDIO_CODING_TYPE_PCM		0x01
@@ -294,6 +331,9 @@ static inline DWORD hdmi_payload_GetRegistrationId(HDMI_VS_INFOFRAME_PAYLOAD *pa
 #define HDMI_INFOFRAME_TYPE_SPD			0x83
 #define HDMI_INFOFRAME_TYPE_AUDIO		0x84
 #define HDMI_INFOFRAME_TYPE_MS			0x85
+#define HDMI_INFOFRAME_TYPE_VBI			0x86
+#define HDMI_INFOFRAME_TYPE_HDR			0x87
+
 
 typedef struct _HDMI_INFOFRAME_HEADER {
 	BYTE								byPacketType;
@@ -312,6 +352,7 @@ typedef struct _HDMI_INFOFRAME_PACKET {
 		HDMI_AUDIO_INFOFRAME_PAYLOAD	audioInfoFramePayload;
 		HDMI_SPD_INFOFRAME_PAYLOAD		spdInfoFramePayload;
 		HDMI_VS_INFOFRAME_PAYLOAD		vsInfoFramePayload;
+        HDMI_HDR_INFOFRAME_PAYLOAD      hdrInfoFramePayload;
 	};
 } HDMI_INFOFRAME_PACKET;
 

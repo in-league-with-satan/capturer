@@ -188,7 +188,7 @@ public:
 
     //
 
-    virtual void setAudioSampleSize(AudioSampleSize::T value) {
+    virtual void setAudioSampleSize(SourceInterface::AudioSampleSize::T value) {
         audio_sample_size=value;
     }
 
@@ -196,7 +196,7 @@ public:
         return audio_sample_size;
     }
 
-    virtual void setAudioChannels(AudioChannels::T value) {
+    virtual void setAudioChannels(SourceInterface::AudioChannels::T value) {
         audio_channels=value;
     }
 

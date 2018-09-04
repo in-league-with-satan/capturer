@@ -57,6 +57,7 @@
 #endif
 
 typedef unsigned long long                         MWCAP_PTR;
+typedef void* HANDLE;
 
 typedef struct _RECT {
     int left;

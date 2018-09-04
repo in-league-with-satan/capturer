@@ -7,11 +7,12 @@
 
 #pragma once
 
-#include "win-types.h"
-#include "mw-common.h"
-#include "mw-smpte.h"
-#include "mw-iec60958.h"
-#include "mw-hdmi-packets.h"
+#include <stdint.h>
+#include "WinTypes.h"
+#include "MWCommon.h"
+#include "MWSMPTE.h"
+#include "MWIEC60958.h"
+#include "MWHDMIPackets.h"
 
 #ifndef _MAX_PATH
 #define _MAX_PATH   (512)
@@ -19,6 +20,59 @@
 
 #pragma pack(push)
 #pragma pack(1)
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+#ifndef HPCICHANNEL
+#define HPCICHANNEL int
+#endif
+
+#ifndef HCHANNEL
+#define HCHANNEL void *
+#endif
+
+#ifndef MWCAP_PTR64
+#define MWCAP_PTR64  MWCAP_PTR
+#endif
+
+#ifndef MWHANDLE
+#define MWHANDLE MWCAP_PTR
+#endif
+
+#ifndef LPBYTE
+#define LPBYTE unsigned char*
+#endif
+
+#ifndef HTIMER
+#define HTIMER MWCAP_PTR
+#endif
+
+#ifndef HNOTIFY
+#define HNOTIFY MWCAP_PTR
+#endif
+
+#ifndef HOSD
+#define HOSD MWCAP_PTR
+#endif
+
+#ifndef LPVOID
+#define LPVOID void *
+#endif
+
+#ifndef ULONG
+#define ULONG unsigned long
+#endif
+
+#ifndef HANDLE64
+#define HANDLE64 MWCAP_PTR
+#endif
+
+#ifdef __cplusplus
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Magewell Capture Extensions
@@ -38,6 +92,13 @@ typedef union _LARGE_INTEGER {
     } u;
     LONGLONG QuadPart;
 } LARGE_INTEGER, *PLARGE_INTEGER;
+
+typedef enum _MW_RESULT_ {
+    MW_SUCCEEDED = 0x00,
+    MW_FAILED,
+    MW_ENODATA,
+    MW_INVALID_PARAMS
+} MW_RESULT;
 
 #define INPUT_SOURCE(type, index)				(((type) << 8) | ((index) & 0xFF))
 #define INPUT_TYPE(source)						((source) >> 8)
@@ -60,8 +121,25 @@ typedef enum _MWCAP_PRODUCT_ID {
     MWCAP_PRODUCT_ID_PRO_CAPTURE_HDMI_4K_PLUS	= 0x00000115,
     MWCAP_PRODUCT_ID_PRO_CAPTURE_DVI_4K			= 0x00000116,
     MWCAP_PRODUCT_ID_PRO_CAPTURE_AIO_4K			= 0x00000117,
+	MWCAP_PRODUCT_ID_PRO_CAPTURE_SDI_4K_PLUS	= 0x00000118,
+	MWCAP_PRODUCT_ID_PRO_CAPTURE_DUAL_HDMI_4K_PLUS	= 0x00000119,
+	MWCAP_PRODUCT_ID_PRO_CAPTURE_DUAL_SDI_4K_PLUS	= 0x00000120,
 
-    MWCAP_PRODUCT_ID_ECO_CAPTURE_OCTA_SDI		= 0x00000150
+    MWCAP_PRODUCT_ID_ECO_CAPTURE_OCTA_SDI		= 0x00000150,
+	MWCAP_PRODUCT_ID_ECO_CAPTURE_DUAL_HDMI_M2	= 0x00000151,
+	MWCAP_PRODUCT_ID_ECO_CAPTURE_HDMI_4K_M2		= 0x00000152,
+	MWCAP_PRODUCT_ID_ECO_CAPTURE_DUAL_SDI_M2	= 0x00000153,
+	MWCAP_PRODUCT_ID_ECO_CAPTURE_QUAD_SDI_M2	= 0x00000154,
+
+	MWCAP_PRODUCT_ID_USB_CAPTURE_HDMI_PLUS 		= 0x00000204,
+	MWCAP_PRODUCT_ID_USB_CAPTURE_SDI_PLUS 		= 0x00000205,
+	MWCAP_PRODUCT_ID_USB_CAPTURE_HDMI 			= 0x00000206,
+	MWCAP_PRODUCT_ID_USB_CAPTURE_SDI			= 0x00000207,
+	MWCAP_PRODUCT_ID_USB_CAPTURE_DVI 			= 0x00000208,
+	MWCAP_PRODUCT_ID_USB_CAPTURE_HDMI_4K 		= 0x00000209,
+	MWCAP_PRODUCT_ID_USB_CAPTURE_SDI_4K			= 0x00000210,
+	MWCAP_PRODUCT_ID_USB_CAPTURE_AIO 			= 0x00000211,
+	MWCAP_PRODUCT_ID_USB_CAPTURE_AIO_4K 		= 0x00000212
 } MWCAP_PRODUCT_ID;
 
 // A/V input type & source
@@ -433,6 +511,11 @@ typedef struct _MWCAP_TIMER_REGISTRATION_S {
 // MWCAP_KSPROPERTY_VIDEO_SAMPLING_PHASE
 #define MWCAP_NOTIFY_VIDEO_SAMPLING_PHASE_CHANGE	0x4000ULL
 
+#define MWCAP_NOTIFY_LOOP_THROUGH_CHANGED			0x8000ULL
+#define MWCAP_NOTIFY_LOOP_THROUGH_EDID_CHANGED		0x10000ULL
+
+#define MWCAP_NOTIFY_NEW_SDI_ANC_PACKET				0x20000ULL
+
 // MWCAP_KSPROPERTY_HDMI_INFOFRAME_VALID, MWCAP_KSPROPERTY_HDMI_INFOFRAME_PACKET
 #define MWCAP_NOTIFY_HDMI_INFOFRAME_AVI			(1ULL << (32 + MWCAP_HDMI_INFOFRAME_ID_AVI))
 #define MWCAP_NOTIFY_HDMI_INFOFRAME_AUDIO		(1ULL << (32 + MWCAP_HDMI_INFOFRAME_ID_AUDIO))
@@ -620,6 +703,8 @@ typedef enum _MWCAP_HDMI_INFOFRAME_ID {
 	MWCAP_HDMI_INFOFRAME_ID_ISRC1,
 	MWCAP_HDMI_INFOFRAME_ID_ISRC2,
 	MWCAP_HDMI_INFOFRAME_ID_GAMUT,
+	MWCAP_HDMI_INFOFRAME_ID_VBI,
+	MWCAP_HDMI_INFOFRAME_ID_HDR,
 	MWCAP_HDMI_INFOFRAME_COUNT
 } MWCAP_HDMI_INFOFRAME_ID;
 
@@ -632,7 +717,9 @@ typedef enum _MWCAP_HDMI_INFOFRAME_MASK {
 	MWCAP_HDMI_INFOFRAME_MASK_ACP				= (1 << MWCAP_HDMI_INFOFRAME_ID_ACP),
 	MWCAP_HDMI_INFOFRAME_MASK_ISRC1				= (1 << MWCAP_HDMI_INFOFRAME_ID_ISRC1),
 	MWCAP_HDMI_INFOFRAME_MASK_ISRC2				= (1 << MWCAP_HDMI_INFOFRAME_ID_ISRC2),
-	MWCAP_HDMI_INFOFRAME_MASK_GAMUT				= (1 << MWCAP_HDMI_INFOFRAME_ID_GAMUT)
+	MWCAP_HDMI_INFOFRAME_MASK_GAMUT				= (1 << MWCAP_HDMI_INFOFRAME_ID_GAMUT),
+	MWCAP_HDMI_INFOFRAME_MASK_VBI				= (1 << MWCAP_HDMI_INFOFRAME_ID_VBI),
+	MWCAP_HDMI_INFOFRAME_MASK_HDR				= (1 << MWCAP_HDMI_INFOFRAME_ID_HDR)
 } MWCAP_HDMI_INFOFRAME_MASK;
 
 typedef struct _MWCAP_VIDEO_ASPECT_RATIO {
@@ -735,6 +822,92 @@ typedef struct _MWCAP_VIDEO_PIN_BUFFER {
     int                                             mem_type;   /* see mw-dma-mem.h */
     unsigned long long                              reserved;
 } MWCAP_VIDEO_PIN_BUFFER;
+
+typedef enum _MW_VIDEO_CAPTURE_MODE {
+    MW_VIDEO_CAPTURE_NORMAL = 0x00,
+    MW_VIDEO_CAPTURE_LOW_LATENCY,
+} MW_VIDEO_CAPTURE_MODE;
+
+typedef enum _MWCAP_AUDIO_CAPTURE_NODE {
+        MWCAP_AUDIO_CAPTURE_NODE_DEFAULT,
+        MWCAP_AUDIO_CAPTURE_NODE_EMBEDDED_CAPTURE,
+        MWCAP_AUDIO_CAPTURE_NODE_MICROPHONE,
+        MWCAP_AUDIO_CAPTURE_NODE_USB_CAPTURE,
+        MWCAP_AUDIO_CAPTURE_NODE_LINE_IN,
+} MWCAP_AUDIO_CAPTURE_NODE;
+
+typedef enum _MWCAP_AUDIO_NODE {
+	MWCAP_AUDIO_MICROPHONE,
+	MWCAP_AUDIO_HEADPHONE,
+	MWCAP_AUDIO_LINE_IN,
+	MWCAP_AUDIO_LINE_OUT,
+	MWCAP_AUDIO_EMBEDDED_CAPTURE,
+	MWCAP_AUDIO_EMBEDDED_PLAYBACK,
+	MWCAP_AUDIO_USB_CAPTURE,
+	MWCAP_AUDIO_USB_PLAYBACK
+} MWCAP_AUDIO_NODE;
+
+typedef void(*LPFN_VIDEO_CAPTURE_CALLBACK)(MWCAP_PTR pbFrame, DWORD cbFrame, DWORD cbStride, MWCAP_VIDEO_FRAME_INFO* pFrameInfo, void* pvContent);
+typedef void(*LPFN_AUDIO_CAPTURE_CALLBACK)(MWCAP_AUDIO_CAPTURE_FRAME* pAudioCaptureFrame, void* pvContent);
+typedef void(*LPFN_TIMER_CALLBACK)(HTIMER pTimer, void* pvContent);
+typedef void(*LPFN_NOTIFY_CALLBACK)(MWCAP_PTR pNotify, DWORD dwEnableBits, void* pvContent);
+
+typedef void (*VIDEO_CAPTURE_CALLBACK)(BYTE *pBuffer, long iBufferLen, void* pParam);
+typedef void (*AUDIO_CAPTURE_CALLBACK)(const BYTE * pbFrame, int cbFrame, uint64_t u64TimeStamp, void* pParam);
+
+typedef struct _MWCAP_SDI_ANC_TYPE {
+	BYTE											byId;
+	BOOLEAN											bHANC;
+	BOOLEAN											bVANC;
+	BYTE											byDID;
+	BYTE											bySDID;
+} MWCAP_SDI_ANC_TYPE;
+
+typedef struct _MWCAP_SDI_ANC_PACKET {
+	BYTE											byDID;
+	BYTE											bySDID;
+	BYTE											byDC;
+	BYTE											abyUDW[255];
+	BYTE											abyReserved[2];
+} MWCAP_SDI_ANC_PACKET;
+
+
+
+typedef struct _MWCAP_VIDEO_ECO_CAPTURE_OPEN {
+	MWCAP_PTR64										hEvent;
+
+	DWORD											dwFOURCC;
+	WORD											cx;
+	WORD											cy;
+	LONGLONG										llFrameDuration;	// -1 for input frame rate
+} MWCAP_VIDEO_ECO_CAPTURE_OPEN;
+
+typedef struct _MWCAP_VIDEO_ECO_CAPTURE_SETTINGS {
+	MWCAP_VIDEO_COLOR_FORMAT						colorFormat;
+	MWCAP_VIDEO_QUANTIZATION_RANGE					quantRange;
+	MWCAP_VIDEO_SATURATION_RANGE					satRange;
+	SHORT											sContrast;			// [50, 200]
+	SHORT											sBrightness;		// [-100, 100]
+	SHORT											sSaturation;		// [0, 200]
+	SHORT											sHue;				// [-90, 90]
+} MWCAP_VIDEO_ECO_CAPTURE_SETTINGS;
+
+typedef struct _MWCAP_VIDEO_ECO_CAPTURE_FRAME {
+	MWCAP_PTR64										pvFrame;
+	DWORD											cbFrame;
+	DWORD											cbStride;
+
+	BOOLEAN											bBottomUp;
+	MWCAP_VIDEO_DEINTERLACE_MODE					deinterlaceMode;
+
+	MWCAP_PTR64										pvContext;
+} MWCAP_VIDEO_ECO_CAPTURE_FRAME;
+
+typedef struct _MWCAP_VIDEO_ECO_CAPTURE_STATUS {
+	MWCAP_PTR64										pvContext;
+	MWCAP_PTR64										pvFrame;
+	LONGLONG										llTimestamp;
+} MWCAP_VIDEO_ECO_CAPTURE_STATUS;
 
 #pragma pack(pop)
 

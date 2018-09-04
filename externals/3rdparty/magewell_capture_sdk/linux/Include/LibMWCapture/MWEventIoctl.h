@@ -7,7 +7,7 @@
 #ifndef __MW_EVENT_IOCTL__
 #define __MW_EVENT_IOCTL__
 
-#include "win-types.h"
+#include "WinTypes.h"
 
 #pragma pack(push)
 #pragma pack(1)

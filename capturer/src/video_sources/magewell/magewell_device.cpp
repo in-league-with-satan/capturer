@@ -21,9 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <qcoreapplication.h>
 
 #ifdef __linux__
-#include "win-types.h"
-#include "mw-common.h"
-#include "lib-mw-capture.h"
+#include "MWCapture.h"
 #endif
 
 #include "magewell_device_worker.h"
@@ -77,7 +75,7 @@ MagewellDevice::Devices MagewellDevice::availableDevices()
     const int channel_count=MWGetChannelCount();
 
     unsigned int temperature=0;
-    char tmp[MAX_CHANNEL_NAME_LEN];
+    char tmp[128];
     MWCAP_CHANNEL_INFO channel_info;
 
     MagewellDevice::Device dev;
@@ -98,7 +96,7 @@ MagewellDevice::Devices MagewellDevice::availableDevices()
 
         dev.channel=MWOpenChannelByPath(tmp);
 
-        if(dev.channel<0) {
+        if(dev.channel==0) {
             qCritical() << "MWOpenChannelByPath err" << dev.channel;
             continue;
         }
@@ -255,7 +253,7 @@ void MagewellDevice::run()
     connect(d, SIGNAL(framerateChanged(AVRational)), SLOT(setFramerate(AVRational)), Qt::QueuedConnection);
     connect(d, SIGNAL(framesizeChanged(QSize)), SLOT(setFramesize(QSize)), Qt::QueuedConnection);
 
-    connect(d, SIGNAL(audioSampleSizeChanged(SourceInterface::AudioSampleSize::T)), SLOT(setAudioSampleSize(AudioSampleSize::T)), Qt::QueuedConnection);
+    connect(d, SIGNAL(audioSampleSizeChanged(SourceInterface::AudioSampleSize::T)), SLOT(setAudioSampleSize(SourceInterface::AudioSampleSize::T)), Qt::QueuedConnection);
 
 
     bool is_active;

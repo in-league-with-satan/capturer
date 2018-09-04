@@ -22,10 +22,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QElapsedTimer>
 
 #ifdef __linux__
-#include "win-types.h"
-#include "mw-common.h"
-#include "mw-fourcc.h"
-#include "lib-mw-capture.h"
+#include "MWCapture.h"
+#include "MWFOURCC.h"
 #endif
 
 #include "framerate.h"
@@ -173,7 +171,7 @@ MagewellDeviceWorker::MagewellDeviceWorker(QObject *parent)
     , a(new MagewellAudioThread())
 {
     connect(a, SIGNAL(audioSampleSizeChnanged(SourceInterface::AudioSampleSize::T)), SIGNAL(audioSampleSizeChanged(SourceInterface::AudioSampleSize::T)), Qt::QueuedConnection);
-    connect(this, SIGNAL(channelChanged(int)), a, SLOT(setChannel(int)), Qt::QueuedConnection);
+    connect(this, SIGNAL(channelChanged(MGHCHANNEL)), a, SLOT(setChannel(MGHCHANNEL)), Qt::QueuedConnection);
 }
 
 MagewellDeviceWorker::~MagewellDeviceWorker()
@@ -277,16 +275,22 @@ bool MagewellDeviceWorker::step()
 
 
     if(d->status_bits==MWCAP_NOTIFY_VIDEO_FRAME_BUFFERED) {
+        HDMI_INFOFRAME_PACKET hdmi_infoframe_packet;
+
+        int ret=MWGetHDMIInfoFramePacket(current_channel, MWCAP_HDMI_INFOFRAME_ID_HDR, &hdmi_infoframe_packet);
+
+        // qDebug() << (ret==MW_SUCCEEDED) << (hdmi_infoframe_packet.hdrInfoFramePayload.maximum_content_light_level_lsb | (hdmi_infoframe_packet.hdrInfoFramePayload.maximum_content_light_level_lsb << 8));
+
         d->ba_audio=a->getData();
 
         if(d->ba_audio.isEmpty()) {
-            qWarning() << "no audio";
+            qDebug() << "no audio";
             return true;
         }
 
-        MWCaptureVideoFrameToVirtualAddress(current_channel, d->video_buffer_info.iNewestBuffering,
-                                            (MWCAP_PTR)(long)d->ba_buffer.constData(), d->ba_buffer.size(), d->min_stride,
-                                            0, 0, d->fourcc, d->framesize.width(), d->framesize.height());
+        ret=MWCaptureVideoFrameToVirtualAddress(current_channel, d->video_buffer_info.iNewestBuffering,
+                                                (MWCAP_PTR)(long)d->ba_buffer.constData(), d->ba_buffer.size(), d->min_stride,
+                                                0, 0, d->fourcc, d->framesize.width(), d->framesize.height());
 
         if(ret!=MW_SUCCEEDED) {
             qCritical() << "MWCaptureVideoFrameToVirtualAddressEx err";
@@ -351,10 +355,12 @@ void MagewellDeviceWorker::setDevice(QString path)
 {
 #ifdef __linux__
 
-    if(current_channel>=0)
+    if(current_channel)
         MWCloseChannel(current_channel);
 
     current_channel=MWOpenChannelByPath(path.toLatin1().data());
+
+    qInfo() << (qintptr)current_channel;
 
     emit channelChanged(current_channel);
 
@@ -371,14 +377,14 @@ void MagewellDeviceWorker::deviceStart()
 
     d->event_capture=MWCreateEvent();
 
-    if(d->event_capture <= 0) {
+    if(d->event_capture==0) {
         qCritical() << "MWCreateEvent err";
         return;
     }
 
     d->event_notify_buffering=MWCreateEvent();
 
-    if(d->event_notify_buffering <= 0) {
+    if(d->event_notify_buffering==0) {
         qCritical() << "MWCreateEvent err";
         return;
     }
@@ -387,7 +393,7 @@ void MagewellDeviceWorker::deviceStart()
     d->notify_buffering=MWRegisterNotify(current_channel, d->event_notify_buffering,
                                          MWCAP_NOTIFY_VIDEO_FRAME_BUFFERED | MWCAP_NOTIFY_VIDEO_SIGNAL_CHANGE);
 
-    if(d->notify_buffering<=0) {
+    if(d->notify_buffering==0) {
         qCritical() << "MWRegisterNotify err";
         return;
     }
@@ -417,7 +423,9 @@ void MagewellDeviceWorker::deviceStop()
 {
 #ifdef __linux__
 
-    MWStopVideoCapture(current_channel);
+    if(current_channel) {
+        MWStopVideoCapture(current_channel);
+    }
 
     if(d->event_notify_buffering) {
         MWUnregisterNotify(current_channel, d->notify_buffering);

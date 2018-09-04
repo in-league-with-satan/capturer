@@ -23,10 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <qcoreapplication.h>
 
 #ifdef __linux__
-#include "win-types.h"
-#include "mw-common.h"
-#include "mw-fourcc.h"
-#include "lib-mw-capture.h"
+#include "MWCapture.h"
 #endif
 
 #include "audio_tools.h"
@@ -58,7 +55,7 @@ MagewellAudioThread::MagewellAudioThread(QObject *parent)
     : QThread(parent)
     , d(new MagewellAudioContext())
 {
-    current_channel=-1;
+    current_channel=0;
 
     start();
 }
@@ -187,7 +184,7 @@ void MagewellAudioThread::run()
 #endif
 }
 
-void MagewellAudioThread::setChannel(int channel)
+void MagewellAudioThread::setChannel(MGHCHANNEL channel)
 {
     current_channel=channel;
 

@@ -10,7 +10,7 @@
 #pragma pack(push)
 #pragma pack(1)
 
-#include "mw-sg.h"
+#include "MWSg.h"
 
 enum mw_dma_data_direction{
     MW_DMA_BIDIRECTIONAL = 0,

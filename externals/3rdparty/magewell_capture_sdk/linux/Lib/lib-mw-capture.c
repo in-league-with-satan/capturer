@@ -1,6 +1,6 @@
 
 #include "lib-mw-capture.h"
-#include "../inc/ProductVer.h"
+#include "../Include/ProductVer.h"
 
 
 typedef struct _CHANNEL_INFO_
@@ -274,7 +274,7 @@ HCHANNEL MWOpenChannelByPath(const char *pszDevicePath)
     return -1;
 }
 
-void MWCloseChannel(int hChannel)
+void MWCloseChannel(HCHANNEL hChannel)
 {
     if (hChannel == -1)
             return;
@@ -288,7 +288,7 @@ void MWCloseChannel(int hChannel)
 }
 
 
-MW_RESULT MWGetChannelInfo(int hChannel, MWCAP_CHANNEL_INFO *pChannelInfo)
+MW_RESULT MWGetChannelInfo(HCHANNEL hChannel, MWCAP_CHANNEL_INFO *pChannelInfo)
 {
     if (hChannel == -1 || pChannelInfo == NULL)
     {
@@ -305,7 +305,7 @@ MW_RESULT MWGetChannelInfo(int hChannel, MWCAP_CHANNEL_INFO *pChannelInfo)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetFamilyInfo(int hChannel, LPVOID pFamilyInfo, unsigned int dwSize)
+MW_RESULT MWGetFamilyInfo(HCHANNEL hChannel, LPVOID pFamilyInfo, unsigned int dwSize)
 {
     if (hChannel == -1)
     {
@@ -324,7 +324,7 @@ MW_RESULT MWGetFamilyInfo(int hChannel, LPVOID pFamilyInfo, unsigned int dwSize)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoCaps(int hChannel, MWCAP_VIDEO_CAPS *pVideoCaps)
+MW_RESULT MWGetVideoCaps(HCHANNEL hChannel, MWCAP_VIDEO_CAPS *pVideoCaps)
 {
     if (hChannel == -1 || pVideoCaps == NULL)
     {
@@ -341,7 +341,7 @@ MW_RESULT MWGetVideoCaps(int hChannel, MWCAP_VIDEO_CAPS *pVideoCaps)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetAudioCaps(int hChannel, MWCAP_AUDIO_CAPS *pAudioCaps)
+MW_RESULT MWGetAudioCaps(HCHANNEL hChannel, MWCAP_AUDIO_CAPS *pAudioCaps)
 {
     if (hChannel == -1)
     {
@@ -358,7 +358,7 @@ MW_RESULT MWGetAudioCaps(int hChannel, MWCAP_AUDIO_CAPS *pAudioCaps)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoInputSourceArray(int hChannel, unsigned int *pdwInputSource, unsigned int *pdwInputCount)
+MW_RESULT MWGetVideoInputSourceArray(HCHANNEL hChannel, unsigned int *pdwInputSource, unsigned int *pdwInputCount)
 {
     if (hChannel == -1)
     {
@@ -386,7 +386,7 @@ MW_RESULT MWGetVideoInputSourceArray(int hChannel, unsigned int *pdwInputSource,
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetAudioInputSourceArray(int hChannel, unsigned int *pdwInputSource, unsigned int *pdwInputCount)
+MW_RESULT MWGetAudioInputSourceArray(HCHANNEL hChannel, unsigned int *pdwInputSource, unsigned int *pdwInputCount)
 {
     if (hChannel == -1)
     {
@@ -415,7 +415,7 @@ MW_RESULT MWGetAudioInputSourceArray(int hChannel, unsigned int *pdwInputSource,
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetInputSourceScan(int hChannel, BOOLEAN *pbScan)
+MW_RESULT MWGetInputSourceScan(HCHANNEL hChannel, BOOLEAN *pbScan)
 {
     if (hChannel == -1)
     {
@@ -433,7 +433,7 @@ MW_RESULT MWGetInputSourceScan(int hChannel, BOOLEAN *pbScan)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetInputSourceScan(int hChannel, BOOLEAN bScan)
+MW_RESULT MWSetInputSourceScan(HCHANNEL hChannel, BOOLEAN bScan)
 {
     if (hChannel == -1)
     {
@@ -450,7 +450,7 @@ MW_RESULT MWSetInputSourceScan(int hChannel, BOOLEAN bScan)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetAVInputSourceLink(int hChannel, BOOLEAN *pbLink)
+MW_RESULT MWGetAVInputSourceLink(HCHANNEL hChannel, BOOLEAN *pbLink)
 {
     if (hChannel == -1)
     {
@@ -467,7 +467,7 @@ MW_RESULT MWGetAVInputSourceLink(int hChannel, BOOLEAN *pbLink)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetAVInputSourceLink(int hChannel, BOOLEAN bLink)
+MW_RESULT MWSetAVInputSourceLink(HCHANNEL hChannel, BOOLEAN bLink)
 {
     if (hChannel == -1)
     {
@@ -484,7 +484,7 @@ MW_RESULT MWSetAVInputSourceLink(int hChannel, BOOLEAN bLink)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoInputSource(int hChannel, unsigned int *pdwSource)
+MW_RESULT MWGetVideoInputSource(HCHANNEL hChannel, unsigned int *pdwSource)
 {
     if (hChannel == -1)
     {
@@ -501,7 +501,7 @@ MW_RESULT MWGetVideoInputSource(int hChannel, unsigned int *pdwSource)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetVideoInputSource(int hChannel, unsigned int dwSource)
+MW_RESULT MWSetVideoInputSource(HCHANNEL hChannel, unsigned int dwSource)
 {
     if (hChannel == -1)
     {
@@ -518,7 +518,7 @@ MW_RESULT MWSetVideoInputSource(int hChannel, unsigned int dwSource)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetAudioInputSource(int hChannel, unsigned int *pdwSource)
+MW_RESULT MWGetAudioInputSource(HCHANNEL hChannel, unsigned int *pdwSource)
 {
     if (hChannel == -1)
     {
@@ -535,7 +535,7 @@ MW_RESULT MWGetAudioInputSource(int hChannel, unsigned int *pdwSource)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetAudioInputSource(int hChannel, unsigned int dwSource)
+MW_RESULT MWSetAudioInputSource(HCHANNEL hChannel, unsigned int dwSource)
 {
     if (hChannel == -1)
     {
@@ -553,7 +553,7 @@ MW_RESULT MWSetAudioInputSource(int hChannel, unsigned int dwSource)
 }
 
 //EDID
-MW_RESULT MWGetEDID(int hChannel, unsigned char *pbyData, ULONG *pulSize)
+MW_RESULT MWGetEDID(HCHANNEL hChannel, unsigned char *pbyData, ULONG *pulSize)
 {
     if (hChannel == -1 || pbyData == NULL || pulSize == NULL)
     {
@@ -575,7 +575,7 @@ MW_RESULT MWGetEDID(int hChannel, unsigned char *pbyData, ULONG *pulSize)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetEDID(int hChannel, unsigned char *pbyData, ULONG ulSize)
+MW_RESULT MWSetEDID(HCHANNEL hChannel, unsigned char *pbyData, ULONG ulSize)
 {
     if (hChannel == -1 || pbyData == NULL)
     {
@@ -597,7 +597,7 @@ MW_RESULT MWSetEDID(int hChannel, unsigned char *pbyData, ULONG ulSize)
 }
 
 //Signal status
-MW_RESULT MWGetInputSpecificStatus(int hChannel, MWCAP_INPUT_SPECIFIC_STATUS *pInputStatus)
+MW_RESULT MWGetInputSpecificStatus(HCHANNEL hChannel, MWCAP_INPUT_SPECIFIC_STATUS *pInputStatus)
 {
     if (hChannel == -1 || pInputStatus == NULL)
     {
@@ -614,7 +614,7 @@ MW_RESULT MWGetInputSpecificStatus(int hChannel, MWCAP_INPUT_SPECIFIC_STATUS *pI
     return MW_SUCCEEDED;
 }
 
-MW_RESULT   MWGetVideoSignalStatus(int hChannel, MWCAP_VIDEO_SIGNAL_STATUS *pSignalStatus)
+MW_RESULT   MWGetVideoSignalStatus(HCHANNEL hChannel, MWCAP_VIDEO_SIGNAL_STATUS *pSignalStatus)
 {
     if (hChannel == -1 || pSignalStatus == NULL)
     {
@@ -631,7 +631,7 @@ MW_RESULT   MWGetVideoSignalStatus(int hChannel, MWCAP_VIDEO_SIGNAL_STATUS *pSig
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetAudioSignalStatus(int hChannel, MWCAP_AUDIO_SIGNAL_STATUS *pSignalStatus)
+MW_RESULT MWGetAudioSignalStatus(HCHANNEL hChannel, MWCAP_AUDIO_SIGNAL_STATUS *pSignalStatus)
 {
     if (hChannel == -1 || pSignalStatus == NULL)
     {
@@ -649,7 +649,7 @@ MW_RESULT MWGetAudioSignalStatus(int hChannel, MWCAP_AUDIO_SIGNAL_STATUS *pSigna
 }
 
 // HDMI InfoFrame
-MW_RESULT MWGetHDMIInfoFrameValidFlag(int hChannel, unsigned int *pdwValidFlag)
+MW_RESULT MWGetHDMIInfoFrameValidFlag(HCHANNEL hChannel, unsigned int *pdwValidFlag)
 {
     if (hChannel == -1 || NULL == pdwValidFlag)
     {
@@ -666,7 +666,7 @@ MW_RESULT MWGetHDMIInfoFrameValidFlag(int hChannel, unsigned int *pdwValidFlag)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetHDMIInfoFramePacket(int hChannel, MWCAP_HDMI_INFOFRAME_ID id, HDMI_INFOFRAME_PACKET *pPacket)
+MW_RESULT MWGetHDMIInfoFramePacket(HCHANNEL hChannel, MWCAP_HDMI_INFOFRAME_ID id, HDMI_INFOFRAME_PACKET *pPacket)
 {
     if (hChannel == -1 || pPacket == NULL ||
             id < MWCAP_HDMI_INFOFRAME_ID_AVI ||
@@ -689,7 +689,7 @@ MW_RESULT MWGetHDMIInfoFramePacket(int hChannel, MWCAP_HDMI_INFOFRAME_ID id, HDM
 }
 
 // Device Time
-MW_RESULT MWGetDeviceTime(int hChannel, long long *pllTime)
+MW_RESULT MWGetDeviceTime(HCHANNEL hChannel, long long *pllTime)
 {
     if (hChannel == -1)
     {
@@ -706,7 +706,7 @@ MW_RESULT MWGetDeviceTime(int hChannel, long long *pllTime)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetDeviceTime(int hChannel, long long llTime)
+MW_RESULT MWSetDeviceTime(HCHANNEL hChannel, long long llTime)
 {
     if (hChannel == -1)
     {
@@ -724,7 +724,7 @@ MW_RESULT MWSetDeviceTime(int hChannel, long long llTime)
 }
 
 
-MW_RESULT MWRegulateDeviceTime(int hChannel, long long llTime)
+MW_RESULT MWRegulateDeviceTime(HCHANNEL hChannel, long long llTime)
 {
     if (hChannel == -1)
     {
@@ -742,7 +742,7 @@ MW_RESULT MWRegulateDeviceTime(int hChannel, long long llTime)
 }
 
 // Timer Event
-HTIMER MWRegisterTimer(int hChannel, HANDLE64 hEvent)
+HTIMER MWRegisterTimer(HCHANNEL hChannel, HANDLE64 hEvent)
 {
     if (hChannel == -1)
     {
@@ -762,7 +762,7 @@ HTIMER MWRegisterTimer(int hChannel, HANDLE64 hEvent)
     return timerReg.pvTimer;
 }
 
-MW_RESULT MWUnregisterTimer(int hChannel, MWCAP_PTR hTimer)
+MW_RESULT MWUnregisterTimer(HCHANNEL hChannel, MWCAP_PTR hTimer)
 {
     if (hChannel == -1 || hTimer == 0)
     {
@@ -779,7 +779,7 @@ MW_RESULT MWUnregisterTimer(int hChannel, MWCAP_PTR hTimer)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWScheduleTimer(int hChannel, MWCAP_PTR hTimer, long long llExpireTime)
+MW_RESULT MWScheduleTimer(HCHANNEL hChannel, MWCAP_PTR hTimer, long long llExpireTime)
 {
     if (hChannel == -1 || hTimer == 0)
     {
@@ -802,7 +802,7 @@ MW_RESULT MWScheduleTimer(int hChannel, MWCAP_PTR hTimer, long long llExpireTime
 
 
 // Notify Event
-HNOTIFY MWRegisterNotify(int hChannel, MWCAP_PTR hEvent, unsigned int dwEnableBits)
+HNOTIFY MWRegisterNotify(HCHANNEL hChannel, MWCAP_PTR hEvent, unsigned int dwEnableBits)
 {
     if (hChannel == -1 || hEvent == 0)
     {
@@ -823,7 +823,7 @@ HNOTIFY MWRegisterNotify(int hChannel, MWCAP_PTR hEvent, unsigned int dwEnableBi
     return mnrs.pvNotify;
 }
 
-MW_RESULT MWUnregisterNotify(int hChannel, MWCAP_PTR hNotify)
+MW_RESULT MWUnregisterNotify(HCHANNEL hChannel, MWCAP_PTR hNotify)
 {
     if (hChannel == -1 || hNotify == 0)
     {
@@ -841,7 +841,7 @@ MW_RESULT MWUnregisterNotify(int hChannel, MWCAP_PTR hNotify)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetNotifyStatus(int hChannel, MWCAP_PTR hNotify, unsigned long long *pullStatus)
+MW_RESULT MWGetNotifyStatus(HCHANNEL hChannel, MWCAP_PTR hNotify, unsigned long long *pullStatus)
 {
     if (hChannel == -1 || hNotify == 0)
     {
@@ -863,7 +863,7 @@ MW_RESULT MWGetNotifyStatus(int hChannel, MWCAP_PTR hNotify, unsigned long long 
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWStartVideoCapture(int hChannel, MWCAP_PTR hEvent)
+MW_RESULT MWStartVideoCapture(HCHANNEL hChannel, MWCAP_PTR hEvent)
 {
     if (hChannel == -1 || hEvent == 0)
     {
@@ -883,7 +883,7 @@ MW_RESULT MWStartVideoCapture(int hChannel, MWCAP_PTR hEvent)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWStopVideoCapture(int hChannel)
+MW_RESULT MWStopVideoCapture(HCHANNEL hChannel)
 {
     if (hChannel == -1)
     {
@@ -900,7 +900,7 @@ MW_RESULT MWStopVideoCapture(int hChannel)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWPinVideoBuffer(int hChannel, MWCAP_PTR pbFrame, unsigned int cbFrame)
+MW_RESULT MWPinVideoBuffer(HCHANNEL hChannel, MWCAP_PTR pbFrame, unsigned int cbFrame)
 {
     if (hChannel == -1 || pbFrame == 0)
     {
@@ -924,7 +924,7 @@ MW_RESULT MWPinVideoBuffer(int hChannel, MWCAP_PTR pbFrame, unsigned int cbFrame
 }
 
 
-MW_RESULT MWUnpinVideoBuffer(int hChannel, MWCAP_PTR pbFrame)
+MW_RESULT MWUnpinVideoBuffer(HCHANNEL hChannel, MWCAP_PTR pbFrame)
 {
     if (hChannel == -1 || pbFrame == 0)
     {
@@ -941,7 +941,7 @@ MW_RESULT MWUnpinVideoBuffer(int hChannel, MWCAP_PTR pbFrame)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWCaptureVideoFrameToVirtualAddress(int           hChannel,
+MW_RESULT MWCaptureVideoFrameToVirtualAddress(HCHANNEL      hChannel,
                                               int           iFrame,
                                               MWCAP_PTR     pbFrame,
                                               unsigned int  cbFrame,
@@ -1001,7 +1001,7 @@ MW_RESULT MWCaptureVideoFrameToVirtualAddress(int           hChannel,
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWCaptureVideoFrameToPhysicalAddress(int              hChannel,
+MW_RESULT MWCaptureVideoFrameToPhysicalAddress(HCHANNEL         hChannel,
                                                int              iFrame,
                                                LARGE_INTEGER    liFrameAddress,
                                                unsigned int     cbFrame,
@@ -1062,7 +1062,7 @@ MW_RESULT MWCaptureVideoFrameToPhysicalAddress(int              hChannel,
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWCaptureVideoFrameWithOSDToVirtualAddress(int            hChannel,
+MW_RESULT MWCaptureVideoFrameWithOSDToVirtualAddress(HCHANNEL       hChannel,
                                                      int            iFrame,
                                                      MWCAP_PTR      pbFrame,
                                                      unsigned int   cbFrame,
@@ -1129,7 +1129,7 @@ MW_RESULT MWCaptureVideoFrameWithOSDToVirtualAddress(int            hChannel,
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWCaptureVideoFrameWithOSDToPhysicalAddress(int               hChannel,
+MW_RESULT MWCaptureVideoFrameWithOSDToPhysicalAddress(HCHANNEL          hChannel,
                                                       int               iFrame,
                                                       LARGE_INTEGER     liFrameAddress,
                                                       unsigned int      cbFrame,
@@ -1197,7 +1197,7 @@ MW_RESULT MWCaptureVideoFrameWithOSDToPhysicalAddress(int               hChannel
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWCaptureVideoFrameToVirtualAddressEx(int                                     hChannel,
+MW_RESULT MWCaptureVideoFrameToVirtualAddressEx(HCHANNEL                                hChannel,
                                                 int                                     iFrame,
                                                 MWCAP_PTR                               pbFrame,
                                                 unsigned int                            cbFrame,
@@ -1290,7 +1290,7 @@ MW_RESULT MWCaptureVideoFrameToVirtualAddressEx(int                             
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWCaptureVideoFrameToPhysicalAddressEx(int                                            hChannel,
+MW_RESULT MWCaptureVideoFrameToPhysicalAddressEx(HCHANNEL                                       hChannel,
                                                  int                                            iFrame,
                                                  LARGE_INTEGER                                  liFrameAddress,
                                                  unsigned int                                   cbFrame,
@@ -1383,7 +1383,7 @@ MW_RESULT MWCaptureVideoFrameToPhysicalAddressEx(int                            
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoBufferInfo(int hChannel, MWCAP_VIDEO_BUFFER_INFO *pVideoBufferInfo)
+MW_RESULT MWGetVideoBufferInfo(HCHANNEL hChannel, MWCAP_VIDEO_BUFFER_INFO *pVideoBufferInfo)
 {
     if (hChannel == -1 || pVideoBufferInfo == NULL)
     {
@@ -1400,7 +1400,7 @@ MW_RESULT MWGetVideoBufferInfo(int hChannel, MWCAP_VIDEO_BUFFER_INFO *pVideoBuff
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoFrameInfo(int hChannel, unsigned char i, MWCAP_VIDEO_FRAME_INFO *pVideoFrameInfo)
+MW_RESULT MWGetVideoFrameInfo(HCHANNEL hChannel, unsigned char i, MWCAP_VIDEO_FRAME_INFO *pVideoFrameInfo)
 {
     if (hChannel == -1 || pVideoFrameInfo == NULL)
     {
@@ -1422,7 +1422,7 @@ MW_RESULT MWGetVideoFrameInfo(int hChannel, unsigned char i, MWCAP_VIDEO_FRAME_I
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoCaptureStatus(int hChannel, MWCAP_VIDEO_CAPTURE_STATUS *pStatus)
+MW_RESULT MWGetVideoCaptureStatus(HCHANNEL hChannel, MWCAP_VIDEO_CAPTURE_STATUS *pStatus)
 {
     if (hChannel == -1 || pStatus == NULL)
     {
@@ -1440,7 +1440,7 @@ MW_RESULT MWGetVideoCaptureStatus(int hChannel, MWCAP_VIDEO_CAPTURE_STATUS *pSta
 }
 
 // Audio Capture
-MW_RESULT MWStartAudioCapture(int hChannel)
+MW_RESULT MWStartAudioCapture(HCHANNEL hChannel)
 {
     if (hChannel == -1)
     {
@@ -1457,7 +1457,7 @@ MW_RESULT MWStartAudioCapture(int hChannel)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWStopAudioCapture(int hChannel)
+MW_RESULT MWStopAudioCapture(HCHANNEL hChannel)
 {
     if (hChannel == -1)
     {
@@ -1475,7 +1475,7 @@ MW_RESULT MWStopAudioCapture(int hChannel)
 }
 
 
-MW_RESULT MWCaptureAudioFrame(int hChannel, MWCAP_AUDIO_CAPTURE_FRAME *pAudioCaptureFrame)
+MW_RESULT MWCaptureAudioFrame(HCHANNEL hChannel, MWCAP_AUDIO_CAPTURE_FRAME *pAudioCaptureFrame)
 {
     if (hChannel == -1 || pAudioCaptureFrame == NULL)
     {
@@ -1502,7 +1502,7 @@ MW_RESULT MWCaptureAudioFrame(int hChannel, MWCAP_AUDIO_CAPTURE_FRAME *pAudioCap
 }
 
 // Video Process
-MW_RESULT MWSetVideoInputAspectRatio(int hChannel, int nAspectX, int nAspectY)
+MW_RESULT MWSetVideoInputAspectRatio(HCHANNEL hChannel, int nAspectX, int nAspectY)
 {
     if (hChannel == -1)
     {
@@ -1522,7 +1522,7 @@ MW_RESULT MWSetVideoInputAspectRatio(int hChannel, int nAspectX, int nAspectY)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoInputAspectRatio(int hChannel, int *pnAspectX, int *pnAspectY)
+MW_RESULT MWGetVideoInputAspectRatio(HCHANNEL hChannel, int *pnAspectX, int *pnAspectY)
 {
     if (hChannel == -1 || NULL == pnAspectX || NULL == pnAspectY)
     {
@@ -1543,7 +1543,7 @@ MW_RESULT MWGetVideoInputAspectRatio(int hChannel, int *pnAspectX, int *pnAspect
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetVideoInputColorFormat(int hChannel, MWCAP_VIDEO_COLOR_FORMAT colorFormat)
+MW_RESULT MWSetVideoInputColorFormat(HCHANNEL hChannel, MWCAP_VIDEO_COLOR_FORMAT colorFormat)
 {
     if (hChannel == -1)
     {
@@ -1560,7 +1560,7 @@ MW_RESULT MWSetVideoInputColorFormat(int hChannel, MWCAP_VIDEO_COLOR_FORMAT colo
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoInputColorFormat(int hChannel, MWCAP_VIDEO_COLOR_FORMAT *pColorFormat)
+MW_RESULT MWGetVideoInputColorFormat(HCHANNEL hChannel, MWCAP_VIDEO_COLOR_FORMAT *pColorFormat)
 {
     if (hChannel == -1 || NULL == pColorFormat)
     {
@@ -1577,7 +1577,7 @@ MW_RESULT MWGetVideoInputColorFormat(int hChannel, MWCAP_VIDEO_COLOR_FORMAT *pCo
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetVideoInputQuantizationRange(int hChannel, MWCAP_VIDEO_QUANTIZATION_RANGE quantRange)
+MW_RESULT MWSetVideoInputQuantizationRange(HCHANNEL hChannel, MWCAP_VIDEO_QUANTIZATION_RANGE quantRange)
 {
     if (hChannel == -1)
     {
@@ -1594,7 +1594,7 @@ MW_RESULT MWSetVideoInputQuantizationRange(int hChannel, MWCAP_VIDEO_QUANTIZATIO
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoInputQuantizationRange(int hChannel, MWCAP_VIDEO_QUANTIZATION_RANGE *pQuantRange)
+MW_RESULT MWGetVideoInputQuantizationRange(HCHANNEL hChannel, MWCAP_VIDEO_QUANTIZATION_RANGE *pQuantRange)
 {
     if (hChannel == -1 || NULL == pQuantRange)
         {
@@ -1613,7 +1613,7 @@ MW_RESULT MWGetVideoInputQuantizationRange(int hChannel, MWCAP_VIDEO_QUANTIZATIO
 
 
 // LED Mode
-MW_RESULT MWSetLEDMode(int hChannel, unsigned int dwMode)
+MW_RESULT MWSetLEDMode(HCHANNEL hChannel, unsigned int dwMode)
 {
     if (hChannel == -1)
     {
@@ -1631,7 +1631,7 @@ MW_RESULT MWSetLEDMode(int hChannel, unsigned int dwMode)
 }
 
 // upgrade firmware
-MW_RESULT MWGetFirmwareStorageInfo(int hChannel, MWCAP_FIRMWARE_STORAGE *pFirmwareStorageInfo)
+MW_RESULT MWGetFirmwareStorageInfo(HCHANNEL hChannel, MWCAP_FIRMWARE_STORAGE *pFirmwareStorageInfo)
 {
     if (hChannel == -1 || pFirmwareStorageInfo == NULL)
     {
@@ -1648,7 +1648,7 @@ MW_RESULT MWGetFirmwareStorageInfo(int hChannel, MWCAP_FIRMWARE_STORAGE *pFirmwa
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWEraseFirmwareData(int hChannel, unsigned int cbOffset, unsigned int cbErase)
+MW_RESULT MWEraseFirmwareData(HCHANNEL hChannel, unsigned int cbOffset, unsigned int cbErase)
 {
     if (hChannel == -1)
     {
@@ -1669,7 +1669,7 @@ MW_RESULT MWEraseFirmwareData(int hChannel, unsigned int cbOffset, unsigned int 
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWReadFirmwareData(int hChannel, unsigned int cbOffset, unsigned char *pbyData, unsigned int cbToRead, unsigned int *pcbRead)
+MW_RESULT MWReadFirmwareData(HCHANNEL hChannel, unsigned int cbOffset, unsigned char *pbyData, unsigned int cbToRead, unsigned int *pcbRead)
 {
     int ret;
 
@@ -1696,7 +1696,7 @@ MW_RESULT MWReadFirmwareData(int hChannel, unsigned int cbOffset, unsigned char 
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWWriteFirmwareData(int hChannel, unsigned int cbOffset, unsigned char *pbyData, unsigned int cbData)
+MW_RESULT MWWriteFirmwareData(HCHANNEL hChannel, unsigned int cbOffset, unsigned char *pbyData, unsigned int cbData)
 {
     if (hChannel == -1 || pbyData == NULL)
     {
@@ -1719,7 +1719,7 @@ MW_RESULT MWWriteFirmwareData(int hChannel, unsigned int cbOffset, unsigned char
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetPostReconfig(int hChannel, unsigned int dwDelayMS)
+MW_RESULT MWSetPostReconfig(HCHANNEL hChannel, unsigned int dwDelayMS)
 {
     if (hChannel == -1)
     {
@@ -1737,7 +1737,7 @@ MW_RESULT MWSetPostReconfig(int hChannel, unsigned int dwDelayMS)
 }
 
 // OSD
-HOSD MWCreateImage(int hChannel, int cx, int cy)
+HOSD MWCreateImage(HCHANNEL hChannel, int cx, int cy)
 {
     if (hChannel == -1)
     {
@@ -1758,7 +1758,7 @@ HOSD MWCreateImage(int hChannel, int cx, int cy)
     return imagedata.pvImage;
 }
 
-MW_RESULT MWOpenImage(int hChannel, MWCAP_PTR hImage, long *plRet)
+MW_RESULT MWOpenImage(HCHANNEL hChannel, MWCAP_PTR hImage, long *plRet)
 {
     if (hChannel == -1 || hImage == 0 || plRet == NULL)
     {
@@ -1780,7 +1780,7 @@ MW_RESULT MWOpenImage(int hChannel, MWCAP_PTR hImage, long *plRet)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWCloseImage(int hChannel, MWCAP_PTR hImage, long *plRet)
+MW_RESULT MWCloseImage(HCHANNEL hChannel, MWCAP_PTR hImage, long *plRet)
 {
     if (hChannel == -1 || hImage == 0 || plRet == NULL)
     {
@@ -1803,7 +1803,7 @@ MW_RESULT MWCloseImage(int hChannel, MWCAP_PTR hImage, long *plRet)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWUploadImageFromVirtualAddress(int                                   hChannel,
+MW_RESULT MWUploadImageFromVirtualAddress(HCHANNEL                              hChannel,
                                           MWCAP_PTR                             hImage,
                                           MWCAP_VIDEO_COLOR_FORMAT              cfDest,
                                           MWCAP_VIDEO_QUANTIZATION_RANGE        quantRangeDest,
@@ -1859,7 +1859,7 @@ MW_RESULT MWUploadImageFromVirtualAddress(int                                   
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWUploadImageFromPhysicalAddress(int                              hChannel,
+MW_RESULT MWUploadImageFromPhysicalAddress(HCHANNEL                         hChannel,
                                            MWCAP_PTR                        hImage,
                                            MWCAP_VIDEO_COLOR_FORMAT         cfDest,
                                            MWCAP_VIDEO_QUANTIZATION_RANGE   quantRangeDest,
@@ -1916,7 +1916,7 @@ MW_RESULT MWUploadImageFromPhysicalAddress(int                              hCha
 }
 
 //Temperature
-MW_RESULT MWGetTemperature(int hChannel, unsigned int *pnTemp)
+MW_RESULT MWGetTemperature(HCHANNEL hChannel, unsigned int *pnTemp)
 {
     if (hChannel == -1 || NULL == pnTemp)
     {
@@ -1933,7 +1933,7 @@ MW_RESULT MWGetTemperature(int hChannel, unsigned int *pnTemp)
 }
 
 // V4l2
-MW_RESULT MWGetStreamCount(int hChannel, int *pnCount)
+MW_RESULT MWGetStreamCount(HCHANNEL hChannel, int *pnCount)
 {
     if (hChannel == -1 || NULL == pnCount)
     {
@@ -1950,7 +1950,7 @@ MW_RESULT MWGetStreamCount(int hChannel, int *pnCount)
 }
 
 
-MW_RESULT MWGetStreamInfos(int hChannel, MWCAP_STREAM_INFO *pStreamInfos, int *pnCount)
+MW_RESULT MWGetStreamInfos(HCHANNEL hChannel, MWCAP_STREAM_INFO *pStreamInfos, int *pnCount)
 {
     if (hChannel == -1 || NULL == pStreamInfos || NULL == pnCount)
     {
@@ -1970,7 +1970,7 @@ MW_RESULT MWGetStreamInfos(int hChannel, MWCAP_STREAM_INFO *pStreamInfos, int *p
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetCtrlStreamID(int hChannel, int nCrtlID)
+MW_RESULT MWSetCtrlStreamID(HCHANNEL hChannel, int nCrtlID)
 {
     if (hChannel == -1) {
         //fprintf(stderr, "Function  %s parameter \"hChanne\" can't be -1\n", __FUNCTION__);
@@ -1985,7 +1985,7 @@ MW_RESULT MWSetCtrlStreamID(int hChannel, int nCrtlID)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoConnectFormat(int hChannel, MWCAP_VIDEO_CONNECTION_FORMAT *pConnectFormat)
+MW_RESULT MWGetVideoConnectFormat(HCHANNEL hChannel, MWCAP_VIDEO_CONNECTION_FORMAT *pConnectFormat)
 {
     if (hChannel == -1 || NULL == pConnectFormat)
     {
@@ -2002,7 +2002,7 @@ MW_RESULT MWGetVideoConnectFormat(int hChannel, MWCAP_VIDEO_CONNECTION_FORMAT *p
 }
 
 
-MW_RESULT MWGetVideoProcessSettings(int hChannel, MWCAP_VIDEO_PROCESS_SETTINGS *pProcessSettings)
+MW_RESULT MWGetVideoProcessSettings(HCHANNEL hChannel, MWCAP_VIDEO_PROCESS_SETTINGS *pProcessSettings)
 {
     if (hChannel == -1 || NULL == pProcessSettings)
     {
@@ -2018,7 +2018,7 @@ MW_RESULT MWGetVideoProcessSettings(int hChannel, MWCAP_VIDEO_PROCESS_SETTINGS *
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetVideoProcessSettings(int hChannel, MWCAP_VIDEO_PROCESS_SETTINGS processSettings)
+MW_RESULT MWSetVideoProcessSettings(HCHANNEL hChannel, MWCAP_VIDEO_PROCESS_SETTINGS processSettings)
 {
     if (hChannel == -1) {
        //fprintf(stderr, "Function  %s parameter \"hChanne\" can't be -1\n", __FUNCTION__);
@@ -2033,7 +2033,7 @@ MW_RESULT MWSetVideoProcessSettings(int hChannel, MWCAP_VIDEO_PROCESS_SETTINGS p
    return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoOSDSettings(int hChannel, MWCAP_VIDEO_OSD_SETTINGS *pOSDSettings)
+MW_RESULT MWGetVideoOSDSettings(HCHANNEL hChannel, MWCAP_VIDEO_OSD_SETTINGS *pOSDSettings)
 {
     if (hChannel == -1 || NULL == pOSDSettings)
     {
@@ -2050,7 +2050,7 @@ MW_RESULT MWGetVideoOSDSettings(int hChannel, MWCAP_VIDEO_OSD_SETTINGS *pOSDSett
 }
 
 
-MW_RESULT MWSetVideoOSDSettings(int hChannel, MWCAP_VIDEO_OSD_SETTINGS OSDSettings)
+MW_RESULT MWSetVideoOSDSettings(HCHANNEL hChannel, MWCAP_VIDEO_OSD_SETTINGS OSDSettings)
 {
     if (hChannel == -1) {
         //fprintf(stderr, "Function  %s parameter \"hChanne\" can't be -1\n", __FUNCTION__);
@@ -2065,7 +2065,7 @@ MW_RESULT MWSetVideoOSDSettings(int hChannel, MWCAP_VIDEO_OSD_SETTINGS OSDSettin
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoOSDImage(int hChannel, MWCAP_VIDEO_OSD_IMAGE *pOSDImage)
+MW_RESULT MWGetVideoOSDImage(HCHANNEL hChannel, MWCAP_VIDEO_OSD_IMAGE *pOSDImage)
 {
     if (hChannel == -1 || NULL == pOSDImage)
     {
@@ -2081,7 +2081,7 @@ MW_RESULT MWGetVideoOSDImage(int hChannel, MWCAP_VIDEO_OSD_IMAGE *pOSDImage)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetVideoOSDImage(int hChannel, MWCAP_VIDEO_OSD_IMAGE OSGImage)
+MW_RESULT MWSetVideoOSDImage(HCHANNEL hChannel, MWCAP_VIDEO_OSD_IMAGE OSGImage)
 {
     if (hChannel == -1) {
         //fprintf(stderr, "Function  %s parameter \"hChanne\" can't be -1\n", __FUNCTION__);
@@ -2096,7 +2096,7 @@ MW_RESULT MWSetVideoOSDImage(int hChannel, MWCAP_VIDEO_OSD_IMAGE OSGImage)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoBrightness(int hChannel, int *pnBrightness)
+MW_RESULT MWGetVideoBrightness(HCHANNEL hChannel, int *pnBrightness)
 {
     if (hChannel == -1 || NULL == pnBrightness)
     {
@@ -2112,7 +2112,7 @@ MW_RESULT MWGetVideoBrightness(int hChannel, int *pnBrightness)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetVideoBrightness(int hChannel, int nBrightness)
+MW_RESULT MWSetVideoBrightness(HCHANNEL hChannel, int nBrightness)
 {
     if (hChannel == -1) {
         //fprintf(stderr, "Function  %s parameter \"hChanne\" can't be -1\n", __FUNCTION__);
@@ -2127,7 +2127,7 @@ MW_RESULT MWSetVideoBrightness(int hChannel, int nBrightness)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoContrast(int hChannel, int *pnContrast)
+MW_RESULT MWGetVideoContrast(HCHANNEL hChannel, int *pnContrast)
 {
     if (hChannel == -1 || NULL == pnContrast)
     {
@@ -2143,7 +2143,7 @@ MW_RESULT MWGetVideoContrast(int hChannel, int *pnContrast)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetVideoContrast(int hChannel, int nContrast)
+MW_RESULT MWSetVideoContrast(HCHANNEL hChannel, int nContrast)
 {
     if (hChannel == -1) {
         //fprintf(stderr, "Function  %s parameter \"hChanne\" can't be -1\n", __FUNCTION__);
@@ -2158,7 +2158,7 @@ MW_RESULT MWSetVideoContrast(int hChannel, int nContrast)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoHue(int hChannel, int *pnHue)
+MW_RESULT MWGetVideoHue(HCHANNEL hChannel, int *pnHue)
 {
     if (hChannel == -1 || NULL == pnHue)
     {
@@ -2174,7 +2174,7 @@ MW_RESULT MWGetVideoHue(int hChannel, int *pnHue)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetVideoHue(int hChannel, int nHue)
+MW_RESULT MWSetVideoHue(HCHANNEL hChannel, int nHue)
 {
     if (hChannel == -1) {
         //fprintf(stderr, "Function  %s parameter \"hChanne\" can't be -1\n", __FUNCTION__);
@@ -2189,7 +2189,7 @@ MW_RESULT MWSetVideoHue(int hChannel, int nHue)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoSaturation(int hChannel, int *pnSaturation)
+MW_RESULT MWGetVideoSaturation(HCHANNEL hChannel, int *pnSaturation)
 {
     if (hChannel == -1 || NULL == pnSaturation)
     {
@@ -2205,7 +2205,7 @@ MW_RESULT MWGetVideoSaturation(int hChannel, int *pnSaturation)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetVideoSaturation(int hChannel, int nSaturation)
+MW_RESULT MWSetVideoSaturation(HCHANNEL hChannel, int nSaturation)
 {
     if (hChannel == -1) {
         //fprintf(stderr, "Function  %s parameter \"hChanne\" can't be -1\n", __FUNCTION__);
@@ -2220,7 +2220,7 @@ MW_RESULT MWSetVideoSaturation(int hChannel, int nSaturation)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSaveSettingsAsPreset(int hChannel)
+MW_RESULT MWSaveSettingsAsPreset(HCHANNEL hChannel)
 {
     if (hChannel == -1) {
         //fprintf(stderr, "Function  %s parameter \"hChanne\" can't be -1\n", __FUNCTION__);
@@ -2235,7 +2235,7 @@ MW_RESULT MWSaveSettingsAsPreset(int hChannel)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWReloadPreset(int hChannel)
+MW_RESULT MWReloadPreset(HCHANNEL hChannel)
 {
     if (hChannel == -1) {
         //fprintf(stderr, "Function  %s parameter \"hChanne\" can't be -1\n", __FUNCTION__);
@@ -2252,7 +2252,7 @@ MW_RESULT MWReloadPreset(int hChannel)
 
 
 // VGA/Component timings
-MW_RESULT MWGetVideoAutoHAlign(int hChannel, BOOLEAN *pbAuto)
+MW_RESULT MWGetVideoAutoHAlign(HCHANNEL hChannel, BOOLEAN *pbAuto)
 {
     if (hChannel == -1)
     {
@@ -2269,7 +2269,7 @@ MW_RESULT MWGetVideoAutoHAlign(int hChannel, BOOLEAN *pbAuto)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetVideoAutoHAlign(int hChannel, BOOLEAN bAuto)
+MW_RESULT MWSetVideoAutoHAlign(HCHANNEL hChannel, BOOLEAN bAuto)
 {
     if (hChannel == -1)
     {
@@ -2286,7 +2286,7 @@ MW_RESULT MWSetVideoAutoHAlign(int hChannel, BOOLEAN bAuto)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoSamplingPhase(int hChannel, unsigned char *pbyValue)
+MW_RESULT MWGetVideoSamplingPhase(HCHANNEL hChannel, unsigned char *pbyValue)
 {
     if (hChannel == -1 || pbyValue == NULL)
     {
@@ -2303,7 +2303,7 @@ MW_RESULT MWGetVideoSamplingPhase(int hChannel, unsigned char *pbyValue)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetVideoSamplingPhase(int hChannel, unsigned char byValue)
+MW_RESULT MWSetVideoSamplingPhase(HCHANNEL hChannel, unsigned char byValue)
 {
     if (hChannel == -1)
     {
@@ -2320,7 +2320,7 @@ MW_RESULT MWSetVideoSamplingPhase(int hChannel, unsigned char byValue)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoSamplingPhaseAutoAdjust(int hChannel, BOOLEAN *pbAuto)
+MW_RESULT MWGetVideoSamplingPhaseAutoAdjust(HCHANNEL hChannel, BOOLEAN *pbAuto)
 {
     if (hChannel == -1)
     {
@@ -2337,7 +2337,7 @@ MW_RESULT MWGetVideoSamplingPhaseAutoAdjust(int hChannel, BOOLEAN *pbAuto)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetVideoSamplingPhaseAutoAdjust(int hChannel, BOOLEAN bAuto)
+MW_RESULT MWSetVideoSamplingPhaseAutoAdjust(HCHANNEL hChannel, BOOLEAN bAuto)
 {
     if (hChannel == -1)
     {
@@ -2355,7 +2355,7 @@ MW_RESULT MWSetVideoSamplingPhaseAutoAdjust(int hChannel, BOOLEAN bAuto)
 }
 
 
-MW_RESULT MWSetVideoTiming(int hChannel, MWCAP_VIDEO_TIMING videoTiming)
+MW_RESULT MWSetVideoTiming(HCHANNEL hChannel, MWCAP_VIDEO_TIMING videoTiming)
 {
     if (hChannel == -1)
     {
@@ -2372,7 +2372,7 @@ MW_RESULT MWSetVideoTiming(int hChannel, MWCAP_VIDEO_TIMING videoTiming)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetVideoPreferredTimingArray(int hChannel, MWCAP_VIDEO_TIMING *pVideoTiming, long *plSize)
+MW_RESULT MWGetVideoPreferredTimingArray(HCHANNEL hChannel, MWCAP_VIDEO_TIMING *pVideoTiming, long *plSize)
 {
     if (hChannel == -1 || pVideoTiming == NULL)
     {
@@ -2394,7 +2394,7 @@ MW_RESULT MWGetVideoPreferredTimingArray(int hChannel, MWCAP_VIDEO_TIMING *pVide
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetCustomVideoTiming(int hChannel, MWCAP_VIDEO_CUSTOM_TIMING videoTiming)
+MW_RESULT MWSetCustomVideoTiming(HCHANNEL hChannel, MWCAP_VIDEO_CUSTOM_TIMING videoTiming)
 {
     if (hChannel == -1)
     {
@@ -2411,7 +2411,7 @@ MW_RESULT MWSetCustomVideoTiming(int hChannel, MWCAP_VIDEO_CUSTOM_TIMING videoTi
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetCustomVideoTimingsCount(int hChannel, unsigned int *pdwCount)
+MW_RESULT MWGetCustomVideoTimingsCount(HCHANNEL hChannel, unsigned int *pdwCount)
 {
     if (hChannel == -1)
     {
@@ -2428,7 +2428,7 @@ MW_RESULT MWGetCustomVideoTimingsCount(int hChannel, unsigned int *pdwCount)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetCustomVideoTimingsArray(int hChannel, MWCAP_VIDEO_CUSTOM_TIMING *pVideoCustomTiming, unsigned int *pdwCount)
+MW_RESULT MWGetCustomVideoTimingsArray(HCHANNEL hChannel, MWCAP_VIDEO_CUSTOM_TIMING *pVideoCustomTiming, unsigned int *pdwCount)
 {
     if (hChannel == -1 || pVideoCustomTiming == NULL)
     {
@@ -2451,7 +2451,7 @@ MW_RESULT MWGetCustomVideoTimingsArray(int hChannel, MWCAP_VIDEO_CUSTOM_TIMING *
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetCustomVideoTimingsArray(int hChannel, MWCAP_VIDEO_CUSTOM_TIMING *pVideoCustomTiming, unsigned int dwCount)
+MW_RESULT MWSetCustomVideoTimingsArray(HCHANNEL hChannel, MWCAP_VIDEO_CUSTOM_TIMING *pVideoCustomTiming, unsigned int dwCount)
 {
     if (hChannel == -1 || pVideoCustomTiming == NULL)
     {
@@ -2472,7 +2472,7 @@ MW_RESULT MWSetCustomVideoTimingsArray(int hChannel, MWCAP_VIDEO_CUSTOM_TIMING *
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetCustomVideoResolutionsCount(int hChannel, unsigned int *pdwCount)
+MW_RESULT MWGetCustomVideoResolutionsCount(HCHANNEL hChannel, unsigned int *pdwCount)
 {
     if (hChannel == -1)
     {
@@ -2489,7 +2489,7 @@ MW_RESULT MWGetCustomVideoResolutionsCount(int hChannel, unsigned int *pdwCount)
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWGetCustomVideoResolutionsArray(int hChannel, MWCAP_SIZE *pResolutionSize, unsigned int *pdwCount)
+MW_RESULT MWGetCustomVideoResolutionsArray(HCHANNEL hChannel, MWCAP_SIZE *pResolutionSize, unsigned int *pdwCount)
 {
     if (hChannel == -1 || pResolutionSize == NULL)
     {
@@ -2512,7 +2512,7 @@ MW_RESULT MWGetCustomVideoResolutionsArray(int hChannel, MWCAP_SIZE *pResolution
     return MW_SUCCEEDED;
 }
 
-MW_RESULT MWSetCustomVideoResolutionsArray(int hChannel, MWCAP_SIZE *pResolutionSize, unsigned int dwCount)
+MW_RESULT MWSetCustomVideoResolutionsArray(HCHANNEL hChannel, MWCAP_SIZE *pResolutionSize, unsigned int dwCount)
 {
     if (hChannel == -1 || pResolutionSize == NULL)
     {

@@ -13,9 +13,9 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#include "../inc/mw-linux.h"
-#include "../inc/mw-dma-mem.h"
-#include "../inc/mw-event-ioctl.h"
+#include "MWLinux.h"
+#include "MWDMAMem.h"
+#include "MWEventIoctl.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -57,12 +57,12 @@ extern "C"
 #endif
 
 
-typedef enum _MW_RESULT_ {
-    MW_SUCCEEDED = 0x00,
-    MW_FAILED,
-    MW_ENODATA,
-    MW_INVALID_PARAMS,
-} MW_RESULT;
+//typedef enum _MW_RESULT_ {
+//    MW_SUCCEEDED = 0x00,
+//    MW_FAILED,
+//    MW_ENODATA,
+//    MW_INVALID_PARAMS,
+//} MW_RESULT;
 
 
 MW_RESULT

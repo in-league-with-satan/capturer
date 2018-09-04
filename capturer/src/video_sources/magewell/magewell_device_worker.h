@@ -23,6 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QObject>
 #include <QSize>
 
+#include "magewell_global.h"
 #include "source_interface.h"
 #include "frame_buffer.h"
 
@@ -65,7 +66,7 @@ public slots:
 private:
     void updateVideoSignalInfo();
 
-    int current_channel=-1;
+    MGHCHANNEL current_channel=0; //nullptr;
 
     MagewellDeviceWorkerContext *d;
     MagewellAudioThread *a;
@@ -84,7 +85,7 @@ signals:
 
     void signalLost(bool value);
     void formatChanged(QString format);
-    void channelChanged(int channel);
+    void channelChanged(MGHCHANNEL channel);
     void frameSkipped();
     void errorString(QString err_string);
 };

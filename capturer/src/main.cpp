@@ -128,6 +128,8 @@ int main(int argc, char *argv[])
     qRegisterMetaType<SourceInterface::AudioChannels::T>("SourceInterface::AudioChannels::T");
     qRegisterMetaType<SourceInterface::AudioSampleSize::T>("SourceInterface::AudioSampleSize::T");
 
+    qRegisterMetaType<MGHCHANNEL>("MGHCHANNEL");
+
     qRegisterMetaType<FFEncoder::Config>("FFEncoder::Config");
     qRegisterMetaType<FFEncoder::Stats>("FFEncoder::Stats");
 
