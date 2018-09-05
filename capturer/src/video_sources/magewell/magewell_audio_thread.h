@@ -68,6 +68,8 @@ private:
 
 signals:
     void audioSampleSizeChnanged(SourceInterface::AudioSampleSize::T value);
+    void audioChannelsChnanged(SourceInterface::AudioChannels::T value);
+
 };
 
 #endif // MAGEWELL_AUDIO_THREAD_H

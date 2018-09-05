@@ -70,6 +70,8 @@ void AudioLevel::run()
 
     const int64_t emit_interval=33*1000*1000; // 33 ms, ~30 fps
 
+    int channels=0;
+
     running=true;
 
     while(running) {
@@ -78,18 +80,20 @@ void AudioLevel::run()
         frame=frame_buffer->take();
 
         if(frame) {
+            channels=frame->audio.channels;
+
             if(frame->audio.sample_size==16) {
                 int16_t *ptr_data=(int16_t*)frame->audio.data_ptr;
 
-                for(int pos=0, size=frame->audio.data_size/2; pos<size; pos+=8)
-                    for(int channel=0; channel<8; ++channel)
+                for(int pos=0, size=frame->audio.data_size/2; pos<size; pos+=channels)
+                    for(int channel=0; channel<channels; ++channel)
                         level[channel]=std::max(level[channel], (int32_t)ptr_data[pos + channel]);
 
             } else {
                 int32_t *ptr_data=(int32_t*)frame->audio.data_ptr;
 
-                for(int pos=0, size=frame->audio.data_size/4; pos<size; pos+=8)
-                    for(int channel=0; channel<8; ++channel)
+                for(int pos=0, size=frame->audio.data_size/4; pos<size; pos+=channels)
+                    for(int channel=0; channel<channels; ++channel)
                         level[channel]=std::max(level[channel], ptr_data[pos + channel]);
             }
 

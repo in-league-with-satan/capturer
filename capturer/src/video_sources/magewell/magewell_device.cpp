@@ -249,7 +249,7 @@ void MagewellDevice::run()
 
     connect(d, &MagewellDeviceWorker::signalLost, [this](bool value){ signal_lost=value; });
     connect(d, &MagewellDeviceWorker::audioSampleSizeChanged, [this](AudioSampleSize::T value){ audio_sample_size=value; });
-
+    connect(d, &MagewellDeviceWorker::audioChannelsChanged, [this](AudioChannels::T value){ audio_channels=value; });
 
     connect(d, SIGNAL(framerateChanged(AVRational)), SLOT(setFramerate(AVRational)), Qt::QueuedConnection);
     connect(d, SIGNAL(framesizeChanged(QSize)), SLOT(setFramesize(QSize)), Qt::QueuedConnection);

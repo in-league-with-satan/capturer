@@ -40,16 +40,69 @@ void channelsRemap(void *data, size_t size)
 }
 
 template <typename T>
-void channelsRemapMagewell(void *data, size_t size)
+void copyAudioSamplesMagewell(void *ptr_src, void *ptr_dst, int samples_per_frame, int channels)
 {
-    T *ptr_data=(T*)data;
+    // front left = 0
+    // front right = 4
+    // center = 5
+    // lfe = 1
+    // back left = 3
+    // back right = 7
+    // side left = 2
+    // side right = 6
 
-    for(int pos=0, csize=size/sizeof(T); pos<csize; pos+=8) {
-        std::swap(ptr_data[pos + 1], ptr_data[pos + 4]);
-        std::swap(ptr_data[pos + 2], ptr_data[pos + 5]);
-        std::swap(ptr_data[pos + 3], ptr_data[pos + 4]);
-        std::swap(ptr_data[pos + 5], ptr_data[pos + 7]);
-        std::swap(ptr_data[pos + 6], ptr_data[pos + 7]);
+    const static int ch_mapping[8]={
+        0, 4, 5, 1, 3, 7, 2, 6
+    };
+
+    const static int ch_mapping_6_wide[8]={
+        0, 4, 5, 1, 2, 6, 3, 7,
+    };
+
+    // const static int ch_mapping_4[8]={
+    //     0, 4, 2, 6, 5, 1, 3, 7,
+    // };
+
+    uint32_t *ptr_r=(uint32_t*)ptr_src;
+    T *ptr_w=(T*)ptr_dst;
+
+    const int sample_size_bytes=sizeof(T);
+
+    if(sample_size_bytes==2) {
+        if(channels==6) {
+            for(int smpl_num=0; smpl_num<samples_per_frame; smpl_num++) {
+                for(int ch_num=0; ch_num<channels; ch_num+=2) {
+                    ptr_w[smpl_num*channels + ch_num + 0]=ptr_r[smpl_num*8 + ch_mapping_6_wide[ch_num + 0]] >> 16;
+                    ptr_w[smpl_num*channels + ch_num + 1]=ptr_r[smpl_num*8 + ch_mapping_6_wide[ch_num + 1]] >> 16;
+                }
+            }
+
+        } else {
+            for(int smpl_num=0; smpl_num<samples_per_frame; smpl_num++) {
+                for(int ch_num=0; ch_num<channels; ch_num+=2) {
+                    ptr_w[smpl_num*channels + ch_num + 0]=ptr_r[smpl_num*8 + ch_mapping[ch_num + 0]] >> 16;
+                    ptr_w[smpl_num*channels + ch_num + 1]=ptr_r[smpl_num*8 + ch_mapping[ch_num + 1]] >> 16;
+                }
+            }
+        }
+
+    } else {
+        if(channels==6) {
+            for(int smpl_num=0; smpl_num<samples_per_frame; smpl_num++) {
+                for(int ch_num=0; ch_num<channels; ch_num+=2) {
+                    ptr_w[smpl_num*channels + ch_num + 0]=ptr_r[smpl_num*8 + ch_mapping_6_wide[ch_num + 0]];
+                    ptr_w[smpl_num*channels + ch_num + 1]=ptr_r[smpl_num*8 + ch_mapping_6_wide[ch_num + 1]];
+                }
+            }
+
+        } else {
+            for(int smpl_num=0; smpl_num<samples_per_frame; smpl_num++) {
+                for(int ch_num=0; ch_num<channels; ch_num+=2) {
+                    ptr_w[smpl_num*channels + ch_num + 0]=ptr_r[smpl_num*8 + ch_mapping[ch_num + 0]];
+                    ptr_w[smpl_num*channels + ch_num + 1]=ptr_r[smpl_num*8 + ch_mapping[ch_num + 1]];
+                }
+            }
+        }
     }
 }
 

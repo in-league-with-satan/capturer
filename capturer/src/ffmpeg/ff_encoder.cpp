@@ -161,8 +161,6 @@ static QString add_stream_audio(OutputStream *out_stream, AVFormatContext *forma
     out_stream->av_codec_context->compression_level=8;
 
 
-    // out_stream->av_codec_context->sample_fmt=(*codec)->sample_fmts ? (*codec)->sample_fmts[0] : AV_SAMPLE_FMT_FLTP;
-
     if(cfg.audio_sample_size==16)
         out_stream->av_codec_context->sample_fmt=AV_SAMPLE_FMT_S16;
 
@@ -173,6 +171,9 @@ static QString add_stream_audio(OutputStream *out_stream, AVFormatContext *forma
 
     switch(cfg.audio_channels_size) {
     case 6:
+        out_stream->av_codec_context->channel_layout=AV_CH_LAYOUT_5POINT1;
+        break;
+
     case 8:
         out_stream->av_codec_context->channel_layout=AV_CH_LAYOUT_7POINT1;
         // c->channel_layout=AV_CH_LAYOUT_7POINT1_WIDE_BACK;
@@ -891,9 +892,6 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 {
     if(!cfg.pixel_format_src.isValid() || !cfg.pixel_format_dst.isValid())
         return false;
-
-    if(context->mode==FFEncoder::Mode::webcam)
-        cfg.audio_channels_size=2;
 
     last_error_string.clear();
 

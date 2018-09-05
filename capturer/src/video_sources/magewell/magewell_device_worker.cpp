@@ -158,6 +158,8 @@ MagewellDeviceWorker::MagewellDeviceWorker(QObject *parent)
     , a(new MagewellAudioThread())
 {
     connect(a, SIGNAL(audioSampleSizeChnanged(SourceInterface::AudioSampleSize::T)), SIGNAL(audioSampleSizeChanged(SourceInterface::AudioSampleSize::T)), Qt::QueuedConnection);
+    connect(a, SIGNAL(audioChannelsChnanged(SourceInterface::AudioChannels::T)), SIGNAL(audioChannelsChanged(SourceInterface::AudioChannels::T)), Qt::QueuedConnection);
+
     connect(this, SIGNAL(channelChanged(MGHCHANNEL)), a, SLOT(setChannel(MGHCHANNEL)), Qt::QueuedConnection);
 }
 
@@ -212,7 +214,7 @@ SourceInterface::AudioSampleSize::T MagewellDeviceWorker::currentAudioSampleSize
 
 SourceInterface::AudioChannels::T MagewellDeviceWorker::currentAudioChannels()
 {
-    return SourceInterface::AudioChannels::ch_8;
+    return (SourceInterface::AudioChannels::T)a->channels();
 }
 
 bool MagewellDeviceWorker::step()

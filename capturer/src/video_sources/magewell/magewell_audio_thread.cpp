@@ -75,7 +75,6 @@ MagewellAudioThread::~MagewellAudioThread()
 
 int MagewellAudioThread::channels() const
 {
-    return 8;
     return d->channels;
 }
 
@@ -136,30 +135,19 @@ void MagewellAudioThread::run()
         if(d->status_bits==MWCAP_NOTIFY_AUDIO_FRAME_BUFFERED) {
             MWCAP_AUDIO_CAPTURE_FRAME audio_frame;
 
-            while(true) {
-                ret=MWCaptureAudioFrame((HCHANNEL)current_channel.load(), &audio_frame);
+            ret=MWCaptureAudioFrame((HCHANNEL)current_channel.load(), &audio_frame);
 
-#ifdef __linux__
-                if(MW_ENODATA==ret)
-#else
-                if(ret==MW_SUCCEEDED)
-#endif
-                    break;
-            }
+            if(ret!=MW_SUCCEEDED)
+                continue;
 
 
-            int size=MWCAP_AUDIO_SAMPLES_PER_FRAME*MWCAP_AUDIO_MAX_NUM_CHANNELS*d->sample_size_bytes;
+            d->ba_buffer.fill(0);
 
-            d->ba_buffer.resize(size);
-
-            memcpy((void*)d->ba_buffer.constData(), (void*)audio_frame.adwSamples, size);
-
-
-            if(d->sample_size==16)
-                channelsRemapMagewell<int16_t>((void*)d->ba_buffer.constData(), d->ba_buffer.size());
+            if(d->sample_size_bytes==2)
+                copyAudioSamplesMagewell<uint16_t>((void*)audio_frame.adwSamples, (void*)d->ba_buffer.constData(), MWCAP_AUDIO_SAMPLES_PER_FRAME, d->channels);
 
             else
-                channelsRemapMagewell<int32_t>((void*)d->ba_buffer.constData(), d->ba_buffer.size());
+                copyAudioSamplesMagewell<uint32_t>((void*)audio_frame.adwSamples, (void*)d->ba_buffer.constData(), MWCAP_AUDIO_SAMPLES_PER_FRAME, d->channels);
 
 
             mutex.lock();
@@ -277,9 +265,10 @@ void MagewellAudioThread::updateAudioSignalInfo()
     d->sample_size=signal_status.cBitsPerSample;
     d->sample_size_bytes=(d->sample_size==16 ? 2 : 4);
 
-    d->ba_buffer.resize(MWCAP_AUDIO_SAMPLES_PER_FRAME*d->channels*(signal_status.cBitsPerSample/8));
+    d->ba_buffer.resize(MWCAP_AUDIO_SAMPLES_PER_FRAME*d->channels*d->sample_size_bytes);
 
     emit audioSampleSizeChnanged(d->sample_size==16 ? SourceInterface::AudioSampleSize::bitdepth_16 : SourceInterface::AudioSampleSize::bitdepth_32);
+    emit audioChannelsChnanged((SourceInterface::AudioChannels::T)d->channels.load());
 
     qDebug() << signal_status.dwSampleRate << d->sample_size << d->channels;
 }

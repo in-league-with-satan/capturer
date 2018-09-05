@@ -83,7 +83,7 @@ signals:
     void framesizeChanged(QSize r);
 
     void audioSampleSizeChanged(SourceInterface::AudioSampleSize::T value);
-
+    void audioChannelsChanged(SourceInterface::AudioChannels::T value);
 
     void signalLost(bool value);
     void formatChanged(QString format);
