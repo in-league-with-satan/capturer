@@ -1045,6 +1045,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
     context->in_start_pts=AV_NOPTS_VALUE;
 
+    context->out_stream_video.last_pts=0;
 
     if(cfg.audio_sample_size!=0) {
         context->out_stream_audio.next_pts=0;
@@ -1221,7 +1222,7 @@ void FFEncoder::calcStats()
     Stats s;
 
     if(context->cfg.audio_sample_size!=0) {
-        double cf_a=av_stream_get_end_pts(context->out_stream_audio.av_stream) * av_q2d(context->out_stream_audio.av_stream->time_base);
+        double cf_a=av_stream_get_end_pts(context->out_stream_audio.av_stream)*av_q2d(context->out_stream_audio.av_stream->time_base);
 
         if(cf_a<.01)
             cf_a=.01;
@@ -1233,7 +1234,7 @@ void FFEncoder::calcStats()
         s.time=QTime(0, 0).addMSecs((double)context->out_stream_video.last_pts*av_q2d(context->out_stream_video.av_codec_context->time_base)*1000);
     }
 
-    double cf_v=av_stream_get_end_pts(context->out_stream_video.av_stream) * av_q2d(context->out_stream_video.av_stream->time_base);
+    double cf_v=av_stream_get_end_pts(context->out_stream_video.av_stream)*av_q2d(context->out_stream_video.av_stream->time_base);
 
     if(cf_v<.01)
         cf_v=.01;

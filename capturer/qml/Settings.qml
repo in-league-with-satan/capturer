@@ -209,6 +209,9 @@ ShowHideRect {
                         if(item_type==list.type_divider)
                             return ""
 
+                        if(item_type==list.type_button)
+                            return ""
+
                         if(item_name!="")
                             return "  " + item_name + ":"
 

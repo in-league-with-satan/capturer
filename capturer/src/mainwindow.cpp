@@ -1583,8 +1583,6 @@ void MainWindow::startStopRecording()
     }
 
 
-    messenger->updateRecStats();
-
     dropped_frames_counter=0;
 }
 
