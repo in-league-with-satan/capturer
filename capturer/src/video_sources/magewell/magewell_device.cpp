@@ -20,9 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDebug>
 #include <qcoreapplication.h>
 
-#ifdef __linux__
 #include "MWCapture.h"
-#endif
 
 #include "magewell_device_worker.h"
 
@@ -60,25 +58,32 @@ SourceInterface::Type::T MagewellDevice::type() const
 
 void MagewellDevice::init()
 {
-#ifdef __linux__
     MWCaptureInitInstance();
     MWRefreshDevice();
-#endif
 }
 
 MagewellDevice::Devices MagewellDevice::availableDevices()
 {
-    Devices list;
+    static Devices list;
 
-#ifdef __linux__
+    if(!list.isEmpty())
+        return list;
 
     const int channel_count=MWGetChannelCount();
 
     unsigned int temperature=0;
-    char tmp[128];
+
+#ifdef __linux__
+    char tmp[128]={};
+#else
+    wchar_t tmp[128]={};
+#endif
+
     MWCAP_CHANNEL_INFO channel_info;
 
     MagewellDevice::Device dev;
+
+    HCHANNEL channel;
 
     int ret;
 
@@ -90,44 +95,47 @@ MagewellDevice::Devices MagewellDevice::availableDevices()
             goto ad_close;
         }
 
+#ifdef __linux__
         dev.path=QString(tmp);
-
+#else
+        dev.path=QString::fromWCharArray(tmp);
+#endif
         //
 
-        dev.channel=MWOpenChannelByPath(tmp);
+        channel=MWOpenChannelByPath(tmp);
 
-        if(dev.channel==0) {
-            qCritical() << "MWOpenChannelByPath err" << dev.channel;
+        if(channel==0) {
+            qCritical() << "MWOpenChannelByPath err";
             continue;
         }
 
         //
 
-        ret=MWGetChannelInfo(dev.channel, &channel_info);
+        ret=MWGetChannelInfo(channel, &channel_info);
 
         if(ret!=MW_SUCCEEDED) {
-            qCritical() << "MWGetChannelInfo err" << dev.channel;
+            qCritical() << "MWGetChannelInfo err" << channel;
             goto ad_close;
         }
 
         dev.name=QString(channel_info.szProductName);
+        dev.index_board=channel_info.byBoardIndex;
+        dev.index_channel=channel_info.byChannelIndex;
 
 
         list.append(dev);
 
         //
 
-        MWGetTemperature(dev.channel, &temperature);
+        MWGetTemperature(channel, &temperature);
 
-        qInfo() << dev.channel << dev.name << dev.path;
+        qInfo() << channel << dev.name << dev.path;
         qInfo() << "temperature:" << temperature/10.;
 
 ad_close:
 
-        MWCloseChannel(dev.channel);
+        MWCloseChannel(channel);
     }
-
-#endif
 
     return list;
 }
@@ -172,13 +180,6 @@ void MagewellDevice::unsubscribe(FrameBuffer<Frame::ptr>::ptr obj)
     d->unsubscribe(obj);
 }
 
-void MagewellDevice::setDevice(MagewellDevice::Device device)
-{
-    this->device=device;
-
-    emit setDevice(device.path);
-}
-
 void MagewellDevice::setDevice(void *ptr)
 {
     MagewellDevice::Device *dev=reinterpret_cast<MagewellDevice::Device*>(ptr);
@@ -190,7 +191,7 @@ void MagewellDevice::setDevice(void *ptr)
     pixel_format=device.pixel_format;
 
     emit setPixelFormat(device.pixel_format);
-    emit setDevice(device.path);
+    emit setDevice(QSize(device.index_board, device.index_channel));
 }
 
 void MagewellDevice::setFramerate(AVRational fr)
@@ -236,7 +237,7 @@ void MagewellDevice::run()
 
     d->moveToThread(this);
 
-    connect(this, SIGNAL(setDevice(QString)), d, SLOT(setDevice(QString)), Qt::QueuedConnection);
+    connect(this, SIGNAL(setDevice(QSize)), d, SLOT(setDevice(QSize)), Qt::QueuedConnection);
     connect(this, SIGNAL(setPixelFormat(PixelFormat)), d, SLOT(setPixelFormat(PixelFormat)), Qt::QueuedConnection);
 
     connect(this, SIGNAL(deviceStart()), d, SLOT(deviceStart()), Qt::QueuedConnection);

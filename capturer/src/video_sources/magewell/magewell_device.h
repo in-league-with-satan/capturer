@@ -49,8 +49,9 @@ public:
     struct Device {
         QString name;
         QString path;
+        int index_channel;
+        int index_board;
         PixelFormat pixel_format;
-        MGHCHANNEL channel=0; //nullptr;
     };
 
     typedef QList <Device> Devices;
@@ -64,7 +65,6 @@ public slots:
     void subscribe(FrameBuffer<Frame::ptr>::ptr obj);
     void unsubscribe(FrameBuffer<Frame::ptr>::ptr obj);
 
-    void setDevice(Device device);
     void setDevice(void *ptr);
 
 private slots:
@@ -90,7 +90,7 @@ protected:
 signals:
     void deviceStart();
     void deviceStop();
-    void setDevice(QString path);
+    void setDevice(QSize board_index);
     void setPixelFormat(PixelFormat fmt);
 
     //

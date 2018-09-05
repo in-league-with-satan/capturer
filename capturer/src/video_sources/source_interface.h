@@ -92,10 +92,7 @@ public:
             return true;
 
         case Type::magewell:
-#ifdef __linux__
             return true;
-#endif
-            return false;
 
         case Type::decklink:
             return true;

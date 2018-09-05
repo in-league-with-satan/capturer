@@ -21,3 +21,19 @@ linux {
 #    LIBS += $$PWD/linux/Lib/x64/libMWCapture.a
 #    LIBS += -ludev -lasound -lv4l2
 }
+
+windows {
+    INCLUDEPATH += \
+        $$PWD \
+        $$PWD/win/Include \
+        $$PWD/win/Include/LibMWCapture
+
+    HEADERS += \
+        $$PWD/*.h \
+        $$PWD/win/Include/*.h \
+        $$PWD/win/Include/LibMWCapture/*.h
+
+
+#    LIBS += $$PWD/win/Lib/Win32/LibMWCapture.lib
+    LIBS += $$PWD/win/Lib/x64/LibMWCapture.lib
+}

@@ -29,6 +29,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "framerate.h"
 #include "ff_tools.h"
+#include "pixel_format_dshow_helper.h"
 
 #include "tools_dshow.h"
 
@@ -166,9 +167,9 @@ QList <FFDevice::Format> getDeviceCapabilities(const QString &dev_name)
                 {
                     quint64 res_key=QString("%1%2").arg(vcaps->MaxOutputSize.cx).arg(vcaps->MaxOutputSize.cy).toULongLong();
 
-                    PixelFormat tmp_pix_fmt;
+                    PixelFormat tmp_pix_fmt=fromDshowPixelFormat(type->subtype);
 
-                    if(tmp_pix_fmt.fromDshowPixelFormat(type->subtype)) {
+                    if(tmp_pix_fmt.isValid()) {
                         // qDebug() << "tmp_pix_fmt" << tmp_pix_fmt.toString() << tmp_pix_fmt;
 
                         if(resolution[tmp_pix_fmt].contains(res_key))

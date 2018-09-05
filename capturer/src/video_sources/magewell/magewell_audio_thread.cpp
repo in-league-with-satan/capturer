@@ -22,9 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QElapsedTimer>
 #include <qcoreapplication.h>
 
-#ifdef __linux__
 #include "MWCapture.h"
-#endif
 
 #include "audio_tools.h"
 
@@ -37,9 +35,12 @@ struct MagewellAudioContext {
 #ifdef __linux__
     MWCAP_PTR event_capture=0;
     MWCAP_PTR event_notify_buffering=0;
+#else
+    HANDLE event_capture=0;
+    HANDLE event_notify_buffering=0;
+#endif
 
     HNOTIFY notify_buffering=0;
-#endif
 
     ULONGLONG status_bits=0;
 
@@ -100,8 +101,6 @@ void MagewellAudioThread::run()
 
     int ret;
 
-#ifdef __linux__
-
     while(running) {
         if(d->event_capture==0) {
             qApp->processEvents();
@@ -118,11 +117,13 @@ void MagewellAudioThread::run()
 
 
         MWWaitEvent(d->event_notify_buffering, mw_timeout);
+        // MWWaitEvent(d->event_notify_buffering, INFINITE);
 
-        ret=MWGetNotifyStatus(current_channel, d->notify_buffering, &d->status_bits);
+
+        ret=MWGetNotifyStatus((HCHANNEL)current_channel.load(), d->notify_buffering, &d->status_bits);
 
         if(ret!=MW_SUCCEEDED) {
-            qCritical() << "MWGetNotifyStatus err";
+            qCritical() << "MWGetNotifyStatus err" << ret;
             continue;
         }
 
@@ -136,9 +137,13 @@ void MagewellAudioThread::run()
             MWCAP_AUDIO_CAPTURE_FRAME audio_frame;
 
             while(true) {
-                ret=MWCaptureAudioFrame(current_channel, &audio_frame);
+                ret=MWCaptureAudioFrame((HCHANNEL)current_channel.load(), &audio_frame);
 
+#ifdef __linux__
                 if(MW_ENODATA==ret)
+#else
+                if(ret==MW_SUCCEEDED)
+#endif
                     break;
             }
 
@@ -169,7 +174,7 @@ void MagewellAudioThread::run()
 
         LONGLONG device_time;
 
-        ret=MWGetDeviceTime(current_channel, &device_time);
+        ret=MWGetDeviceTime((HCHANNEL)current_channel.load(), &device_time);
 
         if(ret!=MW_SUCCEEDED) {
             qCritical() << "MWGetDeviceTime err";
@@ -179,53 +184,51 @@ void MagewellAudioThread::run()
         qApp->processEvents();
     }
 
-    captureStop();
-
-#endif
+    deviceStop();
 }
 
 void MagewellAudioThread::setChannel(MGHCHANNEL channel)
 {
+    qDebug() << channel;
+
     current_channel=channel;
 
-    captureStop();
-    captureStart();
+    deviceStop();
+    deviceStart();
 }
 
-void MagewellAudioThread::captureStart()
+void MagewellAudioThread::deviceStart()
 {
-#ifdef __linux__
-
-    captureStop();
+    deviceStop();
 
     qDebug() << "current_channel" << current_channel;
 
     d->event_capture=MWCreateEvent();
 
-    if(d->event_capture <= 0) {
+    if(d->event_capture==0) {
         qCritical() << "MWCreateEvent err";
         return;
     }
 
     d->event_notify_buffering=MWCreateEvent();
 
-    if(d->event_notify_buffering <= 0) {
+    if(d->event_notify_buffering==0) {
         qCritical() << "MWCreateEvent err";
         return;
     }
 
 
-    d->notify_buffering=MWRegisterNotify(current_channel, d->event_notify_buffering,
+    d->notify_buffering=MWRegisterNotify((HCHANNEL)current_channel.load(), d->event_notify_buffering,
                                          MWCAP_NOTIFY_AUDIO_FRAME_BUFFERED | MWCAP_NOTIFY_AUDIO_SIGNAL_CHANGE);
 
-    if(d->notify_buffering<=0) {
+    if(d->notify_buffering==0) {
         qCritical() << "MWRegisterNotify err";
         return;
     }
 
     //
 
-    int ret=MWStartAudioCapture(current_channel);
+    int ret=MWStartAudioCapture((HCHANNEL)current_channel.load());
 
     if(ret!=MW_SUCCEEDED) {
         qCritical() << "MWStartAudioCapture err";
@@ -236,17 +239,15 @@ void MagewellAudioThread::captureStart()
 
     updateAudioSignalInfo();
 
-#endif
+    qInfo() << "ok?";
 }
 
-void MagewellAudioThread::captureStop()
+void MagewellAudioThread::deviceStop()
 {
-#ifdef __linux__
-
-    MWStopAudioCapture(current_channel);
+    MWStopAudioCapture((HCHANNEL)current_channel.load());
 
     if(d->event_notify_buffering) {
-        MWUnregisterNotify(current_channel, d->notify_buffering);
+        MWUnregisterNotify((HCHANNEL)current_channel.load(), d->notify_buffering);
         d->notify_buffering=0;
     }
 
@@ -254,17 +255,13 @@ void MagewellAudioThread::captureStop()
         MWCloseEvent(d->event_capture);
         d->event_capture=0;
     }
-
-#endif
 }
 
 void MagewellAudioThread::updateAudioSignalInfo()
 {
-#ifdef __linux__
-
     MWCAP_AUDIO_SIGNAL_STATUS signal_status;
 
-    if(MWGetAudioSignalStatus(current_channel, &signal_status)!=MW_SUCCEEDED)
+    if(MWGetAudioSignalStatus((HCHANNEL)current_channel.load(), &signal_status)!=MW_SUCCEEDED)
         return;
 
     d->channels=0;
@@ -285,6 +282,4 @@ void MagewellAudioThread::updateAudioSignalInfo()
     emit audioSampleSizeChnanged(d->sample_size==16 ? SourceInterface::AudioSampleSize::bitdepth_16 : SourceInterface::AudioSampleSize::bitdepth_32);
 
     qDebug() << signal_status.dwSampleRate << d->sample_size << d->channels;
-
-#endif
 }

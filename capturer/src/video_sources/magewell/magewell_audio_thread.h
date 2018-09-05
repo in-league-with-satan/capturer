@@ -47,14 +47,14 @@ public:
     QByteArray getData();
 
 public slots:
+    void deviceStop();
     void setChannel(MGHCHANNEL channel);
 
 protected:
     void run();
 
 private:
-    void captureStart();
-    void captureStop();
+    void deviceStart();
     void updateAudioSignalInfo();
 
     std::atomic <MGHCHANNEL> current_channel;

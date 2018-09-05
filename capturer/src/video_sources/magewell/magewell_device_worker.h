@@ -57,7 +57,7 @@ public:
     bool step();
 
 public slots:
-    void setDevice(QString path);
+    void setDevice(QSize board_channel);
     void deviceStart();
     void deviceStop();
 
@@ -72,6 +72,8 @@ private:
     MagewellAudioThread *a;
 
     bool signal_lost;
+
+    int color_format;
 
 protected:
     QList <FrameBuffer<Frame::ptr>::ptr> subscription_list;

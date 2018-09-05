@@ -4,6 +4,17 @@
 #include <QMetaType>
 
 
+#ifdef __linux__
+;
+#else
+
+#define MWWaitEvent WaitForSingleObject
+#define MWCreateEvent() CreateEvent(NULL, FALSE, FALSE, NULL)
+#define MWCloseEvent CloseHandle
+
+#endif
+
+
 typedef void* MGHCHANNEL;
 
 Q_DECLARE_METATYPE(MGHCHANNEL)
