@@ -127,12 +127,12 @@ void MagewellAudioThread::run()
         }
 
 
-        if(d->status_bits==MWCAP_NOTIFY_AUDIO_SIGNAL_CHANGE) {
+        if(d->status_bits&MWCAP_NOTIFY_AUDIO_SIGNAL_CHANGE) {
             updateAudioSignalInfo();
         }
 
 
-        if(d->status_bits==MWCAP_NOTIFY_AUDIO_FRAME_BUFFERED) {
+        if(d->status_bits&MWCAP_NOTIFY_AUDIO_FRAME_BUFFERED) {
             MWCAP_AUDIO_CAPTURE_FRAME audio_frame;
 
             ret=MWCaptureAudioFrame((HCHANNEL)current_channel.load(), &audio_frame);
@@ -227,7 +227,7 @@ void MagewellAudioThread::deviceStart()
 
     updateAudioSignalInfo();
 
-    qInfo() << "ok?";
+    qInfo() << "ok";
 }
 
 void MagewellAudioThread::deviceStop()
@@ -267,8 +267,8 @@ void MagewellAudioThread::updateAudioSignalInfo()
 
     d->ba_buffer.resize(MWCAP_AUDIO_SAMPLES_PER_FRAME*d->channels*d->sample_size_bytes);
 
-    emit audioSampleSizeChnanged(d->sample_size==16 ? SourceInterface::AudioSampleSize::bitdepth_16 : SourceInterface::AudioSampleSize::bitdepth_32);
-    emit audioChannelsChnanged((SourceInterface::AudioChannels::T)d->channels.load());
+    emit audioSampleSizeChanged(d->sample_size==16 ? SourceInterface::AudioSampleSize::bitdepth_16 : SourceInterface::AudioSampleSize::bitdepth_32);
+    emit audioChannelsChanged((SourceInterface::AudioChannels::T)d->channels.load());
 
     qDebug() << signal_status.dwSampleRate << d->sample_size << d->channels;
 }

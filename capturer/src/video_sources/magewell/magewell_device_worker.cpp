@@ -140,7 +140,7 @@ struct MagewellDeviceWorkerContext {
 
     PixelFormat pixel_format=PixelFormat::nv12;
 
-    QByteArray ba_buffer;
+    size_t frame_buffer_size;
     DWORD min_stride;
 
     QSize framesize;
@@ -157,8 +157,8 @@ MagewellDeviceWorker::MagewellDeviceWorker(QObject *parent)
     , d(new MagewellDeviceWorkerContext())
     , a(new MagewellAudioThread())
 {
-    connect(a, SIGNAL(audioSampleSizeChnanged(SourceInterface::AudioSampleSize::T)), SIGNAL(audioSampleSizeChanged(SourceInterface::AudioSampleSize::T)), Qt::QueuedConnection);
-    connect(a, SIGNAL(audioChannelsChnanged(SourceInterface::AudioChannels::T)), SIGNAL(audioChannelsChanged(SourceInterface::AudioChannels::T)), Qt::QueuedConnection);
+    connect(a, SIGNAL(audioSampleSizeChanged(SourceInterface::AudioSampleSize::T)), SIGNAL(audioSampleSizeChanged(SourceInterface::AudioSampleSize::T)), Qt::QueuedConnection);
+    connect(a, SIGNAL(audioChannelsChanged(SourceInterface::AudioChannels::T)), SIGNAL(audioChannelsChanged(SourceInterface::AudioChannels::T)), Qt::QueuedConnection);
 
     connect(this, SIGNAL(channelChanged(MGHCHANNEL)), a, SLOT(setChannel(MGHCHANNEL)), Qt::QueuedConnection);
 }
@@ -244,20 +244,21 @@ bool MagewellDeviceWorker::step()
         return true;
     }
 
-    ret=MWGetVideoBufferInfo((HCHANNEL)current_channel, &d->video_buffer_info);
 
-    if(ret!=MW_SUCCEEDED) {
-        qCritical() << "MWGetVideoBufferInfo err";
-        return true;
-    }
-
-
-    if(d->status_bits==MWCAP_NOTIFY_VIDEO_SIGNAL_CHANGE) {
+    if(d->status_bits&MWCAP_NOTIFY_VIDEO_SIGNAL_CHANGE) {
         updateVideoSignalInfo();
     }
 
 
-    if(d->status_bits==MWCAP_NOTIFY_VIDEO_FRAME_BUFFERED) {
+    if(d->status_bits&MWCAP_NOTIFY_VIDEO_FRAME_BUFFERED) {
+        ret=MWGetVideoBufferInfo((HCHANNEL)current_channel, &d->video_buffer_info);
+
+        if(ret!=MW_SUCCEEDED) {
+            qCritical() << "MWGetVideoBufferInfo err";
+            return true;
+        }
+
+
         HDMI_INFOFRAME_PACKET hdmi_infoframe_packet;
 
         int ret=MWGetHDMIInfoFramePacket((HCHANNEL)current_channel, MWCAP_HDMI_INFOFRAME_ID_HDR, &hdmi_infoframe_packet);
@@ -271,22 +272,29 @@ bool MagewellDeviceWorker::step()
             return true;
         }
 
+        Frame::ptr frame=Frame::make();
+
+        frame->video.dummy.resize(d->frame_buffer_size);
+        frame->video.data_ptr=(uint8_t*)frame->video.dummy.constData();
+        frame->video.data_size=d->frame_buffer_size;
+        frame->video.size=d->framesize;
+
 #ifdef __linux__
 
-        ret=MWCaptureVideoFrameToVirtualAddress((HCHANNEL)current_channel, d->video_buffer_info.iNewestBuffering,
-                                                (MWCAP_PTR)(long)d->ba_buffer.constData(), d->ba_buffer.size(), d->min_stride,
+        ret=MWCaptureVideoFrameToVirtualAddress((HCHANNEL)current_channel, d->video_buffer_info.iNewestBufferedFullFrame,
+                                                (MWCAP_PTR)frame->video.data_ptr, frame->video.data_size, d->min_stride,
                                                 0, 0, d->fourcc, d->framesize.width(), d->framesize.height());
 
 #else
 
         ret=MWCaptureVideoFrameToVirtualAddressEx(
                     (HCHANNEL)current_channel,
-                    d->video_buffer_info.iNewestBuffering,
-                    (LPBYTE)d->ba_buffer.constData(),
-                    d->ba_buffer.size(),
+                    d->video_buffer_info.iNewestBufferedFullFrame,
+                    (LPBYTE)frame->video.data_ptr,
+                    frame->video.data_size,
                     d->min_stride,
                     0,
-                    0, // ?
+                    0,
                     d->fourcc,
                     d->framesize.width(),
                     d->framesize.height(),
@@ -341,10 +349,6 @@ bool MagewellDeviceWorker::step()
             qCritical() << "MWGetDeviceTime err";
             return true;
         }
-
-        Frame::ptr frame=Frame::make();
-
-        frame->setDataVideo(d->ba_buffer, d->framesize);
 
         frame->video.pixel_format=d->pixel_format;
 
@@ -454,7 +458,8 @@ void MagewellDeviceWorker::deviceStop()
     }
 
     emit signalLost(signal_lost=true);
-    // QMetaObject::invokeMethod(a, "deviceStop", Qt::QueuedConnection);
+
+    QMetaObject::invokeMethod(a, "deviceStop", Qt::QueuedConnection);
 }
 
 void MagewellDeviceWorker::setPixelFormat(PixelFormat fmt)
@@ -545,9 +550,7 @@ void MagewellDeviceWorker::updateVideoSignalInfo()
     d->framesize=QSize(signal_status.cx, signal_status.cy);
 
     d->min_stride=FOURCC_CalcMinStride(d->fourcc, d->framesize.width(), 4);
-    int buf_size=FOURCC_CalcImageSize(d->fourcc, d->framesize.width(), d->framesize.height(), d->min_stride);
-
-    d->ba_buffer.resize(buf_size);
+    d->frame_buffer_size=FOURCC_CalcImageSize(d->fourcc, d->framesize.width(), d->framesize.height(), d->min_stride);
 
     d->framerate=Framerate::toRational(10000000./signal_status.dwFrameDuration);
 
@@ -559,5 +562,5 @@ void MagewellDeviceWorker::updateVideoSignalInfo()
     emit formatChanged(QString("%1%2@%3 %4").arg(d->framesize.height()).arg(signal_status.bInterlaced ? 'i' : 'p')
                        .arg(Framerate::rnd2(Framerate::fromRational(d->framerate))).arg(str_pixel_format));
 
-    qDebug() << d->framesize << buf_size << Framerate::fromRational(d->framerate);
+    qDebug() << d->framesize << d->frame_buffer_size << Framerate::fromRational(d->framerate);
 }

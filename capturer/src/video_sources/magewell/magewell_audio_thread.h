@@ -47,6 +47,7 @@ public:
     QByteArray getData();
 
 public slots:
+    void deviceStart();
     void deviceStop();
     void setChannel(MGHCHANNEL channel);
 
@@ -54,7 +55,6 @@ protected:
     void run();
 
 private:
-    void deviceStart();
     void updateAudioSignalInfo();
 
     std::atomic <MGHCHANNEL> current_channel;
@@ -67,8 +67,8 @@ private:
     QMutex mutex;
 
 signals:
-    void audioSampleSizeChnanged(SourceInterface::AudioSampleSize::T value);
-    void audioChannelsChnanged(SourceInterface::AudioChannels::T value);
+    void audioSampleSizeChanged(SourceInterface::AudioSampleSize::T value);
+    void audioChannelsChanged(SourceInterface::AudioChannels::T value);
 
 };
 
