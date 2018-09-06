@@ -61,8 +61,8 @@ FFSourceWorker::FFSourceWorker(SourceInterface *parent_interface, QObject *paren
     default_format.setSampleSize(16);
     default_format.setCodec("audio/pcm");
     default_format.setByteOrder(QAudioFormat::LittleEndian);
-    default_format.setSampleType(QAudioFormat::UnSignedInt);
-    // default_format.setSampleType(QAudioFormat::SignedInt);
+    // default_format.setSampleType(QAudioFormat::UnSignedInt);
+    default_format.setSampleType(QAudioFormat::SignedInt);
 
     //
 
@@ -182,7 +182,7 @@ void FFSourceWorker::deviceStart()
             if(!dev_list[index_device_audio].supportedSampleTypes().contains(format.sampleType()))
                 format.setSampleType(dev_list[index_device_audio].supportedSampleTypes().first());
 
-            dev_list[index_device_audio].supportedByteOrders();
+            // qInfo() << "supportedSampleSizes" << dev_list[index_device_audio].supportedSampleSizes();
 
             if(!dev_list[index_device_audio].isFormatSupported(format)) {
                 qWarning() << "Default format not supported, trying to use the nearest.";
@@ -449,14 +449,16 @@ bool FFSourceWorker::step()
                         if(d->audio_device) {
                             QByteArray ba_audio=d->audio_device->readAll();
 
-                            if(d->audio_input->format()!=default_format) {
-                                QByteArray ba_audio_conv;
+                            if(!ba_audio.isEmpty()) {
+                                if(d->audio_input->format()!=default_format) {
+                                    QByteArray ba_audio_conv;
 
-                                d->audio_converter.convert(&ba_audio, &ba_audio_conv);
-                                ba_audio=ba_audio_conv;
+                                    d->audio_converter.convert(&ba_audio, &ba_audio_conv);
+                                    ba_audio=ba_audio_conv;
+                                }
+
+                                frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
                             }
-
-                            frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
 
                         } else
                             frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), QByteArray(), 0, 0);

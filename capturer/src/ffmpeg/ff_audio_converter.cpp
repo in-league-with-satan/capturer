@@ -47,8 +47,8 @@ bool AudioConverter::init(uint64_t in_channels_layout, int64_t in_sample_rate, i
 {
     free();
 
-    qDebug() << in_channels_layout << in_sample_rate << in_sample_format
-             << out_channels_layout << out_sample_rate << out_sample_format;
+    qInfo() << in_channels_layout << in_sample_rate << in_sample_format
+            << out_channels_layout << out_sample_rate << out_sample_format;
 
     this->in_channels_layout=in_channels_layout;
     this->in_channels=av_get_channel_layout_nb_channels(in_channels_layout);

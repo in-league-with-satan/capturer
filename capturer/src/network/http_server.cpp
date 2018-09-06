@@ -258,15 +258,7 @@ QByteArray HttpServer::pageIndex()
 
                          "    var data=JSON.parse(request.responseText);\n"
 
-                         "    if(data.input_format.pixel_format.length===0) {\n"
-                         "      document.getElementById('input_format').innerHTML='';\n"
-
-                         "    } else {"
-                         "      var str=data.input_format.height + (data.input_format.progressive_frame ? 'p' : 'i') + '@'"
-                         "       + (data.input_format.frame_scale/data.input_format.frame_duration).toFixed(2) + ' ' + data.input_format.pixel_format;\n"
-
-                         "      document.getElementById('input_format').innerHTML=' ' + str;\n"
-                         "    }\n"
+                         "    document.getElementById('input_format').innerHTML=' ' + data.input_format;\n"
 
                          "    if(data.rec_stats.time==null) {\n"
                          "      document.getElementById('rec_stats').style.visibility='hidden';\n"
@@ -579,39 +571,18 @@ void HttpServer::checkSettings(QMap <QString, QString> new_settings)
         key=nameToMarker(settings_model->data(row, SettingsModel::Role::group).toString() + "_" + settings_model->data(row, SettingsModel::Role::name).toString());
 
         if(new_settings.contains(key)) {
-/*
-            if(settings_model->data_p(row)->value==&settings->device_cam.restart) {
-                qInfo() << "device_cam.restart";
-                emit deviceCamRestart();
-                return;
-
-            } else if(settings_model->data_p(row)->value==&settings->device_cam.stop) {
-                qInfo() << "device_cam.stop";
-                emit deviceCamStop();
-                return;
-
-            } else if(settings_model->data_p(row)->value==&settings->device_decklink.restart) {
-                qInfo() << "device_decklink.restart";
-                emit deviceDecklinkRestart();
-                return;
-
-            } else if(settings_model->data_p(row)->value==&settings->rec.check_encoders) {
-                qInfo() << "rec.check_encoders";
-                emit checkEncoders();
-                return;
-            }
-
             value=new_settings.value(key).toInt();
 
-            if(value!=settings_model->data(row, SettingsModel::Role::value).toInt()) {
-                if(settings_model->data(row, SettingsModel::Role::priority).toInt()==SettingsModel::Priority::high)
+            if(settings_model->data(row, SettingsModel::Role::type).toInt()==SettingsModel::Type::button ||
+                    value!=settings_model->data(row, SettingsModel::Role::value).toInt()) {
+                if(settings_model->data(row, SettingsModel::Role::priority).toInt()==SettingsModel::Priority::high) {
                     skip_group.append(settings_model->data(row, SettingsModel::Role::group).toString());
+                }
 
                 settings_model->setData(row, SettingsModel::Role::value, value);
 
                 data_changed=true;
             }
-*/
         }
     }
 

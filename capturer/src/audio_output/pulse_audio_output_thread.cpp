@@ -89,7 +89,7 @@ void PulseAudioOutputThread::run()
 
         frame=frame_buffer->take();
 
-        if(frame) {
+        if(frame && frame->audio.data_ptr) {
             onInputFrameArrived(frame->audio.data_ptr, frame->audio.data_size, frame->audio.channels, frame->audio.sample_size);
 
             frame.reset();

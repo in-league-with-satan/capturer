@@ -972,6 +972,10 @@ void MainWindow::setDevicePrimary(SourceInterface::Type::T type)
             messenger, SIGNAL(formatChanged(QString)), Qt::QueuedConnection);
 
     connect(dynamic_cast<QObject*>(device_primary),
+            SIGNAL(formatChanged(QString)),
+            http_server, SLOT(formatChanged(QString)), Qt::QueuedConnection);
+
+    connect(dynamic_cast<QObject*>(device_primary),
             SIGNAL(frameSkipped()), SLOT(frameSkipped()), Qt::QueuedConnection);
 
     connect(dynamic_cast<QObject*>(device_primary),
@@ -1198,15 +1202,6 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
         deviceStart();
     }
 
-    if(data->value==&settings->primary_device.start) {
-        deviceStart();
-    }
-
-    if(data->value==&settings->primary_device.stop) {
-        deviceStop();
-    }
-
-
     if(device_primary && device_primary->type()==SourceInterface::Type::ffmpeg) {
         FFSource *ff_device=static_cast<FFSource*>(device_primary);
 
@@ -1354,13 +1349,8 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
     if(data->value==&settings->rec.encoder_video) {
         // pix_fmt
 
-        qInfo() << data->values_data.size() << settings->rec.encoder_video;
-
         if(settings->rec.encoder_video>=data->values_data.size())
             settings->rec.encoder_video=data->values_data.size() - 1;
-
-
-        qInfo() << data->values_data.size() << settings->rec.encoder_video;
 
         const int index_encoder=data->values_data[settings->rec.encoder_video].toInt();
 
@@ -1423,21 +1413,17 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             settings->rec.preset[QString::number(settings->rec.encoder_video)]=settings->rec.preset_current;
 
 
-//    if(data->value==&settings->device_decklink.restart) {
-//        deviceDecklinkRestart();
-//    }
+    if(data->value==&settings->primary_device.start) {
+        deviceStart();
+    }
 
-//    if(data->value==&settings->device_cam.restart) {
-//        deviceCamRestart();
-//    }
+    if(data->value==&settings->primary_device.stop) {
+        deviceStop();
+    }
 
-//    if(data->value==&settings->device_cam.stop) {
-//        deviceCamStop();
-//    }
-
-//    if(data->value==&settings->rec.check_encoders) {
-//        checkEncoders();
-//    }
+    if(data->value==&settings->rec.check_encoders) {
+        checkEncoders();
+    }
 
 
     messenger->settingsModel()->updateQml();
