@@ -94,7 +94,7 @@ void AudioLevelWidget::paintEvent(QPaintEvent*)
     int32_t max_value=sample_size_16 ? max_value_16 : max_value_32;
 
     for(int channel=0; channel<8; ++channel) {
-        graph_height=level[channel]*(h - text_height - 2)/max_value;
+        graph_height=(double)level[channel]/(double)max_value*(double)(h - text_height - 2);
 
         painter.fillRect(QRect(2 + channel*2 + channel*graph_width, h - graph_height - text_height, graph_width, graph_height), Qt::black);
 
