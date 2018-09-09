@@ -63,17 +63,22 @@ public slots:
 
     void setPixelFormat(PixelFormat fmt);
 
+    void setColorFormat(int value);
+    void setQuantizationRange(int value);
+
+    void setPtsEnabled(bool value);
+
 private:
     void updateVideoSignalInfo();
 
-    MGHCHANNEL current_channel=0; //nullptr;
+    MGHCHANNEL current_channel=0;
 
     MagewellDeviceWorkerContext *d;
     MagewellAudioThread *a;
 
     bool signal_lost;
 
-    int color_format;
+    bool pts_enabled=false;
 
 protected:
     QList <FrameBuffer<Frame::ptr>::ptr> subscription_list;

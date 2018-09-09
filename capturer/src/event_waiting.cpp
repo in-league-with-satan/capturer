@@ -67,5 +67,5 @@ void EventWaiting::next()
 
     //
 
-    condition.notify_one();
+    condition.notify_all();
 }

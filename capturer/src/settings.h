@@ -70,6 +70,8 @@ public:
         struct Magewell {
             int index=0;
             int pixel_format=0;
+            int color_format=0;
+            int quantization_range=0;
 
         } magewell;
 

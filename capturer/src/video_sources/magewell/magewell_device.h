@@ -47,11 +47,53 @@ public:
     static void init();
 
     struct Device {
+        struct ColorFormat {
+            enum T {
+                unknown,
+                rgb,
+                bt601,
+                bt709,
+                bt2020,
+                size
+            };
+
+            static QString toString(int value) {
+                switch(value) {
+                case rgb: return QStringLiteral("rgb");
+                case bt601: return QStringLiteral("bt601");
+                case bt709: return QStringLiteral("bt709");
+                case bt2020: return QStringLiteral("bt2020");
+                }
+                return QStringLiteral("unknown");
+            }
+        };
+
+        struct QuantizationRange {
+            enum T {
+                unknown,
+                full,
+                limited,
+                size
+            };
+
+            static QString toString(int value) {
+                switch(value) {
+                case full: return QStringLiteral("full");
+                case limited: return QStringLiteral("limited");
+                }
+                return QStringLiteral("unknown");
+            }
+        };
+
+        ColorFormat::T color_format=ColorFormat::unknown;
+        QuantizationRange::T quantization_range=QuantizationRange::unknown;
+
         QString name;
         QString path;
         int index_channel;
         int index_board;
         PixelFormat pixel_format;
+        bool pts_enabled=false;
     };
 
     typedef QList <Device> Devices;
@@ -92,6 +134,9 @@ signals:
     void deviceStop();
     void setDevice(QSize board_index);
     void setPixelFormat(PixelFormat fmt);
+    void setColorFormat(int value);
+    void setQuantizationRange(int value);
+    void setPtsEnabled(bool value);
 
     //
 

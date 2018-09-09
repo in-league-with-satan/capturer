@@ -35,7 +35,7 @@ MagewellDevice::MagewellDevice(QObject *parent)
 
     running=false;
 
-    start();
+    start(QThread::TimeCriticalPriority);
 
     while(!running) {
         msleep(2);
@@ -191,6 +191,9 @@ void MagewellDevice::setDevice(void *ptr)
     pixel_format=device.pixel_format;
 
     emit setPixelFormat(device.pixel_format);
+    emit setColorFormat(device.color_format);
+    emit setQuantizationRange(device.quantization_range);
+    emit setPtsEnabled(device.pts_enabled);
     emit setDevice(QSize(device.index_board, device.index_channel));
 }
 
@@ -239,6 +242,9 @@ void MagewellDevice::run()
 
     connect(this, SIGNAL(setDevice(QSize)), d, SLOT(setDevice(QSize)), Qt::QueuedConnection);
     connect(this, SIGNAL(setPixelFormat(PixelFormat)), d, SLOT(setPixelFormat(PixelFormat)), Qt::QueuedConnection);
+    connect(this, SIGNAL(setColorFormat(int)), d, SLOT(setColorFormat(int)), Qt::QueuedConnection);
+    connect(this, SIGNAL(setQuantizationRange(int)), d, SLOT(setQuantizationRange(int)), Qt::QueuedConnection);
+    connect(this, SIGNAL(setPtsEnabled(bool)), d, SLOT(setPtsEnabled(bool)), Qt::QueuedConnection);
 
     connect(this, SIGNAL(deviceStart()), d, SLOT(deviceStart()), Qt::QueuedConnection);
     connect(this, SIGNAL(deviceStop()), d, SLOT(deviceStop()), Qt::QueuedConnection);
@@ -271,7 +277,7 @@ void MagewellDevice::run()
         QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents | QEventLoop::ExcludeSocketNotifiers);
 
         if(!is_active)
-            msleep(100);
+            msleep(200);
     }
 
     delete d;

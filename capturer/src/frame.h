@@ -50,6 +50,9 @@ struct Frame
 
             p->audio.channels=audio.channels;
             p->audio.sample_size=audio.sample_size;
+
+            p->audio.pts=audio.pts;
+            p->audio.time_base=audio.time_base;
         }
 
         return p;
@@ -83,9 +86,12 @@ struct Frame
         uint8_t *data_ptr=nullptr;
         size_t data_size=0;
         QSize size;
+
         AVRational time_base={};
         int64_t pts=AV_NOPTS_VALUE;
+
         PixelFormat pixel_format;
+
         QByteArray dummy;
 
     } video;
@@ -96,6 +102,9 @@ struct Frame
 
         int channels=0;
         int sample_size=0;
+
+        AVRational time_base={};
+        int64_t pts=AV_NOPTS_VALUE;
 
         QByteArray dummy;
 

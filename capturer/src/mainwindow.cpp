@@ -896,6 +896,44 @@ void MainWindow::setDevicePrimary(SourceInterface::Type::T type)
         set_model_data.value=&settings->primary_device.magewell.pixel_format;
 
         messenger->settingsModel()->insert(&settings->primary_device.magewell.index, set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        //
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="color format";
+
+        for(int i=0; i<MagewellDevice::Device::ColorFormat::size; ++i) {
+            set_model_data.values << MagewellDevice::Device::ColorFormat::toString(i);
+            set_model_data.values_data << i;
+        }
+
+        set_model_data.value=&settings->primary_device.magewell.color_format;
+
+        messenger->settingsModel()->insert(&settings->primary_device.magewell.pixel_format, set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        //
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="quantization range";
+
+        for(int i=0; i<MagewellDevice::Device::QuantizationRange::size; ++i) {
+            set_model_data.values << MagewellDevice::Device::QuantizationRange::toString(i);
+            set_model_data.values_data << i;
+        }
+
+        set_model_data.value=&settings->primary_device.magewell.quantization_range;
+
+        messenger->settingsModel()->insert(&settings->primary_device.magewell.color_format, set_model_data);
     }
 
 
@@ -1485,6 +1523,9 @@ void MainWindow::deviceStart()
         (*dev)=list[settings->primary_device.magewell.index];
 
         dev->pixel_format=pix_fmt;
+        dev->color_format=(MagewellDevice::Device::ColorFormat::T)settings->primary_device.magewell.color_format;
+        dev->quantization_range=(MagewellDevice::Device::QuantizationRange::T)settings->primary_device.magewell.quantization_range;
+        dev->pts_enabled=false;
 
         device_primary->setDevice(dev);
     }

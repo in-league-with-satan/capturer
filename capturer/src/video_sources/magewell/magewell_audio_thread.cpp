@@ -34,13 +34,13 @@ const int mw_timeout=300;
 struct MagewellAudioContext {
 #ifdef __linux__
     MWCAP_PTR event_capture=0;
-    MWCAP_PTR event_notify_buffering=0;
+    MWCAP_PTR event_buf=0;
 #else
     HANDLE event_capture=0;
-    HANDLE event_notify_buffering=0;
+    HANDLE event_buf=0;
 #endif
 
-    HNOTIFY notify_buffering=0;
+    HNOTIFY notify_event_buf=0;
 
     ULONGLONG status_bits=0;
 
@@ -58,17 +58,17 @@ MagewellAudioThread::MagewellAudioThread(QObject *parent)
 {
     current_channel=0;
 
-    start();
+    start(QThread::TimeCriticalPriority);
 }
 
 MagewellAudioThread::~MagewellAudioThread()
 {
-    running=false;
+    deviceStop();
 
+    running=false;
 
     while(isRunning())
         msleep(30);
-
 
     delete d;
 }
@@ -94,6 +94,19 @@ QByteArray MagewellAudioThread::getData()
     return ba_copy;
 }
 
+void MagewellAudioThread::getData(QByteArray *data, long long *timestamp)
+{
+    QMutexLocker ml(&mutex);
+
+    data->clear();
+
+    data->append(ba_data);
+
+    (*timestamp)=this->timestamp;
+
+    ba_data.clear();
+}
+
 void MagewellAudioThread::run()
 {
     running=true;
@@ -115,11 +128,11 @@ void MagewellAudioThread::run()
         }
 
 
-        MWWaitEvent(d->event_notify_buffering, mw_timeout);
+        MWWaitEvent(d->event_buf, mw_timeout);
         // MWWaitEvent(d->event_notify_buffering, INFINITE);
 
 
-        ret=MWGetNotifyStatus((HCHANNEL)current_channel.load(), d->notify_buffering, &d->status_bits);
+        ret=MWGetNotifyStatus((HCHANNEL)current_channel.load(), d->notify_event_buf, &d->status_bits);
 
         if(ret!=MW_SUCCEEDED) {
             qCritical() << "MWGetNotifyStatus err" << ret;
@@ -152,21 +165,23 @@ void MagewellAudioThread::run()
 
             mutex.lock();
 
+            if(ba_data.isEmpty()) {
+                // ret=MWGetDeviceTime((HCHANNEL)current_channel.load(), &timestamp);
+
+                // if(ret!=MW_SUCCEEDED) {
+                //     qCritical() << "MWGetDeviceTime err";
+                //     continue;
+                // }
+
+                timestamp=audio_frame.llTimestamp;
+            }
+
             ba_data.append(d->ba_buffer);
 
             mutex.unlock();
 
         } else {
             qDebug() << "!MWCAP_NOTIFY_AUDIO_FRAME_BUFFERED";
-        }
-
-        LONGLONG device_time;
-
-        ret=MWGetDeviceTime((HCHANNEL)current_channel.load(), &device_time);
-
-        if(ret!=MW_SUCCEEDED) {
-            qCritical() << "MWGetDeviceTime err";
-            continue;
         }
 
         qApp->processEvents();
@@ -198,18 +213,18 @@ void MagewellAudioThread::deviceStart()
         return;
     }
 
-    d->event_notify_buffering=MWCreateEvent();
+    d->event_buf=MWCreateEvent();
 
-    if(d->event_notify_buffering==0) {
+    if(d->event_buf==0) {
         qCritical() << "MWCreateEvent err";
         return;
     }
 
 
-    d->notify_buffering=MWRegisterNotify((HCHANNEL)current_channel.load(), d->event_notify_buffering,
+    d->notify_event_buf=MWRegisterNotify((HCHANNEL)current_channel.load(), d->event_buf,
                                          MWCAP_NOTIFY_AUDIO_FRAME_BUFFERED | MWCAP_NOTIFY_AUDIO_SIGNAL_CHANGE);
 
-    if(d->notify_buffering==0) {
+    if(d->notify_event_buf==0) {
         qCritical() << "MWRegisterNotify err";
         return;
     }
@@ -232,11 +247,12 @@ void MagewellAudioThread::deviceStart()
 
 void MagewellAudioThread::deviceStop()
 {
-    MWStopAudioCapture((HCHANNEL)current_channel.load());
+    if(current_channel)
+        MWStopAudioCapture((HCHANNEL)current_channel.load());
 
-    if(d->event_notify_buffering) {
-        MWUnregisterNotify((HCHANNEL)current_channel.load(), d->notify_buffering);
-        d->notify_buffering=0;
+    if(d->event_buf) {
+        MWUnregisterNotify((HCHANNEL)current_channel.load(), d->notify_event_buf);
+        d->notify_event_buf=0;
     }
 
     if(d->event_capture) {

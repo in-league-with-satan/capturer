@@ -39,31 +39,32 @@ public:
         av_stream=nullptr;
         av_codec_context=nullptr;
 
-        next_pts=0;
+        pts_start=AV_NOPTS_VALUE;
+        pts_next=AV_NOPTS_VALUE;
+        pts_last=AV_NOPTS_VALUE;
 
         frame=nullptr;
         frame_converted=nullptr;
 
         pkt=nullptr;
-
     }
 
     AVStream *av_stream;
     AVCodecContext *av_codec_context;
 
-    int64_t next_pts;
+    int64_t pts_start;
+    int64_t pts_next;
+    int64_t pts_last;
 
     QByteArray ba_audio_prev_part;
 
     AVPixelFormat frame_fmt;
 
-    int64_t last_pts;
 
     AVFrame *frame;
     AVFrame *frame_converted;
 
     AVPacket *pkt;
-
 
     uint64_t size_total;
 };
@@ -94,8 +95,6 @@ public:
 
     QString filename;
 
-    int64_t in_start_pts;
-
     OutputStream out_stream_video;
     OutputStream out_stream_audio;
 
@@ -115,6 +114,8 @@ public:
 
     FFEncoderBaseFilename *base_filename;
     FFEncoder::Mode::T mode;
+
+    int dropped_frames_counter;
 };
 
 static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AVStream *st, AVPacket *pkt)
@@ -1040,19 +1041,22 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
     context->skip_frame=false;
 
-    context->out_stream_video.next_pts=0;
+    context->dropped_frames_counter=0;
+
+    context->out_stream_video.pts_next=0;
     context->out_stream_video.size_total=0;
 
-    context->in_start_pts=AV_NOPTS_VALUE;
+    context->out_stream_video.pts_last=0;
+    context->out_stream_video.pts_start=AV_NOPTS_VALUE;
+    context->out_stream_audio.pts_start=AV_NOPTS_VALUE;
 
-    context->out_stream_video.last_pts=0;
 
     if(cfg.audio_sample_size!=0) {
-        context->out_stream_audio.next_pts=0;
+        context->out_stream_audio.pts_next=0;
         context->out_stream_audio.size_total=0;
 
         if(cfg.audio_dalay!=0)
-            context->out_stream_audio.next_pts=cfg.audio_dalay/1000.*context->out_stream_audio.av_codec_context->sample_rate;
+            context->out_stream_audio.pts_next=cfg.audio_dalay/1000.*context->out_stream_audio.av_codec_context->sample_rate;
     }
 
     emit stateChanged(true);
@@ -1076,7 +1080,7 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
 
     if(frame->video.data_ptr==nullptr) {
-        context->out_stream_video.next_pts++;
+        context->out_stream_video.pts_next++;
         return true;
     }
 
@@ -1099,24 +1103,42 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
     while(frame_out=format_converter_ff->result()) {
         if(frame_out->d->pts==AV_NOPTS_VALUE) {
-            frame_out->d->pts=context->out_stream_video.next_pts++;
+            frame_out->d->pts=context->out_stream_video.pts_next++;
 
         } else {
-            if(context->in_start_pts==AV_NOPTS_VALUE)
-                context->in_start_pts=frame_out->d->pts;
+            if(context->out_stream_video.pts_start==AV_NOPTS_VALUE)
+                context->out_stream_video.pts_start=context->out_stream_video.pts_last=
+                        frame_out->d->pts;
 
-            frame_out->d->pts=
-                    context->out_stream_video.next_pts=
-                    av_rescale_q(frame_out->d->pts - context->in_start_pts,
+            context->out_stream_video.pts_next=
+                    av_rescale_q(frame_out->d->pts - context->out_stream_video.pts_start,
                                  frame_out->time_base,
                                  context->out_stream_video.av_codec_context->time_base);
+
+            if(context->out_stream_video.pts_next==context->out_stream_video.pts_last) {
+                context->dropped_frames_counter--;
+                qDebug() << "double pts" << context->out_stream_video.pts_next - 1 << context->out_stream_video.pts_next;
+            }
+
+            frame_out->d->pts=context->out_stream_video.pts_next;
+
+
+            if(frame_out->d->pts - context->out_stream_video.pts_last>1) {
+                context->dropped_frames_counter+=frame_out->d->pts - context->out_stream_video.pts_last - 1;
+                qDebug() << "frames dropped" << context->dropped_frames_counter << context->out_stream_video.pts_last << frame_out->d->pts;
+            }
+
+            context->out_stream_video.pts_last=context->out_stream_video.pts_next;
+
+            frame_out->d->pts=context->out_stream_video.pts_next;
         }
 
-        context->out_stream_video.last_pts=frame_out->d->pts;
+        context->out_stream_video.pts_last=frame_out->d->pts;
 
         AVFrame *frame_orig=context->out_stream_video.frame_converted;
 
         context->out_stream_video.frame_converted=frame_out->d;
+
 
         last_error_string=write_video_frame(context->av_format_context, &context->out_stream_video);
         context->out_stream_video.frame_converted=frame_orig;
@@ -1177,9 +1199,21 @@ void FFEncoder::processAudio(Frame::ptr frame)
             return;
         }
 
-        context->out_stream_audio.frame->pts=context->out_stream_audio.next_pts;
+        if(frame->audio.pts==AV_NOPTS_VALUE) {
+            context->out_stream_audio.frame->pts=context->out_stream_audio.pts_next;
+            context->out_stream_audio.pts_next+=context->out_stream_audio.frame->nb_samples;
 
-        context->out_stream_audio.next_pts+=context->out_stream_audio.frame->nb_samples;
+        } else {
+            if(context->out_stream_audio.pts_start==AV_NOPTS_VALUE)
+                context->out_stream_audio.pts_start=
+                        frame->audio.pts;
+
+            context->out_stream_audio.frame->pts=
+                    context->out_stream_audio.pts_next=
+                    av_rescale_q(frame->audio.pts - context->out_stream_audio.pts_start,
+                                 frame->audio.time_base,
+                                 context->out_stream_audio.av_codec_context->time_base);
+        }
 
         write_audio_frame(context->av_format_context, &context->out_stream_audio);
 
@@ -1231,7 +1265,7 @@ void FFEncoder::calcStats()
         s.time=QTime(0, 0).addMSecs((double)context->out_stream_audio.frame->pts/(double)context->out_stream_audio.av_codec_context->sample_rate*1000);
 
     } else {
-        s.time=QTime(0, 0).addMSecs((double)context->out_stream_video.last_pts*av_q2d(context->out_stream_video.av_codec_context->time_base)*1000);
+        s.time=QTime(0, 0).addMSecs((double)context->out_stream_video.pts_last*av_q2d(context->out_stream_video.av_codec_context->time_base)*1000);
     }
 
     double cf_v=av_stream_get_end_pts(context->out_stream_video.av_stream)*av_q2d(context->out_stream_video.av_stream->time_base);

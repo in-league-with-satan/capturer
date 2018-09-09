@@ -45,6 +45,8 @@ public:
     int sampleSize() const;
 
     QByteArray getData();
+    void getData(QByteArray *data, long long *timestamp);
+
 
 public slots:
     void deviceStart();
@@ -63,6 +65,7 @@ private:
     MagewellAudioContext *d;
 
     QByteArray ba_data;
+    long long timestamp;
 
     QMutex mutex;
 
