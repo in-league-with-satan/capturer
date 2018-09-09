@@ -74,13 +74,33 @@ void AudioSender::run()
         }
     };
 
+    const int max_raw_size=24000;
+
+    int max_packets;
+    int max_size;
+
     QList <Listener> listener;
 
     AudioPacket packet;
 
     Frame::ptr frame;
 
+    QByteArray ba_in;
+    QByteArray ba_out;
+
+
+    auto sendData=[&socket, &listener](QByteArray &ba) {
+        foreach(const Listener &l, listener) {
+            socket.writeDatagram(ba, l.host, l.port);
+
+            if(QDateTime::currentMSecsSinceEpoch() - l.timestamp>2000)
+                listener.removeAll(l);
+        }
+    };
+
+
     running=true;
+
 
     while(running) {
         while(socket.hasPendingDatagrams()) {
@@ -105,17 +125,31 @@ void AudioSender::run()
                 continue;
             }
 
-            packet.data=QByteArray((char*)frame->audio.data_ptr, frame->audio.data_size);
+            ba_in=QByteArray((char*)frame->audio.data_ptr, frame->audio.data_size);
+
             packet.channels=frame->audio.channels;
             packet.sample_size=frame->audio.sample_size;
 
-            QByteArray ba=QJsonDocument::fromVariant(packet.toExt()).toBinaryData();
+            if(ba_in.size()>max_raw_size) {
+                max_packets=(max_raw_size - (max_raw_size%(frame->audio.channels*frame->audio.sample_size)))/(frame->audio.channels*frame->audio.sample_size);
+                max_size=max_packets*frame->audio.channels*frame->audio.sample_size;
 
-            foreach(const Listener &l, listener) {
-                socket.writeDatagram(ba, l.host, l.port);
+                while(!ba_in.isEmpty()) {
+                    packet.data=ba_in.left(max_size);
 
-                if(QDateTime::currentMSecsSinceEpoch() - l.timestamp>2000)
-                    listener.removeAll(l);
+                    ba_out=QJsonDocument::fromVariant(packet.toExt()).toBinaryData();
+
+                    sendData(ba_out);
+
+                    ba_in.remove(0, max_size);
+                }
+
+            } else {
+                packet.data=QByteArray((char*)frame->audio.data_ptr, frame->audio.data_size);
+
+                ba_out=QJsonDocument::fromVariant(packet.toExt()).toBinaryData();
+
+                sendData(ba_out);
             }
 
             frame.reset();
