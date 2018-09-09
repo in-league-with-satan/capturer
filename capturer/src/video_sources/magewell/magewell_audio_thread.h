@@ -43,10 +43,13 @@ public:
 
     int channels() const;
     int sampleSize() const;
+    int expectedAudioSize() const;
 
+    QByteArray getDataAll();
     QByteArray getData();
-    void getData(QByteArray *data, long long *timestamp);
 
+public slots:
+    void setVideoFramerate(AVRational fr);
 
 public slots:
     void deviceStart();
@@ -64,8 +67,8 @@ private:
 
     MagewellAudioContext *d;
 
+    QByteArray ba_data_unaligned;
     QByteArray ba_data;
-    long long timestamp;
 
     QMutex mutex;
 

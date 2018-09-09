@@ -160,6 +160,8 @@ struct MagewellDeviceWorkerContext {
 
     LONGLONG device_time;
 
+    size_t audio_processed_size;
+
     struct Fps {
         int frame_counter=0;
         double value=0.;
@@ -267,8 +269,8 @@ bool MagewellDeviceWorker::step()
 
 
     if(d->status_bits&MWCAP_NOTIFY_VIDEO_FRAME_BUFFERING) {
+        /*
         MWGetDeviceTime((HCHANNEL)current_channel, &d->device_time);
-
 
         d->fps.frame_counter++;
 
@@ -281,7 +283,7 @@ bool MagewellDeviceWorker::step()
                 qInfo() << "fps:" << d->fps.value << QString::number(d->fps.value, 'f', 1).toLatin1().data();
             }
         }
-
+        */
 
         //
 
@@ -296,21 +298,24 @@ bool MagewellDeviceWorker::step()
             return true;
         }
 
+        //
 
-        HDMI_INFOFRAME_PACKET hdmi_infoframe_packet;
+        // HDMI_INFOFRAME_PACKET hdmi_infoframe_packet;
 
-        int ret=MWGetHDMIInfoFramePacket((HCHANNEL)current_channel, MWCAP_HDMI_INFOFRAME_ID_HDR, &hdmi_infoframe_packet);
+        // int ret=MWGetHDMIInfoFramePacket((HCHANNEL)current_channel, MWCAP_HDMI_INFOFRAME_ID_HDR, &hdmi_infoframe_packet);
 
         // qDebug() << (ret==MW_SUCCEEDED) << (hdmi_infoframe_packet.hdrInfoFramePayload.maximum_content_light_level_lsb | (hdmi_infoframe_packet.hdrInfoFramePayload.maximum_content_light_level_lsb << 8));
 
+        //
 
-        a->getData(&d->ba_audio, &d->audio_timestamp);
+        d->ba_audio=a->getData();
 
         if(d->ba_audio.isEmpty()) {
             qDebug() << "no audio";
             return true;
         }
 
+        //
 
         Frame::ptr frame=Frame::make();
 
@@ -378,22 +383,14 @@ bool MagewellDeviceWorker::step()
 
         //
 
-        if(!d->ba_audio.isEmpty()) {
-            // int sample_size_bytes=a->sampleSize()==16 ? 2 : 4;
-            // int expected_audio_size=(1000.*av_q2d(d->framerate))/(1000./48000)*sample_size_bytes*a->channels();
-            // qInfo() << expected_audio_size << d->ba_audio.size();
-
-            frame->setDataAudio(d->ba_audio, a->channels(), a->sampleSize());
-        }
-
-
         if(pts_enabled) {
-            frame->video.pts=d->device_time;
-            frame->video.time_base={ 1, 10000000 };
-
-            frame->audio.pts=d->audio_timestamp;
-            frame->audio.time_base={ 1, 10000000 };
+            frame->video.pts=d->audio_processed_size/a->expectedAudioSize();
+            frame->video.time_base=d->framerate;
         }
+
+        frame->setDataAudio(d->ba_audio, a->channels(), a->sampleSize());
+
+        d->audio_processed_size+=d->ba_audio.size();
 
         //
 
@@ -482,6 +479,7 @@ void MagewellDeviceWorker::deviceStart()
 
     d->fps.device_time_last=0;
     d->fps.frame_counter=0;
+    d->audio_processed_size=0;
 
     //
 
@@ -587,6 +585,7 @@ void MagewellDeviceWorker::updateVideoSignalInfo()
         d->framerate=framerate;
         d->framesize=framesize;
         d->specific_status.hdmiStatus.pixelEncoding=specific_status.hdmiStatus.pixelEncoding;
+        d->audio_processed_size=0;
 
         //
 
@@ -616,6 +615,8 @@ void MagewellDeviceWorker::updateVideoSignalInfo()
         str_pixel_format.insert(0, QString("%1Bit").arg(specific_status.hdmiStatus.byBitDepth));
 
         //
+
+        QMetaObject::invokeMethod(a, "setVideoFramerate", Qt::QueuedConnection, Q_ARG(AVRational, d->framerate));
 
         emit framerateChanged(d->framerate);
         emit framesizeChanged(d->framesize);

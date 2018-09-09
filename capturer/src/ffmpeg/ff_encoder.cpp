@@ -1117,15 +1117,16 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
             if(context->out_stream_video.pts_next==context->out_stream_video.pts_last) {
                 context->dropped_frames_counter--;
-                qDebug() << "double pts" << context->out_stream_video.pts_next - 1 << context->out_stream_video.pts_next;
+                qWarning() << "double pts" << context->out_stream_video.pts_next - 1 << context->out_stream_video.pts_next;
             }
+
+            // qInfo() << frame_out->d->pts << context->out_stream_video.pts_next;
 
             frame_out->d->pts=context->out_stream_video.pts_next;
 
-
             if(frame_out->d->pts - context->out_stream_video.pts_last>1) {
                 context->dropped_frames_counter+=frame_out->d->pts - context->out_stream_video.pts_last - 1;
-                qDebug() << "frames dropped" << context->dropped_frames_counter << context->out_stream_video.pts_last << frame_out->d->pts;
+                qWarning() << "frames dropped" << context->dropped_frames_counter << context->out_stream_video.pts_last << frame_out->d->pts;
             }
 
             context->out_stream_video.pts_last=context->out_stream_video.pts_next;

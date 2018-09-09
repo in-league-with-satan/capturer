@@ -1525,7 +1525,7 @@ void MainWindow::deviceStart()
         dev->pixel_format=pix_fmt;
         dev->color_format=(MagewellDevice::Device::ColorFormat::T)settings->primary_device.magewell.color_format;
         dev->quantization_range=(MagewellDevice::Device::QuantizationRange::T)settings->primary_device.magewell.quantization_range;
-        dev->pts_enabled=false;
+        dev->pts_enabled=true;
 
         device_primary->setDevice(dev);
     }

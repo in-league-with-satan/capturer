@@ -49,8 +49,11 @@ struct MagewellAudioContext {
     std::atomic <int> channels;
     std::atomic <int> sample_size;
     int sample_size_bytes;
-};
 
+    std::atomic <int> expected_audio_size;
+
+    AVRational video_framerate={ 0, 0 };
+};
 
 MagewellAudioThread::MagewellAudioThread(QObject *parent)
     : QThread(parent)
@@ -83,7 +86,12 @@ int MagewellAudioThread::sampleSize() const
     return (d->sample_size==16 ? 16 : 32);
 }
 
-QByteArray MagewellAudioThread::getData()
+int MagewellAudioThread::expectedAudioSize() const
+{
+    return d->expected_audio_size;
+}
+
+QByteArray MagewellAudioThread::getDataAll()
 {
     QMutexLocker ml(&mutex);
 
@@ -94,17 +102,36 @@ QByteArray MagewellAudioThread::getData()
     return ba_copy;
 }
 
-void MagewellAudioThread::getData(QByteArray *data, long long *timestamp)
+QByteArray MagewellAudioThread::getData()
 {
-    QMutexLocker ml(&mutex);
+    if(d->expected_audio_size<1)
+        return QByteArray();
 
-    data->clear();
+    mutex.lock();
 
-    data->append(ba_data);
+    while(ba_data.size()<d->expected_audio_size) {
+        if(!d->event_capture) {
+            break;
+        }
 
-    (*timestamp)=this->timestamp;
+        mutex.unlock();
 
-    ba_data.clear();
+        usleep(1);
+
+        mutex.lock();
+    }
+
+    QByteArray ba_copy;
+
+    const int available=ba_data.size() - (ba_data.size()%d->expected_audio_size);
+
+    ba_copy=ba_data.left(available);
+
+    ba_data.remove(0, available);
+
+    mutex.unlock();
+
+    return ba_copy;
 }
 
 void MagewellAudioThread::run()
@@ -153,6 +180,8 @@ void MagewellAudioThread::run()
             if(ret!=MW_SUCCEEDED)
                 continue;
 
+            if(d->expected_audio_size<1)
+                continue;
 
             d->ba_buffer.fill(0);
 
@@ -162,23 +191,18 @@ void MagewellAudioThread::run()
             else
                 copyAudioSamplesMagewell<uint32_t>((void*)audio_frame.adwSamples, (void*)d->ba_buffer.constData(), MWCAP_AUDIO_SAMPLES_PER_FRAME, d->channels);
 
+            ba_data_unaligned.append(d->ba_buffer);
 
-            mutex.lock();
 
-            if(ba_data.isEmpty()) {
-                // ret=MWGetDeviceTime((HCHANNEL)current_channel.load(), &timestamp);
+            while(ba_data_unaligned.size()>=d->expected_audio_size) {
+                mutex.lock();
 
-                // if(ret!=MW_SUCCEEDED) {
-                //     qCritical() << "MWGetDeviceTime err";
-                //     continue;
-                // }
+                ba_data.append(ba_data_unaligned.left(d->expected_audio_size));
 
-                timestamp=audio_frame.llTimestamp;
+                mutex.unlock();
+
+                ba_data_unaligned.remove(0, d->expected_audio_size);
             }
-
-            ba_data.append(d->ba_buffer);
-
-            mutex.unlock();
 
         } else {
             qDebug() << "!MWCAP_NOTIFY_AUDIO_FRAME_BUFFERED";
@@ -198,6 +222,13 @@ void MagewellAudioThread::setChannel(MGHCHANNEL channel)
 
     deviceStop();
     deviceStart();
+}
+
+void MagewellAudioThread::setVideoFramerate(AVRational fr)
+{
+    d->video_framerate=fr;
+
+    updateAudioSignalInfo();
 }
 
 void MagewellAudioThread::deviceStart()
@@ -239,6 +270,11 @@ void MagewellAudioThread::deviceStart()
     }
 
     //
+
+    d->expected_audio_size=0;
+
+    ba_data_unaligned.clear();
+    ba_data.clear();
 
     updateAudioSignalInfo();
 
@@ -283,8 +319,32 @@ void MagewellAudioThread::updateAudioSignalInfo()
 
     d->ba_buffer.resize(MWCAP_AUDIO_SAMPLES_PER_FRAME*d->channels*d->sample_size_bytes);
 
+    //
+
+    if(d->video_framerate.num>0 && d->video_framerate.den>0) {
+        int sample_size_bytes=d->sample_size==16 ? 2 : 4;
+
+        d->expected_audio_size=(1000.*av_q2d(d->video_framerate))/(1000./48000)*sample_size_bytes*d->channels;
+
+        if(d->expected_audio_size%(sample_size_bytes*d->channels)!=0) {
+            qCritical() << "bad size a" << d->expected_audio_size;
+
+            d->expected_audio_size-=d->expected_audio_size%(sample_size_bytes*d->channels);
+
+            qCritical() << "bad size b" << d->expected_audio_size;
+
+            if(double(sample_size_bytes*d->channels)/double(d->expected_audio_size%(sample_size_bytes*d->channels))>.5) {
+                d->expected_audio_size+=sample_size_bytes*d->channels;
+                qCritical().noquote() << "bad size c" << d->expected_audio_size
+                            << QString::number(double(sample_size_bytes*d->channels)/double(d->expected_audio_size%(sample_size_bytes*d->channels)));
+            }
+        }
+    }
+
+    //
+
     emit audioSampleSizeChanged(d->sample_size==16 ? SourceInterface::AudioSampleSize::bitdepth_16 : SourceInterface::AudioSampleSize::bitdepth_32);
     emit audioChannelsChanged((SourceInterface::AudioChannels::T)d->channels.load());
 
-    qDebug() << signal_status.dwSampleRate << d->sample_size << d->channels;
+    qInfo() << signal_status.dwSampleRate << d->sample_size << d->channels << d->expected_audio_size;
 }
