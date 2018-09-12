@@ -1110,17 +1110,21 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
                 context->out_stream_video.pts_start=context->out_stream_video.pts_last=
                         frame_out->d->pts;
 
-            context->out_stream_video.pts_next=
-                    av_rescale_q(frame_out->d->pts - context->out_stream_video.pts_start,
-                                 frame_out->time_base,
-                                 context->out_stream_video.av_codec_context->time_base);
+            if(frame_out->time_base==context->out_stream_video.av_codec_context->time_base)
+                context->out_stream_video.pts_next=frame_out->d->pts - context->out_stream_video.pts_start;
+
+            else
+                context->out_stream_video.pts_next=
+                        av_rescale_q(frame_out->d->pts - context->out_stream_video.pts_start,
+                                     frame_out->time_base,
+                                     context->out_stream_video.av_codec_context->time_base);
+
+            // qInfo() << frame_out->d->pts << context->out_stream_video.pts_next;
 
             if(context->out_stream_video.pts_next==context->out_stream_video.pts_last) {
                 context->dropped_frames_counter--;
                 qWarning() << "double pts" << context->out_stream_video.pts_next - 1 << context->out_stream_video.pts_next;
             }
-
-            // qInfo() << frame_out->d->pts << context->out_stream_video.pts_next;
 
             frame_out->d->pts=context->out_stream_video.pts_next;
 

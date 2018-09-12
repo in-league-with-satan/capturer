@@ -134,8 +134,10 @@ struct MagewellDeviceWorkerContext {
 
     MWCAP_VIDEO_BUFFER_INFO video_buffer_info;
 
-    MWCAP_VIDEO_SIGNAL_STATUS signal_status;
     MWCAP_INPUT_SPECIFIC_STATUS specific_status;
+
+    uint64_t notify_flag=MWCAP_NOTIFY_VIDEO_FRAME_BUFFERED;
+    // uint64_t notify_flag=MWCAP_NOTIFY_VIDEO_FRAME_BUFFERING;
 
     DWORD fourcc=MWFOURCC_NV12;
 
@@ -186,6 +188,9 @@ MagewellDeviceWorker::~MagewellDeviceWorker()
 {
     deviceStop();
 
+    if(current_channel)
+        MWCloseChannel((HCHANNEL)current_channel);
+
     delete d;
     delete a;
 }
@@ -208,7 +213,7 @@ bool MagewellDeviceWorker::isActive()
 
 bool MagewellDeviceWorker::gotSignal()
 {
-    return !signal_lost;
+    return state==State::running;
 }
 
 AVRational MagewellDeviceWorker::currentFramerate()
@@ -239,13 +244,13 @@ SourceInterface::AudioChannels::T MagewellDeviceWorker::currentAudioChannels()
 bool MagewellDeviceWorker::step()
 {
     if(d->event_capture==0) {
-        // qDebug() << "d->hEventCapture nullptr";
+        qDebug() << "d->hEventCapture nullptr";
         return false;
     }
 
     if(d->framesize.width()<=0) {
         updateVideoSignalInfo();
-        // qDebug() << "wrong d->frame_size.width";
+        qDebug() << "wrong d->frame_size.width";
         return false;
     }
 
@@ -268,7 +273,7 @@ bool MagewellDeviceWorker::step()
     // }
 
 
-    if(d->status_bits&MWCAP_NOTIFY_VIDEO_FRAME_BUFFERING) {
+    if(d->status_bits&d->notify_flag) {
         /*
         MWGetDeviceTime((HCHANNEL)current_channel, &d->device_time);
 
@@ -287,7 +292,8 @@ bool MagewellDeviceWorker::step()
 
         //
 
-        updateVideoSignalInfo();
+        if(!updateVideoSignalInfo())
+            return false;
 
         //
 
@@ -308,14 +314,6 @@ bool MagewellDeviceWorker::step()
 
         //
 
-        d->ba_audio=a->getData();
-
-        if(d->ba_audio.isEmpty()) {
-            qDebug() << "no audio";
-            return true;
-        }
-
-        //
 
         Frame::ptr frame=Frame::make();
 
@@ -361,19 +359,35 @@ bool MagewellDeviceWorker::step()
             return true;
         }
 
-        MWWaitEvent(d->event_capture, mw_timeout);
 
         //
 
-        MWCAP_VIDEO_CAPTURE_STATUS videoCaptureStatus;
+        MWWaitEvent(d->event_capture, mw_timeout);
+
+
+        //
+
+        d->ba_audio=a->getData();
+
+        //
+
+        MWCAP_VIDEO_CAPTURE_STATUS video_capture_status;
 
         do {
-            ret=MWGetVideoCaptureStatus((HCHANNEL)current_channel, &videoCaptureStatus);
+            ret=MWGetVideoCaptureStatus((HCHANNEL)current_channel, &video_capture_status);
+            qApp->processEvents();
 
-        } while(ret==MW_SUCCEEDED && videoCaptureStatus.bFrameCompleted==false);
+        } while(ret==MW_SUCCEEDED && video_capture_status.bFrameCompleted==false && d->event_capture);
 
-        if(ret!=MW_SUCCEEDED) {
-            qCritical() << "MWGetVideoCaptureStatus";
+        if(ret!=MW_SUCCEEDED || video_capture_status.bFrameCompleted!=true) {
+            d->framesize=QSize();
+            return false;
+        }
+
+        //
+
+        if(d->ba_audio.isEmpty()) {
+            qDebug() << "no audio";
             return true;
         }
 
@@ -384,8 +398,8 @@ bool MagewellDeviceWorker::step()
         //
 
         if(pts_enabled) {
-            frame->video.pts=d->audio_processed_size/a->expectedAudioSize();
             frame->video.time_base=d->framerate;
+            frame->video.pts=a->lastPts();
         }
 
         frame->setDataAudio(d->ba_audio, a->channels(), a->sampleSize());
@@ -394,11 +408,11 @@ bool MagewellDeviceWorker::step()
 
         //
 
-        if(signal_lost)
-            emit signalLost(signal_lost=false);
-
         foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
             buf->append(frame);
+
+
+        setState(State::running);
 
     } else {
         updateVideoSignalInfo();
@@ -433,24 +447,24 @@ void MagewellDeviceWorker::deviceStart()
 
     if(d->event_capture==0) {
         qCritical() << "MWCreateEvent err";
-        return;
+        goto stop;
     }
 
     d->event_buf=MWCreateEvent();
 
     if(d->event_buf==0) {
         qCritical() << "MWCreateEvent err";
-        return;
+        goto stop;
     }
 
     // qInfo() << current_channel << d->event_notify_buffering;
 
     d->notify_event_buf=MWRegisterNotify((HCHANNEL)current_channel, d->event_buf,
-                                         MWCAP_NOTIFY_VIDEO_FRAME_BUFFERING | MWCAP_NOTIFY_VIDEO_SIGNAL_CHANGE);
+                                         d->notify_flag | MWCAP_NOTIFY_VIDEO_SIGNAL_CHANGE);
 
     if(d->notify_event_buf==0) {
         qCritical() << "MWRegisterNotify err";
-        return;
+        goto stop;
     }
 
     //
@@ -459,17 +473,12 @@ void MagewellDeviceWorker::deviceStart()
 
     //
 
-    int ret=MWStartVideoCapture((HCHANNEL)current_channel, d->event_capture);
-
-    if(ret!=MW_SUCCEEDED) {
+    if(MWStartVideoCapture((HCHANNEL)current_channel, d->event_capture)!=MW_SUCCEEDED) {
         qCritical() << "MWStartVideoCapture err";
-        return;
+        goto stop;
     }
 
-    emit signalLost(signal_lost=false);
-
-
-    updateVideoSignalInfo();
+    // updateVideoSignalInfo();
 
     //
 
@@ -480,10 +489,18 @@ void MagewellDeviceWorker::deviceStart()
     d->fps.device_time_last=0;
     d->fps.frame_counter=0;
     d->audio_processed_size=0;
+    d->framesize=QSize();
 
     //
 
-    qDebug() << "ok";
+    qInfo() << "ok";
+
+    return;
+
+stop:
+    qCritical() << "start err";
+
+    deviceStop();
 }
 
 void MagewellDeviceWorker::deviceStop()
@@ -492,9 +509,14 @@ void MagewellDeviceWorker::deviceStop()
         MWStopVideoCapture((HCHANNEL)current_channel);
     }
 
-    if(d->event_buf) {
+    if(d->notify_event_buf) {
         MWUnregisterNotify((HCHANNEL)current_channel, d->notify_event_buf);
         d->notify_event_buf=0;
+    }
+
+    if(d->event_buf) {
+        MWCloseEvent(d->event_buf);
+        d->event_buf=0;
     }
 
     if(d->event_capture) {
@@ -502,7 +524,7 @@ void MagewellDeviceWorker::deviceStop()
         d->event_capture=0;
     }
 
-    emit signalLost(signal_lost=true);
+    setState(State::no_signal);
 
     QMetaObject::invokeMethod(a, "deviceStop", Qt::QueuedConnection);
 }
@@ -530,43 +552,29 @@ void MagewellDeviceWorker::setPtsEnabled(bool value)
     pts_enabled=value;
 }
 
-void MagewellDeviceWorker::updateVideoSignalInfo()
+bool MagewellDeviceWorker::updateVideoSignalInfo()
 {
     MWCAP_VIDEO_SIGNAL_STATUS signal_status;
 
     if(MWGetVideoSignalStatus((HCHANNEL)current_channel, &signal_status)!=MW_SUCCEEDED) {
         qWarning() << "MWGetVideoSignalStatus err";
-        signal_status.state=MWCAP_VIDEO_SIGNAL_UNSUPPORTED;
+        setState(State::no_signal);
+        d->framesize=QSize();
+        return false;
     }
 
-
-    switch(signal_status.state) {
-    case MWCAP_VIDEO_SIGNAL_UNSUPPORTED:
-        if(!signal_lost || d->signal_status.state!=signal_status.state) {
-            qWarning() << "MWCAP_VIDEO_SIGNAL_UNSUPPORTED";
-            // emit errorString(QStringLiteral("video signal status not valid"));
-            emit formatChanged("UNSUPPORTED");
-            emit signalLost(signal_lost=true);
-            d->signal_status=signal_status;
-            d->framesize=QSize();
-        }
-        return;
-
-    case MWCAP_VIDEO_SIGNAL_NONE:
-        if(!signal_lost || d->signal_status.state!=signal_status.state) {
-            emit formatChanged("NONE");
-            emit signalLost(signal_lost=true);
-            d->signal_status=signal_status;
-            d->framesize=QSize();
-        }
-        return;
-
-    case MWCAP_VIDEO_SIGNAL_LOCKING:
-    case MWCAP_VIDEO_SIGNAL_LOCKED:
-        break;
+    if(signal_status.state==MWCAP_VIDEO_SIGNAL_UNSUPPORTED) {
+        qWarning() << "MWCAP_VIDEO_SIGNAL_UNSUPPORTED";
+        setState(State::unsupported);
+        d->framesize=QSize();
+        return false;
     }
 
-    d->signal_status=signal_status;
+    if(signal_status.state==MWCAP_VIDEO_SIGNAL_NONE) {
+        setState(State::no_signal);
+        d->framesize=QSize();
+        return false;
+    }
 
     MWCAP_INPUT_SPECIFIC_STATUS specific_status;
 
@@ -625,5 +633,26 @@ void MagewellDeviceWorker::updateVideoSignalInfo()
                            .arg(Framerate::rnd2(Framerate::fromRational(d->framerate))).arg(str_pixel_format));
 
         qInfo() << d->framesize << Framerate::fromRational(d->framerate) << str_pixel_format;
+    }
+
+    return signal_status.state==MWCAP_VIDEO_SIGNAL_LOCKED;
+}
+
+void MagewellDeviceWorker::setState(int value)
+{
+    if(state==value)
+        return;
+
+    state=value;
+
+    if(state==State::running) {
+        emit signalLost(false);
+
+    } else if(state==State::no_signal) {
+        emit signalLost(true);
+
+    } else {
+        emit signalLost(true);
+        emit formatChanged("UNSUPPORTED");
     }
 }

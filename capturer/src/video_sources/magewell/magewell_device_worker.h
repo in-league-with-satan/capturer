@@ -53,7 +53,6 @@ public:
     SourceInterface::AudioSampleSize::T currentAudioSampleSize();
     SourceInterface::AudioChannels::T currentAudioChannels();
 
-
     bool step();
 
 public slots:
@@ -69,14 +68,23 @@ public slots:
     void setPtsEnabled(bool value);
 
 private:
-    void updateVideoSignalInfo();
+    bool updateVideoSignalInfo();
+    void setState(int value);
 
     MGHCHANNEL current_channel=0;
 
     MagewellDeviceWorkerContext *d;
     MagewellAudioThread *a;
 
-    bool signal_lost;
+    struct State {
+        enum T {
+            running,
+            no_signal,
+            unsupported
+        };
+    };
+
+    int state=State::no_signal;
 
     bool pts_enabled=false;
 

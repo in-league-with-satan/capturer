@@ -35,7 +35,7 @@ MagewellDevice::MagewellDevice(QObject *parent)
 
     running=false;
 
-    start(QThread::TimeCriticalPriority);
+    start(QThread::HighPriority);
 
     while(!running) {
         msleep(2);
@@ -277,7 +277,7 @@ void MagewellDevice::run()
         QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents | QEventLoop::ExcludeSocketNotifiers);
 
         if(!is_active)
-            msleep(200);
+            msleep(50);
     }
 
     delete d;
