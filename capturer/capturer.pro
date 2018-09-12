@@ -97,7 +97,7 @@ windows {
 
 include($$PWD/../externals/3rdparty/ffmpeg/ffmpeg.pri)
 include($$PWD/../externals/3rdparty/http_server.pri)
-
+include($$PWD/../externals/3rdparty/magewell_capture_sdk/magewell.pri)
 
 INCLUDEPATH += \
     $$PWD/../shared
@@ -111,30 +111,38 @@ SOURCES += \
 
 INCLUDEPATH += \
     $$PWD/src \
-    $$PWD/src/decklink \
     $$PWD/src/ffmpeg \
     $$PWD/src/audio_output \
     $$PWD/src/overlay \
     $$PWD/src/network \
-    $$PWD/src/video_sources
+    $$PWD/src/video_sources \
+    $$PWD/src/video_sources/dummy \
+    $$PWD/src/video_sources/ffmpeg \
+    $$PWD/src/video_sources/magewell \
+    $$PWD/src/video_sources/decklink
 
 SOURCES += \
     $$PWD/src/*.cpp \
-    $$PWD/src/decklink/*.cpp \
     $$PWD/src/ffmpeg/*.cpp \
     $$PWD/src/audio_output/*.cpp \
     $$PWD/src/overlay/*.cpp \
     $$PWD/src/network/*.cpp \
-    $$PWD/src/video_sources/*.cpp
+    $$PWD/src/video_sources/dummy/*.cpp \
+    $$PWD/src/video_sources/ffmpeg/*.cpp \
+    $$PWD/src/video_sources/magewell/*.cpp \
+    $$PWD/src/video_sources/decklink/*.cpp
 
 HEADERS += \
     $$PWD/src/*.h \
-    $$PWD/src/decklink/*.h \
     $$PWD/src/ffmpeg/*.h \
     $$PWD/src/audio_output/*.h \
     $$PWD/src/overlay/*.h \
     $$PWD/src/network/*.h \
-    $$PWD/src/video_sources/*.h
+    $$PWD/src/video_sources/*.h \
+    $$PWD/src/video_sources/dummy/*.h \
+    $$PWD/src/video_sources/ffmpeg/*.h \
+    $$PWD/src/video_sources/magewell/*.h \
+    $$PWD/src/video_sources/decklink/*.h
 
 RESOURCES += \
     $$PWD/qml.qrc \

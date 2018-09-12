@@ -39,7 +39,7 @@ public:
     void setSettingsModel(SettingsModel *mdl);
 
 public slots:
-    void formatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format);
+    void formatChanged(QString format);
 
     void setRecState(const bool &value);
     void setRecStats(const NRecStats &value);

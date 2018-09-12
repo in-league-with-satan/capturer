@@ -89,7 +89,7 @@ void PulseAudioOutputThread::run()
 
         frame=frame_buffer->take();
 
-        if(frame) {
+        if(frame && frame->audio.data_ptr) {
             onInputFrameArrived(frame->audio.data_ptr, frame->audio.data_size, frame->audio.channels, frame->audio.sample_size);
 
             frame.reset();
@@ -121,7 +121,7 @@ void PulseAudioOutputThread::onInputFrameArrived(void *data, size_t size, int ch
     QByteArray ba_tmp=convert(data, size, channels, sample_size, ss.channels);
 
     if(ba_tmp.isEmpty()) {
-        qCritical() << "onInputFrameArrived conv empty";
+        qCritical() << "conv empty";
         return;
     }
 

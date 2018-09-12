@@ -21,65 +21,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "audio_tools.h"
 
-
-void channelsRemap16(void *data, size_t size)
-{
-    int16_t *ptr_data=(int16_t*)data;
-
-    int16_t tmp;
-
-    for(int pos=0, csize=size/2; pos<csize; pos+=8) {
-        // swap center and lfe
-        tmp=ptr_data[pos + 2];
-        ptr_data[pos + 2]=ptr_data[pos + 3];
-        ptr_data[pos + 3]=tmp;
-
-        // swap side left and rear left
-        tmp=ptr_data[pos + 4];
-        ptr_data[pos + 4]=ptr_data[pos + 6];
-        ptr_data[pos + 6]=tmp;
-
-        // swap side right and rear right
-        tmp=ptr_data[pos + 5];
-        ptr_data[pos + 5]=ptr_data[pos + 7];
-        ptr_data[pos + 7]=tmp;
-    }
-}
-
-void channelsRemap32(void *data, size_t size)
-{
-    int32_t *ptr_data=(int32_t*)data;
-
-    int32_t tmp;
-
-    for(int pos=0, csize=size/4; pos<csize; pos+=8) {
-        // swap center and lfe
-        tmp=ptr_data[pos + 2];
-        ptr_data[pos + 2]=ptr_data[pos + 3];
-        ptr_data[pos + 3]=tmp;
-
-        // swap side left and rear left
-        tmp=ptr_data[pos + 4];
-        ptr_data[pos + 4]=ptr_data[pos + 6];
-        ptr_data[pos + 6]=tmp;
-
-        // swap side right and rear right
-        tmp=ptr_data[pos + 5];
-        ptr_data[pos + 5]=ptr_data[pos + 7];
-        ptr_data[pos + 7]=tmp;
-    }
-}
-
-void channelsRemap16(QByteArray *ba_data)
-{
-    channelsRemap16((void*)ba_data->constData(), ba_data->size());
-}
-
-void channelsRemap32(QByteArray *ba_data)
-{
-    channelsRemap32((void*)ba_data->constData(), ba_data->size());
-}
-
 void mix8channelsTo2(QByteArray *ba_src, QByteArray *ba_dst)
 {
     ba_dst->resize(ba_src->size()/8*2);

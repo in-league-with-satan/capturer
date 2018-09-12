@@ -58,6 +58,9 @@ FrameBuffer<Frame::ptr>::ptr AudioOutputInterface::frameBuffer()
 
 QByteArray AudioOutputInterface::convert(void *data, size_t size, const int in_channels, int in_sample_size, int out_channels)
 {
+    if(in_channels<1 || (in_sample_size!=16 && in_sample_size!=32))
+        return QByteArray();
+
     if(in_channels==2 && in_sample_size==16)
         return QByteArray((char*)data, size);
 

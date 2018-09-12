@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define FF_TOOLS_H
 
 #include <QString>
+#include <QMetaType>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -38,6 +39,8 @@ extern "C" {
 #include <libavdevice/avdevice.h>
 #include <libavutil/bswap.h>
 }
+
+Q_DECLARE_METATYPE(AVRational)
 
 const int alignment=32;
 
@@ -59,6 +62,5 @@ bool checkEncoder(const QString &encoder_name, const AVPixelFormat &pixel_format
 bool isHighBitDepthBuild();
 
 bool operator==(const AVRational &l, const AVRational &r);
-
 
 #endif // FF_TOOLS_H

@@ -79,7 +79,7 @@ signals:
     void updateRecStats(QString duration=QString(), QString bitrate=QString(), QString size=QString(),
                         QString buffer_state=QString(), QString dropped_frames_counter=QString());
 
-    void formatChanged(int width, int height, quint64 frame_duration, quint64 frame_scale, bool progressive_frame, QString pixel_format);
+    void formatChanged(QString format);
 
     void audioLevels(qreal l, qreal r, qreal c, qreal lfe, qreal rl, qreal rr, qreal sl, qreal sr);
 

@@ -24,13 +24,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QList>
 #include <QVideoFrame>
 
-#ifdef __WIN32__
-
-#include <windows.h>
-#include <dshow.h>
-
-#endif
-
 #include <inttypes.h>
 
 #include "ff_tools.h"
@@ -79,13 +72,6 @@ struct PixelFormat {
     QVideoFrame::PixelFormat toQPixelFormat() const;
     bool fromQPixelFormat(QVideoFrame::PixelFormat value);
 
-#ifdef __WIN32__
-
-    GUID toDshowPixelFormat() const;
-    bool fromDshowPixelFormat(const GUID &value);
-
-#endif
-
     static QString toString(int value);
     static QString toStringView(int value);
     QString toString() const;
@@ -107,6 +93,10 @@ struct PixelFormat {
 private:
     T d=undefined;
 };
+
+typedef QList<PixelFormat> PixelFormats;
+
+Q_DECLARE_METATYPE(PixelFormats)
 
 int frameBufSize(QSize size, PixelFormat pixel_format);
 

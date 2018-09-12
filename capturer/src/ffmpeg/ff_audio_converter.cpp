@@ -47,8 +47,8 @@ bool AudioConverter::init(uint64_t in_channels_layout, int64_t in_sample_rate, i
 {
     free();
 
-    qDebug() << in_channels_layout << in_sample_rate << in_sample_format
-             << out_channels_layout << out_sample_rate << out_sample_format;
+    qInfo() << in_channels_layout << in_sample_rate << in_sample_format
+            << out_channels_layout << out_sample_rate << out_sample_format;
 
     this->in_channels_layout=in_channels_layout;
     this->in_channels=av_get_channel_layout_nb_channels(in_channels_layout);
@@ -146,6 +146,15 @@ bool AudioConverter::convert(void *src, size_t size, QByteArray *dst)
 bool AudioConverter::convert(QByteArray *src, QByteArray *dst)
 {
     return convert((void*)src->constData(), src->size(), dst);
+}
+
+bool AudioConverter::convert(QByteArray *data)
+{
+    QByteArray ba_tmp;
+
+    return convert((void*)data->constData(), data->size(), &ba_tmp);
+
+    (*data)=ba_tmp;
 }
 
 void AudioConverter::free()

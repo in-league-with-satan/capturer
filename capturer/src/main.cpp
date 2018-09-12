@@ -24,6 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QFile>
 #include <QDateTime>
 
+#include "magewell_device.h"
 #include "decklink_tools.h"
 #include "data_types.h"
 #include "mainwindow.h"
@@ -96,6 +97,10 @@ int main(int argc, char *argv[])
         });
     }
 
+
+    MagewellDevice::init();
+
+
 #ifndef __linux__
 
     if(!comInit())
@@ -117,6 +122,13 @@ int main(int argc, char *argv[])
     qRegisterMetaType<AVRational>("AVRational");
 
     qRegisterMetaType<NRecStats>("NRecStats");
+
+    qRegisterMetaType<PixelFormat>("PixelFormat");
+
+    qRegisterMetaType<SourceInterface::AudioChannels::T>("SourceInterface::AudioChannels::T");
+    qRegisterMetaType<SourceInterface::AudioSampleSize::T>("SourceInterface::AudioSampleSize::T");
+
+    qRegisterMetaType<MGHCHANNEL>("MGHCHANNEL");
 
     qRegisterMetaType<FFEncoder::Config>("FFEncoder::Config");
     qRegisterMetaType<FFEncoder::Stats>("FFEncoder::Stats");

@@ -132,7 +132,7 @@ struct PlayerState {
 };
 
 struct Status {
-    InputFormat input_format;
+    QString input_format;
     NRecStats rec_stats;
     PlayerState player_state;
     qint64 free_space;

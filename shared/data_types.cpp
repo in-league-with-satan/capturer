@@ -144,7 +144,7 @@ QVariantMap Status::toExt()
 {
     QVariantMap map_root;
 
-    map_root.insert(QStringLiteral("input_format"), input_format.toExt());
+    map_root.insert(QStringLiteral("input_format"), input_format);
     map_root.insert(QStringLiteral("rec_stats"), rec_stats.toExt());
     map_root.insert(QStringLiteral("player_state"), player_state.toExt());
     map_root.insert(QStringLiteral("free_space"), free_space);
@@ -154,7 +154,7 @@ QVariantMap Status::toExt()
 
 Status &Status::fromExt(const QVariantMap &map_root)
 {
-    input_format.fromExt(map_root.value(QStringLiteral("input_format")).toMap());
+    input_format=map_root.value(QStringLiteral("input_format")).toString();
     rec_stats.fromExt(map_root.value(QStringLiteral("rec_stats")).toMap());
     player_state.fromExt(map_root.value(QStringLiteral("player_state")).toMap());
     free_space=map_root.value(QStringLiteral("free_space"), 0).toULongLong();

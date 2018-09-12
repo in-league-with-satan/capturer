@@ -116,6 +116,7 @@ AVPixelFormat PixelFormat::toAVPixelFormat() const
         return AV_PIX_FMT_NV12;
 
     case mjpeg:
+        return AV_PIX_FMT_YUV422P;
         return AV_PIX_FMT_NONE;
     }
 
@@ -199,7 +200,7 @@ bool PixelFormat::fromAVPixelFormat(AVPixelFormat value)
         return true;
     }
 
-    qCritical() << "unhandled format:" << av_get_pix_fmt_name(value);
+    qCritical() << "unhandled format:" << value << QString(av_get_pix_fmt_name(value));
 
     return false;
 }
@@ -485,77 +486,6 @@ bool PixelFormat::fromQPixelFormat(QVideoFrame::PixelFormat value)
     return false;
 }
 
-#ifdef __WIN32__
-
-GUID PixelFormat::toDshowPixelFormat() const
-{
-    switch((uint32_t)d) {
-    case rgb24:
-        return MEDIASUBTYPE_RGB24;
-
-    case rgb0:
-        return MEDIASUBTYPE_RGB32;
-
-    case yuv420p:
-        return MEDIASUBTYPE_IYUV;
-
-    case yuyv422:
-        return MEDIASUBTYPE_YUY2;
-        return MEDIASUBTYPE_YUYV;
-
-    case uyvy422:
-        return MEDIASUBTYPE_UYVY;
-
-    case nv12:
-        return MEDIASUBTYPE_NV12;
-
-    case mjpeg:
-        return MEDIASUBTYPE_MJPG;
-    }
-
-    return MEDIASUBTYPE_None;
-}
-
-bool PixelFormat::fromDshowPixelFormat(const GUID &value)
-{
-    if(IsEqualGUID(value, MEDIASUBTYPE_RGB24)) {
-        d=rgb24;
-        return true;
-
-    } else if(IsEqualGUID(value, MEDIASUBTYPE_RGB32)) {
-        d=rgb0;
-        return true;
-
-    } else if(IsEqualGUID(value, MEDIASUBTYPE_IYUV)) {
-        d=yuv420p;
-        return true;
-
-    } else if(IsEqualGUID(value, MEDIASUBTYPE_YUY2)) {
-        d=yuyv422;
-        return true;
-
-    } else if(IsEqualGUID(value, MEDIASUBTYPE_YUYV)) {
-        d=yuyv422;
-        return true;
-
-    } else if(IsEqualGUID(value, MEDIASUBTYPE_UYVY)) {
-        d=uyvy422;
-        return true;
-
-    } else if(IsEqualGUID(value, MEDIASUBTYPE_NV12)) {
-        d=nv12;
-        return true;
-
-    } else if(IsEqualGUID(value, MEDIASUBTYPE_MJPG)) {
-        d=mjpeg;
-        return true;
-    }
-
-    return false;
-}
-
-#endif
-
 QString PixelFormat::toString(int value)
 {
     switch(value) {
@@ -616,6 +546,8 @@ QString PixelFormat::toString(int value)
     case mjpeg:
         return QStringLiteral("mjpeg");
     }
+
+    qWarning() << "unknown" << value;
 
     return QStringLiteral("unknown");
 }

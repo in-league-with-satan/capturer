@@ -92,6 +92,10 @@ void QuickVideoSourceConvertThread::run()
     size_t size_conv=0;
     QByteArray ba_conv;
 
+    AVPixelFormat dst_pix_fmt;
+    AVPixelFormat src_pix_fmt;
+
+
     running=true;
 
     while(running) {
@@ -100,6 +104,9 @@ void QuickVideoSourceConvertThread::run()
         frame_src=frame_buffer_in->take();
 
         if(!frame_src)
+            continue;
+
+        if(!frame_src->video.data_ptr)
             continue;
 
         if(frame_src->video.pixel_format.isDirect()
@@ -121,7 +128,6 @@ void QuickVideoSourceConvertThread::run()
                 format_converter_dl->convert(frame_src->video.data_ptr, (void*)ba_dst.constData());
 
             } else if(frame_src->video.pixel_format!=PixelFormat::bgra) {
-
                 if(!format_converter_ff->compareParams(frame_src->video.pixel_format.toAVPixelFormat(), frame_src->video.size, AV_PIX_FMT_BGRA, frame_src->video.size)) {
                     if(conv_src)
                         av_frame_free(&conv_src);
@@ -156,9 +162,12 @@ void QuickVideoSourceConvertThread::run()
             }
 
         } else {
-            frame_dst->video.pixel_format.fromAVPixelFormat(AV_PIX_FMT_YUV420P);
+            dst_pix_fmt=AV_PIX_FMT_NV12;
+            src_pix_fmt=frame_src->video.pixel_format.toAVPixelFormat();
 
             if(frame_src->video.pixel_format.is10bit() && frame_src->video.pixel_format.is210()) {
+                src_pix_fmt=AV_PIX_FMT_UYVY422;
+
                 size_conv=frameBufSize(frame_src->video.size, frame_src->video.pixel_format);
 
                 ba_conv.resize(size_conv);
@@ -173,20 +182,22 @@ void QuickVideoSourceConvertThread::run()
                 size_conv=frame_src->video.data_size;
             }
 
-            if(!format_converter_ff->compareParams(AV_PIX_FMT_UYVY422, frame_src->video.size, AV_PIX_FMT_YUV420P, frame_src->video.size)) {
+
+            if(!format_converter_ff->compareParams(src_pix_fmt, frame_src->video.size, dst_pix_fmt, frame_src->video.size)) {
                 if(conv_src)
                     av_frame_free(&conv_src);
 
                 if(conv_dst)
                     av_frame_free(&conv_dst);
 
-                conv_src=alloc_frame(AV_PIX_FMT_UYVY422, frame_src->video.size.width(), frame_src->video.size.height(), false);
-                conv_dst=alloc_frame(AV_PIX_FMT_YUV420P, frame_src->video.size.width(), frame_src->video.size.height(), true);
+                conv_src=alloc_frame(src_pix_fmt, frame_src->video.size.width(), frame_src->video.size.height(), false);
+                conv_dst=alloc_frame(dst_pix_fmt, frame_src->video.size.width(), frame_src->video.size.height(), true);
 
-                conv_src->linesize[0]=DeckLinkVideoFrame::rowSize(frame_src->video.size.width(), (BMDPixelFormat)frame_src->video.pixel_format.toBMDPixelFormat());
+                conv_src->linesize[0]=av_image_get_linesize(src_pix_fmt, frame_src->video.size.width(), 0);
 
-                format_converter_ff->setup(AV_PIX_FMT_UYVY422, frame_src->video.size, AV_PIX_FMT_YUV420P, frame_src->video.size);
+                format_converter_ff->setup(src_pix_fmt, frame_src->video.size, dst_pix_fmt, frame_src->video.size);
             }
+
 
             if(fast_yuv) {
                 ba_dst.resize(size_conv);
@@ -194,14 +205,16 @@ void QuickVideoSourceConvertThread::run()
                 memcpy((void*)ba_dst.constData(), data_conv, size_conv);
 
             } else {
-                ba_dst.resize(av_image_get_buffer_size(AV_PIX_FMT_YUV420P, frame_src->video.size.width(), frame_src->video.size.height(), alignment));
+                ba_dst.resize(av_image_get_buffer_size(dst_pix_fmt, frame_src->video.size.width(), frame_src->video.size.height(), alignment));
 
-                av_image_fill_arrays(conv_src->data, conv_src->linesize, data_conv, AV_PIX_FMT_UYVY422, frame_src->video.size.width(), frame_src->video.size.height(), alignment);
+                av_image_fill_arrays(conv_src->data, conv_src->linesize, data_conv, src_pix_fmt, frame_src->video.size.width(), frame_src->video.size.height(), alignment);
 
                 format_converter_ff->convert(conv_src, conv_dst);
 
                 av_image_copy_to_buffer((uint8_t*)ba_dst.constData(), ba_dst.size(), conv_dst->data, conv_dst->linesize, (AVPixelFormat)conv_dst->format, conv_dst->width, conv_dst->height, alignment);
             }
+
+            frame_dst->video.pixel_format.fromAVPixelFormat(dst_pix_fmt);
         }
 
 
