@@ -28,12 +28,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-//#include <pthread.h>
-//#include <unistd.h>
 #include <fcntl.h>
 #include <csignal>
 
-#include "DeckLinkAPI.h"
+
+#include "decklink_global.h"
+
 #include "framerate.h"
 #include "ff_format_converter.h"
 #include "decklink_convert_thread.h"
@@ -43,8 +43,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "decklink_thread.h"
 
-class DeckLinkCaptureDelegate : public IDeckLinkInputCallback
-{
+#ifdef LIB_DECKLINK
+class DeckLinkCaptureDelegate : public IDeckLinkInputCallback {
+#else
+class DeckLinkCaptureDelegate {
+#endif
 public:
     DeckLinkCaptureDelegate(DeckLinkThread *parent);
     virtual ~DeckLinkCaptureDelegate();
@@ -204,6 +207,8 @@ void DeckLinkThread::run()
 
 #endif
 
+#ifdef LIB_DECKLINK
+
     qDebug() << "priority" << priority();
 
     IDeckLinkIterator *decklink_iterator=CreateDeckLinkIteratorInstance();
@@ -227,6 +232,8 @@ void DeckLinkThread::run()
     decklink_capture_delegate->Release();
 
     running_thread=false;
+
+#endif
 }
 
 void DeckLinkThread::deviceStart()
@@ -239,6 +246,8 @@ void DeckLinkThread::deviceStart()
 
 void DeckLinkThread::deviceStop()
 {
+#ifdef LIB_DECKLINK
+
     if(decklink_input) {
         decklink_input->StopStreams();
         decklink_input->DisableAudioInput();
@@ -250,11 +259,15 @@ void DeckLinkThread::deviceStop()
     running=false;
 
     emit signalLost(signal_lost=true);
+
+#endif
 }
 
 void DeckLinkThread::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayMode *mode, uint32_t format_flags)
 {
     Q_UNUSED(events)
+
+#ifdef LIB_DECKLINK
 
     HRESULT result;
 
@@ -312,10 +325,14 @@ void DeckLinkThread::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayMo
     emit formatChanged(format);
 
     qDebug().noquote() << format;
+
+#endif
 }
 
 void DeckLinkThread::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet)
 {
+#ifdef LIB_DECKLINK
+
     if(!video_frame || !audio_packet)
         return;
 
@@ -369,10 +386,14 @@ void DeckLinkThread::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fram
         foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
             buf->append(frame);
     }
+
+#endif
 }
 
 void DeckLinkThread::init()
 {
+#ifdef LIB_DECKLINK
+
     HRESULT result;
 
     int	device_index=device.index;
@@ -514,10 +535,14 @@ void DeckLinkThread::init()
 
 exit:
     release();
+
+#endif
 }
 
 void DeckLinkThread::release()
 {
+#ifdef LIB_DECKLINK
+
     if(decklink_input) {
         decklink_input->Release();
         decklink_input=nullptr;
@@ -537,4 +562,6 @@ void DeckLinkThread::release()
         decklink->Release();
         decklink=nullptr;
     }
+
+#endif
 }

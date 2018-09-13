@@ -20,7 +20,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDebug>
 #include <qcoreapplication.h>
 
+#ifdef LIB_MWCAPTURE
+
 #include "MWCapture.h"
+
+#endif
 
 #include "magewell_device_worker.h"
 
@@ -58,13 +62,19 @@ SourceInterface::Type::T MagewellDevice::type() const
 
 void MagewellDevice::init()
 {
+#ifdef LIB_MWCAPTURE
+
     MWCaptureInitInstance();
     MWRefreshDevice();
+
+#endif
 }
 
 MagewellDevice::Devices MagewellDevice::availableDevices()
 {
     static Devices list;
+
+#ifdef LIB_MWCAPTURE
 
     if(!list.isEmpty())
         return list;
@@ -136,6 +146,8 @@ ad_close:
 
         MWCloseChannel(channel);
     }
+
+#endif
 
     return list;
 }

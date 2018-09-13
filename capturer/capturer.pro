@@ -63,12 +63,6 @@ RCC_DIR     = $$BUILD_OPT/$$QT_VERSION-$$LINK_OPT/rcc
 
 
 linux {
-    INCLUDEPATH += \
-        $$PWD/../externals/3rdparty/blackmagic_decklink_sdk/Linux/include
-
-    SOURCES += \
-        $$PWD/../externals/3rdparty/blackmagic_decklink_sdk/Linux/include/DeckLinkAPIDispatch.cpp
-
     contains(DEFINES, USE_PULSE_AUDIO) {
         LIBS += -lpulse-simple -lpulse
     }
@@ -81,23 +75,14 @@ linux {
 windows {
     DEFINES -= USE_PULSE_AUDIO
     DEFINES -= USE_SDL2
-
-    INCLUDEPATH += \
-        $$PWD/../externals/3rdparty/blackmagic_decklink_sdk-mingw
-
-    HEADERS += \
-        $$PWD/../externals/3rdparty/blackmagic_decklink_sdk-mingw/*.h
-
-    SOURCES += \
-        $$PWD/../externals/3rdparty/blackmagic_decklink_sdk-mingw/*.c
-
-    LIBS += -lole32 -lstrmiids -loleaut32
 }
 
 
 include($$PWD/../externals/3rdparty/ffmpeg/ffmpeg.pri)
 include($$PWD/../externals/3rdparty/http_server.pri)
 include($$PWD/../externals/3rdparty/magewell_capture_sdk/magewell.pri)
+include($$PWD/../externals/3rdparty/decklink.pri)
+
 
 INCLUDEPATH += \
     $$PWD/../shared

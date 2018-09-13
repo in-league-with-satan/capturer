@@ -92,10 +92,18 @@ public:
             return true;
 
         case Type::magewell:
+#ifdef LIB_MWCAPTURE
             return true;
+#else
+            return false;
+#endif
 
         case Type::decklink:
+#ifdef LIB_DECKLINK
             return true;
+#else
+            return false;
+#endif
 
         default:
             break;

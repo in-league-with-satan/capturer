@@ -23,11 +23,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QSize>
 #include <QByteArray>
 
-#include "DeckLinkAPI.h"
+#include "decklink_global.h"
 
 
-class DeckLinkAudioInputPacket : public IDeckLinkAudioInputPacket
-{
+#ifdef LIB_DECKLINK
+class DeckLinkAudioInputPacket : public IDeckLinkAudioInputPacket {
+#else
+class DeckLinkAudioInputPacket {
+#endif
 public:
     DeckLinkAudioInputPacket(int audio_channels, int audio_sample_size);
 

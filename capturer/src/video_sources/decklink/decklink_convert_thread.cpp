@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDebug>
 #include <QMutexLocker>
 
-#include "DeckLinkAPI.h"
+#include "decklink_global.h"
 
 #include "audio_tools.h"
 #include "decklink_tools.h"
@@ -45,7 +45,11 @@ DlConvertThread::DlConvertThread(FrameCompletedCallback func_frame_completed, QO
 {
     frame_video_src=nullptr;
 
+#ifdef LIB_DECKLINK
+
     video_converter=CreateVideoConversionInstance();
+
+#endif
 
     audio_channels=8;
     sample_size=16;
@@ -80,8 +84,12 @@ void DlConvertThread::addFrame(IDeckLinkVideoFrame *frame,  IDeckLinkAudioInputP
     frame_video_src=frame;
     frame_audio_src=audio_packet;
 
+#ifdef LIB_DECKLINK
+
     frame_video_src->AddRef();
     frame_audio_src->AddRef();
+
+#endif
 
     this->frame_counter=frame_counter;
     this->reset_counter=reset_counter;
@@ -137,8 +145,12 @@ void DlConvertThread::run()
 
                 //
 
+#ifdef LIB_DECKLINK
+
                 frame_video_src->Release();
                 frame_audio_src->Release();
+
+#endif
 
                 frame_video_src=nullptr;
                 frame_audio_src=nullptr;

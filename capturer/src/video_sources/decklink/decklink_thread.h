@@ -28,6 +28,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "frame_buffer.h"
 
+#include "decklink_global.h"
+
 #include "decklink_device_list.h"
 
 #include "decklink_audio_input_packet.h"
@@ -37,18 +39,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 class DeckLinkCaptureDelegate;
 class DlConvertThreadContainer;
 
-class IDeckLink;
-class IDeckLinkDisplayModeIterator;
-class IDeckLinkDisplayMode;
-class IDeckLinkInput;
-class IDeckLinkOutput;
-class IDeckLinkIterator;
-class IDeckLinkVideoInputFrame;
-class IDeckLinkAudioInputPacket;
-class IDeckLinkAttributes;
-class IDeckLinkVideoConversion;
-class IDeckLinkMutableVideoFrame;
-class IDeckLinkConfiguration;
 
 namespace FF {
     class FormatConverter;

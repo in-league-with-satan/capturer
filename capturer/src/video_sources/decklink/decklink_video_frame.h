@@ -23,10 +23,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QSize>
 #include <QByteArray>
 
-#include "DeckLinkAPI.h"
+#include "decklink_global.h"
 
-class DeckLinkVideoFrame : public IDeckLinkVideoFrame
-{
+#ifdef LIB_DECKLINK
+class DeckLinkVideoFrame : public IDeckLinkVideoFrame {
+#else
+class DeckLinkVideoFrame {
+#endif
 public:
     DeckLinkVideoFrame();
     virtual ~DeckLinkVideoFrame();

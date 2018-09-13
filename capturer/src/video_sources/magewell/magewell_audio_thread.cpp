@@ -22,7 +22,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QElapsedTimer>
 #include <qcoreapplication.h>
 
+#ifdef LIB_MWCAPTURE
+
 #include "MWCapture.h"
+
+#endif
 
 #include "audio_tools.h"
 
@@ -32,6 +36,8 @@ const int mw_timeout=300;
 
 
 struct MagewellAudioContext {
+#ifdef LIB_MWCAPTURE
+
 #ifdef __linux__
     std::atomic <MWCAP_PTR> event_capture;
     MWCAP_PTR event_buf=0;
@@ -43,6 +49,8 @@ struct MagewellAudioContext {
     HNOTIFY notify_event_buf=0;
 
     ULONGLONG status_bits=0;
+
+#endif // LIB_MWCAPTURE
 
     QByteArray ba_buffer;
 
@@ -60,7 +68,11 @@ MagewellAudioThread::MagewellAudioThread(QObject *parent)
     : QThread(parent)
     , d(new MagewellAudioContext())
 {
+#ifdef LIB_MWCAPTURE
+
     d->event_capture=0;
+
+#endif
 
     current_channel=0;
 
@@ -102,6 +114,8 @@ QByteArray MagewellAudioThread::getData()
 {
     QByteArray ba_copy;
 
+#ifdef LIB_MWCAPTURE
+
     int64_t pts=0;
 
     QElapsedTimer t;
@@ -133,6 +147,8 @@ QByteArray MagewellAudioThread::getData()
 
     d->readed+=ba_copy.size();
 
+#endif
+
     return ba_copy;
 }
 
@@ -148,6 +164,8 @@ int64_t MagewellAudioThread::lastPts() const
 
 void MagewellAudioThread::run()
 {
+#ifdef LIB_MWCAPTURE
+
     running=true;
 
     int ret;
@@ -225,6 +243,8 @@ sleep:
     }
 
     deviceStop();
+
+#endif
 }
 
 void MagewellAudioThread::setChannel(MGHCHANNEL channel)
@@ -245,6 +265,8 @@ void MagewellAudioThread::setVideoFramerate(AVRational fr)
 
 void MagewellAudioThread::deviceStart()
 {
+#ifdef LIB_MWCAPTURE
+
     deviceStop();
 
     qDebug() << "current_channel" << current_channel;
@@ -297,10 +319,14 @@ stop:
     qCritical() << "start err";
 
     deviceStop();
+
+#endif
 }
 
 void MagewellAudioThread::deviceStop()
 {
+#ifdef LIB_MWCAPTURE
+
     qInfo() << "stop";
 
     if(current_channel) {
@@ -321,10 +347,14 @@ void MagewellAudioThread::deviceStop()
         MWCloseEvent(d->event_capture);
         d->event_capture=0;
     }
+
+#endif
 }
 
 void MagewellAudioThread::updateAudioSignalInfo()
 {
+#ifdef LIB_MWCAPTURE
+
     if(!d->event_capture)
         return;
 
@@ -359,4 +389,6 @@ void MagewellAudioThread::updateAudioSignalInfo()
     emit audioChannelsChanged((SourceInterface::AudioChannels::T)d->channels.load());
 
     qInfo() << signal_status.dwSampleRate << d->sample_size << d->channels;
+
+#endif
 }

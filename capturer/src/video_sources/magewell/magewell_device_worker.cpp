@@ -21,8 +21,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QElapsedTimer>
 #include <qcoreapplication.h>
 
+#ifdef LIB_MWCAPTURE
+
 #include "MWCapture.h"
 #include "MWFOURCC.h"
+
+#endif
 
 #include "framerate.h"
 
@@ -34,6 +38,8 @@ const int mw_timeout=300;
 
 PixelFormat fromMagewellPixelFormat(uint32_t fmt)
 {
+#ifdef LIB_MWCAPTURE
+
     switch(fmt) {
     case MWFOURCC_RGB24:
         return PixelFormat::rgb24;
@@ -72,11 +78,15 @@ PixelFormat fromMagewellPixelFormat(uint32_t fmt)
         break;
     }
 
+#endif
+
     return PixelFormat::undefined;
 }
 
 uint32_t toMagewellPixelFormat(PixelFormat fmt)
 {
+#ifdef LIB_MWCAPTURE
+
     switch((int)fmt) {
     case PixelFormat::rgb24:
         return MWFOURCC_RGB24;
@@ -117,9 +127,15 @@ uint32_t toMagewellPixelFormat(PixelFormat fmt)
     }
 
     return MWFOURCC_UNK;
+
+#endif
+
+    return 0;
 }
 
 struct MagewellDeviceWorkerContext {
+#ifdef LIB_MWCAPTURE
+
 #ifdef __linux__
     MWCAP_PTR event_capture=0;
     MWCAP_PTR event_buf=0;
@@ -147,6 +163,7 @@ struct MagewellDeviceWorkerContext {
     size_t frame_buffer_size;
     DWORD min_stride;
 
+
     QSize framesize;
     AVRational framerate;
 
@@ -170,6 +187,9 @@ struct MagewellDeviceWorkerContext {
         LONGLONG device_time_last=0;
 
     } fps;
+
+#endif // LIB_MWCAPTURE
+
 };
 
 
@@ -188,8 +208,12 @@ MagewellDeviceWorker::~MagewellDeviceWorker()
 {
     deviceStop();
 
+#ifdef LIB_MWCAPTURE
+
     if(current_channel)
         MWCloseChannel((HCHANNEL)current_channel);
+
+#endif
 
     delete d;
     delete a;
@@ -208,7 +232,13 @@ void MagewellDeviceWorker::unsubscribe(FrameBuffer<Frame::ptr>::ptr obj)
 
 bool MagewellDeviceWorker::isActive()
 {
+#ifdef LIB_MWCAPTURE
+
     return d->event_capture!=0;
+
+#endif
+
+    return false;
 }
 
 bool MagewellDeviceWorker::gotSignal()
@@ -218,17 +248,35 @@ bool MagewellDeviceWorker::gotSignal()
 
 AVRational MagewellDeviceWorker::currentFramerate()
 {
+#ifdef LIB_MWCAPTURE
+
     return d->framerate;
+
+#endif
+
+    return { 1, 1 };
 }
 
 PixelFormat MagewellDeviceWorker::currentPixelFormat()
 {
+#ifdef LIB_MWCAPTURE
+
     return d->pixel_format;
+
+#endif
+
+    return PixelFormat::undefined;
 }
 
 QSize MagewellDeviceWorker::currentFramesize()
 {
+#ifdef LIB_MWCAPTURE
+
     return d->framesize;
+
+#endif
+
+    return QSize();
 }
 
 SourceInterface::AudioSampleSize::T MagewellDeviceWorker::currentAudioSampleSize()
@@ -243,6 +291,8 @@ SourceInterface::AudioChannels::T MagewellDeviceWorker::currentAudioChannels()
 
 bool MagewellDeviceWorker::step()
 {
+#ifdef LIB_MWCAPTURE
+
     if(d->event_capture==0) {
         qDebug() << "d->hEventCapture nullptr";
         return false;
@@ -420,10 +470,16 @@ bool MagewellDeviceWorker::step()
     }
 
     return true;
+
+#endif
+
+    return false;
 }
 
 void MagewellDeviceWorker::setDevice(QSize board_channel)
 {
+#ifdef LIB_MWCAPTURE
+
     if(current_channel)
         MWCloseChannel((HCHANNEL)current_channel);
 
@@ -435,10 +491,14 @@ void MagewellDeviceWorker::setDevice(QSize board_channel)
     }
 
     emit channelChanged(current_channel);
+
+#endif
 }
 
 void MagewellDeviceWorker::deviceStart()
 {
+#ifdef LIB_MWCAPTURE
+
     deviceStop();
 
     qDebug() << "current_channel" << current_channel;
@@ -501,10 +561,14 @@ stop:
     qCritical() << "start err";
 
     deviceStop();
+
+#endif
 }
 
 void MagewellDeviceWorker::deviceStop()
 {
+#ifdef LIB_MWCAPTURE
+
     if(current_channel) {
         MWStopVideoCapture((HCHANNEL)current_channel);
     }
@@ -527,24 +591,38 @@ void MagewellDeviceWorker::deviceStop()
     setState(State::no_signal);
 
     QMetaObject::invokeMethod(a, "deviceStop", Qt::QueuedConnection);
+
+#endif
 }
 
 void MagewellDeviceWorker::setPixelFormat(PixelFormat fmt)
 {
+#ifdef LIB_MWCAPTURE
+
     d->pixel_format=fmt;
     d->fourcc=toMagewellPixelFormat(fmt);
 
     updateVideoSignalInfo();
+
+#endif
 }
 
 void MagewellDeviceWorker::setColorFormat(int value)
 {
+#ifdef LIB_MWCAPTURE
+
     d->color_format=value;
+
+#endif
 }
 
 void MagewellDeviceWorker::setQuantizationRange(int value)
 {
+#ifdef LIB_MWCAPTURE
+
     d->quantization_range=value;
+
+#endif
 }
 
 void MagewellDeviceWorker::setPtsEnabled(bool value)
@@ -554,6 +632,8 @@ void MagewellDeviceWorker::setPtsEnabled(bool value)
 
 bool MagewellDeviceWorker::updateVideoSignalInfo()
 {
+#ifdef LIB_MWCAPTURE
+
     MWCAP_VIDEO_SIGNAL_STATUS signal_status;
 
     if(MWGetVideoSignalStatus((HCHANNEL)current_channel, &signal_status)!=MW_SUCCEEDED) {
@@ -636,6 +716,10 @@ bool MagewellDeviceWorker::updateVideoSignalInfo()
     }
 
     return signal_status.state==MWCAP_VIDEO_SIGNAL_LOCKED;
+
+#endif
+
+    return false;
 }
 
 void MagewellDeviceWorker::setState(int value)

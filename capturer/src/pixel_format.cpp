@@ -25,7 +25,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #endif
 
-#include "DeckLinkAPI.h"
+#include "decklink_global.h"
+
 #include "decklink_video_frame.h"
 
 #include "pixel_format.h"
@@ -334,6 +335,8 @@ bool PixelFormat::fromV4L2PixelFormat(uint32_t value)
 
 uint32_t PixelFormat::toBMDPixelFormat() const
 {
+#ifdef LIB_DECKLINK
+
     switch((uint32_t)d) {
     case bgra:
         return bmdFormat8BitBGRA; // bmdFormat8BitARGB
@@ -348,11 +351,15 @@ uint32_t PixelFormat::toBMDPixelFormat() const
         return bmdFormat10BitYUV;
     }
 
+#endif
+
     return 0;
 }
 
 bool PixelFormat::fromBMDPixelFormat(uint32_t value)
 {
+#ifdef LIB_DECKLINK
+
     switch(value) {
     case bmdFormat8BitBGRA:
         d=bgra;
@@ -370,6 +377,8 @@ bool PixelFormat::fromBMDPixelFormat(uint32_t value)
         d=yuv422p10le;
         return true;
     }
+
+#endif
 
     return false;
 }

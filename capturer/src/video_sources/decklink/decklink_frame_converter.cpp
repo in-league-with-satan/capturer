@@ -29,12 +29,18 @@ DecklinkFrameConverter::DecklinkFrameConverter()
 
 DecklinkFrameConverter::~DecklinkFrameConverter()
 {
+#ifdef LIB_DECKLINK
+
     if(video_converter)
         video_converter->Release();
+
+#endif
 }
 
 void DecklinkFrameConverter::init(BMDPixelFormat src_format, QSize src_size, BMDPixelFormat dst_format, QSize dst_size)
 {
+#ifdef LIB_DECKLINK
+
     if(!video_converter)
         video_converter=CreateVideoConversionInstance();
 
@@ -43,10 +49,14 @@ void DecklinkFrameConverter::init(BMDPixelFormat src_format, QSize src_size, BMD
 
     if(frame_dst.GetPixelFormat()!=dst_format || frame_dst.getSize()!=dst_size)
         frame_dst.init(dst_size, dst_format, bmdFrameFlagDefault, false);
+
+#endif
 }
 
 int64_t DecklinkFrameConverter::convert(void *src_data, void *dst_data)
 {
+#ifdef LIB_DECKLINK
+
     if(!video_converter)
         return 1;
 
@@ -54,4 +64,8 @@ int64_t DecklinkFrameConverter::convert(void *src_data, void *dst_data)
     frame_dst.buffer=dst_data;
 
     return video_converter->ConvertFrame(&frame_src, &frame_dst);
+
+#endif
+
+    return 0;
 }

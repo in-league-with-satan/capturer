@@ -1,11 +1,17 @@
+INCLUDEPATH += \
+    $$PWD
+
+HEADERS += \
+    $$PWD/*.h
+
 linux {
+    DEFINES += LIB_MWCAPTURE
+
     INCLUDEPATH += \
-        $$PWD \
         $$PWD/linux/Include \
         $$PWD/linux/Include/LibMWCapture
 
     HEADERS += \
-        $$PWD/*.h \
         $$PWD/linux/Include/*.h \
         $$PWD/linux/Include/LibMWCapture/*.h
 
@@ -23,17 +29,19 @@ linux {
 }
 
 windows {
-    INCLUDEPATH += \
-        $$PWD \
-        $$PWD/win/Include \
-        $$PWD/win/Include/LibMWCapture
+    exists($$PWD/win/Include/LibMWCapture/MWCapture.h) {
+        DEFINES += LIB_MWCAPTURE
 
-    HEADERS += \
-        $$PWD/*.h \
-        $$PWD/win/Include/*.h \
-        $$PWD/win/Include/LibMWCapture/*.h
+        INCLUDEPATH += \
+            $$PWD/win/Include \
+            $$PWD/win/Include/LibMWCapture
+
+        HEADERS += \
+            $$PWD/win/Include/*.h \
+            $$PWD/win/Include/LibMWCapture/*.h
 
 
-#    LIBS += $$PWD/win/Lib/Win32/LibMWCapture.lib
-    LIBS += $$PWD/win/Lib/x64/LibMWCapture.lib
+#        LIBS += $$PWD/win/Lib/Win32/LibMWCapture.lib
+        LIBS += $$PWD/win/Lib/x64/LibMWCapture.lib
+    }
 }

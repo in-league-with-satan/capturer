@@ -33,8 +33,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QFile>
 #include <QDir>
 
-#include "DeckLinkAPI.h"
-
 #include "settings.h"
 #include "decklink_device_list.h"
 #include "decklink_thread.h"

@@ -20,7 +20,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef DECKLINK_TOOLS_H
 #define DECKLINK_TOOLS_H
 
-#include "DeckLinkAPI.h"
+#include "decklink_global.h"
+
+#ifdef LIB_DECKLINK
 
 #ifndef __linux__
 
@@ -31,5 +33,7 @@ IDeckLinkIterator *CreateDeckLinkIteratorInstance();
 IDeckLinkVideoConversion *CreateVideoConversionInstance();
 
 #endif
+
+#endif // LIB_DECKLINK
 
 #endif // DECKLINK_TOOLS_H

@@ -24,7 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "decklink_tools.h"
 
-#include "DeckLinkAPI.h"
+#include "decklink_global.h"
 
 #include "decklink_device_list.h"
 
@@ -33,6 +33,9 @@ const BMDPixelFormat known_pixel_formats[]={
 #else
 const uint32_t known_pixel_formats[]={
 #endif
+
+#ifdef LIB_DECKLINK
+
     bmdFormat8BitYUV,
     bmdFormat10BitYUV,
     bmdFormat8BitARGB,
@@ -44,12 +47,16 @@ const uint32_t known_pixel_formats[]={
     bmdFormat10BitRGBX,
     bmdFormatH265,
     bmdFormatDNxHR,
+
+#endif
     0
 };
 
 QString Decklink::BMDPixelFormatToString(uint32_t format)
 {
     static QMap <int, QString> format_names;
+
+#ifdef LIB_DECKLINK
 
     if(format_names.isEmpty()) {
         format_names[bmdFormat8BitYUV]=
@@ -86,6 +93,8 @@ QString Decklink::BMDPixelFormatToString(uint32_t format)
                 "DNxHR";
     }
 
+#endif
+
     return format_names.value(format, QStringLiteral("unknown"));
 }
 
@@ -95,6 +104,8 @@ Decklink::Devices Decklink::getDevices()
 {
     static Decklink::Devices devices;
     static bool updated=false;
+
+#ifdef LIB_DECKLINK
 
     if(!updated) {
         updated=true;
@@ -168,17 +179,21 @@ Decklink::Devices Decklink::getDevices()
         }
     }
 
+#endif
+
     return devices;
 }
 
 int supportedInputFormats(IDeckLink *decklink, Decklink::Formats *formats)
 {
+    HRESULT result;
+
+#ifdef LIB_DECKLINK
+
     IDeckLinkInput *decklink_input=nullptr;
     IDeckLinkDisplayModeIterator *display_mode_iterator=nullptr;
     IDeckLinkDisplayMode *display_mode=nullptr;
-    HRESULT result;
     int format_index=0;
-
 
     result=decklink->QueryInterface(IID_IDeckLinkInput, (void**)&decklink_input);
 
@@ -259,6 +274,8 @@ exit:
 
     if(decklink_input)
         decklink_input->Release();
+
+#endif
 
     return result;
 }

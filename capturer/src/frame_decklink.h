@@ -26,6 +26,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 struct FrameDecklink : public Frame
 {
     FrameDecklink(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet, int audio_channels, int audio_sample_size) {
+#ifdef LIB_DECKLINK
+
         if(video_frame) {
             this->video_frame=video_frame;
 
@@ -49,14 +51,20 @@ struct FrameDecklink : public Frame
             audio.data_size=audio_packet->GetSampleFrameCount()*audio_channels*(audio_sample_size/8);
             audio_packet->GetBytes((void**)&audio.data_ptr);
         }
+
+#endif
     }
 
     ~FrameDecklink() {
+#ifdef LIB_DECKLINK
+
         if(video_frame)
             video_frame->Release();
 
         if(audio_packet)
             audio_packet->Release();
+
+#endif
     }
 
     static ptr make(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet, int audio_channels, int audio_sample_size) {

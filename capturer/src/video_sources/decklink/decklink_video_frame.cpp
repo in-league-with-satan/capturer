@@ -43,6 +43,8 @@ size_t DeckLinkVideoFrame::frameSize(QSize size, BMDPixelFormat pixel_format)
 
 size_t DeckLinkVideoFrame::rowSize(int width, BMDPixelFormat pixel_format)
 {
+#ifdef LIB_DECKLINK
+
     switch(pixel_format) {
     case bmdFormat8BitYUV:
         return width*16/8;
@@ -68,6 +70,8 @@ size_t DeckLinkVideoFrame::rowSize(int width, BMDPixelFormat pixel_format)
     default:
         break;
     }
+
+#endif
 
     return 0;
 }
