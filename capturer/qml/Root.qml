@@ -28,6 +28,7 @@ Rectangle {
     color: "black"
 
     VideoOutput {
+        id: primary_output
         anchors.fill: parent;
         source: messenger.videoSourceMain()
     }
@@ -42,6 +43,46 @@ Rectangle {
         height: parent.height*.3
         source: messenger.videoSourceCam()
         property int position: 0
+    }
+
+    ShaderEffect {
+        property variant source: ShaderEffectSource {
+            id: shader_effect_source
+            hideSource: true
+        }
+
+        anchors.fill: primary_output
+
+        fragmentShader: "
+            uniform sampler2D source;
+            varying vec2 qt_TexCoord0;
+
+            float gamma=.65;
+            float white=.65;
+
+            vec3 saturation(vec3 rgb, float adjustment)
+            {
+                const vec3 W=vec3(.2125, .7154, .0721);
+                vec3 intensity=vec3(dot(rgb, W));
+                return mix(intensity, rgb, adjustment);
+            }
+
+            vec3 whitePreservingLumaBasedReinhardToneMapping(vec3 color)
+            {
+                float luma=dot(color, vec3(.4126, .7152, .0722));
+
+                float tone_mapped_luma=luma*(1. + luma/(white*white))/(1. + luma);
+                color*=tone_mapped_luma/luma;
+                color=pow(color, vec3(1./gamma));
+                return saturation(color, 2.);
+            }
+
+            void main()
+            {
+                vec2 uv=qt_TexCoord0.xy;
+                vec4 orig=texture2D(source, uv);
+                gl_FragColor=vec4(whitePreservingLumaBasedReinhardToneMapping(orig.rgb), 0.);
+            }"
     }
 
     ErrorMessage {
@@ -178,6 +219,14 @@ Rectangle {
                 cam_output.width=Qt.binding(function() { return root.width})
                 cam_output.height=Qt.binding(function() { return root.height })
             }
+        }
+
+        onSetHdrToSdrEnabled: {
+            if(value)
+                shader_effect_source.sourceItem=primary_output;
+
+            else
+                shader_effect_source.sourceItem=null;
         }
     }
 }

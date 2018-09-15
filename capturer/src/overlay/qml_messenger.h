@@ -107,6 +107,8 @@ signals:
 
     void back();
 
+    void setHdrToSdrEnabled(bool value);
+
     void modelVideoEncoderChanged(const QStringList &model, QPrivateSignal);
     void videoEncoderIndexSet(const int &index);
 

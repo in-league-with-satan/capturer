@@ -1091,9 +1091,9 @@ bool MainWindow::eventFilter(QObject *object, QEvent *event)
         QKeyEvent *e=static_cast<QKeyEvent*>(event);
 
         if(e) {
-            // qInfo() << "key pressed" << e->key();
-
             int key=e->key();
+
+            // qInfo() << "key pressed" << e->key() << settings->keyboard_shortcuts.code.contains(key) << settings->keyboard_shortcuts.code.value(key);
 
             if(settings->keyboard_shortcuts.code.contains(key)) {
                 keyPressed(settings->keyboard_shortcuts.code.value(key));
@@ -1167,16 +1167,18 @@ void MainWindow::keyPressed(int code)
         previewOnOff();
         break;
 
-    case KeyCodeC::PreviewFastYuv:
-        messenger->videoSourceMain()->setFastYuv(!messenger->videoSourceMain()->fastYuv());
-        break;
-
     case KeyCodeC::PreviewCam:
         previewCamOnOff();
         break;
 
     case KeyCodeC::PreviewCamChangePosition:
         messenger->camPreviewChangePosition();
+        break;
+
+    case KeyCodeC::HdrToSdr:
+        static bool hdr_shader_enabled=false;
+        hdr_shader_enabled=!hdr_shader_enabled;
+        messenger->setHdrToSdrEnabled(hdr_shader_enabled);
         break;
 
     case KeyCodeC::FullScreen:

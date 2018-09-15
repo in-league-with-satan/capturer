@@ -121,14 +121,14 @@ Qt::Key DialogKeyboardShortcuts::defaultQtKey(int code)
     case KeyCodeC::Preview:
         return Qt::Key_F7;
 
-    case KeyCodeC::PreviewFastYuv:
-        return Qt::Key_F8;
-
     case KeyCodeC::PreviewCam:
         return Qt::Key_F9;
 
     case KeyCodeC::PreviewCamChangePosition:
         return Qt::Key_C;
+
+    case KeyCodeC::HdrToSdr:
+        return Qt::Key_F8;
 
     case KeyCodeC::FullScreen:
         return Qt::Key_F11;
@@ -158,7 +158,7 @@ Qt::Key DialogKeyboardShortcuts::defaultQtKey(int code)
         return Qt::Key_Right;
     }
 
-    return Qt::Key_F1;
+    return Qt::Key_unknown;
 }
 
 bool DialogKeyboardShortcuts::eventFilter(QObject *obj, QEvent *event)
