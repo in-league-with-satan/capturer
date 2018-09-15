@@ -800,6 +800,173 @@ QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
     return QStringList() << QLatin1String("--");
 }
 
+QList <int> FFEncoder::availableColorPrimaries()
+{
+    static QList <int> list=QList<int>() << AVCOL_PRI_BT709 << AVCOL_PRI_BT470M << AVCOL_PRI_BT470BG << AVCOL_PRI_SMPTE170M << AVCOL_PRI_SMPTE240M
+                                         << AVCOL_PRI_FILM << AVCOL_PRI_BT2020 << AVCOL_PRI_SMPTE428 << AVCOL_PRI_SMPTE431 << AVCOL_PRI_SMPTE432 << AVCOL_PRI_JEDEC_P22;
+
+    return list;
+}
+
+QList <int> FFEncoder::availableColorSpaces()
+{
+    static QList <int> list=QList<int>() << AVCOL_SPC_RGB << AVCOL_SPC_BT709 << AVCOL_SPC_FCC << AVCOL_SPC_BT470BG << AVCOL_SPC_SMPTE170M << AVCOL_SPC_SMPTE240M
+                                         << AVCOL_SPC_YCGCO << AVCOL_SPC_BT2020_NCL << AVCOL_SPC_BT2020_CL << AVCOL_SPC_SMPTE2085 << AVCOL_SPC_CHROMA_DERIVED_NCL
+                                         << AVCOL_SPC_CHROMA_DERIVED_CL << AVCOL_SPC_ICTCP;
+
+    return list;
+}
+
+QList <int> FFEncoder::availableColorTransferCharacteristics()
+{
+    static QList <int> list=QList<int>() << AVCOL_TRC_BT709 << AVCOL_TRC_GAMMA22 << AVCOL_TRC_GAMMA28 << AVCOL_TRC_SMPTE170M << AVCOL_TRC_SMPTE240M << AVCOL_TRC_LINEAR
+                                         << AVCOL_TRC_LOG << AVCOL_TRC_LOG_SQRT << AVCOL_TRC_IEC61966_2_4 << AVCOL_TRC_BT1361_ECG << AVCOL_TRC_IEC61966_2_1
+                                         << AVCOL_TRC_BT2020_10 << AVCOL_TRC_BT2020_12 << AVCOL_TRC_SMPTE2084 << AVCOL_TRC_SMPTE428 << AVCOL_TRC_ARIB_STD_B67;
+
+    return list;
+}
+
+QString FFEncoder::colorPrimariesToString(int value)
+{
+    switch(value) {
+    case AVCOL_PRI_BT709:
+        return QStringLiteral("BT709");
+
+    case AVCOL_PRI_BT470M:
+        return QStringLiteral("BT470M");
+
+    case AVCOL_PRI_BT470BG:
+        return QStringLiteral("BT470BG");
+
+    case AVCOL_PRI_SMPTE170M:
+        return QStringLiteral("SMPTE170M");
+
+    case AVCOL_PRI_SMPTE240M:
+        return QStringLiteral("SMPTE240M");
+
+    case AVCOL_PRI_FILM:
+        return QStringLiteral("FILM");
+
+    case AVCOL_PRI_BT2020:
+        return QStringLiteral("BT2020");
+
+    case AVCOL_PRI_SMPTE428:
+        return QStringLiteral("SMPTE428");
+
+    case AVCOL_PRI_SMPTE431:
+        return QStringLiteral("SMPTE431");
+
+    case AVCOL_PRI_SMPTE432:
+        return QStringLiteral("SMPTE432");
+
+    case AVCOL_PRI_JEDEC_P22:
+        return QStringLiteral("JEDEC_P22");
+    }
+
+    return QStringLiteral("undefined");
+}
+
+QString FFEncoder::colorSpaceToString(int value)
+{
+    switch(value) {
+    case AVCOL_SPC_RGB:
+        return QStringLiteral("RGB");
+
+    case AVCOL_SPC_BT709:
+        return QStringLiteral("BT709");
+
+    case AVCOL_SPC_FCC:
+        return QStringLiteral("FCC");
+
+    case AVCOL_SPC_BT470BG:
+        return QStringLiteral("BT470BG");
+
+    case AVCOL_SPC_SMPTE170M:
+        return QStringLiteral("SMPTE170M");
+
+    case AVCOL_SPC_SMPTE240M:
+        return QStringLiteral("SMPTE240M");
+
+    case AVCOL_SPC_YCGCO:
+        return QStringLiteral("YCGCO");
+
+    case AVCOL_SPC_BT2020_NCL:
+        return QStringLiteral("BT2020_NCL");
+
+    case AVCOL_SPC_BT2020_CL:
+        return QStringLiteral("BT2020_CL");
+
+    case AVCOL_SPC_SMPTE2085:
+        return QStringLiteral("SMPTE2085");
+
+    case AVCOL_SPC_CHROMA_DERIVED_NCL:
+        return QStringLiteral("CHROMA_DERIVED_NCL");
+
+    case AVCOL_SPC_CHROMA_DERIVED_CL:
+        return QStringLiteral("CHROMA_DERIVED_CL");
+
+    case AVCOL_SPC_ICTCP:
+        return QStringLiteral("ICTCP");
+    }
+
+    return QStringLiteral("undefined");
+}
+
+QString FFEncoder::colorTransferCharacteristicToString(int value)
+{
+    switch(value) {
+    case AVCOL_TRC_BT709:
+        return QStringLiteral("BT709");
+
+    case AVCOL_TRC_GAMMA22:
+        return QStringLiteral("GAMMA22");
+
+    case AVCOL_TRC_GAMMA28:
+        return QStringLiteral("GAMMA28");
+
+    case AVCOL_TRC_SMPTE170M:
+        return QStringLiteral("SMPTE170M");
+
+    case AVCOL_TRC_SMPTE240M:
+        return QStringLiteral("SMPTE240M");
+
+    case AVCOL_TRC_LINEAR:
+        return QStringLiteral("LINEAR");
+
+    case AVCOL_TRC_LOG:
+        return QStringLiteral("LOG");
+
+    case AVCOL_TRC_LOG_SQRT:
+        return QStringLiteral("LOG_SQRT");
+
+    case AVCOL_TRC_IEC61966_2_4:
+        return QStringLiteral("IEC61966_2_4");
+
+    case AVCOL_TRC_BT1361_ECG:
+        return QStringLiteral("BT1361_ECG");
+
+    case AVCOL_TRC_IEC61966_2_1:
+        return QStringLiteral("IEC61966_2_1");
+
+    case AVCOL_TRC_BT2020_10:
+        return QStringLiteral("BT2020_10");
+
+    case AVCOL_TRC_BT2020_12:
+        return QStringLiteral("BT2020_12");
+
+    case AVCOL_TRC_SMPTE2084:
+        return QStringLiteral("SMPTE2084");
+
+    case AVCOL_TRC_SMPTE428:
+        return QStringLiteral("SMPTE428");
+
+    case AVCOL_TRC_ARIB_STD_B67:
+        return QStringLiteral("ARIB_STD_B67");
+    }
+
+    return QStringLiteral("undefined");
+}
+
 void FFEncoder::setEncodingToolName(const QString &encoding_tool)
 {
     this->encoding_tool=encoding_tool;

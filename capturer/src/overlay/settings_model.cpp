@@ -29,6 +29,19 @@ SettingsModel::SettingsModel(QObject *parent)
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
 }
 
+QVariant SettingsModel::valueData(int *ptr_value)
+{
+    Data *dp=data_p(ptr_value);
+
+    if(!dp)
+        return QVariant();
+
+    if(dp->values_data.size()<(*ptr_value))
+        return QVariant();
+
+    return dp->values_data[*ptr_value];
+}
+
 int SettingsModel::rowCount(const QModelIndex &parent) const
 {
     Q_UNUSED(parent)

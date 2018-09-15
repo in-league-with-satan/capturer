@@ -183,6 +183,14 @@ public:
     static QString presetVisualNameToParamName(const QString &str);
     static QStringList compatiblePresets(VideoEncoder::T encoder);
 
+    static QList <int> availableColorPrimaries();
+    static QList <int> availableColorSpaces();
+    static QList <int> availableColorTransferCharacteristics();
+
+    static QString colorPrimariesToString(int value);
+    static QString colorSpaceToString(int value);
+    static QString colorTransferCharacteristicToString(int value);
+
     void setEncodingToolName(const QString &encoding_tool);
     void setBaseFilename(FFEncoderBaseFilename *bf);
 

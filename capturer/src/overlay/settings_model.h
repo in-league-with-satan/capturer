@@ -46,7 +46,7 @@ public:
         QString name;
     };
 
-
+    QVariant valueData(int *ptr_value);
     virtual int rowCount(const QModelIndex &parent=QModelIndex()) const;
     virtual QVariant data(const QModelIndex &index, int role) const;
     Q_INVOKABLE QVariant data(const int &index, int role) const;

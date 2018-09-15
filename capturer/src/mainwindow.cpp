@@ -330,6 +330,63 @@ MainWindow::MainWindow(QWidget *parent)
     //
 
     set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="color primaries";
+    set_model_data.value=&settings->rec.color_primaries;
+
+    set_model_data.values << "disabled";
+    set_model_data.values_data << -1;
+
+    foreach(int value, FFEncoder::availableColorPrimaries()) {
+        set_model_data.values << FFEncoder::colorPrimariesToString(value);
+        set_model_data.values_data << value;
+    }
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="color space";
+    set_model_data.value=&settings->rec.color_space;
+
+    set_model_data.values << "disabled";
+    set_model_data.values_data << -1;
+
+    foreach(int value, FFEncoder::availableColorSpaces()) {
+        set_model_data.values << FFEncoder::colorSpaceToString(value);
+        set_model_data.values_data << value;
+    }
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="color transfer characteristic";
+    set_model_data.value=&settings->rec.color_transfer_characteristic;
+
+    set_model_data.values << "disabled";
+    set_model_data.values_data << -1;
+
+    foreach(int value, FFEncoder::availableColorTransferCharacteristics()) {
+        set_model_data.values << FFEncoder::colorTransferCharacteristicToString(value);
+        set_model_data.values_data << value;
+    }
+
+    messenger->settingsModel()->add(set_model_data);
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
     set_model_data.name="downscale";
     set_model_data.value=&settings->rec.downscale;
 
@@ -1588,18 +1645,18 @@ void MainWindow::startStopRecording()
 
             cfg.framerate=FFEncoder::calcFps(framerate.num, framerate.den, settings->rec.half_fps);
             cfg.frame_resolution_src=device_primary->currentFramesize();
-            cfg.pixel_format_dst=messenger->settingsModel()->data_p(&settings->rec.pixel_format_current)->values_data[settings->rec.pixel_format_current].toInt();
-            cfg.preset=messenger->settingsModel()->data_p(&settings->rec.preset_current)->values_data[settings->rec.preset_current].toString();
-            cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->data_p(&settings->rec.encoder_video)->values_data[settings->rec.encoder_video].toInt();
+            cfg.pixel_format_dst=messenger->settingsModel()->valueData(&settings->rec.pixel_format_current).toInt();
+            cfg.preset=messenger->settingsModel()->valueData(&settings->rec.preset_current).toString();
+            cfg.video_encoder=(FFEncoder::VideoEncoder::T)messenger->settingsModel()->valueData(&settings->rec.encoder_video).toInt();
             cfg.crf=settings->rec.crf;
             cfg.pixel_format_src=device_primary->currentPixelFormat();
             cfg.audio_sample_size=device_primary->currentAudioSampleSize();
             cfg.audio_channels_size=device_primary->currentAudioChannels();
             cfg.downscale=settings->rec.downscale;
             cfg.scale_filter=settings->rec.scale_filter;
-            cfg.color_primaries=settings->rec.color_primaries;
-            cfg.color_space=settings->rec.color_space;
-            cfg.color_transfer_characteristic=settings->rec.color_transfer_characteristic;
+            cfg.color_primaries=messenger->settingsModel()->valueData(&settings->rec.color_primaries).toInt();
+            cfg.color_space=messenger->settingsModel()->valueData(&settings->rec.color_space).toInt();
+            cfg.color_transfer_characteristic=messenger->settingsModel()->valueData(&settings->rec.color_transfer_characteristic).toInt();
             cfg.nvenc=settings->nvenc;
             cfg.audio_flac=settings->rec.encoder_audio==1;
 

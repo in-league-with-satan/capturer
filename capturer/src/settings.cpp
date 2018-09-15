@@ -128,9 +128,9 @@ bool Settings::load()
     rec.stop_rec_on_frames_drop=map_rec.value(QStringLiteral("stop_rec_on_frames_drop"), 0).toInt();
     rec.downscale=map_rec.value(QStringLiteral("downscale"), FFEncoder::DownScale::Disabled).toInt();
     rec.scale_filter=map_rec.value(QStringLiteral("scale_filter"), FFEncoder::ScaleFilter::FastBilinear).toInt();
-    rec.color_primaries=map_rec.value(QStringLiteral("color_primaries"), -1).toInt();
-    rec.color_space=map_rec.value(QStringLiteral("color_space"), -1).toInt();
-    rec.color_transfer_characteristic=map_rec.value(QStringLiteral("color_transfer_characteristic"), -1).toInt();
+    rec.color_primaries=map_rec.value(QStringLiteral("color_primaries"), 0).toInt();
+    rec.color_space=map_rec.value(QStringLiteral("color_space"), 0).toInt();
+    rec.color_transfer_characteristic=map_rec.value(QStringLiteral("color_transfer_characteristic"), 0).toInt();
 
 #ifdef LIB_QHTTP
     http_server.enabled=map_http_server.value(QStringLiteral("enabled"), true).toBool();
@@ -240,14 +240,6 @@ bool Settings::save()
     map_rec.insert(QStringLiteral("color_space"), rec.color_space);
     map_rec.insert(QStringLiteral("color_transfer_characteristic"), rec.color_transfer_characteristic);
 
-    map_rec.insert(QStringLiteral("color_primaries_help"), "RESERVED0=0, BT709=1, UNSPECIFIED=2, RESERVED=3, BT470M=4, BT470BG=5, SMPTE170M=6, "
-                                                           "SMPTE240M=7, FILM=8, BT2020=9, SMPTE428=10, SMPTE431=11, SMPTE432=12, JEDEC_P22=22");
-    map_rec.insert(QStringLiteral("color_space_help"), "BT709=1, UNSPECIFIED=2, GAMMA22=4, GAMMA28=5, SMPTE170M=6, SMPTE240M=7, LINEAR=8, "
-                                                       "LOG=9, LOG_SQRT=10, IEC61966_2_4=11, BT1361_ECG=12, IEC61966_2_1=13, BT2020_10=14, "
-                                                       "BT2020_12=15, SMPTE2084=16, SMPTE428=17, ARIB_STD_B67=18");
-    map_rec.insert(QStringLiteral("color_transfer_characteristic_help"), "RGB=0, BT709=1, UNSPECIFIED=2, FCC=4, BT470BG=5, SMPTE170M=6, SMPTE240M=7, YCGCO=8, "
-                                                                         "BT2020_NCL=9, BT2020_CL=10, SMPTE2085=11, CHROMA_DERIVED_NCL=12, CHROMA_DERIVED_CL=13, "
-                                                                         "ICTCP=14");
 
 #ifdef LIB_QHTTP
     map_http_server.insert(QStringLiteral("enabled"), http_server.enabled);
