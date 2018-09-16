@@ -38,7 +38,7 @@ class QmlMessenger : public QObject
     Q_PROPERTY(QString rootPath READ getRootPath NOTIFY fileSystemModelChanged)
 
 public:
-    explicit QmlMessenger(QObject *parent=0);
+    explicit QmlMessenger(SettingsModel *settings_model, QObject *parent=0);
     ~QmlMessenger();
 
     Q_INVOKABLE SettingsModel *settingsModel();
@@ -66,7 +66,6 @@ public slots:
     void setRecStarted(bool value);
 
 private slots:
-    void checkFreeSpace();
 
 private:
     SettingsModel *settings_model;

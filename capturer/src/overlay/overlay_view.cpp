@@ -70,3 +70,15 @@ void OverlayView::focusInEvent(QFocusEvent *)
 {
     QApplication::setOverrideCursor(Qt::BlankCursor);
 }
+
+void OverlayView::mousePressEvent(QMouseEvent *event)
+{
+    if(event->button()==Qt::LeftButton)
+        pos_mouse_press=event->globalPos() - frameGeometry().topLeft();
+}
+
+void OverlayView::mouseMoveEvent(QMouseEvent *event)
+{
+    if(event->buttons()&Qt::LeftButton)
+        move(event->globalPos() - pos_mouse_press);
+}

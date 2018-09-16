@@ -62,6 +62,10 @@ Settings::Settings(QObject *parent) :
 
     secondary_device.group="secondary device";
     secondary_device.group_settings="secondary device setup";
+
+
+    if(qApp->arguments().contains("--headless"))
+        main.headless=1;
 }
 
 bool Settings::load()

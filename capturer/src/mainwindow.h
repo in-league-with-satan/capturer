@@ -37,21 +37,24 @@ class QmlMessenger;
 class OverlayView;
 class Server;
 class HttpServer;
+class SettingsModel;
 
 class QMessageBox;
 
-class MainWindow : public QMainWindow
+class MainWindow : public QObject
 {
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent=0);
+    MainWindow(QObject *parent=0);
     ~MainWindow();
 
 private:
     void setDevicePrimary(SourceInterface::Type::T type);
 
     SourceInterface *device_primary=nullptr;
+
+    SettingsModel *settings_model;
 
     FFEncoderThread *ff_enc;
     FFEncoderThread *ff_enc_cam;
@@ -72,16 +75,11 @@ private:
 
     uint32_t dropped_frames_counter;
 
-    QPoint pos_mouse_press;
-
     FFEncoderBaseFilename enc_base_filename;
 
 protected:
     virtual bool eventFilter(QObject *object, QEvent *event);
     virtual void closeEvent(QCloseEvent *);
-
-    virtual void mousePressEvent(QMouseEvent *event);
-    virtual void mouseMoveEvent(QMouseEvent *event);
 
 private slots:
     void keyPressed(int code);
@@ -106,6 +104,13 @@ private slots:
     void updateStats(FFEncoder::Stats s);
 
     void checkEncoders();
+
+    void checkFreeSpace();
+
+signals:
+    void freeSpaceStr(QString size);
+    void freeSpace(qint64 size);
+    void signalLost(bool state);
 };
 
 #endif // MAINWINDOW_H

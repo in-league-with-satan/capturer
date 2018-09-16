@@ -41,6 +41,7 @@ public:
     struct Main {
         int preview=1;
         int dummy;
+        int headless=0;
 
     } main;
 

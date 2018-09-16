@@ -20,21 +20,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDebug>
 #include <QApplication>
 #include <QKeyEvent>
-#include <QTimer>
-#include <QStorageInfo>
 #include <QNetworkInterface>
 
 #include "ff_tools.h"
 
 #include "qml_messenger.h"
 
-QmlMessenger::QmlMessenger(QObject *parent)
+QmlMessenger::QmlMessenger(SettingsModel *settings_model, QObject *parent)
     : QObject(parent)
+    , settings_model(settings_model)
 {
     video_source_main=new QuickVideoSource(this);
     video_source_cam=new QuickVideoSource(this);
 
-    settings_model=new SettingsModel();
 
     connect(settings_model, SIGNAL(changed(SettingsModel*)), SIGNAL(settingsModelChanged(SettingsModel*)));
 
@@ -44,13 +42,6 @@ QmlMessenger::QmlMessenger(QObject *parent)
     connect(file_system_model, SIGNAL(changed(FileSystemModel*)), SIGNAL(fileSystemModelChanged(FileSystemModel*)));
 
     file_system_model->setRootPath(getRootPath());
-
-
-    QTimer *timer=new QTimer();
-
-    connect(timer, SIGNAL(timeout()), SLOT(checkFreeSpace()));
-
-    timer->start(1000);
 }
 
 QmlMessenger::~QmlMessenger()
@@ -159,12 +150,4 @@ void QmlMessenger::setRecStarted(bool value)
         emit recStopped();
 
     }
-}
-
-void QmlMessenger::checkFreeSpace()
-{
-    QStorageInfo info=QStorageInfo(QApplication::applicationDirPath() + "/videos");
-
-    emit freeSpace(info.bytesAvailable());
-    emit freeSpaceStr(QString("%1 MB").arg(QLocale().toString(info.bytesAvailable()/1024/1024)));
 }

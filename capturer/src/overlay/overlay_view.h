@@ -37,10 +37,15 @@ public:
 
     void addImageProvider(const QString &id, QQmlImageProviderBase *image_provider);
 
+private:
+    QPoint pos_mouse_press;
+
 protected:
     virtual void focusInEvent(QFocusEvent *);
     virtual void focusOutEvent(QFocusEvent *);
 
+    virtual void mousePressEvent(QMouseEvent *);
+    virtual void mouseMoveEvent(QMouseEvent *);
 };
 
 #endif // OVERLAY_VIEW_H

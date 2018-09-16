@@ -29,15 +29,15 @@ SettingsModel::SettingsModel(QObject *parent)
     QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
 }
 
-QVariant SettingsModel::valueData(int *ptr_value)
+QVariant SettingsModel::valueData(int *ptr_value, QVariant default_value)
 {
     Data *dp=data_p(ptr_value);
 
     if(!dp)
-        return QVariant();
+        return default_value;
 
     if(dp->values_data.size()<(*ptr_value))
-        return QVariant();
+        return default_value;
 
     return dp->values_data[*ptr_value];
 }

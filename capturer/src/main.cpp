@@ -24,6 +24,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QFile>
 #include <QDateTime>
 
+#include <signal.h>
+
 #include "magewell_device.h"
 #include "decklink_tools.h"
 #include "data_types.h"
@@ -48,9 +50,19 @@ void checkRoot()
 
 #endif
 
+MainWindow *root_obj=nullptr;
+
+void signal_handler(int signum)
+{
+    root_obj->deleteLater();
+
+    qApp->exit(signum);
+}
 
 int main(int argc, char *argv[])
 {
+    signal(SIGINT, signal_handler);
+
     qSetMessagePattern("%{time hh:mm:ss.zzz}:%{qthreadptr}: %{file}(%{line}) %{function}: %{message}");
 
     QApplication application(argc, argv);
@@ -137,7 +149,7 @@ int main(int argc, char *argv[])
 
     Settings::createInstance();
 
-    new MainWindow();
+    root_obj=new MainWindow();
 
     return application.exec();
 }
