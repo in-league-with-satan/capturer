@@ -29,6 +29,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #endif
 
 #include "audio_tools.h"
+#include "magewell_device.h"
 
 #include "magewell_audio_thread.h"
 
@@ -53,6 +54,8 @@ struct MagewellAudioContext {
 #endif // LIB_MWCAPTURE
 
     QByteArray ba_buffer;
+
+    std::atomic <int> audio_remap_mode;
 
     std::atomic <int> channels;
     std::atomic <int> sample_size;
@@ -91,6 +94,9 @@ MagewellAudioThread::~MagewellAudioThread()
 
 int MagewellAudioThread::channels() const
 {
+    if(d->channels==8 && d->audio_remap_mode!=MagewellDevice::Device::AudioRemapMode::disabled)
+        return 6;
+
     return d->channels;
 }
 
@@ -154,7 +160,7 @@ QByteArray MagewellAudioThread::getData()
 
 int64_t MagewellAudioThread::sizeToPos(int64_t size) const
 {
-    return (double)size*1000./(double)(48000*d->sample_size_bytes*d->channels);
+    return (double)size*1000./(double)(48000*d->sample_size_bytes*channels());
 }
 
 int64_t MagewellAudioThread::lastPts() const
@@ -218,12 +224,24 @@ void MagewellAudioThread::run()
                 copyAudioSamplesMagewell<uint32_t>((void*)audio_frame.adwSamples, (void*)d->ba_buffer.constData(), MWCAP_AUDIO_SAMPLES_PER_FRAME, d->channels);
 
 
+            QByteArray ba_ready=QByteArray(d->ba_buffer);
+
+            if(d->audio_remap_mode!=MagewellDevice::Device::AudioRemapMode::disabled) {
+                if(d->channels==8) {
+                    if(d->sample_size_bytes==2)
+                        map8channelsTo6<uint16_t>(&d->ba_buffer, &ba_ready, d->audio_remap_mode==MagewellDevice::Device::AudioRemapMode::sides_drop);
+
+                    else
+                        map8channelsTo6<uint32_t>(&d->ba_buffer, &ba_ready, d->audio_remap_mode==MagewellDevice::Device::AudioRemapMode::sides_drop);
+                }
+            }
+
+
             mutex.lock();
 
-            ba_data.append(d->ba_buffer);
+            ba_data.append(ba_ready);
 
             if(sizeToPos(ba_data.size())>100) {
-                // qInfo() << "ba_data.clear" << ba_data.size() << sizeToPos(ba_data.size());
                 ba_data.clear();
             }
 
@@ -254,6 +272,11 @@ void MagewellAudioThread::setChannel(MGHCHANNEL channel)
     current_channel=channel;
 
     deviceStart();
+}
+
+void MagewellAudioThread::setAudioRemapMode(int value)
+{
+    d->audio_remap_mode=value;
 }
 
 void MagewellAudioThread::setVideoFramerate(AVRational fr)
@@ -386,9 +409,9 @@ void MagewellAudioThread::updateAudioSignalInfo()
     //
 
     emit audioSampleSizeChanged(d->sample_size==16 ? SourceInterface::AudioSampleSize::bitdepth_16 : SourceInterface::AudioSampleSize::bitdepth_32);
-    emit audioChannelsChanged((SourceInterface::AudioChannels::T)d->channels.load());
+    emit audioChannelsChanged((SourceInterface::AudioChannels::T)channels());
 
-    qInfo() << signal_status.dwSampleRate << d->sample_size << d->channels;
+    qInfo().noquote() << signal_status.dwSampleRate << d->sample_size << QString("%1 (%2)").arg(d->channels).arg(channels());
 
 #endif
 }

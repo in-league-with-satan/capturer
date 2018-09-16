@@ -989,6 +989,25 @@ void MainWindow::setDevicePrimary(SourceInterface::Type::T type)
         set_model_data.value=&settings->primary_device.magewell.quantization_range;
 
         messenger->settingsModel()->insert(&settings->primary_device.magewell.color_format, set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        //
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="remap audio channels";
+
+        for(int i=0; i<MagewellDevice::Device::AudioRemapMode::size; ++i) {
+            set_model_data.values << MagewellDevice::Device::AudioRemapMode::toString(i);
+            set_model_data.values_data << i;
+        }
+
+        set_model_data.value=&settings->primary_device.magewell.audio_remap_mode;
+
+        messenger->settingsModel()->insert(&settings->primary_device.magewell.quantization_range, set_model_data);
     }
 
 
@@ -1583,6 +1602,7 @@ void MainWindow::deviceStart()
         dev->color_format=(MagewellDevice::Device::ColorFormat::T)settings->primary_device.magewell.color_format;
         dev->quantization_range=(MagewellDevice::Device::QuantizationRange::T)settings->primary_device.magewell.quantization_range;
         dev->pts_enabled=true;
+        dev->audio_remap_mode=settings->primary_device.magewell.audio_remap_mode;
 
         device_primary->setDevice(dev);
     }

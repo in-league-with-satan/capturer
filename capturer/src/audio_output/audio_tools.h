@@ -110,4 +110,33 @@ void mix8channelsTo2(QByteArray *ba_src, QByteArray *ba_dst);
 
 void mix8channelsTo6(QByteArray *ba_src, QByteArray *ba_dst);
 
+template <typename T>
+void map8channelsTo6(QByteArray *ba_src, QByteArray *ba_dst, bool drop_side)
+{
+    ba_dst->resize(ba_src->size()/8*6);
+    ba_dst->fill(0);
+
+    T *ptr_data_src=(T*)ba_src->constData();
+    T *ptr_data_dst=(T*)ba_dst->constData();
+
+    const int sample_size_bytes=sizeof(T);
+
+    int index_src_rear_left=6;
+    int index_src_rear_right=7;
+
+    if(drop_side) {
+        index_src_rear_left=4;
+        index_src_rear_right=5;
+    }
+
+    for(int pos_src=0, pos_dst=0, size=ba_src->size()/sample_size_bytes; pos_src<size; pos_src+=8, pos_dst+=6) {
+         ptr_data_dst[pos_dst + 0]=ptr_data_src[pos_src + 0];                       // front left;
+         ptr_data_dst[pos_dst + 1]=ptr_data_src[pos_src + 1];                       // front right;
+         ptr_data_dst[pos_dst + 2]=ptr_data_src[pos_src + 2];                       // front center;
+         ptr_data_dst[pos_dst + 3]=ptr_data_src[pos_src + 3];                       // lfe;
+         ptr_data_dst[pos_dst + 4]=ptr_data_src[pos_src + index_src_rear_left];     // rear left;
+         ptr_data_dst[pos_dst + 5]=ptr_data_src[pos_src + index_src_rear_right];    // rear right;
+    }
+}
+
 #endif // AUDIO_TOOLS_H

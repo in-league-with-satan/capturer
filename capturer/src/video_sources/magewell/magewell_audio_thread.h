@@ -57,6 +57,7 @@ public slots:
     void deviceStart();
     void deviceStop();
     void setChannel(MGHCHANNEL channel);
+    void setAudioRemapMode(int value);
 
 protected:
     void run();
@@ -76,7 +77,6 @@ private:
 signals:
     void audioSampleSizeChanged(SourceInterface::AudioSampleSize::T value);
     void audioChannelsChanged(SourceInterface::AudioChannels::T value);
-
 };
 
 #endif // MAGEWELL_AUDIO_THREAD_H

@@ -67,6 +67,8 @@ public slots:
 
     void setPtsEnabled(bool value);
 
+    void setAudioRemapMode(int value);
+
 private:
     bool updateVideoSignalInfo();
     void setState(int value);

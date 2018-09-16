@@ -630,6 +630,11 @@ void MagewellDeviceWorker::setPtsEnabled(bool value)
     pts_enabled=value;
 }
 
+void MagewellDeviceWorker::setAudioRemapMode(int value)
+{
+    a->setAudioRemapMode(value);
+}
+
 bool MagewellDeviceWorker::updateVideoSignalInfo()
 {
 #ifdef LIB_MWCAPTURE

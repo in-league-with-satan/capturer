@@ -206,6 +206,7 @@ void MagewellDevice::setDevice(void *ptr)
     emit setColorFormat(device.color_format);
     emit setQuantizationRange(device.quantization_range);
     emit setPtsEnabled(device.pts_enabled);
+    emit setAudioRemapMode(device.audio_remap_mode);
     emit setDevice(QSize(device.index_board, device.index_channel));
 }
 
@@ -257,6 +258,7 @@ void MagewellDevice::run()
     connect(this, SIGNAL(setColorFormat(int)), d, SLOT(setColorFormat(int)), Qt::QueuedConnection);
     connect(this, SIGNAL(setQuantizationRange(int)), d, SLOT(setQuantizationRange(int)), Qt::QueuedConnection);
     connect(this, SIGNAL(setPtsEnabled(bool)), d, SLOT(setPtsEnabled(bool)), Qt::QueuedConnection);
+    connect(this, SIGNAL(setAudioRemapMode(int)), d, SLOT(setAudioRemapMode(int)), Qt::QueuedConnection);
 
     connect(this, SIGNAL(deviceStart()), d, SLOT(deviceStart()), Qt::QueuedConnection);
     connect(this, SIGNAL(deviceStop()), d, SLOT(deviceStop()), Qt::QueuedConnection);

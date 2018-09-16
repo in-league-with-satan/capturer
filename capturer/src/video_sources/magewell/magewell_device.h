@@ -85,6 +85,24 @@ public:
             }
         };
 
+        struct AudioRemapMode {
+            enum {
+                disabled,
+                sides_drop,
+                sides_to_rear,
+                size
+            };
+
+            static QString toString(int value) {
+                switch(value) {
+                case disabled: return QStringLiteral("disabled");
+                case sides_drop: return QStringLiteral("sides drop");
+                case sides_to_rear: return QStringLiteral("sides to rear");
+                }
+                return QStringLiteral("unknown");
+            }
+        };
+
         ColorFormat::T color_format=ColorFormat::unknown;
         QuantizationRange::T quantization_range=QuantizationRange::unknown;
 
@@ -92,6 +110,7 @@ public:
         QString path;
         int index_channel;
         int index_board;
+        int audio_remap_mode;
         PixelFormat pixel_format;
         bool pts_enabled=false;
     };
@@ -137,6 +156,7 @@ signals:
     void setColorFormat(int value);
     void setQuantizationRange(int value);
     void setPtsEnabled(bool value);
+    void setAudioRemapMode(int value);
 
     //
 
