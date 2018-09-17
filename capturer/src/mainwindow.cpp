@@ -423,14 +423,6 @@ MainWindow::MainWindow(QObject *parent)
 
     settings_model->add(set_model_data);
 
-    //
-
-    set_model_data.type=SettingsModel::Type::checkbox;
-    set_model_data.name="stop rec on frames drop";
-    set_model_data.value=&settings->rec.stop_rec_on_frames_drop;
-
-    settings_model->add(set_model_data);
-
     // } rec
 
     set_model_data.type=SettingsModel::Type::divider;
@@ -1104,9 +1096,6 @@ void MainWindow::setDevicePrimary(SourceInterface::Type::T type)
             SIGNAL(formatChanged(QString)),
             http_server, SLOT(formatChanged(QString)), Qt::QueuedConnection);
 
-    connect(dynamic_cast<QObject*>(device_primary),
-            SIGNAL(frameSkipped()), SLOT(frameSkipped()), Qt::QueuedConnection);
-
     device_primary->subscribe(ff_enc->frameBuffer());
     device_primary->subscribe(audio_sender->frameBuffer());
 }
@@ -1292,7 +1281,7 @@ void MainWindow::checkFreeSpace()
     QStorageInfo info=QStorageInfo(QApplication::applicationDirPath() + "/videos");
 
     emit freeSpace(info.bytesAvailable());
-    emit freeSpaceStr(QString("%1 MB").arg(QLocale().toString(info.bytesAvailable()/1024./1024.)));
+    emit freeSpaceStr(QString("%1 MB").arg(QLocale().toString(qint64(info.bytesAvailable()/1024./1024.))));
 }
 
 void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
@@ -1674,9 +1663,6 @@ void MainWindow::startStopRecording()
             ff_enc->setConfig(cfg);
         }
     }
-
-
-    dropped_frames_counter=0;
 }
 
 void MainWindow::updateEncList()
@@ -1704,30 +1690,6 @@ void MainWindow::updateEncList()
     }
 
     settingsModelDataChanged(settings_model->data_p_index(&settings->rec.encoder_video), 0, false);
-}
-
-void MainWindow::frameSkipped()
-{
-    dropped_frames_counter++;
-
-    if(!settings->rec.stop_rec_on_frames_drop)
-        return;
-
-    if(!ff_enc->isWorking())
-        return;
-
-    ff_enc->stopCoder();
-
-    // QMetaObject::invokeMethod(decklink_thread, "captureStop", Qt::QueuedConnection);
-
-    if(!mb_rec_stopped)
-        mb_rec_stopped=new QMessageBox(QMessageBox::Critical, "", "", QMessageBox::Ok);
-
-    mb_rec_stopped->setText("some frames was dropped, recording stopped");
-
-    mb_rec_stopped->show();
-    mb_rec_stopped->raise();
-    mb_rec_stopped->exec();
 }
 
 void MainWindow::encoderBufferOverload()
@@ -1823,7 +1785,7 @@ void MainWindow::updateStats(FFEncoder::Stats s)
 
     const QPair <int, int> buffer_size=ff_enc->frameBuffer()->size();
 
-    http_server->setRecStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.streams_size, dropped_frames_counter, buffer_size.second, buffer_size.first));
+    http_server->setRecStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.streams_size, s.dropped_frames_counter, buffer_size.second, buffer_size.first));
 
     if(settings->main.headless)
         return;
@@ -1833,5 +1795,5 @@ void MainWindow::updateStats(FFEncoder::Stats s)
                               QLocale().toString((s.avg_bitrate_video + s.avg_bitrate_audio)/8/1024./1024., 'f', 2)),
                               QString(QLatin1String("%1 bytes")).arg(QLocale().toString((qulonglong)s.streams_size)),
                               QString(QLatin1String("buf state: %1/%2")).arg(buffer_size.first).arg(buffer_size.second),
-                              QString(QLatin1String("frames dropped: %1")).arg(dropped_frames_counter));
+                              QString(QLatin1String("frames dropped: %1")).arg(s.dropped_frames_counter));
 }

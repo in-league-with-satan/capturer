@@ -213,7 +213,6 @@ public:
 
     virtual void signalLost(bool value)=0;
     virtual void formatChanged(QString format)=0;
-    virtual void frameSkipped()=0;
     virtual void errorString(QString err_string)=0;
 
 protected:

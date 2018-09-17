@@ -125,6 +125,9 @@ void AudioSender::run()
                 continue;
             }
 
+            if(!frame->audio.data_ptr || !frame->audio.data_size || !frame->audio.channels || !frame->audio.sample_size)
+                continue;
+
             ba_in=QByteArray((char*)frame->audio.data_ptr, frame->audio.data_size);
 
             packet.channels=frame->audio.channels;

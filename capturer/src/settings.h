@@ -97,7 +97,6 @@ public:
         int encoder_audio;
         int encoder_video;
         int half_fps;
-        int stop_rec_on_frames_drop;
         int downscale;
         int scale_filter;
         int check_encoders;

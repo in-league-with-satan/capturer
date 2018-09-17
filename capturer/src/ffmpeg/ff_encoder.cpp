@@ -663,8 +663,6 @@ FFEncoder::FFEncoder(FFEncoder::Mode::T mode, QObject *parent) :
     // format_converter_ff->useMultithreading(false);
     format_converter_ff->useMultithreading(true);
 
-    // connect(format_converter_ff, SIGNAL(frameSkipped()), SLOT(converterFrameSkip()), Qt::QueuedConnection);
-
     context->base_filename=nullptr;
     context->mode=mode;
 }
@@ -1447,6 +1445,8 @@ void FFEncoder::calcStats()
 
     s.avg_bitrate_video=(double)(context->out_stream_video.size_total*8)/cf_v;
     s.streams_size=context->out_stream_audio.size_total + context->out_stream_video.size_total;
+
+    s.dropped_frames_counter=context->dropped_frames_counter;
 
     emit stats(s);
 }

@@ -162,7 +162,6 @@ signals:
 
     void signalLost(bool value);
     void formatChanged(QString format);
-    void frameSkipped();
     void errorString(QString err_string);
 };
 

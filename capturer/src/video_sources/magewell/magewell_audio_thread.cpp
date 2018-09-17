@@ -248,7 +248,8 @@ void MagewellAudioThread::run()
             mutex.unlock();
 
         } else {
-            qDebug() << "!MWCAP_NOTIFY_AUDIO_FRAME_BUFFERED";
+            qWarning() << "!MWCAP_NOTIFY_AUDIO_FRAME_BUFFERED";
+            msleep(50);
         }
 
         qApp->processEvents();

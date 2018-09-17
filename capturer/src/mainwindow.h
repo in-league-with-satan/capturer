@@ -73,8 +73,6 @@ private:
 
     HttpServer *http_server;
 
-    uint32_t dropped_frames_counter;
-
     FFEncoderBaseFilename enc_base_filename;
 
 protected:
@@ -92,7 +90,6 @@ private slots:
     void startStopRecording();
     void updateEncList();
 
-    void frameSkipped();
     void encoderBufferOverload();
 
     void previewOnOff();

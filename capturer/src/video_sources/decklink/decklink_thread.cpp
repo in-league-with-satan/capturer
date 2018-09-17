@@ -353,23 +353,12 @@ void DeckLinkThread::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fram
 
         video_frame->GetStreamTime(&frame_time, &frame_duration, frame_scale);
 
-        if(frame_time!=0) {
-            if(frame_time - frame_time_prev!=frame_duration) {
-                qWarning() << "decklink: frame dropped" << QDateTime::currentDateTime();
-
-                for(int i=0; i<(frame_time - frame_time_prev)/frame_duration - 1; ++i) {
-                    emit frameSkipped();
-                }
-            }
-
-        } else
-            frame_counter=0;
-
-        frame_time_prev=frame_time;
-
         //
 
         Frame::ptr frame=FrameDecklink::make(video_frame, audio_packet, audio_channels, audio_sample_size);
+
+        frame->video.pts=frame->audio.pts=frame_time/frame_duration;
+        frame->video.time_base=frame->audio.time_base={ (int)frame_duration, (int)frame_scale };
 
         //
 

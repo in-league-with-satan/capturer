@@ -103,7 +103,6 @@ signals:
     void signalLost(bool value);
     void formatChanged(QString format);
     void channelChanged(MGHCHANNEL channel);
-    void frameSkipped();
     void errorString(QString err_string);
 };
 

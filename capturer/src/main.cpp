@@ -65,12 +65,26 @@ int main(int argc, char *argv[])
 
     qSetMessagePattern("%{time hh:mm:ss.zzz}:%{qthreadptr}: %{file}(%{line}) %{function}: %{message}");
 
-    QApplication application(argc, argv);
+    QCoreApplication *application=nullptr;
 
-    application.setApplicationName(QString("capturer (%1)").arg(QString(VERSION_STRING).split("-").first()));
-    application.setApplicationVersion(QString(VERSION_STRING));
+    bool headless=false;
 
-    if(application.arguments().contains("--log-file", Qt::CaseInsensitive)) {
+    for(int i=1; i<argc; ++i) {
+        if(QString::compare(QString(argv[i]), QString("--headless"), Qt::CaseInsensitive)==0)
+            headless=true;
+    }
+
+    if(headless)
+        application=new QCoreApplication(argc, argv);
+
+    else
+        application=new QApplication(argc, argv);
+
+
+    application->setApplicationName(QString("capturer (%1)").arg(QString(VERSION_STRING).split("-").first()));
+    application->setApplicationVersion(QString(VERSION_STRING));
+
+    if(application->arguments().contains("--log-file", Qt::CaseInsensitive)) {
         qInstallMessageHandler([](QtMsgType, const QMessageLogContext &context, const QString &msg) {
             static QMutex mutex;
 
@@ -120,7 +134,7 @@ int main(int argc, char *argv[])
 
 #else
 
-    if(!application.arguments().contains("--dont-check-root", Qt::CaseInsensitive))
+    if(!application->arguments().contains("--dont-check-root", Qt::CaseInsensitive))
         checkRoot();
 
 #endif
@@ -151,5 +165,5 @@ int main(int argc, char *argv[])
 
     root_obj=new MainWindow();
 
-    return application.exec();
+    return application->exec();
 }

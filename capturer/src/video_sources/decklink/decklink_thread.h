@@ -97,9 +97,6 @@ private:
     Decklink::Device device;
 
     int64_t frame_scale;
-    int64_t frame_time_prev;
-
-    uint8_t frame_counter;
 
 protected:
     std::atomic <bool> running;
@@ -112,7 +109,6 @@ protected:
 signals:
     void signalLost(bool value);
     void formatChanged(QString format);
-    void frameSkipped();
     void errorString(QString err_string);
 };
 
