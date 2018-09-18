@@ -54,6 +54,9 @@ Rectangle {
         anchors.fill: primary_output
 
         fragmentShader: "
+            // precision mediump float;
+            precision highp float;
+
             uniform sampler2D source;
             varying vec2 qt_TexCoord0;
 
