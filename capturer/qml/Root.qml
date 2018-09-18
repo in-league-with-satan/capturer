@@ -29,7 +29,7 @@ Rectangle {
 
     VideoOutput {
         id: primary_output
-        anchors.fill: parent;
+        anchors.fill: parent
         source: messenger.videoSourceMain()
     }
 
@@ -46,12 +46,13 @@ Rectangle {
     }
 
     ShaderEffect {
-        property variant source: ShaderEffectSource {
-            id: shader_effect_source
-            hideSource: true
-        }
-
+        id: shader_effect
         anchors.fill: primary_output
+        visible: false
+
+        property variant source: ShaderEffectSource {
+            sourceItem: primary_output
+        }
 
         fragmentShader: "
             // precision mediump float;
@@ -225,11 +226,7 @@ Rectangle {
         }
 
         onSetHdrToSdrEnabled: {
-            if(value)
-                shader_effect_source.sourceItem=primary_output;
-
-            else
-                shader_effect_source.sourceItem=null;
+            shader_effect.visible=value;
         }
     }
 }
