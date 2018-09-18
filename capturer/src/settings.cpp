@@ -90,7 +90,7 @@ bool Settings::load()
 
     //
 
-    QVariantMap map_main=map_root.value(QStringLiteral("main")).toMap();
+    // QVariantMap map_main=map_root.value(QStringLiteral("main")).toMap();
     QVariantMap map_primary_device=map_root.value(QStringLiteral("primary_device")).toMap();
     QVariantMap map_rec=map_root.value(QStringLiteral("rec")).toMap();
     QVariantMap map_http_server=map_root.value(QStringLiteral("http_server")).toMap();
@@ -191,7 +191,7 @@ bool Settings::load()
 bool Settings::save()
 {
     QVariantMap map_root;
-    QVariantMap map_main;
+    // QVariantMap map_main;
     QVariantMap map_primary_device;
     QVariantMap map_rec;
     QVariantMap map_http_server;
@@ -279,7 +279,7 @@ bool Settings::save()
     map_nvenc.insert(QStringLiteral("weighted_pred"), (bool)nvenc.weighted_pred);
 
 
-    map_root.insert(QStringLiteral("main"), map_main);
+    // map_root.insert(QStringLiteral("main"), map_main);
     map_root.insert(QStringLiteral("primary_device"), map_primary_device);
     map_root.insert(QStringLiteral("rec"), map_rec);
     map_root.insert(QStringLiteral("keyboard_shortcuts"), map_keyboard_shortcuts);

@@ -484,6 +484,13 @@ QByteArray HttpServer::favicon()
 {
     static QByteArray d;
 
+#ifndef __linux__
+
+    if(settings->main.headless)
+        return d;
+
+#endif
+
     if(d.isEmpty()) {
         QPixmap pm=QIcon(QStringLiteral(":/images/capturer.svg")).pixmap(QSize(128, 128));
         QBuffer buffer;

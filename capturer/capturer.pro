@@ -28,6 +28,7 @@ DEFINES += USE_PULSE_AUDIO
 TEMPLATE = app
 
 CONFIG += c++14
+CONFIG += console
 
 DESTDIR = $$PWD/../bin
 

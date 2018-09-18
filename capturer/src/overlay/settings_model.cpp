@@ -31,6 +31,9 @@ SettingsModel::SettingsModel(QObject *parent)
 
 QVariant SettingsModel::valueData(int *ptr_value, QVariant default_value)
 {
+    if((*ptr_value)<0)
+        return default_value;
+
     Data *dp=data_p(ptr_value);
 
     if(!dp)
