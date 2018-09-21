@@ -23,7 +23,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QLabel>
 #include <QComboBox>
 #include <QPushButton>
-#include <QPixmap>
 #include <QFile>
 #include <QGenericArgument>
 #include <QLineEdit>

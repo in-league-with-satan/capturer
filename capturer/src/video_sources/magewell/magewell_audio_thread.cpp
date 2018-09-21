@@ -64,6 +64,8 @@ struct MagewellAudioContext {
     std::atomic <int64_t> readed;
     std::atomic <int64_t> prev_pts;
 
+    QElapsedTimer timer_frame_buffered_warning;
+
     AVRational video_framerate={ 0, 0 };
 };
 
@@ -74,6 +76,8 @@ MagewellAudioThread::MagewellAudioThread(QObject *parent)
 #ifdef LIB_MWCAPTURE
 
     d->event_capture=0;
+
+    d->timer_frame_buffered_warning.start();
 
 #endif
 
@@ -248,8 +252,12 @@ void MagewellAudioThread::run()
             mutex.unlock();
 
         } else {
-            qWarning() << "!MWCAP_NOTIFY_AUDIO_FRAME_BUFFERED";
-            msleep(50);
+            if(d->timer_frame_buffered_warning.elapsed()>1000) {
+                d->timer_frame_buffered_warning.restart();
+                qWarning() << "!MWCAP_NOTIFY_AUDIO_FRAME_BUFFERED";
+            }
+
+            // msleep(50);
         }
 
         qApp->processEvents();

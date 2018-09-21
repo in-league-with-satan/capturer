@@ -22,8 +22,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QJsonDocument>
 #include <QUrlQuery>
 #include <QBuffer>
-#include <QPixmap>
-#include <QIcon>
+#include <QImage>
+#include <QSvgRenderer>
+#include <QPainter>
 
 #include <assert.h>
 
@@ -484,17 +485,19 @@ QByteArray HttpServer::favicon()
 {
     static QByteArray d;
 
-#ifndef __linux__
-
-    if(settings->main.headless)
-        return d;
-
-#endif
-
     if(d.isEmpty()) {
-        QPixmap pm=QIcon(QStringLiteral(":/images/capturer.svg")).pixmap(QSize(128, 128));
+        QImage image(128, 128, QImage::Format_ARGB32);
+        image.fill(qRgba(0, 0, 0, 0));
+
+        QPainter painter(&image);
+
+        QSvgRenderer svg_renderer(QStringLiteral(":/images/capturer.svg"));
+        svg_renderer.render(&painter);
+
+        painter.end();
+
         QBuffer buffer;
-        pm.save(&buffer, "PNG");
+        image.save(&buffer, "PNG");
         d=buffer.buffer();
     }
 
