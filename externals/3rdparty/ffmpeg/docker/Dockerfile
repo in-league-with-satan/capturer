@@ -2,7 +2,7 @@
 FROM ubuntu:latest
 
 RUN apt-get update && apt-get upgrade -y \
-    && apt-get install -y autoconf automake libtool build-essential cmake git subversion mercurial pkg-config libva-dev libxcb1-dev libnuma-dev \
+    && apt-get install -y autoconf automake libtool build-essential cmake git pkg-config libva-dev \
     && apt-get autoremove -y && apt-get autoclean -y \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

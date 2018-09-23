@@ -1,4 +1,4 @@
-#install mesa-common-dev libgl-dev libpulse-dev libsdl2-dev libbz2-dev liblzma-dev libnuma-dev
+#install mesa-common-dev libgl-dev libpulse-dev libbz2-dev liblzma-dev libnuma-dev
 
 QT += \
     core \
@@ -20,7 +20,6 @@ DEFINES += QT_DEPRECATED_WARNINGS
 DEFINES += QT_MESSAGELOGCONTEXT
 
 DEFINES += USE_PULSE_AUDIO
-#DEFINES += USE_SDL2
 #DEFINES += STATIC_WIN_FF
 #DEFINES += __linux__
 
@@ -67,15 +66,10 @@ linux {
     contains(DEFINES, USE_PULSE_AUDIO) {
         LIBS += -lpulse-simple -lpulse
     }
-
-    contains(DEFINES, USE_SDL2) {
-        LIBS += -lSDL2main -lSDL2
-    }
 }
 
 windows {
     DEFINES -= USE_PULSE_AUDIO
-    DEFINES -= USE_SDL2
 }
 
 
