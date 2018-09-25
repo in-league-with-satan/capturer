@@ -152,13 +152,17 @@ struct MagewellDeviceWorkerContext {
 
     MWCAP_INPUT_SPECIFIC_STATUS specific_status;
 
-    uint64_t notify_flag=MWCAP_NOTIFY_VIDEO_FRAME_BUFFERED;
-    // uint64_t notify_flag=MWCAP_NOTIFY_VIDEO_FRAME_BUFFERING;
+    uint64_t notify_flag=0;
 
     DWORD fourcc=MWFOURCC_NV12;
 
 
     PixelFormat pixel_format=PixelFormat::nv12;
+
+    bool half_fps=false;
+    bool skip_frame=false;
+
+    bool low_latency=false;
 
     size_t frame_buffer_size;
     DWORD min_stride;
@@ -324,6 +328,11 @@ bool MagewellDeviceWorker::step()
 
 
     if(d->status_bits&d->notify_flag) {
+        if(d->half_fps) {
+            if((d->skip_frame=!d->skip_frame))
+                return true;
+        }
+
         /*
         MWGetDeviceTime((HCHANNEL)current_channel, &d->device_time);
 
@@ -375,7 +384,7 @@ bool MagewellDeviceWorker::step()
 
         ret=MWCaptureVideoFrameToVirtualAddressEx(
                     (HCHANNEL)current_channel,
-                    d->video_buffer_info.iNewestBufferedFullFrame,
+                    d->low_latency ? d->video_buffer_info.iNewestBuffering : d->video_buffer_info.iNewestBufferedFullFrame,
                     (LPBYTE)frame->video.data_ptr,
                     frame->video.data_size,
                     d->min_stride,
@@ -436,25 +445,25 @@ bool MagewellDeviceWorker::step()
 
         //
 
-        if(d->ba_audio.isEmpty()) {
-            qDebug() << "no audio";
-            return true;
-        }
-
-        //
-
         frame->video.pixel_format=d->pixel_format;
 
         //
 
-        if(pts_enabled) {
-            frame->video.time_base=d->framerate;
+        frame->video.time_base=d->framerate;
+
+        if(!d->ba_audio.isEmpty()) {
             frame->video.pts=a->lastPts();
+
+            frame->setDataAudio(d->ba_audio, a->channels(), a->sampleSize());
+
+            d->audio_processed_size+=d->ba_audio.size();
+
+        } else {
+            // qDebug() << "no audio";
+            qWarning() << "no audio";
+
+            frame->video.pts=0;
         }
-
-        frame->setDataAudio(d->ba_audio, a->channels(), a->sampleSize());
-
-        d->audio_processed_size+=d->ba_audio.size();
 
         //
 
@@ -466,7 +475,7 @@ bool MagewellDeviceWorker::step()
 
     } else {
         updateVideoSignalInfo();
-        qDebug() << "!MWCAP_NOTIFY_VIDEO_FRAME_BUFFERED";
+        qDebug() << "!MWCAP_NOTIFY_VIDEO_FRAME_BUFFERED(ING)";
     }
 
     return true;
@@ -503,6 +512,7 @@ void MagewellDeviceWorker::deviceStart()
 
     qDebug() << "current_channel" << current_channel;
 
+
     d->event_capture=MWCreateEvent();
 
     if(d->event_capture==0) {
@@ -510,12 +520,22 @@ void MagewellDeviceWorker::deviceStart()
         goto stop;
     }
 
+    //
+
     d->event_buf=MWCreateEvent();
 
     if(d->event_buf==0) {
         qCritical() << "MWCreateEvent err";
         goto stop;
     }
+
+    //
+
+    if(d->low_latency)
+        d->notify_flag=MWCAP_NOTIFY_VIDEO_FRAME_BUFFERING;
+
+    else
+        d->notify_flag=MWCAP_NOTIFY_VIDEO_FRAME_BUFFERED;
 
     // qInfo() << current_channel << d->event_notify_buffering;
 
@@ -607,6 +627,16 @@ void MagewellDeviceWorker::setPixelFormat(PixelFormat fmt)
 #endif
 }
 
+void MagewellDeviceWorker::setHalfFps(bool value)
+{
+    d->half_fps=value;
+}
+
+void MagewellDeviceWorker::setLowLatency(bool value)
+{
+    d->low_latency=value;
+}
+
 void MagewellDeviceWorker::setColorFormat(int value)
 {
 #ifdef LIB_MWCAPTURE
@@ -672,6 +702,10 @@ bool MagewellDeviceWorker::updateVideoSignalInfo()
     d->frame_buffer_size=FOURCC_CalcImageSize(d->fourcc, d->framesize.width(), d->framesize.height(), d->min_stride);
 
     AVRational framerate=Framerate::toRational(10000000./signal_status.dwFrameDuration);
+
+
+    if(d->half_fps)
+        framerate={ framerate.num, int(framerate.den*.5) };
 
 
     if(av_cmp_q(d->framerate, framerate)!=0 || d->framesize!=framesize || d->specific_status.hdmiStatus.pixelEncoding!=specific_status.hdmiStatus.pixelEncoding) {

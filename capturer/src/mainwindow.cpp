@@ -1005,6 +1005,24 @@ void MainWindow::setDevicePrimary(SourceInterface::Type::T type)
         set_model_data.value=&settings->primary_device.magewell.audio_remap_mode;
 
         settings_model->insert(&settings->primary_device.magewell.quantization_range, set_model_data);
+
+        //
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="low latency";
+
+        set_model_data.value=&settings->primary_device.magewell.low_latency;
+
+        settings_model->insert(&settings->primary_device.magewell.audio_remap_mode, set_model_data);
+
+        //
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="half-fps";
+
+        set_model_data.value=&settings->primary_device.magewell.half_fps;
+
+        settings_model->insert(&settings->primary_device.magewell.low_latency, set_model_data);
     }
 
 
@@ -1585,6 +1603,8 @@ void MainWindow::deviceStart()
         dev->color_format=(MagewellDevice::Device::ColorFormat::T)settings->primary_device.magewell.color_format;
         dev->quantization_range=(MagewellDevice::Device::QuantizationRange::T)settings->primary_device.magewell.quantization_range;
         dev->pts_enabled=true;
+        dev->low_latency=settings->primary_device.magewell.low_latency;
+        dev->half_fps=settings->primary_device.magewell.half_fps;
         dev->audio_remap_mode=settings->primary_device.magewell.audio_remap_mode;
 
         device_primary->setDevice(dev);

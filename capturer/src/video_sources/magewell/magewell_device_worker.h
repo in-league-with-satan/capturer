@@ -62,6 +62,10 @@ public slots:
 
     void setPixelFormat(PixelFormat fmt);
 
+    void setHalfFps(bool value);
+
+    void setLowLatency(bool value);
+
     void setColorFormat(int value);
     void setQuantizationRange(int value);
 

@@ -113,6 +113,8 @@ public:
         int audio_remap_mode;
         PixelFormat pixel_format;
         bool pts_enabled=false;
+        bool half_fps=false;
+        bool low_latency=false;
     };
 
     typedef QList <Device> Devices;
@@ -153,6 +155,8 @@ signals:
     void deviceStop();
     void setDevice(QSize board_index);
     void setPixelFormat(PixelFormat fmt);
+    void setHalfFps(bool value);
+    void setLowLatency(bool value);
     void setColorFormat(int value);
     void setQuantizationRange(int value);
     void setPtsEnabled(bool value);

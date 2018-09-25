@@ -74,6 +74,8 @@ public:
             int color_format=0;
             int quantization_range=0;
             int audio_remap_mode=0;
+            int low_latency=0;
+            int half_fps=0;
 
         } magewell;
 
