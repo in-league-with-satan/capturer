@@ -29,13 +29,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "frame_buffer.h"
 
 class FFSourceContext;
+class FFSource;
 
 class FFSourceWorker : public QObject
 {
     Q_OBJECT
 
 public:
-    FFSourceWorker(SourceInterface *parent_interface, QObject *parent=0);
+    FFSourceWorker(FFSource *parent_interface, QObject *parent=0);
     ~FFSourceWorker();
 
     static QString formatString(const QAudioFormat &format);
@@ -76,7 +77,7 @@ private:
     FFDevice::Dev video_device;
 
     FFSourceContext *d;
-    SourceInterface *parent_interface;
+    FFSource *parent_interface;
 
 signals:
     void signalLost(bool value);

@@ -28,30 +28,20 @@ Rectangle {
     color: "black"
 
     VideoOutput {
-        id: primary_output
+        id: output_primary
         anchors.fill: parent
-        source: messenger.videoSourceMain()
+        source: messenger.videoSourcePrimary()
     }
 
     NoSignal {}
 
-    VideoOutput {
-        id: cam_output
-        x: parent.width*.06
-        y: parent.height - height - parent.height*.1
-        width: parent.width*.3
-        height: parent.height*.3
-        source: messenger.videoSourceCam()
-        property int position: 0
-    }
-
     ShaderEffect {
         id: shader_effect
-        anchors.fill: primary_output
+        anchors.fill: output_primary
         visible: false
 
         property variant source: ShaderEffectSource {
-            sourceItem: primary_output
+            sourceItem: output_primary
         }
 
         fragmentShader: "
@@ -87,6 +77,16 @@ Rectangle {
                 vec4 orig=texture2D(source, uv);
                 gl_FragColor=vec4(whitePreservingLumaBasedReinhardToneMapping(orig.rgb), 0.);
             }"
+    }
+
+    VideoOutput {
+        id: output_secondary
+        x: parent.width*.06
+        y: parent.height - height - parent.height*.1
+        width: parent.width*.3
+        height: parent.height*.3
+        source: messenger.videoSourceSecondary()
+        property int position: 0
     }
 
     ErrorMessage {
@@ -200,28 +200,28 @@ Rectangle {
             file_browser.state_visible=false
         }
 
-        onCamPreview: {
-            cam_output.visible=visible
+        onPreviewSecondary: {
+            output_secondary.visible=visible
         }
 
-        onCamPreviewChangePosition: {
-            cam_output.position++;
+        onPreviewSecondaryChangePosition: {
+            output_secondary.position++;
 
-            if(cam_output.position>1)
-                cam_output.position=0;
+            if(output_secondary.position>1)
+                output_secondary.position=0;
 
-            if(cam_output.position==0) {
-                cam_output.x=Qt.binding(function() { return root.width*.06 })
-                cam_output.y=Qt.binding(function() { return root.height - cam_output.height - root.height*.1 })
-                cam_output.width=Qt.binding(function() { return root.width*.3 })
-                cam_output.height=Qt.binding(function() { return root.height*.3 })
+            if(output_secondary.position==0) {
+                output_secondary.x=Qt.binding(function() { return root.width*.06 })
+                output_secondary.y=Qt.binding(function() { return root.height - output_secondary.height - root.height*.1 })
+                output_secondary.width=Qt.binding(function() { return root.width*.3 })
+                output_secondary.height=Qt.binding(function() { return root.height*.3 })
             }
 
-            if(cam_output.position==1) {
-                cam_output.x=0
-                cam_output.y=0
-                cam_output.width=Qt.binding(function() { return root.width})
-                cam_output.height=Qt.binding(function() { return root.height })
+            if(output_secondary.position==1) {
+                output_secondary.x=0
+                output_secondary.y=0
+                output_secondary.width=Qt.binding(function() { return root.width})
+                output_secondary.height=Qt.binding(function() { return root.height })
             }
         }
 

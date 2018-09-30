@@ -68,9 +68,6 @@ signals:
     void keyPressed(int code);
     void playerSeek(qint64 pos);
 
-    void deviceCamRestart();
-    void deviceCamStop();
-    void deviceDecklinkRestart();
     void checkEncoders();
 };
 

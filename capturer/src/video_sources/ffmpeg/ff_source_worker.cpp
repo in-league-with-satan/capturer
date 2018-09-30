@@ -23,6 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "framerate.h"
 #include "ff_format_converter.h"
 #include "ff_audio_converter.h"
+#include "ff_source.h"
 
 #include "ff_source_worker.h"
 
@@ -52,7 +53,7 @@ struct FFSourceContext
     AudioConverter audio_converter;
 };
 
-FFSourceWorker::FFSourceWorker(SourceInterface *parent_interface, QObject *parent)
+FFSourceWorker::FFSourceWorker(FFSource *parent_interface, QObject *parent)
     : QObject(parent)
     , parent_interface(parent_interface)
 {
@@ -198,8 +199,17 @@ void FFSourceWorker::deviceStart()
 
             d->audio_input=new QAudioInput(dev_list[index_device_audio], format);
             d->audio_device=d->audio_input->start();
+
+            parent_interface->type_flags|=SourceInterface::TypeFlag::audio;
         }
+
+    } else {
+        parent_interface->type_flags&=~SourceInterface::TypeFlag::audio;
     }
+
+    if((parent_interface->type_flags&SourceInterface::TypeFlag::video)==0)
+        return;
+
 
     int ret;
 
@@ -384,8 +394,13 @@ void FFSourceWorker::unsubscribe(FrameBuffer<Frame::ptr>::ptr obj)
 
 bool FFSourceWorker::isActive()
 {
-    if(d->format_context)
+    if(parent_interface->type_flags&SourceInterface::TypeFlag::video) {
+        if(d->format_context)
+            return true;
+
+    } else if(d->audio_device) {
         return true;
+    }
 
     return false;
 }
@@ -405,6 +420,29 @@ PixelFormat FFSourceWorker::pixelFormat() const
 
 bool FFSourceWorker::step()
 {
+    if((parent_interface->type_flags&SourceInterface::TypeFlag::video)==0 && d->audio_device) {
+        QByteArray ba_audio=d->audio_device->readAll();
+
+        if(!ba_audio.isEmpty()) {
+            if(d->audio_input->format()!=default_format) {
+                QByteArray ba_audio_conv;
+
+                d->audio_converter.convert(&ba_audio, &ba_audio_conv);
+                ba_audio=ba_audio_conv;
+            }
+
+            Frame::ptr frame=Frame::make();
+
+            frame->setDataAudio(ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
+
+            foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
+                buf->append(frame);
+        }
+
+        return true;
+    }
+
+
     if(d->format_context && d->codec_context) {
         AVPacket packet;
 

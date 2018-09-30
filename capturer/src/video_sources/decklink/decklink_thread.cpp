@@ -121,6 +121,8 @@ HRESULT DeckLinkCaptureDelegate::VideoInputFrameArrived(IDeckLinkVideoInputFrame
 DeckLinkThread::DeckLinkThread(QObject *parent)
     : QThread(parent)
 {
+    type_flags=TypeFlag::audio | TypeFlag::video;
+
     signal_lost=false;
 
     decklink_capture_delegate=nullptr;
@@ -316,7 +318,7 @@ void DeckLinkThread::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayMo
 
     framesize=QSize(mode->GetWidth(), mode->GetHeight());
 
-    QString format=QString("%1%2@%3 %4")
+    format=QString("%1%2@%3 %4")
             .arg(mode->GetHeight())
             .arg(mode->GetFieldDominance()==bmdProgressiveFrame || mode->GetFieldDominance()==bmdProgressiveSegmentedFrame ? "p" : "i")
             .arg(frame_scale/frame_duration)
@@ -342,11 +344,14 @@ void DeckLinkThread::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fram
         if(!signal_lost) {
             qWarning() << "no input signal";
             emit signalLost(signal_lost=true);
+            emit formatChanged("no signal");
         }
 
     } else {
-        if(signal_lost)
+        if(signal_lost) {
             emit signalLost(signal_lost=false);
+            emit formatChanged(format);
+        }
 
         BMDTimeValue frame_time;
         BMDTimeValue frame_duration;

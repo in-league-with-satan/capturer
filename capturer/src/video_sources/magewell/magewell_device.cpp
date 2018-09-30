@@ -35,6 +35,8 @@ MagewellDevice::MagewellDevice(QObject *parent)
     : QThread(parent)
     , d(nullptr)
 {
+    type_flags=TypeFlag::audio | TypeFlag::video;
+
     audio_channels=AudioChannels::ch_8;
 
     running=false;

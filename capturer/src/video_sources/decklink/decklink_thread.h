@@ -94,11 +94,12 @@ private:
 
     BMDPixelFormat bm_pixel_format;
 
+    QString format;
+
     Decklink::Device device;
 
     int64_t frame_scale;
 
-protected:
     std::atomic <bool> running;
     std::atomic <bool> running_thread;
     std::atomic <bool> signal_lost;

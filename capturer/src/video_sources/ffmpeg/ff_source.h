@@ -36,6 +36,8 @@ class FFSource : public QThread, public SourceInterface
     Q_OBJECT
     Q_INTERFACES(SourceInterface)
 
+    friend class FFSourceWorker;
+
 public:
     FFSource(QObject *parent=0);
     ~FFSource();
@@ -48,7 +50,7 @@ public:
         int pixel_format;
     };
 
-    static QStringList availableCameras();
+    static QStringList availableVideoInput();
     static QStringList availableAudioInput();
 
     static void updateDevList();

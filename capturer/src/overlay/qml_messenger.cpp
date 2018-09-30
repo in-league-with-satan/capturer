@@ -30,8 +30,8 @@ QmlMessenger::QmlMessenger(SettingsModel *settings_model, QObject *parent)
     : QObject(parent)
     , settings_model(settings_model)
 {
-    video_source_main=new QuickVideoSource(this);
-    video_source_cam=new QuickVideoSource(this);
+    video_source_primary=new QuickVideoSource(this);
+    video_source_secondary=new QuickVideoSource(this);
 
 
     connect(settings_model, SIGNAL(changed(SettingsModel*)), SIGNAL(settingsModelChanged(SettingsModel*)));
@@ -109,14 +109,14 @@ QStringList QmlMessenger::networkAddresses() const
     return sl;
 }
 
-QuickVideoSource *QmlMessenger::videoSourceMain()
+QuickVideoSource *QmlMessenger::videoSourcePrimary()
 {
-    return video_source_main;
+    return video_source_primary;
 }
 
-QuickVideoSource *QmlMessenger::videoSourceCam()
+QuickVideoSource *QmlMessenger::videoSourceSecondary()
 {
-    return video_source_cam;
+    return video_source_secondary;
 }
 
 FileSystemModel *QmlMessenger::fileSystemModel()

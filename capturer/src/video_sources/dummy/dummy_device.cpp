@@ -27,6 +27,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 DummyDevice::DummyDevice(QObject *parent)
     : QThread(parent)
 {
+    type_flags=TypeFlag::video;
+
     framesize=QSize(1920, 1080);
     framerate=Framerate::toRational(60.);
     pixel_format=PixelFormat::rgb24;

@@ -67,7 +67,7 @@ SourceInterface::Type::T FFSource::type() const
     return Type::ffmpeg;
 }
 
-QStringList FFSource::availableCameras()
+QStringList FFSource::availableVideoInput()
 {
     QStringList list;
 
@@ -108,7 +108,7 @@ QStringList FFSource::availableAudioInput()
 
 bool FFSource::setVideoDevice(int index)
 {
-    if(index<0 || index>=dev_list.size())
+    if(index>=dev_list.size())
         return false;
 
     QMutexLocker ml(&mutex);
@@ -118,9 +118,15 @@ bool FFSource::setVideoDevice(int index)
 
     index_device_video=index;
 
-    d->setVideoDevice(dev_list[index_device_video]);
+    if(index_device_video<0) {
+        d->setVideoDevice(FFDevice::Dev());
+        type_flags&=~TypeFlag::video;
 
-    qDebug() << index_device_video << dev_list[index_device_video].name;
+    } else {
+        d->setVideoDevice(dev_list[index_device_video]);
+        type_flags|=TypeFlag::video;
+        qDebug() << index_device_video << dev_list[index_device_video].name;
+    }
 
     return true;
 }
@@ -149,6 +155,9 @@ void FFSource::setDevice(void *ptr)
 
 QList <QSize> FFSource::supportedResolutions()
 {
+    if(index_device_video<0)
+        return QList<QSize>();
+
     if(dev_list.size() - 1<index_device_video)
         return QList<QSize>();
 
@@ -183,6 +192,9 @@ QList <QSize> FFSource::supportedResolutions()
 
 QList <int> FFSource::supportedPixelFormats(QSize size)
 {
+    if(index_device_video<0)
+        return QList<int>();
+
     if(dev_list.size() - 1<index_device_video)
         return QList<int>();
 
@@ -205,6 +217,9 @@ QList <int> FFSource::supportedPixelFormats(QSize size)
 
 QList <AVRational> FFSource::supportedFramerates(QSize size, int fmt)
 {
+    if(index_device_video<0)
+        return QList<AVRational>();
+
     if(dev_list.size() - 1<index_device_video)
         return QList<AVRational>();
 

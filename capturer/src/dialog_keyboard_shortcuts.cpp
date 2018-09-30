@@ -118,13 +118,13 @@ Qt::Key DialogKeyboardShortcuts::defaultQtKey(int code)
     case KeyCodeC::RecState:
         return Qt::Key_F6;
 
-    case KeyCodeC::Preview:
+    case KeyCodeC::PreviewPrimary:
         return Qt::Key_F7;
 
-    case KeyCodeC::PreviewCam:
+    case KeyCodeC::PreviewSecondary:
         return Qt::Key_F9;
 
-    case KeyCodeC::PreviewCamChangePosition:
+    case KeyCodeC::PreviewSecondaryChangePosition:
         return Qt::Key_C;
 
     case KeyCodeC::HdrToSdr:

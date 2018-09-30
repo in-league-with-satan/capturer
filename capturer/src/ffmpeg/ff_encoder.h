@@ -45,7 +45,7 @@ public:
     struct Mode {
         enum T {
             primary,
-            webcam
+            secondary
         };
     };
 
@@ -143,6 +143,7 @@ public:
         VideoEncoder::T video_encoder;
         QString preset;
         AVRational framerate_force={ 0, 0 };
+        uint32_t input_type_flags=0;
 
         int color_primaries=-1;
         int color_space=-1;

@@ -51,13 +51,17 @@ public:
 
 private:
     void setDevicePrimary(SourceInterface::Type::T type);
+    void setDeviceSecondary(SourceInterface::Type::T type);
+    void setDevice(bool primary, SourceInterface::Type::T type);
 
     SourceInterface *device_primary=nullptr;
+    SourceInterface *device_secondary=nullptr;
 
     SettingsModel *settings_model;
 
-    FFEncoderThread *ff_enc;
-    FFEncoderThread *ff_enc_cam;
+    FFEncoderThread *ff_enc_primary;
+    FFEncoderThread *ff_enc_secondary;
+
     FFDecoderThread *ff_dec;
 
     QmlMessenger *messenger;
@@ -84,16 +88,16 @@ private slots:
 
     void settingsModelDataChanged(int index, int role, bool qml);
 
-    void deviceStart();
-    void deviceStop();
+    void deviceStart(bool primary);
+    void deviceStop(bool primary);
 
     void startStopRecording();
     void updateEncList();
 
     void encoderBufferOverload();
 
-    void previewOnOff();
-    void previewCamOnOff();
+    void previewPrimaryOnOff();
+    void previewSecondaryOnOff();
 
     void encoderStateChanged(bool state);
     void playerStateChanged(int state);

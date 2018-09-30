@@ -773,6 +773,7 @@ void MagewellDeviceWorker::setState(int value)
 
     } else if(state==State::no_signal) {
         emit signalLost(true);
+        emit formatChanged("no signal");
 
     } else {
         emit signalLost(true);

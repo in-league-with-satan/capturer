@@ -86,7 +86,7 @@ public:
 
         } decklink;
 
-    } primary_device, secondary_device;
+    } device_primary, device_secondary;
 
 
     struct Rec {

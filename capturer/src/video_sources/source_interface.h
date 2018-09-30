@@ -60,11 +60,21 @@ public:
         };
     };
 
+    struct TypeFlag {
+        enum {
+            audio=0x1,
+            video=0x2
+        };
+    };
+
     SourceInterface() {
+        type_flags=0;
+
         pixel_format=PixelFormat::undefined;
         framerate={ 60000, 1000 };
         framesize=QSize(640, 480);
         half_fps=false;
+        signal_lost=true;
 
         audio_sample_size=AudioSampleSize::bitdepth_null;
         audio_channels=AudioChannels::ch_8;
@@ -211,6 +221,12 @@ public:
 
     //
 
+    virtual uint32_t typeFlags() {
+        return type_flags;
+    }
+
+    //
+
     virtual void signalLost(bool value)=0;
     virtual void formatChanged(QString format)=0;
     virtual void errorString(QString err_string)=0;
@@ -219,6 +235,8 @@ protected:
     QList <FrameBuffer<Frame::ptr>::ptr> subscription_list;
 
     std::atomic <bool> signal_lost;
+
+    std::atomic <uint32_t> type_flags;
 
     std::atomic <int> pixel_format;
     std::atomic <AVRational> framerate;

@@ -57,11 +57,11 @@ QString filename()
 Settings::Settings(QObject *parent) :
     QObject(parent)
 {
-    primary_device.group="primary device";
-    primary_device.group_settings="primary device setup";
+    device_primary.group="primary device";
+    device_primary.group_settings="primary device setup";
 
-    secondary_device.group="secondary device";
-    secondary_device.group_settings="secondary device setup";
+    device_secondary.group="secondary device";
+    device_secondary.group_settings="secondary device setup";
 
 
     if(qApp->arguments().contains("--headless"))
@@ -91,39 +91,71 @@ bool Settings::load()
     //
 
     // QVariantMap map_main=map_root.value(QStringLiteral("main")).toMap();
-    QVariantMap map_primary_device=map_root.value(QStringLiteral("primary_device")).toMap();
+    QVariantMap map_device_primary=map_root.value(QStringLiteral("device_primary")).toMap();
+    QVariantMap map_device_secondary=map_root.value(QStringLiteral("device_secondary")).toMap();
     QVariantMap map_rec=map_root.value(QStringLiteral("rec")).toMap();
     QVariantMap map_http_server=map_root.value(QStringLiteral("http_server")).toMap();
     QVariantMap map_keyboard_shortcuts=map_root.value(QStringLiteral("keyboard_shortcuts")).toMap();
     QVariantMap map_nvenc=map_root.value(QStringLiteral("nvenc")).toMap();
 
-    QVariantMap map_primary_device_dummy=map_primary_device.value(QStringLiteral("dummy")).toMap();
-    QVariantMap map_primary_device_ff=map_primary_device.value(QStringLiteral("ff")).toMap();
-    QVariantMap map_primary_device_magewell=map_primary_device.value(QStringLiteral("magewell")).toMap();
-    QVariantMap map_primary_device_decklink=map_primary_device.value(QStringLiteral("decklink")).toMap();
+    QVariantMap map_device_primary_dummy=map_device_primary.value(QStringLiteral("dummy")).toMap();
+    QVariantMap map_device_primary_ff=map_device_primary.value(QStringLiteral("ff")).toMap();
+    QVariantMap map_device_primary_magewell=map_device_primary.value(QStringLiteral("magewell")).toMap();
+    QVariantMap map_device_primary_decklink=map_device_primary.value(QStringLiteral("decklink")).toMap();
 
-    primary_device.index=map_primary_device.value(QStringLiteral("index"), 0).toInt();
+    QVariantMap map_device_secondary_dummy=map_device_secondary.value(QStringLiteral("dummy")).toMap();
+    QVariantMap map_device_secondary_ff=map_device_secondary.value(QStringLiteral("ff")).toMap();
+    QVariantMap map_device_secondary_magewell=map_device_secondary.value(QStringLiteral("magewell")).toMap();
+    QVariantMap map_device_secondary_decklink=map_device_secondary.value(QStringLiteral("decklink")).toMap();
 
-    primary_device.dummy_device.framesize=map_primary_device_dummy.value(QStringLiteral("framesize"), 0).toInt();
-    primary_device.dummy_device.show_frame_counter=map_primary_device_dummy.value(QStringLiteral("show_frame_counter"), 0).toInt();
 
-    primary_device.ff_device.index_video=map_primary_device_ff.value(QStringLiteral("index_video"), 0).toInt();
-    primary_device.ff_device.index_audio=map_primary_device_ff.value(QStringLiteral("index_audio"), 0).toInt();
-    primary_device.ff_device.framesize=map_primary_device_ff.value(QStringLiteral("framesize"), 0).toInt();
-    primary_device.ff_device.framerate=map_primary_device_ff.value(QStringLiteral("framerate"), 0).toInt();
-    primary_device.ff_device.pixel_format=map_primary_device_ff.value(QStringLiteral("pixel_format"), 0).toInt();
+    device_primary.index=map_device_primary.value(QStringLiteral("index"), 0).toInt();
 
-    primary_device.magewell.index=map_primary_device_magewell.value(QStringLiteral("index"), 0).toInt();
-    primary_device.magewell.pixel_format=map_primary_device_magewell.value(QStringLiteral("pixel_format"), 0).toInt();
-    primary_device.magewell.color_format=map_primary_device_magewell.value(QStringLiteral("color_format"), 0).toInt();
-    primary_device.magewell.quantization_range=map_primary_device_magewell.value(QStringLiteral("quantization_range"), 0).toInt();
-    primary_device.magewell.audio_remap_mode=map_primary_device_magewell.value(QStringLiteral("audio_remap_mode"), 0).toInt();
-    primary_device.magewell.low_latency=map_primary_device_magewell.value(QStringLiteral("low_latency"), 0).toInt();
-    primary_device.magewell.half_fps=map_primary_device_magewell.value(QStringLiteral("half_fps"), 0).toInt();
+    device_primary.dummy_device.framesize=map_device_primary_dummy.value(QStringLiteral("framesize"), 0).toInt();
+    device_primary.dummy_device.show_frame_counter=map_device_primary_dummy.value(QStringLiteral("show_frame_counter"), 0).toInt();
 
-    primary_device.decklink.index=map_primary_device_decklink.value(QStringLiteral("index"), 0).toInt();
-    primary_device.decklink.audio_sample_size=map_primary_device_decklink.value(QStringLiteral("audio_sample_size"), 0).toInt();
-    primary_device.decklink.video_bitdepth=map_primary_device_decklink.value(QStringLiteral("video_bitdepth"), 0).toInt();
+    device_primary.ff_device.index_video=map_device_primary_ff.value(QStringLiteral("index_video"), 0).toInt();
+    device_primary.ff_device.index_audio=map_device_primary_ff.value(QStringLiteral("index_audio"), 0).toInt();
+    device_primary.ff_device.framesize=map_device_primary_ff.value(QStringLiteral("framesize"), 0).toInt();
+    device_primary.ff_device.framerate=map_device_primary_ff.value(QStringLiteral("framerate"), 0).toInt();
+    device_primary.ff_device.pixel_format=map_device_primary_ff.value(QStringLiteral("pixel_format"), 0).toInt();
+
+    device_primary.magewell.index=map_device_primary_magewell.value(QStringLiteral("index"), 0).toInt();
+    device_primary.magewell.pixel_format=map_device_primary_magewell.value(QStringLiteral("pixel_format"), 0).toInt();
+    device_primary.magewell.color_format=map_device_primary_magewell.value(QStringLiteral("color_format"), 0).toInt();
+    device_primary.magewell.quantization_range=map_device_primary_magewell.value(QStringLiteral("quantization_range"), 0).toInt();
+    device_primary.magewell.audio_remap_mode=map_device_primary_magewell.value(QStringLiteral("audio_remap_mode"), 0).toInt();
+    device_primary.magewell.low_latency=map_device_primary_magewell.value(QStringLiteral("low_latency"), 0).toInt();
+    device_primary.magewell.half_fps=map_device_primary_magewell.value(QStringLiteral("half_fps"), 0).toInt();
+
+    device_primary.decklink.index=map_device_primary_decklink.value(QStringLiteral("index"), 0).toInt();
+    device_primary.decklink.audio_sample_size=map_device_primary_decklink.value(QStringLiteral("audio_sample_size"), 0).toInt();
+    device_primary.decklink.video_bitdepth=map_device_primary_decklink.value(QStringLiteral("video_bitdepth"), 0).toInt();
+
+
+    device_secondary.index=map_device_secondary.value(QStringLiteral("index"), 0).toInt();
+
+    device_secondary.dummy_device.framesize=map_device_secondary_dummy.value(QStringLiteral("framesize"), 0).toInt();
+    device_secondary.dummy_device.show_frame_counter=map_device_secondary_dummy.value(QStringLiteral("show_frame_counter"), 0).toInt();
+
+    device_secondary.ff_device.index_video=map_device_secondary_ff.value(QStringLiteral("index_video"), 0).toInt();
+    device_secondary.ff_device.index_audio=map_device_secondary_ff.value(QStringLiteral("index_audio"), 0).toInt();
+    device_secondary.ff_device.framesize=map_device_secondary_ff.value(QStringLiteral("framesize"), 0).toInt();
+    device_secondary.ff_device.framerate=map_device_secondary_ff.value(QStringLiteral("framerate"), 0).toInt();
+    device_secondary.ff_device.pixel_format=map_device_secondary_ff.value(QStringLiteral("pixel_format"), 0).toInt();
+
+    device_secondary.magewell.index=map_device_secondary_magewell.value(QStringLiteral("index"), 0).toInt();
+    device_secondary.magewell.pixel_format=map_device_secondary_magewell.value(QStringLiteral("pixel_format"), 0).toInt();
+    device_secondary.magewell.color_format=map_device_secondary_magewell.value(QStringLiteral("color_format"), 0).toInt();
+    device_secondary.magewell.quantization_range=map_device_secondary_magewell.value(QStringLiteral("quantization_range"), 0).toInt();
+    device_secondary.magewell.audio_remap_mode=map_device_secondary_magewell.value(QStringLiteral("audio_remap_mode"), 0).toInt();
+    device_secondary.magewell.low_latency=map_device_secondary_magewell.value(QStringLiteral("low_latency"), 0).toInt();
+    device_secondary.magewell.half_fps=map_device_secondary_magewell.value(QStringLiteral("half_fps"), 0).toInt();
+
+    device_secondary.decklink.index=map_device_secondary_decklink.value(QStringLiteral("index"), 0).toInt();
+    device_secondary.decklink.audio_sample_size=map_device_secondary_decklink.value(QStringLiteral("audio_sample_size"), 0).toInt();
+    device_secondary.decklink.video_bitdepth=map_device_secondary_decklink.value(QStringLiteral("video_bitdepth"), 0).toInt();
+
 
     rec.supported_enc=map_rec.value(QStringLiteral("supported_enc")).toMap();
     rec.encoder_audio=map_rec.value(QStringLiteral("encoder_audio"), 0).toInt();
@@ -194,44 +226,78 @@ bool Settings::save()
 {
     QVariantMap map_root;
     // QVariantMap map_main;
-    QVariantMap map_primary_device;
+    QVariantMap map_device_primary;
+    QVariantMap map_device_secondary;
     QVariantMap map_rec;
     QVariantMap map_http_server;
     QVariantMap map_keyboard_shortcuts;
     QVariantMap map_nvenc;
 
-    QVariantMap map_primary_device_dummy;
-    QVariantMap map_primary_device_ff;
-    QVariantMap map_primary_device_magewell;
-    QVariantMap map_primary_device_decklink;
+    QVariantMap map_device_primary_dummy;
+    QVariantMap map_device_primary_ff;
+    QVariantMap map_device_primary_magewell;
+    QVariantMap map_device_primary_decklink;
+
+    QVariantMap map_device_secondary_dummy;
+    QVariantMap map_device_secondary_ff;
+    QVariantMap map_device_secondary_magewell;
+    QVariantMap map_device_secondary_decklink;
+
+    map_device_primary_dummy.insert(QStringLiteral("framesize"), device_primary.dummy_device.framesize);
+    map_device_primary_dummy.insert(QStringLiteral("show_frame_counter"), device_primary.dummy_device.show_frame_counter);
+
+    map_device_primary_ff.insert(QStringLiteral("index_video"), device_primary.ff_device.index_video);
+    map_device_primary_ff.insert(QStringLiteral("index_audio"), device_primary.ff_device.index_audio);
+    map_device_primary_ff.insert(QStringLiteral("framesize"), device_primary.ff_device.framesize);
+    map_device_primary_ff.insert(QStringLiteral("framerate"), device_primary.ff_device.framerate);
+    map_device_primary_ff.insert(QStringLiteral("pixel_format"), device_primary.ff_device.pixel_format);
+
+    map_device_primary_magewell.insert(QStringLiteral("index"), device_primary.magewell.index);
+    map_device_primary_magewell.insert(QStringLiteral("pixel_format"), device_primary.magewell.pixel_format);
+    map_device_primary_magewell.insert(QStringLiteral("color_format"), device_primary.magewell.color_format);
+    map_device_primary_magewell.insert(QStringLiteral("quantization_range"), device_primary.magewell.quantization_range);
+    map_device_primary_magewell.insert(QStringLiteral("audio_remap_mode"), device_primary.magewell.audio_remap_mode);
+    map_device_primary_magewell.insert(QStringLiteral("low_latency"), device_primary.magewell.low_latency);
+    map_device_primary_magewell.insert(QStringLiteral("half_fps"), device_primary.magewell.half_fps);
+
+    map_device_primary_decklink.insert(QStringLiteral("index"), device_primary.decklink.index);
+    map_device_primary_decklink.insert(QStringLiteral("audio_sample_size"), device_primary.decklink.audio_sample_size);
+    map_device_primary_decklink.insert(QStringLiteral("index"), device_primary.decklink.video_bitdepth);
+
+    map_device_primary.insert(QStringLiteral("index"), device_primary.index);
+    map_device_primary.insert(QStringLiteral("dummy"), map_device_primary_dummy);
+    map_device_primary.insert(QStringLiteral("ff"), map_device_primary_ff);
+    map_device_primary.insert(QStringLiteral("magewell"), map_device_primary_magewell);
+    map_device_primary.insert(QStringLiteral("decklink"), map_device_primary_decklink);
 
 
-    map_primary_device_dummy.insert(QStringLiteral("framesize"), primary_device.dummy_device.framesize);
-    map_primary_device_dummy.insert(QStringLiteral("show_frame_counter"), primary_device.dummy_device.show_frame_counter);
 
-    map_primary_device_ff.insert(QStringLiteral("index_video"), primary_device.ff_device.index_video);
-    map_primary_device_ff.insert(QStringLiteral("index_audio"), primary_device.ff_device.index_audio);
-    map_primary_device_ff.insert(QStringLiteral("framesize"), primary_device.ff_device.framesize);
-    map_primary_device_ff.insert(QStringLiteral("framerate"), primary_device.ff_device.framerate);
-    map_primary_device_ff.insert(QStringLiteral("pixel_format"), primary_device.ff_device.pixel_format);
+    map_device_secondary_dummy.insert(QStringLiteral("framesize"), device_secondary.dummy_device.framesize);
+    map_device_secondary_dummy.insert(QStringLiteral("show_frame_counter"), device_secondary.dummy_device.show_frame_counter);
 
-    map_primary_device_magewell.insert(QStringLiteral("index"), primary_device.magewell.index);
-    map_primary_device_magewell.insert(QStringLiteral("pixel_format"), primary_device.magewell.pixel_format);
-    map_primary_device_magewell.insert(QStringLiteral("color_format"), primary_device.magewell.color_format);
-    map_primary_device_magewell.insert(QStringLiteral("quantization_range"), primary_device.magewell.quantization_range);
-    map_primary_device_magewell.insert(QStringLiteral("audio_remap_mode"), primary_device.magewell.audio_remap_mode);
-    map_primary_device_magewell.insert(QStringLiteral("low_latency"), primary_device.magewell.low_latency);
-    map_primary_device_magewell.insert(QStringLiteral("half_fps"), primary_device.magewell.half_fps);
+    map_device_secondary_ff.insert(QStringLiteral("index_video"), device_secondary.ff_device.index_video);
+    map_device_secondary_ff.insert(QStringLiteral("index_audio"), device_secondary.ff_device.index_audio);
+    map_device_secondary_ff.insert(QStringLiteral("framesize"), device_secondary.ff_device.framesize);
+    map_device_secondary_ff.insert(QStringLiteral("framerate"), device_secondary.ff_device.framerate);
+    map_device_secondary_ff.insert(QStringLiteral("pixel_format"), device_secondary.ff_device.pixel_format);
 
-    map_primary_device_decklink.insert(QStringLiteral("index"), primary_device.decklink.index);
-    map_primary_device_decklink.insert(QStringLiteral("audio_sample_size"), primary_device.decklink.audio_sample_size);
-    map_primary_device_decklink.insert(QStringLiteral("index"), primary_device.decklink.video_bitdepth);
+    map_device_secondary_magewell.insert(QStringLiteral("index"), device_secondary.magewell.index);
+    map_device_secondary_magewell.insert(QStringLiteral("pixel_format"), device_secondary.magewell.pixel_format);
+    map_device_secondary_magewell.insert(QStringLiteral("color_format"), device_secondary.magewell.color_format);
+    map_device_secondary_magewell.insert(QStringLiteral("quantization_range"), device_secondary.magewell.quantization_range);
+    map_device_secondary_magewell.insert(QStringLiteral("audio_remap_mode"), device_secondary.magewell.audio_remap_mode);
+    map_device_secondary_magewell.insert(QStringLiteral("low_latency"), device_secondary.magewell.low_latency);
+    map_device_secondary_magewell.insert(QStringLiteral("half_fps"), device_secondary.magewell.half_fps);
 
-    map_primary_device.insert(QStringLiteral("index"), primary_device.index);
-    map_primary_device.insert(QStringLiteral("dummy"), map_primary_device_dummy);
-    map_primary_device.insert(QStringLiteral("ff"), map_primary_device_ff);
-    map_primary_device.insert(QStringLiteral("magewell"), map_primary_device_magewell);
-    map_primary_device.insert(QStringLiteral("decklink"), map_primary_device_decklink);
+    map_device_secondary_decklink.insert(QStringLiteral("index"), device_secondary.decklink.index);
+    map_device_secondary_decklink.insert(QStringLiteral("audio_sample_size"), device_secondary.decklink.audio_sample_size);
+    map_device_secondary_decklink.insert(QStringLiteral("index"), device_secondary.decklink.video_bitdepth);
+
+    map_device_secondary.insert(QStringLiteral("index"), device_secondary.index);
+    map_device_secondary.insert(QStringLiteral("dummy"), map_device_secondary_dummy);
+    map_device_secondary.insert(QStringLiteral("ff"), map_device_secondary_ff);
+    map_device_secondary.insert(QStringLiteral("magewell"), map_device_secondary_magewell);
+    map_device_secondary.insert(QStringLiteral("decklink"), map_device_secondary_decklink);
 
 
     map_rec.insert(QStringLiteral("supported_enc"), rec.supported_enc);
@@ -284,7 +350,8 @@ bool Settings::save()
 
 
     // map_root.insert(QStringLiteral("main"), map_main);
-    map_root.insert(QStringLiteral("primary_device"), map_primary_device);
+    map_root.insert(QStringLiteral("device_primary"), map_device_primary);
+    map_root.insert(QStringLiteral("device_secondary"), map_device_secondary);
     map_root.insert(QStringLiteral("rec"), map_rec);
     map_root.insert(QStringLiteral("keyboard_shortcuts"), map_keyboard_shortcuts);
     map_root.insert(QStringLiteral("nvenc"), map_nvenc);

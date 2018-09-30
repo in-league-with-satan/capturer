@@ -29,6 +29,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "ff_tools.h"
 #include "ff_format_converter_multithreaded.h"
 #include "decklink_frame_converter.h"
+#include "source_interface.h"
 
 #include "ff_encoder.h"
 
@@ -120,11 +121,10 @@ public:
 
 static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AVStream *st, AVPacket *pkt)
 {
-    // rescale output packet timestamp values from codec to stream timebase
     av_packet_rescale_ts(pkt, *time_base, st->time_base);
+
     pkt->stream_index=st->index;
 
-    // write the compressed frame to the media file
     return av_interleaved_write_frame(fmt_ctx, pkt);
 }
 
@@ -132,7 +132,6 @@ static QString add_stream_audio(OutputStream *out_stream, AVFormatContext *forma
 {
     AVCodecID codec_id=AV_CODEC_ID_PCM_S16LE;
 
-    // find the encoder
     if(cfg.audio_sample_size!=16)
         codec_id=AV_CODEC_ID_PCM_S32LE;
 
@@ -192,7 +191,6 @@ static QString add_stream_audio(OutputStream *out_stream, AVFormatContext *forma
     out_stream->av_stream->time_base={ 1, out_stream->av_codec_context->sample_rate };
 
 
-    // some formats want stream headers to be separate
     if(format_context->oformat->flags & AVFMT_GLOBALHEADER)
         out_stream->av_codec_context->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
 
@@ -444,14 +442,12 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
     if(cfg.color_transfer_characteristic>-1)
         out_stream->av_codec_context->color_trc=(AVColorTransferCharacteristic)cfg.color_transfer_characteristic;
 
-    // some formats want stream headers to be separate
     if(format_context->oformat->flags & AVFMT_GLOBALHEADER)
         out_stream->av_codec_context->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
 
     return QStringLiteral("");
 }
 
-// audio output
 static QString alloc_audio_frame(enum AVSampleFormat sample_fmt, uint64_t channel_layout, int sample_rate, int nb_samples, AVFrame **frame)
 {
     (*frame)=av_frame_alloc();
@@ -492,7 +488,6 @@ static QString open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost
 
     c=ost->av_codec_context;
 
-    // open it
     av_dict_copy(&opt, opt_arg, 0);
 
     ret=avcodec_open2(c, codec, &opt);
@@ -509,7 +504,6 @@ static QString open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost
     if(!err.isEmpty())
         return err;
 
-    // copy the stream parameters to the muxer
     ret=avcodec_parameters_from_context(ost->av_stream->codecpar, c);
 
     if(ret<0)
@@ -558,7 +552,6 @@ QString open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDic
     //             .arg(ost->av_codec_context->time_base.den)
     //             .arg(ost->av_codec_context->time_base.num).toLatin1().constData(), 0);
 
-    // open the codec
     ret=avcodec_open2(c, codec, &opt);
 
     av_dict_free(&opt);
@@ -568,28 +561,27 @@ QString open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, AVDic
     }
 
 
-    // allocate and init a re-usable frame
     ost->frame=alloc_frame(ost->frame_fmt, cfg.frame_resolution_src.width(), cfg.frame_resolution_src.height());
 
     if(!ost->frame)
         return QStringLiteral("could not allocate video frame");
 
 
-    // allocate and init a re-usable frame
     ost->frame_converted=alloc_frame(cfg.pixel_format_dst.toAVPixelFormat(), cfg.frame_resolution_dst.width(), cfg.frame_resolution_dst.height());
 
     if(!ost->frame_converted)
         return QStringLiteral("Could not allocate video frame");
 
 
-    // copy the stream parameters to the muxer
     ret=avcodec_parameters_from_context(ost->av_stream->codecpar, c);
 
     if(ret<0)
         return QStringLiteral("could not copy the stream parameters");
 
+
     if(!ost->pkt)
         ost->pkt=av_packet_alloc();
+
 
     return QStringLiteral("");
 }
@@ -1056,7 +1048,7 @@ QString FFEncoder::configString(const FFEncoder::Config &cfg)
 
 bool FFEncoder::setConfig(FFEncoder::Config cfg)
 {
-    if(!cfg.pixel_format_src.isValid() || !cfg.pixel_format_dst.isValid())
+    if(cfg.input_type_flags&SourceInterface::TypeFlag::video && (!cfg.pixel_format_src.isValid() || !cfg.pixel_format_dst.isValid()))
         return false;
 
     last_error_string.clear();
@@ -1088,10 +1080,10 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             cfg.nvenc.aq_mode=0;
     }
 
-
-    if(!format_converter_ff->setup(cfg.pixel_format_src.toAVPixelFormat(), cfg.frame_resolution_src, cfg.pixel_format_dst.toAVPixelFormat(), cfg.frame_resolution_dst,
-                                   cfg.downscale==DownScale::Disabled ? FFFormatConverter::Filter::cNull : (FFFormatConverter::Filter::T)ScaleFilter::toSws(cfg.scale_filter),
-                                   cfg.pixel_format_src.is210() ? (cfg.pixel_format_src.isRgb() ? DecodeFrom210::Format::R210 : DecodeFrom210::Format::V210) : DecodeFrom210::Format::Disabled)) {
+    if(cfg.input_type_flags&SourceInterface::TypeFlag::video && !format_converter_ff->setup(
+                cfg.pixel_format_src.toAVPixelFormat(), cfg.frame_resolution_src, cfg.pixel_format_dst.toAVPixelFormat(), cfg.frame_resolution_dst,
+                cfg.downscale==DownScale::Disabled ? FFFormatConverter::Filter::cNull : (FFFormatConverter::Filter::T)ScaleFilter::toSws(cfg.scale_filter),
+                cfg.pixel_format_src.is210() ? (cfg.pixel_format_src.isRgb() ? DecodeFrom210::Format::R210 : DecodeFrom210::Format::V210) : DecodeFrom210::Format::Disabled)) {
         emit errorString(last_error_string=QStringLiteral("err init format converter"));
         goto fail;
     }
@@ -1116,8 +1108,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             name=QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss");
 
 
-        if(context->mode==Mode::webcam)
-            name+=QLatin1String("_cam");
+        if(context->mode==Mode::secondary)
+            name+=QLatin1String("_second");
 
 
         context->filename=QString(QLatin1String("%1/videos/%2.mkv"))
@@ -1127,7 +1119,6 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     // context->filename="/dev/null";
 
 
-    // allocate the output media context
     avformat_alloc_output_context2(&context->av_format_context, nullptr, "matroska", nullptr);
 
     if(!context->av_format_context) {
@@ -1137,27 +1128,24 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
     context->av_output_format=context->av_format_context->oformat;
 
+    if(cfg.input_type_flags&SourceInterface::TypeFlag::video) {
+        last_error_string=add_stream_video(&context->out_stream_video, context->av_format_context, &context->av_codec_video, cfg);
 
-    // add the audio and video streams using the default format codecs
-    // and initialize the codecs
-    last_error_string=add_stream_video(&context->out_stream_video, context->av_format_context, &context->av_codec_video, cfg);
+        if(!last_error_string.isEmpty()) {
+            emit errorString(last_error_string);
+            goto fail;
+        }
 
-    if(!last_error_string.isEmpty()) {
-        emit errorString(last_error_string);
-        goto fail;
-    }
+        last_error_string=open_video(context->av_format_context, context->av_codec_video, &context->out_stream_video, context->opt, cfg);
 
-    // now that all the parameters are set, we can open the audio and
-    // video codecs and allocate the necessary encode buffers
-    last_error_string=open_video(context->av_format_context, context->av_codec_video, &context->out_stream_video, context->opt, cfg);
-
-    if(!last_error_string.isEmpty()) {
-        emit errorString(last_error_string);
-        goto fail;
+        if(!last_error_string.isEmpty()) {
+            emit errorString(last_error_string);
+            goto fail;
+        }
     }
 
 
-    if(cfg.audio_sample_size!=0) {
+    if(cfg.input_type_flags&SourceInterface::TypeFlag::audio && cfg.audio_sample_size!=0) {
         last_error_string=add_stream_audio(&context->out_stream_audio, context->av_format_context, &context->av_codec_audio, cfg);
 
         if(!last_error_string.isEmpty()) {
@@ -1178,7 +1166,6 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     av_dump_format(context->av_format_context, 0, "", 1);
 
 
-    // open the output file
     ret=avio_open(&context->av_format_context->pb, context->filename.toLatin1().constData(), AVIO_FLAG_WRITE);
 
     if(ret<0) {
@@ -1186,14 +1173,13 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
         goto fail;
     }
 
-
-    av_dict_set(&context->av_format_context->metadata, "encoding_params", configString(cfg).toLatin1().constData(), 0);
+    if(cfg.input_type_flags&SourceInterface::TypeFlag::video)
+        av_dict_set(&context->av_format_context->metadata, "encoding_params", configString(cfg).toLatin1().constData(), 0);
 
     if(!encoding_tool.isEmpty())
         av_dict_set(&context->av_format_context->metadata, "encoding_tool", encoding_tool.toLatin1().constData(), 0);
 
 
-    // write the stream header, if any
     ret=avformat_write_header(context->av_format_context, &context->opt);
 
     if(ret<0) {
@@ -1241,7 +1227,12 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
         return false;
 
 
-    processAudio(frame);
+    if(context->cfg.input_type_flags&SourceInterface::TypeFlag::audio)
+        processAudio(frame);
+
+
+    if((context->cfg.input_type_flags&SourceInterface::TypeFlag::video)==0)
+        return true;
 
 
     if(frame->video.data_ptr==nullptr) {
@@ -1394,19 +1385,17 @@ void FFEncoder::processAudio(Frame::ptr frame)
 bool FFEncoder::stopCoder()
 {
     if(context->av_format_context)
-        if(context->av_format_context->pb)
+        if(context->av_format_context->pb && (context->cfg.input_type_flags&SourceInterface::TypeFlag::audio
+                                              || context->cfg.input_type_flags&SourceInterface::TypeFlag::video))
             av_write_trailer(context->av_format_context);
 
-    // close each codec.
     close_stream(&context->out_stream_video);
     close_stream(&context->out_stream_audio);
 
     if(context->av_format_context) {
-        // close the output file.
         if(context->av_format_context->pb)
             avio_closep(&context->av_format_context->pb);
 
-        // free the stream
         avformat_free_context(context->av_format_context);
         context->av_format_context=nullptr;
     }
