@@ -629,12 +629,20 @@ void MagewellDeviceWorker::setPixelFormat(PixelFormat fmt)
 
 void MagewellDeviceWorker::setHalfFps(bool value)
 {
+#ifdef LIB_MWCAPTURE
+
     d->half_fps=value;
+
+#endif
 }
 
 void MagewellDeviceWorker::setLowLatency(bool value)
 {
+#ifdef LIB_MWCAPTURE
+
     d->low_latency=value;
+
+#endif
 }
 
 void MagewellDeviceWorker::setColorFormat(int value)
