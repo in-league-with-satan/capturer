@@ -62,6 +62,9 @@ private:
     bool fast_yuv;
 
     QuickVideoSourceConvertThread *convert_thread;
+
+signals:
+    void switchHalfFps();
 };
 
 #endif // QUICK_VIDEO_SOURCE_H

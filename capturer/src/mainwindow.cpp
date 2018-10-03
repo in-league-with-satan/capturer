@@ -1301,6 +1301,10 @@ void MainWindow::keyPressed(int code)
             messenger->previewSecondaryChangePosition();
             break;
 
+        case KeyCodeC::PreviewSwitchHalfFps:
+            messenger->videoSourcePrimary()->switchHalfFps();
+            break;
+
         case KeyCodeC::HdrToSdr:
             static bool hdr_shader_enabled=false;
             hdr_shader_enabled=!hdr_shader_enabled;

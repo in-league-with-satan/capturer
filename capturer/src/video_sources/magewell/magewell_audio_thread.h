@@ -45,10 +45,9 @@ public:
     int sampleSize() const;
 
     QByteArray getDataAll();
-    QByteArray getData();
+    void getData(QByteArray *data, int64_t *pts);
 
     int64_t sizeToPos(int64_t size) const;
-    int64_t lastPts() const;
 
 public slots:
     void setVideoFramerate(AVRational fr);

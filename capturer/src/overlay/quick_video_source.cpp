@@ -33,6 +33,7 @@ QuickVideoSource::QuickVideoSource(QObject *parent)
     convert_thread=new QuickVideoSourceConvertThread(this);
 
     connect(convert_thread, SIGNAL(gotFrame()), SLOT(checkFrame()), Qt::QueuedConnection);
+    connect(this, SIGNAL(switchHalfFps()), convert_thread, SLOT(switchHalfFps()), Qt::QueuedConnection);
 }
 
 QuickVideoSource::~QuickVideoSource()

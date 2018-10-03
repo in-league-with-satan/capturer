@@ -116,7 +116,8 @@ public:
     FFEncoderBaseFilename *base_filename;
     FFEncoder::Mode::T mode;
 
-    int dropped_frames_counter;
+    uint32_t dropped_frames_counter;
+    uint32_t double_frames_counter;
 };
 
 static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AVStream *st, AVPacket *pkt)
@@ -1193,6 +1194,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     context->skip_frame=false;
 
     context->dropped_frames_counter=0;
+    context->double_frames_counter=0;
 
     context->out_stream_video.pts_next=0;
     context->out_stream_video.size_total=0;
@@ -1275,11 +1277,14 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
                                      frame_out->time_base,
                                      context->out_stream_video.av_codec_context->time_base);
 
+            context->out_stream_video.pts_next+=context->double_frames_counter;
+
             // qInfo() << frame_out->d->pts << context->out_stream_video.pts_next;
 
             if(context->out_stream_video.pts_next==context->out_stream_video.pts_last) {
-                context->dropped_frames_counter--;
                 qWarning() << "double pts" << context->out_stream_video.pts_next - 1 << context->out_stream_video.pts_next;
+                context->double_frames_counter++;
+                context->out_stream_video.pts_next++;
             }
 
             frame_out->d->pts=context->out_stream_video.pts_next;

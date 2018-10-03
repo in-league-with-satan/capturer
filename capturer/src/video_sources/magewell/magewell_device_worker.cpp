@@ -148,6 +148,7 @@ struct MagewellDeviceWorkerContext {
 
     ULONGLONG status_bits=0;
 
+    MWCAP_VIDEO_FRAME_INFO video_frame_info;
     MWCAP_VIDEO_BUFFER_INFO video_buffer_info;
 
     MWCAP_INPUT_SPECIFIC_STATUS specific_status;
@@ -176,14 +177,12 @@ struct MagewellDeviceWorkerContext {
 
     //
 
-    long long audio_timestamp;
+    int64_t audio_timestamp;
     QByteArray ba_audio;
 
     //
 
     LONGLONG device_time;
-
-    size_t audio_processed_size;
 
     struct Fps {
         int frame_counter=0;
@@ -365,6 +364,10 @@ bool MagewellDeviceWorker::step()
 
         //
 
+        MWGetVideoFrameInfo((HCHANNEL)current_channel, d->video_buffer_info.iNewestBufferedFullFrame, &d->video_frame_info);
+
+        //
+
         // HDMI_INFOFRAME_PACKET hdmi_infoframe_packet;
 
         // int ret=MWGetHDMIInfoFramePacket((HCHANNEL)current_channel, MWCAP_HDMI_INFOFRAME_ID_HDR, &hdmi_infoframe_packet);
@@ -426,7 +429,7 @@ bool MagewellDeviceWorker::step()
 
         //
 
-        d->ba_audio=a->getData();
+        a->getData(&d->ba_audio, &d->audio_timestamp);
 
         //
 
@@ -451,18 +454,20 @@ bool MagewellDeviceWorker::step()
 
         frame->video.time_base=d->framerate;
 
-        if(!d->ba_audio.isEmpty()) {
-            frame->video.pts=a->lastPts();
+        // frame->video.pts=av_rescale_q(d->video_frame_info.allFieldBufferedTimes[0], { 1, 10000000 }, d->framerate);
+        frame->video.pts=av_rescale_q(d->video_frame_info.allFieldStartTimes[0], { 1, 10000000 }, d->framerate);
 
+
+        if(!d->ba_audio.isEmpty()) {
             frame->setDataAudio(d->ba_audio, a->channels(), a->sampleSize());
 
-            d->audio_processed_size+=d->ba_audio.size();
+            frame->audio.time_base={ 1, 10000000 };
+
+            frame->audio.pts=d->audio_timestamp;
 
         } else {
             // qDebug() << "no audio";
-            qWarning() << "no audio";
-
-            frame->video.pts=0;
+            // qWarning() << "no audio";
         }
 
         //
@@ -568,7 +573,6 @@ void MagewellDeviceWorker::deviceStart()
 
     d->fps.device_time_last=0;
     d->fps.frame_counter=0;
-    d->audio_processed_size=0;
     d->framesize=QSize();
 
     //
@@ -720,7 +724,6 @@ bool MagewellDeviceWorker::updateVideoSignalInfo()
         d->framerate=framerate;
         d->framesize=framesize;
         d->specific_status.hdmiStatus.pixelEncoding=specific_status.hdmiStatus.pixelEncoding;
-        d->audio_processed_size=0;
 
         //
 

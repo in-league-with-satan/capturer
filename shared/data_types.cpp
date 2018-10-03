@@ -33,6 +33,7 @@ QString KeyCodeC::key_title[KeyCodeC::enm_size]={
     QStringLiteral("Preview Primary"),
     QStringLiteral("Preview Secondary"),
     QStringLiteral("Preview Secondary change position"),
+    QStringLiteral("Preview switch half-fps"),
     QStringLiteral("HDR to SDR shader"),
     QStringLiteral("Full Screen"),
     QStringLiteral("File Browser"),

@@ -66,6 +66,7 @@ public:
         PreviewPrimary,
         PreviewSecondary,
         PreviewSecondaryChangePosition,
+        PreviewSwitchHalfFps,
         HdrToSdr,
         FullScreen,
         FileBrowser,

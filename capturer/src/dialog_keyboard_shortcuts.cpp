@@ -127,6 +127,9 @@ Qt::Key DialogKeyboardShortcuts::defaultQtKey(int code)
     case KeyCodeC::PreviewSecondaryChangePosition:
         return Qt::Key_C;
 
+    case KeyCodeC::PreviewSwitchHalfFps:
+        return Qt::Key_H;
+
     case KeyCodeC::HdrToSdr:
         return Qt::Key_F8;
 

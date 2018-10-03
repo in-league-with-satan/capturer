@@ -49,6 +49,8 @@ public:
 public slots:
     void setFastYuv(bool value);
 
+    void switchHalfFps();
+
 protected:
     virtual void run();
 
@@ -58,6 +60,9 @@ private:
 
     std::atomic <bool> running;
     std::atomic <bool> fast_yuv;
+    std::atomic <bool> half_fps;
+
+    bool skip_frame;
 
     AVFrame *conv_src;
     AVFrame *conv_dst;

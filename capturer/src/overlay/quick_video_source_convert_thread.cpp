@@ -28,6 +28,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 QuickVideoSourceConvertThread::QuickVideoSourceConvertThread(QObject *parent)
     : QThread(parent)
     , fast_yuv(false)
+    , half_fps(false)
+    , skip_frame(false)
     , conv_src(nullptr)
     , conv_dst(nullptr)
     , format_converter_ff(new FFFormatConverter())
@@ -81,6 +83,13 @@ void QuickVideoSourceConvertThread::setFastYuv(bool value)
     fast_yuv=value;
 }
 
+void QuickVideoSourceConvertThread::switchHalfFps()
+{
+    half_fps=!half_fps;
+
+    qInfo() << half_fps;
+}
+
 void QuickVideoSourceConvertThread::run()
 {
     Frame::ptr frame_src;
@@ -108,6 +117,11 @@ void QuickVideoSourceConvertThread::run()
 
         if(!frame_src->video.data_ptr)
             continue;
+
+        if(half_fps) {
+            if((skip_frame=!skip_frame))
+                continue;
+        }
 
         if(frame_src->video.pixel_format.isDirect()
                 && frame_src->video.pixel_format!=PixelFormat::rgb24
