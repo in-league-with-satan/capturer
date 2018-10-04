@@ -66,7 +66,8 @@ private:
     QmlMessenger *messenger;
     OverlayView *overlay_view;
 
-    AudioLevel *audio_level;
+    AudioLevel *audio_level_primary;
+    AudioLevel *audio_level_secondary;
 
     AudioOutputInterface *audio_output;
 

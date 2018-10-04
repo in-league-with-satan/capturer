@@ -25,6 +25,14 @@ ShowHideRect {
     color: "#bb000000"
 
     LevelMonitor {
+        id: audio_level_primary
+        width: parent.width*.2
+        height: parent.height
+    }
+
+    LevelMonitor {
+        id: audio_level_secondary
+        anchors.right: parent.right
         width: parent.width*.2
         height: parent.height
     }
@@ -90,5 +98,7 @@ ShowHideRect {
 
         onFormatChanged: input_format.text="input format: " + format
         onFreeSpaceStr: free_space.text="free space: " + size
+        onAudioLevelPrimary: audio_level_primary.setLevel(l, r, c, lfe, rl, rr, sl, sr)
+        onAudioLevelSecondary: audio_level_secondary.setLevel(l, r, c, lfe, rl, rr, sl, sr)
     }
 }

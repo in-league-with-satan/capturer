@@ -142,10 +142,16 @@ MainWindow::MainWindow(QObject *parent)
 
         //
 
-        audio_level=new AudioLevel(this);
+        audio_level_primary=new AudioLevel(this);
 
-        connect(audio_level, SIGNAL(levels(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)),
-                messenger, SIGNAL(audioLevels(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)), Qt::QueuedConnection);
+        connect(audio_level_primary, SIGNAL(levels(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)),
+                messenger, SIGNAL(audioLevelPrimary(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)), Qt::QueuedConnection);
+
+
+        audio_level_secondary=new AudioLevel(this);
+
+        connect(audio_level_secondary, SIGNAL(levels(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)),
+                messenger, SIGNAL(audioLevelSecondary(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)), Qt::QueuedConnection);
 
         //
 
@@ -1204,11 +1210,11 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
             (*device)->subscribe(messenger->videoSourcePrimary()->frameBuffer());
             (*device)->subscribe(audio_output->frameBuffer());
-            (*device)->subscribe(audio_level->frameBuffer());
+            (*device)->subscribe(audio_level_primary->frameBuffer());
 
         } else {
             (*device)->subscribe(messenger->videoSourceSecondary()->frameBuffer());
-
+            (*device)->subscribe(audio_level_secondary->frameBuffer());
         }
 
         connect(dynamic_cast<QObject*>(*device),

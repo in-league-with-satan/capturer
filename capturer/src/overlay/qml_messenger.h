@@ -80,8 +80,8 @@ signals:
 
     void formatChanged(QString format);
 
-    void audioLevels(qreal l, qreal r, qreal c, qreal lfe, qreal rl, qreal rr, qreal sl, qreal sr);
-
+    void audioLevelPrimary(qreal l, qreal r, qreal c, qreal lfe, qreal rl, qreal rr, qreal sl, qreal sr);
+    void audioLevelSecondary(qreal l, qreal r, qreal c, qreal lfe, qreal rl, qreal rr, qreal sl, qreal sr);
 
     void freeSpaceStr(QString size);
     void freeSpace(qint64 size);

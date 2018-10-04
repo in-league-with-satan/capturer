@@ -290,18 +290,17 @@ Rectangle {
         text: "SR"
     }
 
-    Connections {
-        target: messenger
+    function setLevel(l, r, c, lfe, rl, rr, sl, sr) {
+        if(!visible)
+            return
 
-        onAudioLevels: {
-            line_left.height=l*root.max_height
-            line_right.height=r*root.max_height
-            line_center.height=c*root.max_height
-            line_lfe.height=lfe*root.max_height
-            line_rear_left.height=rl*root.max_height
-            line_rear_right.height=rr*root.max_height
-            line_side_left.height=sl*root.max_height
-            line_side_right.height=sr*root.max_height
-        }
+        line_left.height=l*root.max_height
+        line_right.height=r*root.max_height
+        line_center.height=c*root.max_height
+        line_lfe.height=lfe*root.max_height
+        line_rear_left.height=rl*root.max_height
+        line_rear_right.height=rr*root.max_height
+        line_side_left.height=sl*root.max_height
+        line_side_right.height=sr*root.max_height
     }
 }
