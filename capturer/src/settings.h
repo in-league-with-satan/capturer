@@ -71,6 +71,7 @@ public:
         struct Magewell {
             int index=0;
             int pixel_format=0;
+            int framesize=0;
             int color_format=0;
             int quantization_range=0;
             int audio_remap_mode=0;

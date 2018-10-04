@@ -115,6 +115,7 @@ public:
         bool pts_enabled=false;
         bool half_fps=false;
         bool low_latency=false;
+        QSize framesize;
     };
 
     typedef QList <Device> Devices;
@@ -155,6 +156,7 @@ signals:
     void deviceStop();
     void setDevice(QSize board_index);
     void setPixelFormat(PixelFormat fmt);
+    void setCustomFramesize(QSize value);
     void setHalfFps(bool value);
     void setLowLatency(bool value);
     void setColorFormat(int value);

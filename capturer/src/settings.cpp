@@ -122,6 +122,7 @@ bool Settings::load()
 
     device_primary.magewell.index=map_device_primary_magewell.value(QStringLiteral("index"), 0).toInt();
     device_primary.magewell.pixel_format=map_device_primary_magewell.value(QStringLiteral("pixel_format"), 0).toInt();
+    device_primary.magewell.framesize=map_device_primary_magewell.value(QStringLiteral("framesize"), 0).toInt();
     device_primary.magewell.color_format=map_device_primary_magewell.value(QStringLiteral("color_format"), 0).toInt();
     device_primary.magewell.quantization_range=map_device_primary_magewell.value(QStringLiteral("quantization_range"), 0).toInt();
     device_primary.magewell.audio_remap_mode=map_device_primary_magewell.value(QStringLiteral("audio_remap_mode"), 0).toInt();
@@ -146,6 +147,7 @@ bool Settings::load()
 
     device_secondary.magewell.index=map_device_secondary_magewell.value(QStringLiteral("index"), 0).toInt();
     device_secondary.magewell.pixel_format=map_device_secondary_magewell.value(QStringLiteral("pixel_format"), 0).toInt();
+    device_secondary.magewell.framesize=map_device_secondary_magewell.value(QStringLiteral("framesize"), 0).toInt();
     device_secondary.magewell.color_format=map_device_secondary_magewell.value(QStringLiteral("color_format"), 0).toInt();
     device_secondary.magewell.quantization_range=map_device_secondary_magewell.value(QStringLiteral("quantization_range"), 0).toInt();
     device_secondary.magewell.audio_remap_mode=map_device_secondary_magewell.value(QStringLiteral("audio_remap_mode"), 0).toInt();
@@ -254,6 +256,7 @@ bool Settings::save()
 
     map_device_primary_magewell.insert(QStringLiteral("index"), device_primary.magewell.index);
     map_device_primary_magewell.insert(QStringLiteral("pixel_format"), device_primary.magewell.pixel_format);
+    map_device_primary_magewell.insert(QStringLiteral("framesize"), device_primary.magewell.framesize);
     map_device_primary_magewell.insert(QStringLiteral("color_format"), device_primary.magewell.color_format);
     map_device_primary_magewell.insert(QStringLiteral("quantization_range"), device_primary.magewell.quantization_range);
     map_device_primary_magewell.insert(QStringLiteral("audio_remap_mode"), device_primary.magewell.audio_remap_mode);
@@ -283,6 +286,7 @@ bool Settings::save()
 
     map_device_secondary_magewell.insert(QStringLiteral("index"), device_secondary.magewell.index);
     map_device_secondary_magewell.insert(QStringLiteral("pixel_format"), device_secondary.magewell.pixel_format);
+    map_device_secondary_magewell.insert(QStringLiteral("framesize"), device_secondary.magewell.framesize);
     map_device_secondary_magewell.insert(QStringLiteral("color_format"), device_secondary.magewell.color_format);
     map_device_secondary_magewell.insert(QStringLiteral("quantization_range"), device_secondary.magewell.quantization_range);
     map_device_secondary_magewell.insert(QStringLiteral("audio_remap_mode"), device_secondary.magewell.audio_remap_mode);

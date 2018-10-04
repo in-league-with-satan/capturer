@@ -205,6 +205,7 @@ void MagewellDevice::setDevice(void *ptr)
     pixel_format=device.pixel_format;
 
     emit setPixelFormat(device.pixel_format);
+    emit setCustomFramesize(dev->framesize);
     emit setHalfFps(dev->half_fps);
     emit setLowLatency(dev->low_latency);
     emit setColorFormat(device.color_format);
@@ -259,6 +260,7 @@ void MagewellDevice::run()
 
     connect(this, SIGNAL(setDevice(QSize)), d, SLOT(setDevice(QSize)), Qt::QueuedConnection);
     connect(this, SIGNAL(setPixelFormat(PixelFormat)), d, SLOT(setPixelFormat(PixelFormat)), Qt::QueuedConnection);
+    connect(this, SIGNAL(setCustomFramesize(QSize)), d, SLOT(setCustomFramesize(QSize)), Qt::QueuedConnection);
     connect(this, SIGNAL(setHalfFps(bool)), d, SLOT(setHalfFps(bool)), Qt::QueuedConnection);
     connect(this, SIGNAL(setLowLatency(bool)), d, SLOT(setLowLatency(bool)), Qt::QueuedConnection);
     connect(this, SIGNAL(setColorFormat(int)), d, SLOT(setColorFormat(int)), Qt::QueuedConnection);

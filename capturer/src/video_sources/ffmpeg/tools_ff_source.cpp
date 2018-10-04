@@ -85,10 +85,11 @@ QList <QSize> ToolsFFSource::resBuildSequence(const QSize &res_min, const QSize 
         QSize(1280, 720),
         QSize(1280, 800),
         QSize(1600, 900),
-        QSize(1680, 1050),
+        QSize(1600, 1200),
         QSize(1920, 1080),
         QSize(1920, 1200),
         QSize(2560, 1440),
+        QSize(2560, 1600),
         QSize(3840, 2160),
         QSize(4096, 2160)
     };

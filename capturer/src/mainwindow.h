@@ -39,7 +39,6 @@ class Server;
 class HttpServer;
 class SettingsModel;
 
-class QMessageBox;
 
 class MainWindow : public QObject
 {
@@ -72,8 +71,6 @@ private:
     AudioOutputInterface *audio_output;
 
     AudioSender *audio_sender;
-
-    QMessageBox *mb_rec_stopped;
 
     HttpServer *http_server;
 

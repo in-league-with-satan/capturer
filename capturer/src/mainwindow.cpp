@@ -19,15 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <QDebug>
 #include <QApplication>
-#include <QLayout>
-#include <QLabel>
-#include <QComboBox>
-#include <QPushButton>
 #include <QFile>
 #include <QGenericArgument>
-#include <QLineEdit>
-#include <QCheckBox>
-#include <QMessageBox>
 #include <QJsonDocument>
 #include <QFile>
 #include <QDir>
@@ -57,7 +50,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 MainWindow::MainWindow(QObject *parent)
     : QObject(parent)
-    , mb_rec_stopped(nullptr)
 {
     QDir dir(qApp->applicationDirPath() + "/videos");
 
@@ -1043,6 +1035,28 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
         //
 
         set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="frame size";
+
+        set_model_data.values << "from source";
+        set_model_data.values_data << QVariant::fromValue(QSize());
+
+        foreach(QSize size, ToolsFFSource::resBuildSequence(QSize(), QSize(4096, 2160))) {
+            set_model_data.values << QString("%1x%2").arg(size.width()).arg(size.height());
+            set_model_data.values_data << QVariant::fromValue(size);
+        }
+
+        set_model_data.value=&settings_device->magewell.framesize;
+
+        settings_model->insert(&settings_device->magewell.pixel_format, set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        //
+
+        set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="color format";
 
         for(int i=0; i<MagewellDevice::Device::ColorFormat::size; ++i) {
@@ -1052,7 +1066,7 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->magewell.color_format;
 
-        settings_model->insert(&settings_device->magewell.pixel_format, set_model_data);
+        settings_model->insert(&settings_device->magewell.framesize, set_model_data);
 
         //
 
@@ -1738,13 +1752,11 @@ void MainWindow::deviceStart(bool primary)
             return;
         }
 
-        PixelFormat pix_fmt=
-                settings_model->valueData(&settings_device->magewell.pixel_format, PixelFormat::nv12).toInt();
-
         MagewellDevice::Device *dev=new MagewellDevice::Device();
         (*dev)=list[settings_device->magewell.index];
 
-        dev->pixel_format=pix_fmt;
+        dev->pixel_format=settings_model->valueData(&settings_device->magewell.pixel_format, PixelFormat::nv12).toInt();;
+        dev->framesize=settings_model->valueData(&settings_device->magewell.framesize, QSize()).value<QSize>();
         dev->color_format=(MagewellDevice::Device::ColorFormat::T)settings_device->magewell.color_format;
         dev->quantization_range=(MagewellDevice::Device::QuantizationRange::T)settings_device->magewell.quantization_range;
         dev->pts_enabled=true;
@@ -1895,19 +1907,9 @@ void MainWindow::updateEncList()
 
 void MainWindow::encoderBufferOverload()
 {
-    if(!ff_enc_primary->isWorking())
-        return;
-
     ff_enc_primary->stopCoder();
 
-    if(!mb_rec_stopped)
-        mb_rec_stopped=new QMessageBox(QMessageBox::Critical, "", "", QMessageBox::Ok);
-
-    mb_rec_stopped->setText("encoder buffer overload, recording stopped");
-
-    mb_rec_stopped->show();
-    mb_rec_stopped->raise();
-    mb_rec_stopped->exec();
+    emit messenger->errorString("encoder buffer overload, recording stopped");
 }
 
 void MainWindow::previewPrimaryOnOff()

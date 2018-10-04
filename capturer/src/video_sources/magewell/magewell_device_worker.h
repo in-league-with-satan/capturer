@@ -73,6 +73,8 @@ public slots:
 
     void setAudioRemapMode(int value);
 
+    void setCustomFramesize(QSize value);
+
 private:
     bool updateVideoSignalInfo();
     void setState(int value);

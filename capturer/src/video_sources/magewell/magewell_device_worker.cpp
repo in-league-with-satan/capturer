@@ -170,6 +170,7 @@ struct MagewellDeviceWorkerContext {
 
 
     QSize framesize;
+    QSize frameresize;
     AVRational framerate;
 
     int color_format=0;
@@ -297,13 +298,16 @@ bool MagewellDeviceWorker::step()
 #ifdef LIB_MWCAPTURE
 
     if(d->event_capture==0) {
-        qDebug() << "d->hEventCapture nullptr";
+        if(state==State::running)
+            setState(State::no_signal);
+
+        // qDebug() << "d->hEventCapture nullptr";
         return false;
     }
 
     if(d->framesize.width()<=0) {
         updateVideoSignalInfo();
-        qDebug() << "wrong d->frame_size.width";
+        // qDebug() << "wrong d->frame_size.width";
         return false;
     }
 
@@ -677,6 +681,11 @@ void MagewellDeviceWorker::setAudioRemapMode(int value)
     a->setAudioRemapMode(value);
 }
 
+void MagewellDeviceWorker::setCustomFramesize(QSize value)
+{
+    d->frameresize=value;
+}
+
 bool MagewellDeviceWorker::updateVideoSignalInfo()
 {
 #ifdef LIB_MWCAPTURE
@@ -710,8 +719,11 @@ bool MagewellDeviceWorker::updateVideoSignalInfo()
 
     QSize framesize=QSize(signal_status.cx, signal_status.cy);
 
-    d->min_stride=FOURCC_CalcMinStride(d->fourcc, d->framesize.width(), 4);
-    d->frame_buffer_size=FOURCC_CalcImageSize(d->fourcc, d->framesize.width(), d->framesize.height(), d->min_stride);
+    if(d->frameresize.width()>0)
+        framesize=d->frameresize;
+
+    d->min_stride=FOURCC_CalcMinStride(d->fourcc, framesize.width(), 4);
+    d->frame_buffer_size=FOURCC_CalcImageSize(d->fourcc, framesize.width(), framesize.height(), d->min_stride);
 
     AVRational framerate=Framerate::toRational(10000000./signal_status.dwFrameDuration);
 
@@ -759,8 +771,14 @@ bool MagewellDeviceWorker::updateVideoSignalInfo()
         emit framerateChanged(d->framerate);
         emit framesizeChanged(d->framesize);
 
-        emit formatChanged(QString("%1%2@%3 %4").arg(d->framesize.height()).arg(signal_status.bInterlaced ? 'i' : 'p')
-                           .arg(Framerate::rnd2(Framerate::fromRational(d->framerate))).arg(str_pixel_format));
+
+        if(d->frameresize.width()>0 && d->framesize.height()!=signal_status.cy)
+            emit formatChanged(QString("%1(%2)%3@%4 %5").arg(d->framesize.height()).arg(signal_status.cy).arg(signal_status.bInterlaced ? 'i' : 'p')
+                               .arg(Framerate::rnd2(Framerate::fromRational(d->framerate))).arg(str_pixel_format));
+
+        else
+            emit formatChanged(QString("%1%2@%3 %4").arg(d->framesize.height()).arg(signal_status.bInterlaced ? 'i' : 'p')
+                               .arg(Framerate::rnd2(Framerate::fromRational(d->framerate))).arg(str_pixel_format));
 
         qInfo() << d->framesize << Framerate::fromRational(d->framerate) << str_pixel_format;
     }
