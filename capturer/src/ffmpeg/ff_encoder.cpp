@@ -1047,6 +1047,42 @@ QString FFEncoder::configString(const FFEncoder::Config &cfg)
     return QString(QJsonDocument::fromVariant(map).toJson(QJsonDocument::Compact)).remove("{").remove("}").remove("\"").replace(":", "=").replace(",", ", ");
 }
 
+bool FFEncoder::checkFrameParams(Frame::ptr frame) const
+{
+    if(frame->video.data_ptr) {
+        if(frame->video.size!=context->cfg.frame_resolution_src || frame->video.pixel_format!=context->cfg.pixel_format_src)
+            return false;
+    }
+
+    if(frame->audio.data_ptr) {
+        if(frame->audio.channels!=context->cfg.audio_channels_size || frame->audio.sample_size!=context->cfg.audio_sample_size)
+            return false;
+    }
+
+    return true;
+}
+
+void FFEncoder::restart(Frame::ptr frame)
+{
+    stopCoder();
+
+    Config cfg=context->cfg;
+
+    if(frame->video.data_ptr) {
+        cfg.frame_resolution_src=frame->video.size;
+        cfg.pixel_format_src=frame->video.pixel_format;
+    }
+
+    if(frame->audio.data_ptr) {
+        cfg.audio_channels_size=frame->audio.channels;
+        cfg.audio_sample_size=frame->audio.sample_size;
+    }
+
+    context->base_filename->reset();
+
+    setConfig(cfg);
+}
+
 bool FFEncoder::setConfig(FFEncoder::Config cfg)
 {
     if(cfg.input_type_flags&SourceInterface::TypeFlag::video && (!cfg.pixel_format_src.isValid() || !cfg.pixel_format_dst.isValid()))
@@ -1227,6 +1263,12 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 {
     if(!context->canAcceptFrame())
         return false;
+
+
+    if(!checkFrameParams(frame)) {
+        restart(frame);
+        return false;
+    }
 
 
     if(context->cfg.input_type_flags&SourceInterface::TypeFlag::audio)

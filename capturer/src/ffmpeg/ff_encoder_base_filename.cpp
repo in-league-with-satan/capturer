@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ******************************************************************************/
 
 #include <QMutexLocker>
+#include <QDateTime>
 
 #include "ff_encoder_base_filename.h"
 
@@ -35,6 +36,13 @@ QString FFEncoderBaseFilename::operator=(const QString &val)
     str=val;
 
     return str;
+}
+
+void FFEncoderBaseFilename::reset()
+{
+    QMutexLocker ml(&mutex);
+
+    str=QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss");
 }
 
 void FFEncoderBaseFilename::clear()
