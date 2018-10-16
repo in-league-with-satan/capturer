@@ -42,7 +42,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "ff_source.h"
 #include "framerate.h"
 #include "dummy_device.h"
-#include "cuda_tools.h"
+#include "nv_tools.h"
 #include "magewell_device.h"
 
 #include "mainwindow.h"
@@ -58,18 +58,25 @@ MainWindow::MainWindow(QObject *parent)
 
     //
 
-    QStringList cuda_devices=cuda::availableDevices();
-
-    //
-
     qmlRegisterType<SettingsModel>("FuckTheSystem", 0, 0, "SettingsModel");
     qmlRegisterType<FileSystemModel>("FuckTheSystem", 0, 0, "FileSystemModel");
     qmlRegisterType<SnapshotListModel>("FuckTheSystem", 0, 0, "SnapshotListModel");
     qmlRegisterType<QuickVideoSource>("FuckTheSystem", 0, 0, "QuickVideoSource");
 
+    //
 
     settings->load();
 
+    //
+
+    nv_tools=new NvTools(this);
+
+    const QStringList cuda_devices=nv_tools->availableDevices();
+
+    if(!cuda_devices.isEmpty())
+        nv_tools->monitoringStart(0);
+
+    //
 
     settings_model=new SettingsModel();
     connect(settings_model, SIGNAL(dataChanged(int,int,bool)), SLOT(settingsModelDataChanged(int,int,bool)));
@@ -99,6 +106,7 @@ MainWindow::MainWindow(QObject *parent)
     connect(http_server, SIGNAL(keyPressed(int)), SLOT(keyPressed(int)));
     connect(http_server, SIGNAL(checkEncoders()), SLOT(checkEncoders()), Qt::DirectConnection);
     connect(this, SIGNAL(freeSpace(qint64)), http_server, SLOT(setFreeSpace(qint64)), Qt::QueuedConnection);
+    connect(nv_tools, SIGNAL(stateChanged(NvState)), http_server, SLOT(setNvState(NvState)));
 
 
     if(!settings->main.headless) {

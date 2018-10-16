@@ -1204,10 +1204,10 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     context->out_stream_audio.pts_start=AV_NOPTS_VALUE;
 
 
-    if(cfg.audio_sample_size!=0) {
-        context->out_stream_audio.pts_next=0;
-        context->out_stream_audio.size_total=0;
+    context->out_stream_audio.pts_next=0;
+    context->out_stream_audio.size_total=0;
 
+    if(cfg.audio_sample_size!=0) {
         if(cfg.audio_dalay!=0)
             context->out_stream_audio.pts_next=cfg.audio_dalay/1000.*context->out_stream_audio.av_codec_context->sample_rate;
     }

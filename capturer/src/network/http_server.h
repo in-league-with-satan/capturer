@@ -46,6 +46,7 @@ public slots:
     void setPlayerDuration(const qint64 &value);
     void setPlayerPosition(const qint64 &value);
     void setFreeSpace(const qint64 &value);
+    void setNvState(const NvState &state);
 
 private:
     QByteArray pageIndex();

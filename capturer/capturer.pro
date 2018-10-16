@@ -27,7 +27,7 @@ DEFINES += USE_PULSE_AUDIO
 TEMPLATE = app
 
 CONFIG += c++14
-windows:CONFIG += console
+#windows:CONFIG += console
 
 DESTDIR = $$PWD/../bin
 
@@ -95,6 +95,7 @@ INCLUDEPATH += \
     $$PWD/src/audio_output \
     $$PWD/src/overlay \
     $$PWD/src/network \
+    $$PWD/src/nv \
     $$PWD/src/video_sources \
     $$PWD/src/video_sources/dummy \
     $$PWD/src/video_sources/ffmpeg \
@@ -107,6 +108,7 @@ SOURCES += \
     $$PWD/src/audio_output/*.cpp \
     $$PWD/src/overlay/*.cpp \
     $$PWD/src/network/*.cpp \
+    $$PWD/src/nv/*.cpp \
     $$PWD/src/video_sources/dummy/*.cpp \
     $$PWD/src/video_sources/ffmpeg/*.cpp \
     $$PWD/src/video_sources/magewell/*.cpp \
@@ -118,6 +120,7 @@ HEADERS += \
     $$PWD/src/audio_output/*.h \
     $$PWD/src/overlay/*.h \
     $$PWD/src/network/*.h \
+    $$PWD/src/nv/*.h \
     $$PWD/src/video_sources/*.h \
     $$PWD/src/video_sources/dummy/*.h \
     $$PWD/src/video_sources/ffmpeg/*.h \

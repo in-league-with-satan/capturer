@@ -38,7 +38,7 @@ class OverlayView;
 class Server;
 class HttpServer;
 class SettingsModel;
-
+class NvTools;
 
 class MainWindow : public QObject
 {
@@ -74,6 +74,8 @@ private:
     AudioSender *audio_sender;
 
     HttpServer *http_server;
+
+    NvTools *nv_tools;
 
     FFEncoderBaseFilename enc_base_filename;
 

@@ -132,10 +132,24 @@ struct PlayerState {
     qint64 position;
 };
 
+struct NvState {
+    NvState();
+
+    QVariantMap toExt() const;
+    NvState &fromExt(const QVariantMap &map_root);
+
+    QString dev_name;
+    int temperature;
+    int graphic_processing_unit;
+    int memory_controller_unit;
+    int video_processing_unit;
+};
+
 struct Status {
     QString input_format;
     NRecStats rec_stats;
     PlayerState player_state;
+    NvState nv_state;
     qint64 free_space;
 
     Status();

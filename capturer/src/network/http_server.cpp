@@ -226,6 +226,11 @@ void HttpServer::setFreeSpace(const qint64 &value)
     status.free_space=value;
 }
 
+void HttpServer::setNvState(const NvState &state)
+{
+    status.nv_state=state;
+}
+
 QByteArray HttpServer::pageIndex()
 {
     QString page;
@@ -250,6 +255,7 @@ QByteArray HttpServer::pageIndex()
                          "  request.onreadystatechange=function () {\n"
                          "    if(request.status!=200) {\n"
                          "      document.getElementById('input_format').innerHTML=' offline';\n"
+                         "      document.getElementById('nv_stats').style.visibility='hidden';\n"
                          "      document.getElementById('rec_stats').style.visibility='hidden';\n"
                          "      document.getElementById('button_rec').innerHTML='start rec';\n"
                          "    }\n"
@@ -260,6 +266,25 @@ QByteArray HttpServer::pageIndex()
                          "    var data=JSON.parse(request.responseText);\n"
 
                          "    document.getElementById('input_format').innerHTML=' ' + data.input_format;\n"
+
+                         "    if(data.nv_state.dev_name.length) {\n"
+                         "      if(document.getElementById('nv_stats')!=null) {"
+                         "        var nv_state=data.nv_state;"
+
+                         "        document.getElementById('nv_stats').style.visibility='visible';\n"
+
+                         "        document.getElementById('nv_dev_name').innerHTML=nv_state.dev_name;\n"
+                         "        document.getElementById('nv_temperature').innerHTML=nv_state.temperature + '℃';\n"
+                         "        document.getElementById('nv_gpu').innerHTML=nv_state.graphic_processing_unit + '%';\n"
+                         "        document.getElementById('nv_mcu').innerHTML=nv_state.memory_controller_unit + '%';\n"
+                         "        document.getElementById('nv_vpu').innerHTML=nv_state.video_processing_unit + '%';\n"
+                         "      }"
+
+                         "    } else {\n"
+                         "      if(document.getElementById('nv_stats')!=null) {"
+                         "        document.getElementById('nv_stats').style.visibility='hidden';\n"
+                         "      }"
+                         "    }\n"
 
                          "    if(data.rec_stats.time==null) {\n"
                          "      document.getElementById('rec_stats').style.visibility='hidden';\n"
@@ -303,13 +328,40 @@ QByteArray HttpServer::pageIndex()
 
     page+="<div class='row_3'>";
 
-    page+=QString("<span>input format:</span><span id='input_format'></span>");
-
     TableBuilder table_builder;
 
-    // page+=table_builder.open(2, "display:none", "", "id='rec_stats' ");
-    page+=table_builder.open(2, "visibility:hidden", "", "id='rec_stats' ", 0, 0, 4);
+    //
 
+    // page+=QString("<span>input format:</span><span id='input_format'></span>");
+
+    page+=table_builder.open(2, "", "", "", 0, 0, 4);
+    page+=table_builder.row(QStringList() << QStringLiteral("input format:") << "<span id='input_format'></span>");
+    page+=table_builder.close();
+
+    page+=QStringLiteral("<br>");
+
+    //
+
+    if(!status.nv_state.dev_name.isEmpty()) {
+        page+=table_builder.open(4, "visibility:hidden", "", "id='nv_stats'", 0, 0, 4);
+
+        page+=table_builder.row(QStringList() << "<span id='nv_dev_name'></span>", QStringList() << "colspan=4 align='center'");
+
+        page+=table_builder.row(QStringList() << QStringLiteral("<pre> temp </pre>") << QStringLiteral("<pre>  gpu  </pre>") << QStringLiteral("<pre>  mcu  </pre>") << QStringLiteral("<pre>  vpu  </pre>"),
+                                QStringList() << "align='center'" << "align='center'" << "align='center'" << "align='center'");
+
+        page+=table_builder.row(QStringList() << "<span id='nv_temperature'></span>" << "<span id='nv_gpu'></span>"
+                                << "<span id='nv_mcu'></span>" << "<span id='nv_vpu'></span>",
+                                QStringList() << "align='center'" << "align='center'" << "align='center'" << "align='center'");
+
+        page+=table_builder.close();
+
+        page+=QStringLiteral("<br>");
+    }
+
+    //
+
+    page+=table_builder.open(2, "visibility:hidden", "", "id='rec_stats'", 0, 0, 4);
 
     page+=table_builder.row(QStringList() << QStringLiteral("time:") << "<span id='time'></span>");
     page+=table_builder.row(QStringList() << QStringLiteral("free space:") << "<span id='free_space'></span>");

@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
-#include <data_types.h>
+#include "data_types.h"
 
 
 QString KeyCodeC::key_title[KeyCodeC::enm_size]={
@@ -136,6 +136,40 @@ PlayerState &PlayerState::fromExt(const QVariantMap &map_root)
 
 //
 
+NvState::NvState()
+{
+    temperature=0;
+    graphic_processing_unit=0;
+    memory_controller_unit=0;
+    video_processing_unit=0;
+}
+
+QVariantMap NvState::toExt() const
+{
+    QVariantMap map_root;
+
+    map_root.insert(QStringLiteral("dev_name"), dev_name);
+    map_root.insert(QStringLiteral("temperature"), temperature);
+    map_root.insert(QStringLiteral("graphic_processing_unit"), graphic_processing_unit);
+    map_root.insert(QStringLiteral("memory_controller_unit"), memory_controller_unit);
+    map_root.insert(QStringLiteral("video_processing_unit"), video_processing_unit);
+
+    return map_root;
+}
+
+NvState &NvState::fromExt(const QVariantMap &map_root)
+{
+    dev_name=map_root.value(QStringLiteral("dev_name")).toString();
+    temperature=map_root.value(QStringLiteral("temperature")).toInt();
+    graphic_processing_unit=map_root.value(QStringLiteral("graphic_processing_unit")).toInt();
+    memory_controller_unit=map_root.value(QStringLiteral("memory_controller_unit")).toInt();
+    video_processing_unit=map_root.value(QStringLiteral("video_processing_unit")).toInt();
+
+    return *this;
+}
+
+//
+
 Status::Status()
 {
     free_space=0;
@@ -148,6 +182,7 @@ QVariantMap Status::toExt()
     map_root.insert(QStringLiteral("input_format"), input_format);
     map_root.insert(QStringLiteral("rec_stats"), rec_stats.toExt());
     map_root.insert(QStringLiteral("player_state"), player_state.toExt());
+    map_root.insert(QStringLiteral("nv_state"), nv_state.toExt());
     map_root.insert(QStringLiteral("free_space"), free_space);
 
     return map_root;
@@ -158,8 +193,8 @@ Status &Status::fromExt(const QVariantMap &map_root)
     input_format=map_root.value(QStringLiteral("input_format")).toString();
     rec_stats.fromExt(map_root.value(QStringLiteral("rec_stats")).toMap());
     player_state.fromExt(map_root.value(QStringLiteral("player_state")).toMap());
+    nv_state.fromExt(map_root.value(QStringLiteral("nv_state")).toMap());
     free_space=map_root.value(QStringLiteral("free_space"), 0).toULongLong();
-
     return *this;
 }
 

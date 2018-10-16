@@ -159,6 +159,9 @@ int main(int argc, char *argv[])
     qRegisterMetaType<FFEncoder::Config>("FFEncoder::Config");
     qRegisterMetaType<FFEncoder::Stats>("FFEncoder::Stats");
 
+    qRegisterMetaType<NvState>("NvState");
+
+
     initLibAV();
 
     Settings::createInstance();

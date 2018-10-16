@@ -17,13 +17,37 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
-#ifndef CUDA_TOOLS_H
-#define CUDA_TOOLS_H
+#ifndef NV_TOOLS_H
+#define NV_TOOLS_H
 
+#include <QObject>
 #include <QStringList>
 
-namespace cuda {
-    QStringList availableDevices();
-}
+#include "data_types.h"
 
-#endif // CUDA_TOOLS_H
+struct NvToolsPrivate;
+
+class NvTools : public QObject
+{
+    Q_OBJECT
+
+public:
+    NvTools(QObject *parent=0);
+    ~NvTools();
+
+    QStringList availableDevices();
+
+    void monitoringStart(int index);
+    void monitoringStop(int index);
+
+private slots:
+    void onTimer();
+
+private:
+    NvToolsPrivate *d;
+
+signals:
+    void stateChanged(const NvState &state);
+};
+
+#endif // NV_TOOLS_H
