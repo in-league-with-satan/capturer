@@ -198,6 +198,9 @@ void MagewellDevice::setDevice(void *ptr)
 {
     MagewellDevice::Device *dev=reinterpret_cast<MagewellDevice::Device*>(ptr);
 
+    if(dev->name.isEmpty() || dev->path.isEmpty())
+        return;
+
     device=(*dev);
 
     delete dev;

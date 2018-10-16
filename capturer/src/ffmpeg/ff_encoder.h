@@ -214,6 +214,10 @@ private:
     void calcStats();
     QString configString(const FFEncoder::Config &cfg);
 
+    bool checkFrameParams(Frame::ptr frame) const;
+
+    void restart(Frame::ptr frame);
+
     FFMpegContext *context;
     FFFormatConverterMt *format_converter_ff;
 

@@ -508,6 +508,8 @@ void MagewellDeviceWorker::setDevice(QSize board_channel)
         return;
     }
 
+    MWSetDeviceTime((HCHANNEL)current_channel, 0ll);
+
     emit channelChanged(current_channel);
 
 #endif
@@ -555,10 +557,6 @@ void MagewellDeviceWorker::deviceStart()
         qCritical() << "MWRegisterNotify err";
         goto stop;
     }
-
-    //
-
-    MWSetDeviceTime((HCHANNEL)current_channel, 0ll);
 
     //
 

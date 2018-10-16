@@ -29,8 +29,7 @@ public:
     operator QString();
     QString operator=(const QString &val);
 
-//    void setName(const QString &val);
-//    QString getName();
+    void reset();
 
     void clear();
     bool isEmpty();

@@ -1832,8 +1832,7 @@ void MainWindow::startStopRecording()
     if(!settings->main.headless && ff_dec->currentState()!=FFDecoderThread::ST_STOPPED)
         return;
 
-    enc_base_filename=
-            QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss");
+    enc_base_filename.reset();
 
     if(device_primary) {
         if(device_primary->gotSignal()) {
