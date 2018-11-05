@@ -21,6 +21,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QLibrary>
 #include <QTimer>
 #include <QProcess>
+#include <QMutex>
+#include <QMutexLocker>
 
 #include <iostream>
 
@@ -42,7 +44,7 @@ struct NvToolsPrivate
 
     QList <int> list_mon;
 
-    QTimer timer;
+    QTimer *timer;
 
     QStringList device_list;
     bool device_list_ready=false;
@@ -52,11 +54,14 @@ struct NvToolsPrivate
     NV_GPU_THERMAL_SETTINGS nv_gpu_thermal_settings[NVAPI_MAX_PHYSICAL_GPUS];
 
     QProcess proc;
+
+    QMutex mutex;
 };
 
 NvTools::NvTools(QObject *parent)
-    : QObject(parent)
+    : QThread(parent)
     , d(new NvToolsPrivate())
+
 {
 #ifdef __linux__
 
@@ -84,13 +89,16 @@ NvTools::NvTools(QObject *parent)
         d->nv_gpu_thermal_settings[i].sensor[0].target=NVAPI_THERMAL_TARGET_GPU;
     }
 
-    d->timer.setInterval(1000);
-
-    connect(&d->timer, SIGNAL(timeout()), SLOT(onTimer()));
+    start();
 }
 
 NvTools::~NvTools()
 {
+    while(isRunning()) {
+        quit();
+        msleep(1);
+    }
+
     delete d;
 }
 
@@ -137,6 +145,8 @@ void NvTools::monitoringStart(int index)
 
 #else
 
+    QMutexLocker ml(&mutex);
+
     if(!d->lib.loadedCuda())
         return;
 
@@ -150,8 +160,6 @@ void NvTools::monitoringStart(int index)
         d->list_mon.append(index);
 
 #endif
-
-    d->timer.start();
 }
 
 void NvTools::monitoringStop(int index)
@@ -160,29 +168,27 @@ void NvTools::monitoringStop(int index)
 
     Q_UNUSED(index)
 
-    d->timer.stop();
-
 #else
 
-    d->list_mon.removeAll(index);
+    QMutexLocker ml(&mutex);
 
-    if(d->list_mon.isEmpty())
-        d->timer.stop();
+    d->list_mon.removeAll(index);
 
 #endif
 }
 
 void NvTools::onTimer()
 {
+    QMutexLocker ml(&d->mutex);
+
     if(d->device_list.isEmpty()) {
-        d->timer.stop();
+        d->timer->stop();
         return;
     }
 
     NvState state;
 
 #ifdef __linux__
-
 
     d->proc.start(QStringLiteral("nvidia-settings -q=[gpu:0]/GPUUtilization -q=[gpu:0]/GPUCoreTemp"));
     d->proc.waitForFinished();
@@ -195,7 +201,7 @@ void NvTools::onTimer()
                    QString::SkipEmptyParts);
 
     if(!lst.contains(QStringLiteral("GPUUtilization")) || lst.size()<6) {
-        d->timer.stop();
+        d->timer->stop();
         return;
     }
 
@@ -214,7 +220,7 @@ void NvTools::onTimer()
             return;
 
         d->lib.nvapiGPUGetUsages(d->gpu_handle[index], d->gpu_usage[index]);
-        d->lib.nvapiGPUGetThermalSettings(d->gpu_handle[0], 0, &d->nv_gpu_thermal_settings[index]);
+        d->lib.nvapiGPUGetThermalSettings(d->gpu_handle[index], 0, &d->nv_gpu_thermal_settings[index]);
 
         state.dev_name=d->device_list.at(index);
         state.temperature=d->nv_gpu_thermal_settings[index].sensor[0].temp_current;
@@ -226,4 +232,17 @@ void NvTools::onTimer()
     }
 
 #endif
+}
+
+void NvTools::run()
+{
+    d->timer=new QTimer();
+    d->timer->moveToThread(this);
+    d->timer->setInterval(1000);
+
+    connect(d->timer, SIGNAL(timeout()), SLOT(onTimer()));
+
+    d->timer->start();
+
+    exec();
 }

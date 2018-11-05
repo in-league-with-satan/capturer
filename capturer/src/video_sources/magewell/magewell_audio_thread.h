@@ -44,8 +44,9 @@ public:
     int channels() const;
     int sampleSize() const;
 
-    QByteArray getDataAll();
+    QByteArray getData();
     void getData(QByteArray *data, int64_t *pts);
+    void getData2(QByteArray *data, int64_t *pts);
 
     int64_t sizeToPos(int64_t size) const;
 

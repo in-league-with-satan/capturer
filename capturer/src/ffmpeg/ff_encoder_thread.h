@@ -68,6 +68,9 @@ signals:
     void stateChanged(bool state);
 
     void errorString(QString err_string);
+
+    void restartIn();
+    void restartOut();
 };
 
 #endif // FF_ENCODER_THREAD_H

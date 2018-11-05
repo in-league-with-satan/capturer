@@ -107,6 +107,10 @@ void FFEncoderThread::run()
     connect(ffmpeg, SIGNAL(stateChanged(bool)), SLOT(onStateChanged(bool)), Qt::QueuedConnection);
     connect(ffmpeg, SIGNAL(errorString(QString)), SIGNAL(errorString(QString)), Qt::QueuedConnection);
 
+    connect(ffmpeg, SIGNAL(restartReq()), SIGNAL(restartOut()), Qt::QueuedConnection);
+    connect(this, SIGNAL(restartIn()), ffmpeg, SLOT(restartExt()), Qt::QueuedConnection);
+
+
     ffmpeg->setBaseFilename(base_filename);
     ffmpeg->setEncodingToolName(encoding_tool_name);
 

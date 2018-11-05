@@ -45,6 +45,7 @@ public:
     Type::T type() const;
 
     static void init();
+    static void release();
 
     struct Device {
         struct ColorFormat {
@@ -103,6 +104,25 @@ public:
             }
         };
 
+        struct PtsMode {
+            enum {
+                disabled,
+                device,
+                audio,
+
+                size
+            };
+
+            static QString toString(int value) {
+                switch(value) {
+                case disabled: return QStringLiteral("disabled");
+                case device: return QStringLiteral("device");
+                case audio: return QStringLiteral("audio");
+                }
+                return QStringLiteral("unknown");
+            }
+        };
+
         ColorFormat::T color_format=ColorFormat::unknown;
         QuantizationRange::T quantization_range=QuantizationRange::unknown;
 
@@ -111,8 +131,8 @@ public:
         int index_channel;
         int index_board;
         int audio_remap_mode;
+        int pts_mode;
         PixelFormat pixel_format;
-        bool pts_enabled=false;
         bool half_fps=false;
         bool low_latency=false;
         QSize framesize;
@@ -154,15 +174,8 @@ protected:
 signals:
     void deviceStart();
     void deviceStop();
-    void setDevice(QSize board_index);
-    void setPixelFormat(PixelFormat fmt);
-    void setCustomFramesize(QSize value);
-    void setHalfFps(bool value);
-    void setLowLatency(bool value);
-    void setColorFormat(int value);
-    void setQuantizationRange(int value);
-    void setPtsEnabled(bool value);
-    void setAudioRemapMode(int value);
+
+    void updateDevice(MagewellDevice::Device dev);
 
     //
 

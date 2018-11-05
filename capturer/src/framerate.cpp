@@ -41,7 +41,7 @@ double Framerate::rnd4(const double &value)
 
 AVRational Framerate::toRational(const double &fr)
 {
-    static const double eps=.003;
+    static const double eps=.004;
 
     if(std::abs(fr - 2.)<eps)
         return { 1, 2 };

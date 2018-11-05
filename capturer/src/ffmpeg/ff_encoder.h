@@ -209,13 +209,14 @@ public slots:
 private slots:
     void converterFrameSkip();
     void processAudio(Frame::ptr frame);
+    void restartExt();
 
 private:
     void calcStats();
+    QTime duration();
     QString configString(const FFEncoder::Config &cfg);
 
     bool checkFrameParams(Frame::ptr frame) const;
-
     void restart(Frame::ptr frame);
 
     FFMpegContext *context;
@@ -231,6 +232,8 @@ signals:
     void stats(FFEncoder::Stats s);
     void stateChanged(bool state);
     void errorString(QString err_string);
+
+    void restartReq();
 };
 
 Q_DECLARE_METATYPE(FFEncoder::Config)

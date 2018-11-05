@@ -72,6 +72,15 @@ void MagewellDevice::init()
 #endif
 }
 
+void MagewellDevice::release()
+{
+#ifdef LIB_MWCAPTURE
+
+    MWCaptureExitInstance();
+
+#endif
+}
+
 MagewellDevice::Devices MagewellDevice::availableDevices()
 {
     static Devices list;
@@ -207,15 +216,7 @@ void MagewellDevice::setDevice(void *ptr)
 
     pixel_format=device.pixel_format;
 
-    emit setPixelFormat(device.pixel_format);
-    emit setCustomFramesize(dev->framesize);
-    emit setHalfFps(dev->half_fps);
-    emit setLowLatency(dev->low_latency);
-    emit setColorFormat(device.color_format);
-    emit setQuantizationRange(device.quantization_range);
-    emit setPtsEnabled(device.pts_enabled);
-    emit setAudioRemapMode(device.audio_remap_mode);
-    emit setDevice(QSize(device.index_board, device.index_channel));
+    emit updateDevice(device);
 }
 
 void MagewellDevice::setFramerate(AVRational fr)
@@ -261,15 +262,7 @@ void MagewellDevice::run()
 
     d->moveToThread(this);
 
-    connect(this, SIGNAL(setDevice(QSize)), d, SLOT(setDevice(QSize)), Qt::QueuedConnection);
-    connect(this, SIGNAL(setPixelFormat(PixelFormat)), d, SLOT(setPixelFormat(PixelFormat)), Qt::QueuedConnection);
-    connect(this, SIGNAL(setCustomFramesize(QSize)), d, SLOT(setCustomFramesize(QSize)), Qt::QueuedConnection);
-    connect(this, SIGNAL(setHalfFps(bool)), d, SLOT(setHalfFps(bool)), Qt::QueuedConnection);
-    connect(this, SIGNAL(setLowLatency(bool)), d, SLOT(setLowLatency(bool)), Qt::QueuedConnection);
-    connect(this, SIGNAL(setColorFormat(int)), d, SLOT(setColorFormat(int)), Qt::QueuedConnection);
-    connect(this, SIGNAL(setQuantizationRange(int)), d, SLOT(setQuantizationRange(int)), Qt::QueuedConnection);
-    connect(this, SIGNAL(setPtsEnabled(bool)), d, SLOT(setPtsEnabled(bool)), Qt::QueuedConnection);
-    connect(this, SIGNAL(setAudioRemapMode(int)), d, SLOT(setAudioRemapMode(int)), Qt::QueuedConnection);
+    connect(this, SIGNAL(updateDevice(MagewellDevice::Device)), d, SLOT(setDevice(MagewellDevice::Device)), Qt::QueuedConnection);
 
     connect(this, SIGNAL(deviceStart()), d, SLOT(deviceStart()), Qt::QueuedConnection);
     connect(this, SIGNAL(deviceStop()), d, SLOT(deviceStop()), Qt::QueuedConnection);

@@ -61,7 +61,10 @@ struct MagewellAudioContext {
     std::atomic <int> sample_size;
     int sample_size_bytes;
 
-    std::atomic <int64_t> pts;
+    std::atomic <int64_t> lltimestamp;
+
+    int64_t readed;
+    int64_t prev_pts;
 
     QElapsedTimer timer_frame_buffered_warning;
 
@@ -108,7 +111,7 @@ int MagewellAudioThread::sampleSize() const
     return (d->sample_size==16 ? 16 : 32);
 }
 
-QByteArray MagewellAudioThread::getDataAll()
+QByteArray MagewellAudioThread::getData()
 {
     QMutexLocker ml(&mutex);
 
@@ -125,7 +128,7 @@ void MagewellAudioThread::getData(QByteArray *data, int64_t *pts)
 
     mutex.lock();
 
-    (*pts)=d->pts;
+    (*pts)=d->lltimestamp;
 
     data->append(ba_data);
 
@@ -134,9 +137,45 @@ void MagewellAudioThread::getData(QByteArray *data, int64_t *pts)
     mutex.unlock();
 }
 
+void MagewellAudioThread::getData2(QByteArray *data, int64_t *pts)
+{
+    QByteArray ba_copy;
+
+    QElapsedTimer t;
+
+    t.start();
+
+    while(t.elapsed()<100) {
+        if(!d->event_capture) {
+            break;
+        }
+
+        mutex.lock();
+
+        ba_copy.append(ba_data);
+
+        ba_data.clear();
+
+        mutex.unlock();
+
+        *pts=av_rescale_q(sizeToPos(d->readed + ba_copy.size()), { 1, 1000 }, d->video_framerate);
+
+        if(*pts>d->prev_pts) {
+            d->prev_pts=*pts;
+            break;
+        }
+
+        usleep(1);
+    }
+
+    d->readed+=ba_copy.size();
+
+    *data=ba_copy;
+}
+
 int64_t MagewellAudioThread::sizeToPos(int64_t size) const
 {
-    return (double)size*1000./(double)(48000*d->sample_size_bytes*channels());
+    return (double)size*1000./(double)(48000*d->sample_size_bytes*d->channels);
 }
 
 void MagewellAudioThread::run()
@@ -207,7 +246,7 @@ void MagewellAudioThread::run()
                 }
             }
 
-            d->pts=audio_frame.llTimestamp;
+            d->lltimestamp=audio_frame.llTimestamp;
 
             mutex.lock();
 
@@ -374,6 +413,11 @@ void MagewellAudioThread::updateAudioSignalInfo()
     d->sample_size_bytes=(d->sample_size==16 ? 2 : 4);
 
     d->ba_buffer.resize(MWCAP_AUDIO_SAMPLES_PER_FRAME*d->channels*d->sample_size_bytes);
+
+    //
+
+    d->readed=0;
+    d->prev_pts=0;
 
     //
 

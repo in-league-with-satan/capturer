@@ -1081,6 +1081,8 @@ void FFEncoder::restart(Frame::ptr frame)
     context->base_filename->reset();
 
     setConfig(cfg);
+
+    emit restartReq();
 }
 
 bool FFEncoder::setConfig(FFEncoder::Config cfg)
@@ -1236,6 +1238,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     context->out_stream_video.size_total=0;
 
     context->out_stream_video.pts_last=0;
+    context->out_stream_audio.pts_last=0;
     context->out_stream_video.pts_start=AV_NOPTS_VALUE;
     context->out_stream_audio.pts_start=AV_NOPTS_VALUE;
 
@@ -1323,6 +1326,11 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
             // qInfo() << frame_out->d->pts << context->out_stream_video.pts_next;
 
+            if(context->out_stream_video.pts_next<0) {
+                qWarning() << "wrong pts" << context->out_stream_video.pts_next;
+                return false;
+            }
+
             if(context->out_stream_video.pts_next==context->out_stream_video.pts_last) {
                 qWarning() << "double pts" << context->out_stream_video.pts_next - 1 << context->out_stream_video.pts_next;
                 context->double_frames_counter++;
@@ -1333,7 +1341,7 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
             if(frame_out->d->pts - context->out_stream_video.pts_last>1) {
                 context->dropped_frames_counter+=frame_out->d->pts - context->out_stream_video.pts_last - 1;
-                qWarning() << "frames dropped" << context->dropped_frames_counter << context->out_stream_video.pts_last << frame_out->d->pts;
+                qWarning() << "frames dropped" << duration().toString(QStringLiteral("hh:mm:ss.zzz")) << context->dropped_frames_counter << context->out_stream_video.pts_last << frame_out->d->pts;
             }
 
             context->out_stream_video.pts_last=context->out_stream_video.pts_next;
@@ -1352,8 +1360,12 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
         context->out_stream_video.frame_converted=frame_orig;
 
         if(!last_error_string.isEmpty()) {
-            stopCoder();
+            // stopCoder();
+
             emit errorString("write_video_frame error: " + last_error_string);
+
+            restart(frame);
+
             return false;
         }
     }
@@ -1429,6 +1441,16 @@ void FFEncoder::processAudio(Frame::ptr frame)
     }
 }
 
+void FFEncoder::restartExt()
+{
+    if(!context->canAcceptFrame())
+        return;
+
+    stopCoder();
+
+    setConfig(context->cfg);
+}
+
 bool FFEncoder::stopCoder()
 {
     if(context->av_format_context)
@@ -1485,6 +1507,14 @@ void FFEncoder::calcStats()
     s.dropped_frames_counter=context->dropped_frames_counter;
 
     emit stats(s);
+}
+
+QTime FFEncoder::duration()
+{
+    if(context->cfg.audio_sample_size!=0)
+        return QTime(0, 0).addMSecs((double)context->out_stream_audio.frame->pts/(double)context->out_stream_audio.av_codec_context->sample_rate*1000);
+
+    return QTime(0, 0).addMSecs((double)context->out_stream_video.pts_last*av_q2d(context->out_stream_video.av_codec_context->time_base)*1000);
 }
 
 QString FFEncoder::VideoEncoder::toString(uint32_t enc)

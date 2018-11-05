@@ -23,9 +23,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QMainWindow>
 #include <QVariant>
 
+#include "data_types.h"
 #include "ff_encoder_thread.h"
 #include "ff_decoder_thread.h"
-
 #include "source_interface.h"
 
 
@@ -112,6 +112,7 @@ signals:
     void freeSpaceStr(QString size);
     void freeSpace(qint64 size);
     void signalLost(bool state);
+    void recStats(NRecStats stats);
 };
 
 #endif // MAINWINDOW_H

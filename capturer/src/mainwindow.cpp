@@ -35,7 +35,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "qml_messenger.h"
 #include "overlay_view.h"
 #include "http_server.h"
-#include "data_types.h"
 #include "dialog_keyboard_shortcuts.h"
 #include "audio_sender.h"
 #include "tools_ff_source.h"
@@ -81,8 +80,9 @@ MainWindow::MainWindow(QObject *parent)
     settings_model=new SettingsModel();
     connect(settings_model, SIGNAL(dataChanged(int,int,bool)), SLOT(settingsModelDataChanged(int,int,bool)));
 
-    ff_enc_primary=new FFEncoderThread(FFEncoder::Mode::primary, &enc_base_filename, QString("capturer %1").arg(VERSION_STRING), this);
+    //
 
+    ff_enc_primary=new FFEncoderThread(FFEncoder::Mode::primary, &enc_base_filename, QString("capturer %1").arg(VERSION_STRING), this);
 
     connect(&ff_enc_primary->frameBuffer()->signaler, SIGNAL(frameSkipped()), SLOT(encoderBufferOverload()), Qt::QueuedConnection);
     connect(ff_enc_primary, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
@@ -97,6 +97,10 @@ MainWindow::MainWindow(QObject *parent)
 
     //
 
+    connect(ff_enc_primary, SIGNAL(restartOut()), ff_enc_secondary, SIGNAL(restartIn()), Qt::QueuedConnection);
+
+    //
+
     audio_sender=new AudioSender(this);
 
     //
@@ -104,9 +108,10 @@ MainWindow::MainWindow(QObject *parent)
     http_server=new HttpServer(settings->http_server.enabled ? settings->http_server.port : 0, this);
     http_server->setSettingsModel(settings_model);
     connect(http_server, SIGNAL(keyPressed(int)), SLOT(keyPressed(int)));
-    connect(http_server, SIGNAL(checkEncoders()), SLOT(checkEncoders()), Qt::DirectConnection);
+    connect(http_server, SIGNAL(checkEncoders()), SLOT(checkEncoders()));
     connect(this, SIGNAL(freeSpace(qint64)), http_server, SLOT(setFreeSpace(qint64)), Qt::QueuedConnection);
-    connect(nv_tools, SIGNAL(stateChanged(NvState)), http_server, SLOT(setNvState(NvState)));
+    connect(this, SIGNAL(recStats(NRecStats)), http_server, SLOT(setRecStats(NRecStats)));
+    connect(nv_tools, SIGNAL(stateChanged(NvState)), http_server, SLOT(setNvState(NvState)), Qt::QueuedConnection);
 
 
     if(!settings->main.headless) {
@@ -144,7 +149,7 @@ MainWindow::MainWindow(QObject *parent)
         connect(ff_dec, SIGNAL(positionChanged(qint64)), messenger, SIGNAL(playerPositionChanged(qint64)), Qt::QueuedConnection);
         connect(ff_dec, SIGNAL(stateChanged(int)), SLOT(playerStateChanged(int)), Qt::QueuedConnection);
         connect(messenger, SIGNAL(playerSetPosition(qint64)), ff_dec, SLOT(seek(qint64)));
-        connect(http_server, SIGNAL(playerSeek(qint64)), ff_dec, SLOT(seek(qint64)));
+        connect(http_server, SIGNAL(playerSeek(qint64)), ff_dec, SLOT(seek(qint64)), Qt::QueuedConnection);
         connect(ff_dec, SIGNAL(durationChanged(qint64)), http_server, SLOT(setPlayerDuration(qint64)), Qt::QueuedConnection);
         connect(ff_dec, SIGNAL(positionChanged(qint64)), http_server, SLOT(setPlayerPosition(qint64)), Qt::QueuedConnection);
 
@@ -730,6 +735,8 @@ MainWindow::MainWindow(QObject *parent)
 MainWindow::~MainWindow()
 {
     settings->save();
+
+    MagewellDevice::release();
 }
 
 void MainWindow::setDevicePrimary(SourceInterface::Type::T type)
@@ -1109,6 +1116,25 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
         //
 
         set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="pts mode";
+
+        for(int i=0; i<MagewellDevice::Device::PtsMode::size; ++i) {
+            set_model_data.values << MagewellDevice::Device::PtsMode::toString(i);
+            set_model_data.values_data << i;
+        }
+
+        set_model_data.value=&settings_device->magewell.pts_mode;
+
+        settings_model->insert(&settings_device->magewell.quantization_range, set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        //
+
+        set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="remap audio channels";
 
         for(int i=0; i<MagewellDevice::Device::AudioRemapMode::size; ++i) {
@@ -1118,7 +1144,7 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->magewell.audio_remap_mode;
 
-        settings_model->insert(&settings_device->magewell.quantization_range, set_model_data);
+        settings_model->insert(&settings_device->magewell.pts_mode, set_model_data);
 
         //
 
@@ -1773,7 +1799,7 @@ void MainWindow::deviceStart(bool primary)
         dev->framesize=settings_model->valueData(&settings_device->magewell.framesize, QSize()).value<QSize>();
         dev->color_format=(MagewellDevice::Device::ColorFormat::T)settings_device->magewell.color_format;
         dev->quantization_range=(MagewellDevice::Device::QuantizationRange::T)settings_device->magewell.quantization_range;
-        dev->pts_enabled=true;
+        dev->pts_mode=settings_device->magewell.pts_mode;
         dev->low_latency=settings_device->magewell.low_latency;
         dev->half_fps=settings_device->magewell.half_fps;
         dev->audio_remap_mode=settings_device->magewell.audio_remap_mode;
@@ -1841,6 +1867,10 @@ void MainWindow::startStopRecording()
             AVRational framerate=device_primary->currentFramerate();
 
             cfg.framerate=FFEncoder::calcFps(framerate.num, framerate.den, settings->rec.half_fps);
+
+            if(cfg.framerate==FFEncoder::Framerate::unknown)
+                cfg.framerate_force=framerate;
+
             cfg.frame_resolution_src=device_primary->currentFramesize();
             cfg.pixel_format_dst=settings_model->valueData(&settings->rec.pixel_format_current).toInt();
             cfg.preset=settings_model->valueData(&settings->rec.preset_current).toString();
@@ -2001,7 +2031,7 @@ void MainWindow::updateStats(FFEncoder::Stats s)
 
     const QPair <int, int> buffer_size=ff_enc_primary->frameBuffer()->size();
 
-    http_server->setRecStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.streams_size, s.dropped_frames_counter, buffer_size.second, buffer_size.first));
+    emit recStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.streams_size, s.dropped_frames_counter, buffer_size.second, buffer_size.first));
 
     if(settings->main.headless)
         return;

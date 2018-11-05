@@ -268,6 +268,8 @@ int SettingsModel::insert(int *ptr_value_pos, const SettingsModel::Data &data)
             return i + 1;
         }
     }
+
+    return 0;
 }
 
 void SettingsModel::removeRow(int *ptr_value)

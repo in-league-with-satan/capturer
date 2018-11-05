@@ -77,6 +77,7 @@ public:
             int audio_remap_mode=0;
             int low_latency=0;
             int half_fps=0;
+            int pts_mode=0;
 
         } magewell;
 

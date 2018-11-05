@@ -24,6 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QSize>
 
 #include "magewell_global.h"
+#include "magewell_device.h"
 #include "source_interface.h"
 #include "frame_buffer.h"
 
@@ -56,24 +57,10 @@ public:
     bool step();
 
 public slots:
-    void setDevice(QSize board_channel);
+    void setDevice(MagewellDevice::Device dev);
+
     void deviceStart();
     void deviceStop();
-
-    void setPixelFormat(PixelFormat fmt);
-
-    void setHalfFps(bool value);
-
-    void setLowLatency(bool value);
-
-    void setColorFormat(int value);
-    void setQuantizationRange(int value);
-
-    void setPtsEnabled(bool value);
-
-    void setAudioRemapMode(int value);
-
-    void setCustomFramesize(QSize value);
 
 private:
     bool updateVideoSignalInfo();
@@ -93,8 +80,6 @@ private:
     };
 
     int state=State::no_signal;
-
-    bool pts_enabled=false;
 
 protected:
     QList <FrameBuffer<Frame::ptr>::ptr> subscription_list;

@@ -176,6 +176,8 @@ struct MagewellDeviceWorkerContext {
     int color_format=0;
     int quantization_range=0;
 
+    int pts_mode=0;
+
     //
 
     int64_t audio_timestamp;
@@ -430,11 +432,6 @@ bool MagewellDeviceWorker::step()
 
         MWWaitEvent(d->event_capture, mw_timeout);
 
-
-        //
-
-        a->getData(&d->ba_audio, &d->audio_timestamp);
-
         //
 
         MWCAP_VIDEO_CAPTURE_STATUS video_capture_status;
@@ -458,20 +455,47 @@ bool MagewellDeviceWorker::step()
 
         frame->video.time_base=d->framerate;
 
-        // frame->video.pts=av_rescale_q(d->video_frame_info.allFieldBufferedTimes[0], { 1, 10000000 }, d->framerate);
-        frame->video.pts=av_rescale_q(d->video_frame_info.allFieldStartTimes[0], { 1, 10000000 }, d->framerate);
+        if(d->video_frame_info.allFieldStartTimes[0]<1) {
+            qWarning() << "wrong all field times";
+            // return true;
+        }
 
 
-        if(!d->ba_audio.isEmpty()) {
+        switch(d->pts_mode) {
+        case MagewellDevice::Device::PtsMode::device:
+            a->getData(&d->ba_audio, &d->audio_timestamp);
+
+            frame->video.pts=av_rescale_q(d->video_frame_info.allFieldStartTimes[0], { 1, 10000000 }, d->framerate);
+
+            if(!d->ba_audio.isEmpty()) {
+                frame->setDataAudio(d->ba_audio, a->channels(), a->sampleSize());
+
+                frame->audio.time_base={ 1, 10000000 };
+
+                frame->audio.pts=d->audio_timestamp;
+
+            } else {
+                // qDebug() << "no audio";
+                // qWarning() << "no audio";
+            }
+
+            break;
+
+        case MagewellDevice::Device::PtsMode::audio:
+            a->getData2(&d->ba_audio, &frame->video.pts);
+
+            if(!d->ba_audio.isEmpty()) {
+                frame->setDataAudio(d->ba_audio, a->channels(), a->sampleSize());
+                frame->video.time_base=d->framerate;
+            }
+
+            break;
+
+        case MagewellDevice::Device::PtsMode::disabled:
+        default:
+            d->ba_audio=a->getData();
             frame->setDataAudio(d->ba_audio, a->channels(), a->sampleSize());
-
-            frame->audio.time_base={ 1, 10000000 };
-
-            frame->audio.pts=d->audio_timestamp;
-
-        } else {
-            // qDebug() << "no audio";
-            // qWarning() << "no audio";
+            break;
         }
 
         //
@@ -494,14 +518,14 @@ bool MagewellDeviceWorker::step()
     return false;
 }
 
-void MagewellDeviceWorker::setDevice(QSize board_channel)
+void MagewellDeviceWorker::setDevice(MagewellDevice::Device dev)
 {
 #ifdef LIB_MWCAPTURE
 
     if(current_channel)
         MWCloseChannel((HCHANNEL)current_channel);
 
-    current_channel=MWOpenChannel(board_channel.width(), board_channel.height());
+    current_channel=MWOpenChannel(dev.index_board, dev.index_channel);
 
     if(current_channel==0) {
         qCritical() << "MWOpenChannelByPath err";
@@ -511,6 +535,29 @@ void MagewellDeviceWorker::setDevice(QSize board_channel)
     MWSetDeviceTime((HCHANNEL)current_channel, 0ll);
 
     emit channelChanged(current_channel);
+
+    //
+
+    d->pixel_format=dev.pixel_format;
+    d->fourcc=toMagewellPixelFormat(dev.pixel_format);
+
+    updateVideoSignalInfo();
+
+    //
+
+    d->half_fps=dev.half_fps;
+
+    d->low_latency=dev.low_latency;
+
+    d->color_format=dev.color_format;
+
+    d->quantization_range=dev.quantization_range;
+
+    d->pts_mode=dev.pts_mode;
+
+    a->setAudioRemapMode(dev.audio_remap_mode);
+
+    d->frameresize=dev.framesize;
 
 #endif
 }
@@ -619,69 +666,6 @@ void MagewellDeviceWorker::deviceStop()
     QMetaObject::invokeMethod(a, "deviceStop", Qt::QueuedConnection);
 
 #endif
-}
-
-void MagewellDeviceWorker::setPixelFormat(PixelFormat fmt)
-{
-#ifdef LIB_MWCAPTURE
-
-    d->pixel_format=fmt;
-    d->fourcc=toMagewellPixelFormat(fmt);
-
-    updateVideoSignalInfo();
-
-#endif
-}
-
-void MagewellDeviceWorker::setHalfFps(bool value)
-{
-#ifdef LIB_MWCAPTURE
-
-    d->half_fps=value;
-
-#endif
-}
-
-void MagewellDeviceWorker::setLowLatency(bool value)
-{
-#ifdef LIB_MWCAPTURE
-
-    d->low_latency=value;
-
-#endif
-}
-
-void MagewellDeviceWorker::setColorFormat(int value)
-{
-#ifdef LIB_MWCAPTURE
-
-    d->color_format=value;
-
-#endif
-}
-
-void MagewellDeviceWorker::setQuantizationRange(int value)
-{
-#ifdef LIB_MWCAPTURE
-
-    d->quantization_range=value;
-
-#endif
-}
-
-void MagewellDeviceWorker::setPtsEnabled(bool value)
-{
-    pts_enabled=value;
-}
-
-void MagewellDeviceWorker::setAudioRemapMode(int value)
-{
-    a->setAudioRemapMode(value);
-}
-
-void MagewellDeviceWorker::setCustomFramesize(QSize value)
-{
-    d->frameresize=value;
 }
 
 bool MagewellDeviceWorker::updateVideoSignalInfo()

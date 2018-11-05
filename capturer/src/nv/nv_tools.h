@@ -20,14 +20,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef NV_TOOLS_H
 #define NV_TOOLS_H
 
-#include <QObject>
+#include <QThread>
 #include <QStringList>
 
 #include "data_types.h"
 
 struct NvToolsPrivate;
 
-class NvTools : public QObject
+class NvTools : public QThread
 {
     Q_OBJECT
 
@@ -45,6 +45,9 @@ private slots:
 
 private:
     NvToolsPrivate *d;
+
+protected:
+    void run();
 
 signals:
     void stateChanged(const NvState &state);
