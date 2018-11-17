@@ -57,6 +57,9 @@ public slots:
     void deviceStart();
     void deviceStop();
 
+    void deviceHold() {}
+    void deviceResume() {}
+
     void setDevice(void *ptr);
 
 private:

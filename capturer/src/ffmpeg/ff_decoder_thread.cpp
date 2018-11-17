@@ -191,14 +191,28 @@ void FFDecoderThread::_open()
 
     context.stream_video=context.format_context->streams[stream_video_pos];
 
-    //if(context.codec_context_video->codec_id==AV_CODEC_ID_H264)
-    //    context.codec_video=avcodec_find_decoder_by_name("h264_cuvid");
+    if(context.stream_video->codecpar->codec_id==AV_CODEC_ID_H264) {
+        context.codec_video=avcodec_find_decoder_by_name("h264_cuvid");
 
-    //else
-    context.codec_video=avcodec_find_decoder(context.stream_video->codecpar->codec_id);
+    } else if(context.stream_video->codecpar->codec_id==AV_CODEC_ID_HEVC) {
+        context.codec_video=avcodec_find_decoder_by_name("hevc_cuvid");
 
+    } else {
+        context.codec_video=avcodec_find_decoder(context.stream_video->codecpar->codec_id);
+    }
+
+    if(!context.codec_video) {
+        qWarning() << "hw decoder err";
+        context.codec_video=avcodec_find_decoder(context.stream_video->codecpar->codec_id);
+    }
+
+    if(!context.codec_video) {
+        qCritical() << "decoder err";
+        return;
+    }
 
     context.codec_context_video=avcodec_alloc_context3(context.codec_video);
+
     err=avcodec_parameters_to_context(context.codec_context_video, context.stream_video->codecpar);
 
     if(err<0) {
@@ -207,14 +221,9 @@ void FFDecoderThread::_open()
         state=ST_STOPPED;
     }
 
+    context.codec_context_video->flags2|=AV_CODEC_FLAG2_FAST;
 
-    // if(context.codec_video->capabilities & CODEC_CAP_TRUNCATED)
-    //     context.codec_context_video->flags|=CODEC_FLAG_TRUNCATED;
-
-    // context.codec_context_video->flags2|=CODEC_FLAG2_FAST;
-
-    context.codec_context_video->thread_count=QThread::idealThreadCount();
-    // context.codec_context_video->thread_count=qMin(QThread::idealThreadCount(), 4);
+    context.codec_context_video->thread_count=qMin(QThread::idealThreadCount(), 4);
 
     av_opt_set(context.codec_context_video->priv_data, "tune", "fastdecode", 0);
 
@@ -226,34 +235,22 @@ void FFDecoderThread::_open()
         return;
     }
 
-    QSize target_size=qApp->desktop()->screenGeometry().size();
+    QSize target_size=QSize(context.codec_context_video->width, context.codec_context_video->height);
 
     target_size=target_size.width()<=1920 ? target_size : target_size.scaled(QSize(1920, 1080), Qt::KeepAspectRatio);
 
-    int scale_filter=SWS_POINT;
+    context.scale_filter=SWS_POINT;
 
     if(context.codec_context_video->width!=target_size.width()) {
         context.target_size=QSize(context.codec_context_video->width, context.codec_context_video->height)
                 .scaled(target_size, Qt::KeepAspectRatio);
 
-        scale_filter=SWS_FAST_BILINEAR;
+        context.scale_filter=SWS_FAST_BILINEAR;
 
     } else
         context.target_size=QSize(context.codec_context_video->width, context.codec_context_video->height);
 
-    qDebug() << "target_size" << context.target_size;
-
-    context.convert_context_video=sws_getContext(context.codec_context_video->width, context.codec_context_video->height,
-                                                 context.codec_context_video->pix_fmt,
-                                                 context.target_size.width(), context.target_size.height(),
-                                                 AV_PIX_FMT_BGRA, scale_filter,
-                                                 nullptr, nullptr, nullptr);
-
-    if(!context.convert_context_video) {
-        qCritical() << "sws_getContext nullptr";
-        freeContext();
-        return;
-    }
+    qInfo() << "target_size" << context.target_size << av_get_pix_fmt_name((AVPixelFormat)context.stream_video->codecpar->format);
 
     // } video
 
@@ -420,15 +417,25 @@ void FFDecoderThread::_play()
 
                     context.video_frame_duration=computeDelay();
 
-                    if(!context.frame_rgb)
-                        context.frame_rgb=alloc_frame(AV_PIX_FMT_BGRA, context.target_size.width(), context.target_size.height());
+                    if(context.frame_video->format!=AV_PIX_FMT_YUV420P) {
+                        if(!context.frame_cnv)
+                            context.frame_cnv=alloc_frame(AV_PIX_FMT_NV12, context.target_size.width(), context.target_size.height());
 
-                    sws_scale(context.convert_context_video,
-                              context.frame_video->data, context.frame_video->linesize,
-                              0, context.codec_context_video->height,
-                              context.frame_rgb->data, context.frame_rgb->linesize);
+                        if(!context.convert_context_video) {
+                            context.convert_context_video=sws_getContext(context.codec_context_video->width, context.codec_context_video->height,
+                                                                         context.codec_context_video->pix_fmt,
+                                                                         context.target_size.width(), context.target_size.height(),
+                                                                         (AVPixelFormat)context.frame_cnv->format, context.scale_filter,
+                                                                         nullptr, nullptr, nullptr);
+                        }
 
-                    context.wait_video=true;
+                        sws_scale(context.convert_context_video,
+                                  context.frame_video->data, context.frame_video->linesize,
+                                  0, context.codec_context_video->height,
+                                  context.frame_cnv->data, context.frame_cnv->linesize);
+
+                        context.wait_video=true;
+                    }
                 }
 
                 av_packet_unref(&packet);
@@ -444,14 +451,20 @@ void FFDecoderThread::_play()
             if(!context.wait_video) {
                 Frame::ptr f=Frame::make();
 
-                f->video.data_size=DeckLinkVideoFrame::frameSize(QSize(context.frame_rgb->width, context.frame_rgb->height), bmdFormat8BitBGRA);
+                AVFrame *frame=context.frame_video;
+
+                if(context.frame_cnv) {
+                   frame=context.frame_cnv;
+                }
+
+                f->video.pixel_format.fromAVPixelFormat((AVPixelFormat)frame->format);
+                f->video.size=QSize(frame->width, frame->height);
+                f->video.data_size=frameBufSize(QSize(frame->width, frame->height), f->video.pixel_format);
                 f->video.dummy.resize(f->video.data_size);
                 f->video.data_ptr=(uint8_t*)f->video.dummy.constData();
-                f->video.pixel_format.fromAVPixelFormat(AV_PIX_FMT_BGRA);
 
-                av_image_copy_to_buffer((uint8_t*)f->video.data_ptr, f->video.data_size, context.frame_rgb->data, context.frame_rgb->linesize,
-                                        AV_PIX_FMT_BGRA, context.frame_rgb->width, context.frame_rgb->height, alignment);
-
+                av_image_copy_to_buffer((uint8_t*)f->video.data_ptr, f->video.data_size, frame->data, frame->linesize,
+                                        (AVPixelFormat)frame->format, frame->width, frame->height, alignment);
 
                 context.last_video_out_time=av_gettime();
 
@@ -462,7 +475,6 @@ void FFDecoderThread::_play()
 
                 if(context.frame_video->pts!=AV_NOPTS_VALUE)
                     emit positionChanged(position=context.frame_video->pts*av_q2d(context.stream_video->time_base)*1000);
-
 
                 f.reset();
 
@@ -505,20 +517,9 @@ void FFDecoderThread::_play()
                                                 (const uint8_t**)&context.frame_audio->extended_data[0], context.frame_audio->nb_samples);
 
 
-                    // int src_data_size=av_samples_get_buffer_size(nullptr, context.codec_context_audio->channels,
-                    //                                              context.frame_audio->nb_samples,
-                    //                                              context.codec_context_audio->sample_fmt, 0);
-
                     int src_data_size=av_get_bytes_per_sample((AVSampleFormat)context.codec_context_audio->sample_fmt)*context.codec_context_audio->channels*context.frame_audio->nb_samples;
 
                     context.audio_buf_size+=src_data_size;
-
-                    //
-
-                    // QByteArray ba_src((char*)context.frame_audio->extended_data[0], data_size);
-                    // QByteArray ba_dst;
-
-                    // context.audio_converter.convert(&ba_src, &ba_dst);
 
                     //
 
@@ -666,10 +667,10 @@ void FFDecoderThread::freeContext()
         context.frame_audio=nullptr;
     }
 
-    if(context.frame_rgb) {
-        av_frame_free(&context.frame_rgb);
+    if(context.frame_cnv) {
+        av_frame_free(&context.frame_cnv);
 
-        context.frame_rgb=nullptr;
+        context.frame_cnv=nullptr;
     }
 
     // context.audio_converter.free();

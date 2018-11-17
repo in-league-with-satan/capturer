@@ -98,7 +98,7 @@ private:
 
             frame_video=nullptr;
             frame_audio=nullptr;
-            frame_rgb=nullptr;
+            frame_cnv=nullptr;
         }
 
         AVFormatContext *format_context;
@@ -116,12 +116,14 @@ private:
         SwrContext *convert_context_audio;
         // AudioConverter audio_converter;
 
+        int scale_filter=0;
+
         FrameBuffer<Frame::ptr>::ptr out_video_buffer;
         FrameBuffer<Frame::ptr>::ptr out_audio_buffer;
 
         AVFrame *frame_video;
         AVFrame *frame_audio;
-        AVFrame *frame_rgb;
+        AVFrame *frame_cnv;
 
         QSize target_size;
 

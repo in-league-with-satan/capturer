@@ -175,7 +175,12 @@ void MagewellAudioThread::getData2(QByteArray *data, int64_t *pts)
 
 int64_t MagewellAudioThread::sizeToPos(int64_t size) const
 {
-    return (double)size*1000./(double)(48000*d->sample_size_bytes*d->channels);
+    int audio_channels=d->channels;
+
+    if(d->audio_remap_mode!=MagewellDevice::Device::AudioRemapMode::disabled && d->channels==8)
+        audio_channels=6;
+
+    return (double)size*1000./(double)(48000*d->sample_size_bytes*audio_channels);
 }
 
 void MagewellAudioThread::run()

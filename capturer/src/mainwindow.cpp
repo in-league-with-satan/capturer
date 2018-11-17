@@ -1984,23 +1984,26 @@ void MainWindow::encoderStateChanged(bool state)
 
 void MainWindow::playerStateChanged(int state)
 {
-    if(!device_primary)
-        return;
-
-    if(state!=FFDecoderThread::ST_STOPPED || device_primary->gotSignal()) {
+    if(state!=FFDecoderThread::ST_STOPPED) {
         emit signalLost(false);
 
     } else {
-        emit signalLost(true);
+        if(device_primary && device_primary->gotSignal())
+            emit signalLost(false);
+
+        else
+            emit signalLost(true);
     }
 
-    if(state==FFDecoderThread::ST_STOPPED) {
-        QMetaObject::invokeMethod(dynamic_cast<QObject*>(device_primary), "deviceStart", Qt::QueuedConnection);
+    if(device_primary) {
+        if(state==FFDecoderThread::ST_STOPPED) {
+            QMetaObject::invokeMethod(dynamic_cast<QObject*>(device_primary), "deviceResume", Qt::QueuedConnection);
 
-        emit messenger->showPlayerState(false);
+            emit messenger->showPlayerState(false);
 
-    } else {
-        QMetaObject::invokeMethod(dynamic_cast<QObject*>(device_primary), "deviceStop", Qt::QueuedConnection);
+        } else {
+            QMetaObject::invokeMethod(dynamic_cast<QObject*>(device_primary), "deviceHold", Qt::QueuedConnection);
+        }
     }
 }
 

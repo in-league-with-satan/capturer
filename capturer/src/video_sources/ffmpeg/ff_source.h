@@ -92,6 +92,9 @@ signals:
     void deviceStart();
     void deviceStop();
 
+    void deviceHold();
+    void deviceResume();
+
     void signalLost(bool value);
     void formatChanged(QString format);
     void errorString(QString err_string);

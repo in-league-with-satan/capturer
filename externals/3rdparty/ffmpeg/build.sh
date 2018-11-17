@@ -148,6 +148,7 @@ build_ff() {
     --enable-gpl \
     --enable-nonfree \
     --enable-nvenc \
+    --enable-cuvid \
     `#--enable-libmfx` \
     --enable-libx264 \
     --disable-libfreetype \

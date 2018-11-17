@@ -151,6 +151,9 @@ public slots:
 
     void setDevice(void *ptr);
 
+    void deviceHold();
+    void deviceResume();
+
 private slots:
     void setFramerate(AVRational fr);
     void setFramesize(QSize r);
@@ -170,6 +173,8 @@ private:
 
 protected:
     std::atomic <bool> running;
+
+    std::atomic <bool> on_hold;
 
 signals:
     void deviceStart();

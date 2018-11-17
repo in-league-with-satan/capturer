@@ -40,6 +40,7 @@ MagewellDevice::MagewellDevice(QObject *parent)
     audio_channels=AudioChannels::ch_8;
 
     running=false;
+    on_hold=false;
 
     start(QThread::HighPriority);
 
@@ -219,6 +220,16 @@ void MagewellDevice::setDevice(void *ptr)
     emit updateDevice(device);
 }
 
+void MagewellDevice::deviceHold()
+{
+    on_hold=true;
+}
+
+void MagewellDevice::deviceResume()
+{
+    on_hold=false;
+}
+
 void MagewellDevice::setFramerate(AVRational fr)
 {
     if(sender()!=d)
@@ -286,6 +297,11 @@ void MagewellDevice::run()
     running=true;
 
     while(running) {
+        if(on_hold) {
+            msleep(200);
+            continue;
+        }
+
         mutex.lock();
 
         is_active=d->step();

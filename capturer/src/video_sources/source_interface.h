@@ -171,6 +171,9 @@ public:
     virtual void deviceStart()=0;
     virtual void deviceStop()=0;
 
+    virtual void deviceHold()=0;
+    virtual void deviceResume()=0;
+
     virtual void setDevice(void *dev)=0;
 
     virtual void setFramerate(AVRational fr) {

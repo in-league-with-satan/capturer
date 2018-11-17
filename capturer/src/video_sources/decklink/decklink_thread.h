@@ -75,6 +75,9 @@ public slots:
     void deviceStart();
     void deviceStop();
 
+    void deviceHold() {}
+    void deviceResume() {}
+
 private:
     void videoInputFormatChanged(uint32_t events, IDeckLinkDisplayMode *mode, uint32_t format_flags);
     void videoInputFrameArrived(IDeckLinkVideoInputFrame *video_frame, IDeckLinkAudioInputPacket *audio_packet);
