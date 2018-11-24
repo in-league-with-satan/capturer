@@ -302,6 +302,9 @@ ShowHideRect {
             if(index>=list.model.count)
                 return false
 
+            if(!list.contentItem.children[index])
+                return false
+
             if(list.contentItem.children[index].item_type===list.type_title
                     || list.contentItem.children[index].item_type===list.type_divider) {
                 return false

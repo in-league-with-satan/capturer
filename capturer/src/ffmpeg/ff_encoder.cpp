@@ -293,7 +293,7 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
             if(cfg.nvenc.device!=0)
                 av_opt_set(out_stream->av_codec_context->priv_data, "gpu", QString::number(cfg.nvenc.device - 1).toLatin1().constData(), 0);
 
-            if(cfg.nvenc.weighted_pred==0)
+            if(cfg.nvenc.weighted_pred==0 && cfg.nvenc.b_frames>0)
                 out_stream->av_codec_context->max_b_frames=cfg.nvenc.b_frames;
 
             out_stream->av_codec_context->refs=cfg.nvenc.ref_frames;
@@ -366,6 +366,9 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
             if(cfg.nvenc.device!=0)
                 av_opt_set(out_stream->av_codec_context->priv_data, "gpu", QString::number(cfg.nvenc.device - 1).toLatin1().constData(), 0);
 
+            if(cfg.nvenc.weighted_pred==0 && cfg.nvenc.b_frames>0)
+                out_stream->av_codec_context->max_b_frames=cfg.nvenc.b_frames;
+
             out_stream->av_codec_context->refs=cfg.nvenc.ref_frames;
 
             out_stream->av_codec_context->gop_size=cfg.nvenc.gop_size;
@@ -376,6 +379,7 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
             } else {
                 av_opt_set(out_stream->av_codec_context->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i - 1).toLatin1().constData(), 0);
                 av_opt_set(out_stream->av_codec_context->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p - 1).toLatin1().constData(), 0);
+                av_opt_set(out_stream->av_codec_context->priv_data, "init_qpB", QString::number(cfg.nvenc.qp_b - 1).toLatin1().constData(), 0);
             }
 
             switch(cfg.nvenc.aq_mode) {
@@ -1020,7 +1024,7 @@ QString FFEncoder::configString(const FFEncoder::Config &cfg)
 
         map.remove("crf");
 
-        if(cfg.video_encoder==VideoEncoder::nvenc_h264)
+        if((cfg.video_encoder==VideoEncoder::nvenc_h264 || cfg.video_encoder==VideoEncoder::nvenc_hevc) && cfg.nvenc.b_frames>0)
             map.insert("b_frames", cfg.nvenc.b_frames);
 
         map.insert("ref_frames", cfg.nvenc.ref_frames);
@@ -1032,11 +1036,34 @@ QString FFEncoder::configString(const FFEncoder::Config &cfg)
         if(cfg.nvenc.surfaces>0)
             map.insert("surfaces", cfg.nvenc.surfaces - 1);
 
+
+        if(cfg.nvenc.no_scenecut!=0)
+            map.insert("no-scenecut", QVariant());
+
+        if(cfg.nvenc.forced_idr!=0)
+            map.insert("forced-idr", QVariant());
+
+        if(cfg.nvenc.b_adapt!=0)
+            map.insert("b_adapt", QVariant());
+
+        if(cfg.nvenc.nonref_p!=0)
+            map.insert("nonref_p", QVariant());
+
+        if(cfg.nvenc.strict_gop!=0)
+            map.insert("strict_gop", QVariant());
+
+        if(cfg.nvenc.weighted_pred!=0)
+            map.insert("weighted_pred", QVariant());
+
+        if(cfg.nvenc.bluray_compat!=0)
+            map.insert("bluray_compat", QVariant());
+
+
         if(cfg.nvenc.qp_i>0) {
             map.insert("qp_i", cfg.nvenc.qp_i - 1);
             map.insert("qp_p", cfg.nvenc.qp_p - 1);
 
-            if(cfg.video_encoder==VideoEncoder::nvenc_h264)
+            if(cfg.video_encoder==VideoEncoder::nvenc_h264 || cfg.video_encoder==VideoEncoder::nvenc_hevc)
                 map.insert("qp_b", cfg.nvenc.qp_b - 1);
 
         } else {
@@ -1044,7 +1071,13 @@ QString FFEncoder::configString(const FFEncoder::Config &cfg)
         }
     }
 
-    return QString(QJsonDocument::fromVariant(map).toJson(QJsonDocument::Compact)).remove("{").remove("}").remove("\"").replace(":", "=").replace(",", ", ");
+    return QString(QJsonDocument::fromVariant(map).toJson(QJsonDocument::Compact))
+            .remove("{")
+            .remove("}")
+            .remove("\"")
+            .remove(":null")
+            .replace(":", "=")
+            .replace(",", ", ");
 }
 
 bool FFEncoder::checkFrameParams(Frame::ptr frame) const

@@ -533,10 +533,10 @@ MainWindow::MainWindow(QObject *parent)
         //
 
         set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="b frames (h264 only)";
+        set_model_data.name="b frames";
         set_model_data.value=&settings->nvenc.b_frames;
 
-        for(int i=0; i<5; i++)
+        for(int i=0; i<6; i++)
             set_model_data.values << QString::number(i);
 
         settings_model->add(set_model_data);
@@ -567,7 +567,7 @@ MainWindow::MainWindow(QObject *parent)
         set_model_data.name="gop size";
         set_model_data.value=&settings->nvenc.gop_size;
 
-        for(int i=0; i<301; i++)
+        for(int i=0; i<601; i++)
             set_model_data.values << QString::number(i);
 
         settings_model->add(set_model_data);
@@ -596,7 +596,7 @@ MainWindow::MainWindow(QObject *parent)
 
         //
 
-        set_model_data.name="qpB (h264 only)";
+        set_model_data.name="qpB";
         set_model_data.value=&settings->nvenc.qp_b;
 
         settings_model->add(set_model_data);
@@ -672,7 +672,7 @@ MainWindow::MainWindow(QObject *parent)
         //
 
         set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="b adapt (h264 only)";
+        set_model_data.name="b adapt";
         set_model_data.value=&settings->nvenc.b_adapt;
 
         settings_model->add(set_model_data);
@@ -1736,8 +1736,8 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
         checkEncoders();
     }
 
-
-    settings_model->updateQml();
+    if(!qml)
+        settings_model->updateQml();
 }
 
 void MainWindow::deviceStart(bool primary)
