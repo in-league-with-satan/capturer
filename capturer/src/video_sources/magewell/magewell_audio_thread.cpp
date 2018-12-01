@@ -139,6 +139,13 @@ void MagewellAudioThread::getData(QByteArray *data, int64_t *pts)
 
 void MagewellAudioThread::getData2(QByteArray *data, int64_t *pts)
 {
+#ifndef LIB_MWCAPTURE
+
+    Q_UNUSED(data)
+    Q_UNUSED(pts)
+
+#else
+
     QByteArray ba_copy;
 
     QElapsedTimer t;
@@ -171,6 +178,8 @@ void MagewellAudioThread::getData2(QByteArray *data, int64_t *pts)
     d->readed+=ba_copy.size();
 
     *data=ba_copy;
+
+#endif
 }
 
 int64_t MagewellAudioThread::sizeToPos(int64_t size) const
