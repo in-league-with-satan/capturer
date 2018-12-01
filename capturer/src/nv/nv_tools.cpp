@@ -63,15 +63,15 @@ NvTools::NvTools(QObject *parent)
     , d(new NvToolsPrivate())
 
 {
+    d->lib.cuInit(0);
+
 #ifdef __linux__
 
     setenv("DISPLAY", ":0", 0);
 
-#endif
+#else
 
     d->proc.setProcessChannelMode(QProcess::MergedChannels);
-
-    d->lib.cuInit(0);
 
     availableDevices();
 
@@ -88,6 +88,8 @@ NvTools::NvTools(QObject *parent)
         d->nv_gpu_thermal_settings[i].sensor[0].controller=-1;
         d->nv_gpu_thermal_settings[i].sensor[0].target=NVAPI_THERMAL_TARGET_GPU;
     }
+
+#endif
 
     start();
 }
@@ -139,13 +141,7 @@ QStringList NvTools::availableDevices()
 
 void NvTools::monitoringStart(int index)
 {
-#ifdef __linux__
-
-    Q_UNUSED(index)
-
-#else
-
-    QMutexLocker ml(&mutex);
+    QMutexLocker ml(&d->mutex);
 
     if(!d->lib.loadedCuda())
         return;
@@ -153,28 +149,22 @@ void NvTools::monitoringStart(int index)
     if(index<0 || index>=NVAPI_MAX_PHYSICAL_GPUS)
         return;
 
+#ifndef __linux__
+
     if(!d->gpu_handle[index])
         return;
 
+#endif
+
     if(!d->list_mon.contains(index))
         d->list_mon.append(index);
-
-#endif
 }
 
 void NvTools::monitoringStop(int index)
 {
-#ifdef __linux__
-
-    Q_UNUSED(index)
-
-#else
-
-    QMutexLocker ml(&mutex);
+    QMutexLocker ml(&d->mutex);
 
     d->list_mon.removeAll(index);
-
-#endif
 }
 
 void NvTools::onTimer()
@@ -190,28 +180,43 @@ void NvTools::onTimer()
 
 #ifdef __linux__
 
-    d->proc.start(QStringLiteral("nvidia-settings -q=[gpu:0]/GPUUtilization -q=[gpu:0]/GPUCoreTemp"));
-    d->proc.waitForFinished();
+    foreach(const int &index, d->list_mon) {
+        d->proc.start(QString("nvidia-settings -q=[gpu:%1]/GPUUtilization -q=[gpu:%1]/GPUCoreTemp").arg(index));
+        d->proc.waitForFinished();
 
-    QStringList lst=QString(d->proc.readAll())
-            .remove(QStringLiteral("\n"))
-            .remove(QStringLiteral("'"))
-            .remove(QStringLiteral(","))
-            .split(QStringLiteral(" "),
-                   QString::SkipEmptyParts);
+        QStringList lst=QString(d->proc.readAll())
+                .remove(QStringLiteral("\n"))
+                .remove(QStringLiteral("'"))
+                .remove(QStringLiteral(","))
+                .split(QStringLiteral(" "),
+                       QString::SkipEmptyParts);
 
-    if(!lst.contains(QStringLiteral("GPUUtilization")) || lst.size()<6) {
-        d->timer->stop();
-        return;
+        if(!lst.contains(QStringLiteral("GPUUtilization")) || lst.size()<6) {
+            d->timer->stop();
+            return;
+        }
+
+        foreach(QString str, lst) {
+            bool ok=false;
+            double t=str.toDouble(&ok);
+
+            if(ok)
+                state.temperature=t;
+
+            if(str.startsWith(QStringLiteral("graphics=")))
+                state.graphic_processing_unit=str.remove(QStringLiteral("graphics=")).toInt();
+
+            if(str.startsWith(QStringLiteral("memory=")))
+                state.memory_controller_unit=str.remove(QStringLiteral("memory=")).toInt();
+
+            if(str.startsWith(QStringLiteral("video=")))
+                state.video_processing_unit=str.remove(QStringLiteral("video=")).toInt();
+        }
+
+        state.dev_name=d->device_list.at(index);
+
+        emit stateChanged(state);
     }
-
-    state.dev_name=d->device_list.first();
-    state.temperature=lst[10].toDouble();
-    state.graphic_processing_unit=lst[3].remove(QStringLiteral("graphics=")).toInt();
-    state.memory_controller_unit=lst[4].remove(QStringLiteral("memory=")).toInt();
-    state.video_processing_unit=lst[5].remove(QStringLiteral("video=")).toInt();
-
-    emit stateChanged(state);
 
 #else
 
