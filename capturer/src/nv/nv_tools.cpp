@@ -26,13 +26,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <iostream>
 
-#ifdef __linux__
-
-#include <stdlib.h>
-
-#endif
-
 #include "nv_lib.h"
+
 
 #include "nv_tools.h"
 
@@ -53,7 +48,7 @@ struct NvToolsPrivate
     unsigned int gpu_usage[NVAPI_MAX_PHYSICAL_GPUS][NVAPI_MAX_USAGES_PER_GPU]={ 0 };
     NV_GPU_THERMAL_SETTINGS nv_gpu_thermal_settings[NVAPI_MAX_PHYSICAL_GPUS];
 
-    QProcess proc;
+    QProcess *proc;
 
     QMutex mutex;
 };
@@ -65,11 +60,7 @@ NvTools::NvTools(QObject *parent)
 {
     d->lib.cuInit(0);
 
-#ifdef __linux__
-
-    setenv("DISPLAY", ":0", 0);
-
-#else
+#ifndef __linux__
 
     d->proc.setProcessChannelMode(QProcess::MergedChannels);
 
@@ -180,42 +171,32 @@ void NvTools::onTimer()
 
 #ifdef __linux__
 
-    foreach(const int &index, d->list_mon) {
-        d->proc.start(QString("nvidia-settings -q=[gpu:%1]/GPUUtilization -q=[gpu:%1]/GPUCoreTemp").arg(index));
-        d->proc.waitForFinished();
-
-        QStringList lst=QString(d->proc.readAll())
+    while(d->proc->state()==QProcess::Running) {
+        QStringList lst=
+                QString(d->proc->readAllStandardOutput())
+                .simplified()
                 .remove(QStringLiteral("\n"))
-                .remove(QStringLiteral("'"))
-                .remove(QStringLiteral(","))
-                .split(QStringLiteral(" "),
-                       QString::SkipEmptyParts);
+                .split(QStringLiteral(" "), QString::SkipEmptyParts);
 
-        if(!lst.contains(QStringLiteral("GPUUtilization")) || lst.size()<6) {
-            d->timer->stop();
-            return;
+        if(lst.empty())
+            break;
+
+        if(lst.size()==10) {
+            const int dev_idx=lst[0].toInt();
+
+            if(!d->list_mon.contains(dev_idx))
+                continue;
+
+            if(dev_idx>=0 && dev_idx<d->device_list.size()) {
+                state.temperature=lst[2].toInt();
+                state.graphic_processing_unit=lst[4].toInt();
+                state.memory_controller_unit=lst[5].toInt();
+                state.video_processing_unit=lst[6].toInt();
+                state.dev_name=d->device_list.at(dev_idx);
+
+                emit stateChanged(state);
+            }
         }
-
-        foreach(QString str, lst) {
-            bool ok=false;
-            double t=str.toDouble(&ok);
-
-            if(ok)
-                state.temperature=t;
-
-            if(str.startsWith(QStringLiteral("graphics=")))
-                state.graphic_processing_unit=str.remove(QStringLiteral("graphics=")).toInt();
-
-            if(str.startsWith(QStringLiteral("memory=")))
-                state.memory_controller_unit=str.remove(QStringLiteral("memory=")).toInt();
-
-            if(str.startsWith(QStringLiteral("video=")))
-                state.video_processing_unit=str.remove(QStringLiteral("video=")).toInt();
-        }
-
-        state.dev_name=d->device_list.at(index);
-
-        emit stateChanged(state);
     }
 
 #else
@@ -241,6 +222,13 @@ void NvTools::onTimer()
 
 void NvTools::run()
 {
+    d->proc=new QProcess();
+    d->proc->moveToThread(this);
+    d->proc->start("nvidia-smi dmon");
+    d->proc->waitForStarted();
+
+    //
+
     d->timer=new QTimer();
     d->timer->moveToThread(this);
     d->timer->setInterval(1000);
@@ -250,4 +238,10 @@ void NvTools::run()
     d->timer->start();
 
     exec();
+
+    d->proc->kill();
+    d->proc->terminate();
+    d->proc->waitForFinished();
+
+    delete d->proc;
 }
