@@ -1316,6 +1316,9 @@ void MainWindow::keyPressed(int code)
         break;
     }
 
+    static double hdr_shader_brightness=1.;
+    static double hdr_shader_saturation=2.;
+
     if(!settings->main.headless) {
         switch(code) {
         case KeyCodeC::FileBrowser:
@@ -1363,6 +1366,46 @@ void MainWindow::keyPressed(int code)
             static bool hdr_shader_enabled=false;
             hdr_shader_enabled=!hdr_shader_enabled;
             messenger->setHdrToSdrEnabled(hdr_shader_enabled);
+            break;
+
+        case KeyCodeC::HdrBrightnesPlus:
+            hdr_shader_brightness+=.01;
+
+            if(hdr_shader_brightness>4.)
+                hdr_shader_brightness=4.;
+
+            messenger->setHdrBrightness(hdr_shader_brightness);
+
+            break;
+
+        case KeyCodeC::HdrBrightnesMinus:
+            hdr_shader_brightness-=.01;
+
+            if(hdr_shader_brightness<0.)
+                hdr_shader_brightness=0.;
+
+            messenger->setHdrBrightness(hdr_shader_brightness);
+
+            break;
+
+        case KeyCodeC::HdrSaturationPlus:
+            hdr_shader_saturation+=.1;
+
+            if(hdr_shader_saturation>4.)
+                hdr_shader_saturation=4.;
+
+            messenger->setHdrSaturation(hdr_shader_saturation);
+
+            break;
+
+        case KeyCodeC::HdrSaturationMinus:
+            hdr_shader_saturation-=.1;
+
+            if(hdr_shader_saturation<0.)
+                hdr_shader_saturation=0.;
+
+            messenger->setHdrSaturation(hdr_shader_saturation);
+
             break;
 
         case KeyCodeC::FullScreen:

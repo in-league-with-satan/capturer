@@ -133,6 +133,18 @@ Qt::Key DialogKeyboardShortcuts::defaultQtKey(int code)
     case KeyCodeC::HdrToSdr:
         return Qt::Key_F8;
 
+    case KeyCodeC::HdrBrightnesPlus:
+        return Qt::Key_J;
+
+    case KeyCodeC::HdrBrightnesMinus:
+        return Qt::Key_N;
+
+    case KeyCodeC::HdrSaturationPlus:
+        return Qt::Key_K;
+
+    case KeyCodeC::HdrSaturationMinus:
+        return Qt::Key_M;
+
     case KeyCodeC::FullScreen:
         return Qt::Key_F11;
 

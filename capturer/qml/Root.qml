@@ -40,6 +40,9 @@ Rectangle {
         anchors.fill: output_primary
         visible: false
 
+        property real m_brightness: 1.
+        property real m_saturation: 2.
+
         property variant source: ShaderEffectSource {
             sourceItem: output_primary
         }
@@ -54,6 +57,9 @@ Rectangle {
             float gamma=.65;
             float white=.65;
 
+            uniform float m_brightness;
+            uniform float m_saturation;
+
             vec3 saturation(vec3 rgb, float adjustment)
             {
                 const vec3 W=vec3(.2125, .7154, .0721);
@@ -63,19 +69,22 @@ Rectangle {
 
             vec3 whitePreservingLumaBasedReinhardToneMapping(vec3 color)
             {
-                float luma=dot(color, vec3(.4126, .7152, .0722));
-
+                float luma=dot(color, vec3(.2126, .7152, .0722));
                 float tone_mapped_luma=luma*(1. + luma/(white*white))/(1. + luma);
                 color*=tone_mapped_luma/luma;
+
+                gamma=m_brightness;
+
                 color=pow(color, vec3(1./gamma));
-                return saturation(color, 2.);
+
+                return saturation(color, m_saturation);
             }
 
             void main()
             {
                 vec2 uv=qt_TexCoord0.xy;
                 vec4 orig=texture2D(source, uv);
-                gl_FragColor=vec4(whitePreservingLumaBasedReinhardToneMapping(orig.rgb), 0.);
+                gl_FragColor=vec4(whitePreservingLumaBasedReinhardToneMapping(orig.rgb), 1.);
             }"
     }
 
@@ -227,6 +236,14 @@ Rectangle {
 
         onSetHdrToSdrEnabled: {
             shader_effect.visible=value;
+        }
+
+        onSetHdrBrightness: {
+            shader_effect.m_brightness=value;
+        }
+
+        onSetHdrSaturation: {
+            shader_effect.m_saturation=value;
         }
     }
 }
