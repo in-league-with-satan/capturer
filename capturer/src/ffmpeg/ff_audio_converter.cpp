@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -41,6 +41,16 @@ bool AudioConverter::isReady() const
         return true;
 
     return false;
+}
+
+bool AudioConverter::compareParams(uint64_t in_channels, size_t in_sample_size, int64_t in_sample_rate, uint64_t out_channels, size_t out_sample_size, int64_t out_sample_rate)
+{
+    return this->in_channels==in_channels
+            && this->in_sample_size==in_sample_size
+            && this->in_sample_rate==in_sample_rate
+            && this->out_channels==out_channels
+            && this->out_sample_size==out_sample_size
+            && this->out_sample_rate==out_sample_rate;
 }
 
 bool AudioConverter::init(uint64_t in_channels_layout, int64_t in_sample_rate, int64_t in_sample_format, uint64_t out_channels_layout, int64_t out_sample_rate, int64_t out_sample_format)

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -102,6 +102,7 @@ MainWindow::MainWindow(QObject *parent)
     //
 
     audio_sender=new AudioSender(this);
+    audio_sender->setSimplify(settings->main.simplify_audio_for_send);
 
     //
 
