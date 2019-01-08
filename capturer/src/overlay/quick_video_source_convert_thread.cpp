@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ QuickVideoSourceConvertThread::QuickVideoSourceConvertThread(QObject *parent)
     , conv_dst(nullptr)
     , format_converter_ff(new FFFormatConverter())
     , format_converter_dl(new DecklinkFrameConverter())
+    , from210(new DecodeFrom210())
 {
     frame_buffer_in=FrameBuffer<Frame::ptr>::make();
     frame_buffer_in->setMaxSize(1);
@@ -188,8 +189,13 @@ void QuickVideoSourceConvertThread::run()
 
                 data_conv=(uint8_t*)ba_conv.constData();
 
-                format_converter_dl->init(bmdFormat10BitYUV, frame_src->video.size, bmdFormat8BitYUV, frame_src->video.size);
-                format_converter_dl->convert(frame_src->video.data_ptr, (void*)ba_conv.constData());
+                if(frame_src->video.pixel_format!=PixelFormat::v410) {
+                    format_converter_dl->init(bmdFormat10BitYUV, frame_src->video.size, bmdFormat8BitYUV, frame_src->video.size);
+                    format_converter_dl->convert(frame_src->video.data_ptr, (void*)ba_conv.constData());
+
+                } else {
+                    src_pix_fmt=DecodeFrom210::v410PixelFormat();
+                }
 
             } else {
                 data_conv=frame_src->video.data_ptr;
@@ -221,7 +227,14 @@ void QuickVideoSourceConvertThread::run()
             } else {
                 ba_dst.resize(av_image_get_buffer_size(dst_pix_fmt, frame_src->video.size.width(), frame_src->video.size.height(), alignment));
 
-                av_image_fill_arrays(conv_src->data, conv_src->linesize, data_conv, src_pix_fmt, frame_src->video.size.width(), frame_src->video.size.height(), alignment);
+
+                if(frame_src->video.pixel_format==PixelFormat::v410) {
+                        from210->convert(DecodeFrom210::Format::V410, frame_src->video.data_ptr, frame_src->video.data_size,
+                                         frame_src->video.size.width(), frame_src->video.size.height(), conv_src);
+
+                } else {
+                    av_image_fill_arrays(conv_src->data, conv_src->linesize, data_conv, src_pix_fmt, frame_src->video.size.width(), frame_src->video.size.height(), alignment);
+                }
 
                 format_converter_ff->convert(conv_src, conv_dst);
 

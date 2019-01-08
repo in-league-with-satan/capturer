@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -109,6 +109,9 @@ AVPixelFormat PixelFormat::toAVPixelFormat() const
 
     case yuv444p16le:
         return AV_PIX_FMT_YUV444P16LE;
+
+    case v410:
+        return AV_PIX_FMT_YUV444P10LE;
 
     case p010le:
         return AV_PIX_FMT_P010LE;
@@ -546,6 +549,9 @@ QString PixelFormat::toString(int value)
     case yuv444p16le:
         return QStringLiteral("yuv444p16le");
 
+    case v410:
+        return QStringLiteral("v410");
+
     case p010le:
         return QStringLiteral("p010le");
 
@@ -611,6 +617,9 @@ QString PixelFormat::toStringView(int value)
 
     case yuv444p16le:
         return QStringLiteral("yuv444p16le");
+
+    case v410:
+        return QStringLiteral("yuv444p10le (v410)");
 
     case p010le:
         return QStringLiteral("p010le");
@@ -679,13 +688,14 @@ bool PixelFormat::is10bit() const
             || d==yuv422p10le
             || d==yuv444p10
             || d==yuv444p16le
+            || d==v410
             || d==p010le;
 }
 
 bool PixelFormat::is210() const
 {
     return d==gbrp10le
-            || d==yuv422p10le;
+            || d==yuv422p10le || d==v410;
 }
 
 bool PixelFormat::isDirect() const

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,12 +17,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
-#include <QApplication>
 #include <QDebug>
 #include <QThread>
 #include <QFile>
 #include <QDir>
 #include <QJsonDocument>
+#include <qcoreapplication.h>
 
 #include <iostream>
 
@@ -118,6 +118,8 @@ public:
 
     uint32_t dropped_frames_counter;
     uint32_t double_frames_counter;
+
+    uint32_t counter_process_events;
 };
 
 static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AVStream *st, AVPacket *pkt)
@@ -361,6 +363,8 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::nvenc_hevc) {
         if(cfg.nvenc.enabled) {
             av_opt_set(out_stream->av_codec_context->priv_data, "rc", "constqp", 0);
+            // av_opt_set(out_stream->av_codec_context->priv_data, "rc", "vbr_hq", 0);
+
             av_opt_set(out_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
             if(cfg.nvenc.device!=0)
@@ -372,9 +376,20 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
             out_stream->av_codec_context->refs=cfg.nvenc.ref_frames;
 
             out_stream->av_codec_context->gop_size=cfg.nvenc.gop_size;
+            out_stream->av_codec_context->keyint_min=6;
+            // av_opt_set(out_stream->av_codec_context->priv_data, "sc_threshold", "40", 0);
+
+
+            out_stream->av_codec_context->bit_rate=64*1024*1024;
+
 
             if(cfg.nvenc.qp_i==0) {
                 av_opt_set(out_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
+
+                // out_stream->av_codec_context->qmin=cfg.crf;
+                // out_stream->av_codec_context->qmax=cfg.crf;
+                // out_stream->av_codec_context->max_qdiff=out_stream->av_codec_context->qmax - out_stream->av_codec_context->qmin;
+
 
             } else {
                 av_opt_set(out_stream->av_codec_context->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i - 1).toLatin1().constData(), 0);
@@ -1155,7 +1170,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     if(cfg.input_type_flags&SourceInterface::TypeFlag::video && !format_converter_ff->setup(
                 cfg.pixel_format_src.toAVPixelFormat(), cfg.frame_resolution_src, cfg.pixel_format_dst.toAVPixelFormat(), cfg.frame_resolution_dst,
                 cfg.downscale==DownScale::Disabled ? FFFormatConverter::Filter::cNull : (FFFormatConverter::Filter::T)ScaleFilter::toSws(cfg.scale_filter),
-                cfg.pixel_format_src.is210() ? (cfg.pixel_format_src.isRgb() ? DecodeFrom210::Format::R210 : DecodeFrom210::Format::V210) : DecodeFrom210::Format::Disabled)) {
+                cfg.pixel_format_src.is210() ? (cfg.pixel_format_src.isRgb() ? DecodeFrom210::Format::R210 : (cfg.pixel_format_src==PixelFormat::v410 ? DecodeFrom210::Format::V410 : DecodeFrom210::Format::V210)) : DecodeFrom210::Format::Disabled)) {
         emit errorString(last_error_string=QStringLiteral("err init format converter"));
         goto fail;
     }
@@ -1164,7 +1179,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
 
     {
-        QDir dir(QApplication::applicationDirPath() + "/videos");
+        QDir dir(qApp->applicationDirPath() + "/videos");
 
         if(!dir.exists())
             dir.mkdir(dir.dirName());
@@ -1185,7 +1200,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
 
         context->filename=QString(QLatin1String("%1/videos/%2.mkv"))
-                .arg(QApplication::applicationDirPath()).arg(name);
+                .arg(qApp->applicationDirPath()).arg(name);
     }
 
     // context->filename="/dev/null";
@@ -1338,6 +1353,9 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
     AVFrameSP::ptr frame_out;
 
     while(frame_out=format_converter_ff->result()) {
+        if(!context->canAcceptFrame())
+            continue;
+
         if(frame_out->d->pts==AV_NOPTS_VALUE) {
             frame_out->d->pts=context->out_stream_video.pts_next++;
 
@@ -1400,6 +1418,11 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
             restart(frame);
 
             return false;
+        }
+
+        if(++context->counter_process_events>10) {
+            context->counter_process_events=0;
+            qApp->processEvents(QEventLoop::ExcludeUserInputEvents | QEventLoop::ExcludeSocketNotifiers | QEventLoop::X11ExcludeTimers);
         }
     }
 

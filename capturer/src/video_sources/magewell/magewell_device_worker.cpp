@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -68,6 +68,9 @@ PixelFormat fromMagewellPixelFormat(uint32_t fmt)
     case MWFOURCC_P210:
         return PixelFormat::yuv422p10le;
 
+    case MWFOURCC_Y410:
+        return PixelFormat::yuv444p10;
+
     case MWFOURCC_P010:
         return PixelFormat::p010le;
 
@@ -115,6 +118,9 @@ uint32_t toMagewellPixelFormat(PixelFormat fmt)
 
     case PixelFormat::yuv422p10le:
         return MWFOURCC_P210;
+
+    case PixelFormat::v410:
+        return MWFOURCC_V410;
 
     case PixelFormat::p010le:
         return MWFOURCC_P010;

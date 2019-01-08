@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -60,6 +60,11 @@ AVPixelFormat DecodeFrom210::v210PixelFormat()
 AVPixelFormat DecodeFrom210::r210PixelFormat()
 {
     return AV_PIX_FMT_GBRP10LE;
+}
+
+AVPixelFormat DecodeFrom210::v410PixelFormat()
+{
+    return AV_PIX_FMT_YUV444P10LE;
 }
 
 bool DecodeFrom210::convert(Format::T format, uint8_t *data, int size, int width, int height, AVFrame *frame)
@@ -192,6 +197,9 @@ void Context::init()
 
     else if(format==DecodeFrom210::Format::R210)
         codec=avcodec_find_decoder(AV_CODEC_ID_R210);
+
+    else if(format==DecodeFrom210::Format::V410)
+        codec=avcodec_find_decoder(AV_CODEC_ID_V410);
 
     else
         codec=nullptr;
