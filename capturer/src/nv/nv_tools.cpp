@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -48,7 +48,11 @@ struct NvToolsPrivate
     unsigned int gpu_usage[NVAPI_MAX_PHYSICAL_GPUS][NVAPI_MAX_USAGES_PER_GPU]={ 0 };
     NV_GPU_THERMAL_SETTINGS nv_gpu_thermal_settings[NVAPI_MAX_PHYSICAL_GPUS];
 
+#ifdef __linux__
+
     QProcess *proc;
+
+#endif
 
     QMutex mutex;
 };
@@ -61,8 +65,6 @@ NvTools::NvTools(QObject *parent)
     d->lib.cuInit(0);
 
 #ifndef __linux__
-
-    d->proc.setProcessChannelMode(QProcess::MergedChannels);
 
     availableDevices();
 
@@ -222,10 +224,14 @@ void NvTools::onTimer()
 
 void NvTools::run()
 {
+#ifdef __linux__
+
     d->proc=new QProcess();
     d->proc->moveToThread(this);
     d->proc->start("nvidia-smi dmon");
     d->proc->waitForStarted();
+
+#endif
 
     //
 
@@ -239,9 +245,13 @@ void NvTools::run()
 
     exec();
 
+#ifdef __linux__
+
     d->proc->kill();
     d->proc->terminate();
     d->proc->waitForFinished();
 
     delete d->proc;
+
+#endif
 }

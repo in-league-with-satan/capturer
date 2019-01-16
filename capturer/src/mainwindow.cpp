@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -1546,69 +1546,88 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             FFSource *ff_device=static_cast<FFSource*>(*device);
 
             if(data->value==&settings_device->ff_device.index_video) {
-                ff_device->setVideoDevice(settings_model->valueData(&settings_device->ff_device.index_video).toInt());
-
                 QStringList list_values;
                 QVariantList list_values_data;
 
-                foreach(QSize val, ff_device->supportedResolutions()) {
-                    list_values << QString("%1x%2").arg(val.width()).arg(val.height());
-                    list_values_data << val;
-                }
+                qml=false;
 
-                if(settings_device->ff_device.framesize>=list_values.size()) {
-                    settings_device->ff_device.framesize=0;
-                }
-
-                settings_model->setData(&settings_device->ff_device.framesize, SettingsModel::Role::values, list_values, false, true);
-                settings_model->setData(&settings_device->ff_device.framesize, SettingsModel::Role::values_data, list_values_data, false, true);
-
-                if(settings_device->ff_device.framesize>=list_values.size())
-                    settings_device->ff_device.framesize=list_values.size() - 1;
-
-
-                if(!list_values_data.isEmpty()) {
-                    const QSize size=list_values_data.value(settings_device->ff_device.framesize).toSize();
-
-                    list_values.clear();
-                    list_values_data.clear();
-
-                    foreach(qint64 val, ff_device->supportedPixelFormats(size)) {
-                        list_values << PixelFormat::toStringView(val);
-                        list_values_data << val;
-                    }
+                if(settings_model->valueData(&settings_device->ff_device.index_video).toInt()<0) {
+                    settings_model->setData(&settings_device->ff_device.framesize, SettingsModel::Role::values, list_values, false, true);
+                    settings_model->setData(&settings_device->ff_device.framesize, SettingsModel::Role::values_data, list_values_data, false, true);
 
                     settings_model->setData(&settings_device->ff_device.pixel_format, SettingsModel::Role::values, list_values, false, true);
                     settings_model->setData(&settings_device->ff_device.pixel_format, SettingsModel::Role::values_data, list_values_data, false, true);
 
-                    if(settings_device->ff_device.pixel_format>=list_values.size())
-                        settings_device->ff_device.pixel_format=list_values.size() - 1;
-
-                    //
-
-                    list_values.clear();
-                    list_values_data.clear();
-
-                    if(!settings_model->data_p(&settings_device->ff_device.pixel_format)->values_data.isEmpty()) {
-                        foreach(AVRational val, ff_device->supportedFramerates(size, settings_model->valueData(&settings_device->ff_device.pixel_format).toLongLong())) {
-                            list_values << QString::number(Framerate::fromRational(val));
-                            list_values_data << QVariant::fromValue<AVRational>(val);
-                        }
-
-                    } else {
-                        qWarning() << "model no framerate data. pixel_format" << settings_device->ff_device.pixel_format;
-                    }
-
                     settings_model->setData(&settings_device->ff_device.framerate, SettingsModel::Role::values, list_values, false, true);
                     settings_model->setData(&settings_device->ff_device.framerate, SettingsModel::Role::values_data, list_values_data, false, true);
 
-                    if(!list_values.isEmpty()) {
-                        if(settings_device->ff_device.framerate>=list_values.size())
-                            settings_device->ff_device.framerate=list_values.size() - 1;
+                } else {
+                    ff_device->setVideoDevice(settings_model->valueData(&settings_device->ff_device.index_video).toInt());
+
+                    foreach(QSize val, ff_device->supportedResolutions()) {
+                        list_values << QString("%1x%2").arg(val.width()).arg(val.height());
+                        list_values_data << val;
                     }
 
-                } else {
-                    qInfo() << "list_values_data is empty!!!!1";
+
+                    settings_model->setData(&settings_device->ff_device.framesize, SettingsModel::Role::values, list_values, false, true);
+                    settings_model->setData(&settings_device->ff_device.framesize, SettingsModel::Role::values_data, list_values_data, false, true);
+
+                    if(settings_device->ff_device.framesize<0)
+                        settings_device->ff_device.framesize=0;
+
+                    else if(settings_device->ff_device.framesize>=list_values.size())
+                        settings_device->ff_device.framesize=list_values.size() - 1;
+
+
+                    if(!list_values_data.isEmpty()) {
+                        const QSize size=list_values_data.value(settings_device->ff_device.framesize).toSize();
+
+                        list_values.clear();
+                        list_values_data.clear();
+
+                        foreach(qint64 val, ff_device->supportedPixelFormats(size)) {
+                            list_values << PixelFormat::toStringView(val);
+                            list_values_data << val;
+                        }
+
+
+                        settings_model->setData(&settings_device->ff_device.pixel_format, SettingsModel::Role::values, list_values, false, true);
+                        settings_model->setData(&settings_device->ff_device.pixel_format, SettingsModel::Role::values_data, list_values_data, false, true);
+
+
+                        if(settings_device->ff_device.pixel_format<0)
+                            settings_device->ff_device.pixel_format=0;
+
+                        else if(settings_device->ff_device.pixel_format>=list_values.size())
+                            settings_device->ff_device.pixel_format=list_values.size() - 1;
+
+                        //
+
+                        list_values.clear();
+                        list_values_data.clear();
+
+                        if(!settings_model->data_p(&settings_device->ff_device.pixel_format)->values_data.isEmpty()) {
+                            foreach(AVRational val, ff_device->supportedFramerates(size, settings_model->valueData(&settings_device->ff_device.pixel_format).toLongLong())) {
+                                list_values << QString::number(Framerate::fromRational(val));
+                                list_values_data << QVariant::fromValue<AVRational>(val);
+                            }
+
+                        } else {
+                            qWarning() << "model no framerate data. pixel_format" << settings_device->ff_device.pixel_format;
+                        }
+
+                        settings_model->setData(&settings_device->ff_device.framerate, SettingsModel::Role::values, list_values, false, true);
+                        settings_model->setData(&settings_device->ff_device.framerate, SettingsModel::Role::values_data, list_values_data, false, true);
+
+                        if(!list_values.isEmpty()) {
+                            if(settings_device->ff_device.framerate>=list_values.size())
+                                settings_device->ff_device.framerate=list_values.size() - 1;
+                        }
+
+                    } else {
+                        qInfo() << "list_values_data is empty!!!!1";
+                    }
                 }
             }
 
@@ -1619,6 +1638,8 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
 
             if(data->value==&settings_device->ff_device.framesize) {
+                qml=false;
+
                 QSize size=data->values_data.value(settings_device->ff_device.framesize).toSize();
 
                 QStringList list_values;
@@ -1660,6 +1681,8 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             }
 
             if(data->value==&settings_device->ff_device.pixel_format) {
+                qml=false;
+
                 QSize size;
                 int64_t pixel_format=0;
 
@@ -1779,8 +1802,9 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
         checkEncoders();
     }
 
-    if(!qml)
+    if(!qml) {
         settings_model->updateQml();
+    }
 }
 
 void MainWindow::deviceStart(bool primary)
@@ -1818,13 +1842,15 @@ void MainWindow::deviceStart(bool primary)
     }
 
     if((*device)->type()==SourceInterface::Type::ffmpeg) {
-        FFSource::Device *dev=new FFSource::Device();
+        if(settings_model->valueData(&settings_device->ff_device.index_video).toInt()>=0) {
+            FFSource::Device *dev=new FFSource::Device();
 
-        dev->framerate=settings_model->valueData(&settings_device->ff_device.framerate).value<AVRational>();
-        dev->pixel_format=settings_model->valueData(&settings_device->ff_device.pixel_format, 0).toInt();
-        dev->size=settings_model->valueData(&settings_device->ff_device.framesize, QSize(640, 480)).toSize();
+            dev->framerate=settings_model->valueData(&settings_device->ff_device.framerate).value<AVRational>();
+            dev->pixel_format=settings_model->valueData(&settings_device->ff_device.pixel_format, 0).toInt();
+            dev->size=settings_model->valueData(&settings_device->ff_device.framesize, QSize(640, 480)).toSize();
 
-        (*device)->setDevice(dev);
+            (*device)->setDevice(dev);
+        }
     }
 
     if((*device)->type()==SourceInterface::Type::magewell) {

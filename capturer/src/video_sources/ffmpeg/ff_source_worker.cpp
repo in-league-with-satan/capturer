@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <QDebug>
 #include <QAudioInput>
+#include <assert.h>
 
 #include "framerate.h"
 #include "ff_format_converter.h"
@@ -154,6 +155,8 @@ void FFSourceWorker::setAudioDevice(int index)
 
 void FFSourceWorker::setConfig(QSize size, AVRational framerate, int64_t pixel_format)
 {
+    assert(framerate.num>0);
+
     cfg.size=size;
     cfg.framerate=framerate;
     cfg.pixel_format=pixel_format;

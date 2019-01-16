@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -72,6 +72,9 @@ void SnapshotListModel::add(const QString &id)
 
 void SnapshotListModel::clear()
 {
+    if(id_list.empty())
+        return;
+
     beginRemoveRows(QModelIndex(), 0, id_list.size());
 
     id_list.clear();
