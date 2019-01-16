@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -177,6 +177,7 @@ PixelFormats MagewellDevice::supportedPixelFormats()
              << PixelFormat::yuyv422
              << PixelFormat::uyvy422
              // << PixelFormat::yuv422p10le
+             << PixelFormat::v410
              << PixelFormat::p010le
              << PixelFormat::nv12;
     }

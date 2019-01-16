@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDateTime>
 #include <qcoreapplication.h>
 
+#include "ff_audio_converter.h"
 #include "audio_packet.h"
 
 #include "audio_sender.h"
@@ -33,6 +34,8 @@ AudioSender::AudioSender(QObject *parent)
 {
     frame_buffer=FrameBuffer<Frame::ptr>::make();
     frame_buffer->setMaxSize(1);
+
+    audio_converter=new AudioConverter();
 
     start(QThread::NormalPriority);
 }
@@ -46,11 +49,18 @@ AudioSender::~AudioSender()
     while(isRunning()) {
         msleep(30);
     }
+
+    delete audio_converter;
 }
 
 FrameBuffer<Frame::ptr>::ptr AudioSender::frameBuffer()
 {
     return frame_buffer;
+}
+
+void AudioSender::setSimplify(bool value)
+{
+    simplify=value;
 }
 
 void AudioSender::run()
@@ -128,14 +138,30 @@ void AudioSender::run()
             if(!frame->audio.data_ptr || !frame->audio.data_size || !frame->audio.channels || !frame->audio.sample_size)
                 continue;
 
-            ba_in=QByteArray((char*)frame->audio.data_ptr, frame->audio.data_size);
 
-            packet.channels=frame->audio.channels;
-            packet.sample_size=frame->audio.sample_size;
+            if(simplify) {
+                if(!audio_converter->compareParams(frame->audio.channels, frame->audio.sample_size==16 ? 2 : 4, 48000, 2, 2, 48000)) {
+                    audio_converter->init(av_get_default_channel_layout(frame->audio.channels), 48000, frame->audio.sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32,
+                                          AV_CH_LAYOUT_STEREO, 48000, AV_SAMPLE_FMT_S16);
+                }
+
+                if(audio_converter->isReady()) {
+                    audio_converter->convert(frame->audio.data_ptr, frame->audio.data_size, &ba_in);
+                    packet.sample_size=16;
+                    packet.channels=2;
+                }
+
+            } else {
+                ba_in=QByteArray((char*)frame->audio.data_ptr, frame->audio.data_size);
+
+                packet.sample_size=frame->audio.sample_size;
+                packet.channels=frame->audio.channels;
+            }
+
 
             if(ba_in.size()>max_raw_size) {
-                max_packets=(max_raw_size - (max_raw_size%(frame->audio.channels*frame->audio.sample_size)))/(frame->audio.channels*frame->audio.sample_size);
-                max_size=max_packets*frame->audio.channels*frame->audio.sample_size;
+                max_packets=(max_raw_size - (max_raw_size%(packet.channels*packet.sample_size)))/(packet.channels*packet.sample_size);
+                max_size=max_packets*packet.channels*packet.sample_size;
 
                 while(!ba_in.isEmpty()) {
                     packet.data=ba_in.left(max_size);
@@ -148,7 +174,7 @@ void AudioSender::run()
                 }
 
             } else {
-                packet.data=QByteArray((char*)frame->audio.data_ptr, frame->audio.data_size);
+                packet.data=QByteArray((char*)ba_in.constData(), ba_in.size());
 
                 ba_out=QJsonDocument::fromVariant(packet.toExt()).toBinaryData();
 

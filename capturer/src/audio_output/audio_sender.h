@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "frame_buffer.h"
 
+class AudioConverter;
+
 class AudioSender : public QThread
 {
     Q_OBJECT
@@ -36,13 +38,20 @@ public:
 
     FrameBuffer<Frame::ptr>::ptr frameBuffer();
 
+public slots:
+    void setSimplify(bool value);
+
 protected:
     void run();
 
 private:
     FrameBuffer<Frame::ptr>::ptr frame_buffer;
 
+    AudioConverter *audio_converter;
+
     std::atomic <bool> running;
+
+    std::atomic <bool> simplify;
 };
 
 #endif // AUDIO_RESENDER_H

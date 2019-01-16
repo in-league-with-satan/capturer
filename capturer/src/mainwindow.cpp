@@ -102,6 +102,7 @@ MainWindow::MainWindow(QObject *parent)
     //
 
     audio_sender=new AudioSender(this);
+    audio_sender->setSimplify(settings->main.simplify_audio_for_send);
 
     //
 

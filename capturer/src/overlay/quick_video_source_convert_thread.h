@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <atomic>
 
 #include "frame_buffer.h"
+#include "decode_from_210.h"
 
 class AVFrame;
 
@@ -69,6 +70,7 @@ private:
 
     FFFormatConverter *format_converter_ff;
     DecklinkFrameConverter *format_converter_dl;
+    DecodeFrom210 *from210;
 
 signals:
     void gotFrame();

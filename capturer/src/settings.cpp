@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -90,7 +90,7 @@ bool Settings::load()
 
     //
 
-    // QVariantMap map_main=map_root.value(QStringLiteral("main")).toMap();
+    QVariantMap map_main=map_root.value(QStringLiteral("main")).toMap();
     QVariantMap map_device_primary=map_root.value(QStringLiteral("device_primary")).toMap();
     QVariantMap map_device_secondary=map_root.value(QStringLiteral("device_secondary")).toMap();
     QVariantMap map_rec=map_root.value(QStringLiteral("rec")).toMap();
@@ -108,6 +108,8 @@ bool Settings::load()
     QVariantMap map_device_secondary_magewell=map_device_secondary.value(QStringLiteral("magewell")).toMap();
     QVariantMap map_device_secondary_decklink=map_device_secondary.value(QStringLiteral("decklink")).toMap();
 
+
+    main.simplify_audio_for_send=map_main.value(QStringLiteral("simplify_audio_for_send"), 0).toInt();
 
     device_primary.index=map_device_primary.value(QStringLiteral("index"), 0).toInt();
 
@@ -229,7 +231,7 @@ bool Settings::load()
 bool Settings::save()
 {
     QVariantMap map_root;
-    // QVariantMap map_main;
+    QVariantMap map_main;
     QVariantMap map_device_primary;
     QVariantMap map_device_secondary;
     QVariantMap map_rec;
@@ -246,6 +248,9 @@ bool Settings::save()
     QVariantMap map_device_secondary_ff;
     QVariantMap map_device_secondary_magewell;
     QVariantMap map_device_secondary_decklink;
+
+
+    map_main.insert(QStringLiteral("simplify_audio_for_send"), main.simplify_audio_for_send);
 
     map_device_primary_dummy.insert(QStringLiteral("framesize"), device_primary.dummy_device.framesize);
     map_device_primary_dummy.insert(QStringLiteral("show_frame_counter"), device_primary.dummy_device.show_frame_counter);
@@ -357,7 +362,7 @@ bool Settings::save()
     map_nvenc.insert(QStringLiteral("weighted_pred"), (bool)nvenc.weighted_pred);
 
 
-    // map_root.insert(QStringLiteral("main"), map_main);
+    map_root.insert(QStringLiteral("main"), map_main);
     map_root.insert(QStringLiteral("device_primary"), map_device_primary);
     map_root.insert(QStringLiteral("device_secondary"), map_device_secondary);
     map_root.insert(QStringLiteral("rec"), map_rec);

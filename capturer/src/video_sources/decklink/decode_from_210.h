@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -34,12 +34,14 @@ public:
         enum T {
             Disabled,
             V210,
-            R210
+            R210,
+            V410
         };
     };
 
     static AVPixelFormat v210PixelFormat();
     static AVPixelFormat r210PixelFormat();
+    static AVPixelFormat v410PixelFormat();
 
     bool convert(Format::T format, uint8_t *data, int size, int width, int height, AVFrame *frame);
     Frame::ptr convert(Format::T format, Frame::ptr frame);
