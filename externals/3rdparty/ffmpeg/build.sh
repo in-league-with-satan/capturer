@@ -55,7 +55,7 @@ build_nasm() {
 
   if [ ! -e nasm ]; then
     # git clone git://repo.or.cz/nasm.git
-    git clone git://repo.or.cz/nasm.git --branch nasm-2.13.03 --single-branch --depth 1
+    git clone git://repo.or.cz/nasm.git --branch nasm-2.14.02 --single-branch --depth 1
     cd nasm
     # git checkout nasm-2.13.03
 
