@@ -529,7 +529,7 @@ static QString open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost
     if(ret<0)
         return QStringLiteral("could not copy the stream parameters");
 
-   if(!ost->pkt)
+    if(!ost->pkt)
         ost->pkt=av_packet_alloc();
 
     return QStringLiteral("");
@@ -1537,6 +1537,9 @@ void FFEncoder::converterFrameSkip()
 
 void FFEncoder::calcStats()
 {
+    if(!context->canAcceptFrame())
+        return;
+
     Stats s;
 
     if(context->cfg.audio_sample_size!=0) {

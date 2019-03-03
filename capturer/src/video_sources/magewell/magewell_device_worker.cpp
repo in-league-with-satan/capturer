@@ -139,7 +139,8 @@ uint32_t toMagewellPixelFormat(PixelFormat fmt)
     return 0;
 }
 
-struct MagewellDeviceWorkerContext {
+struct MagewellDeviceWorkerContext
+{
 #ifdef LIB_MWCAPTURE
 
 #ifdef __linux__
@@ -179,8 +180,10 @@ struct MagewellDeviceWorkerContext {
     QSize frameresize;
     AVRational framerate;
 
-    int color_format=0;
-    int quantization_range=0;
+    int color_format_in=0;
+    int color_format_out=0;
+    int quantization_range_in=0;
+    int quantization_range_out=0;
 
     int pts_mode=0;
 
@@ -201,7 +204,6 @@ struct MagewellDeviceWorkerContext {
     } fps;
 
 #endif // LIB_MWCAPTURE
-
 };
 
 
@@ -333,7 +335,7 @@ bool MagewellDeviceWorker::step()
     }
 
 
-    // if(d->status_bits&MWCAP_NOTIFY_VIDEO_SIGNAL_CHANGE) {
+    // if(d->status_bits&MWCAP_NOTIFY_VIDEO_SIGNAL_CHANGE || d->status_bits&MWCAP_NOTIFY_INPUT_SPECIFIC_CHANGE) {
     //     updateVideoSignalInfo();
     // }
 
@@ -376,7 +378,7 @@ bool MagewellDeviceWorker::step()
 
         //
 
-        MWGetVideoFrameInfo((HCHANNEL)current_channel, d->video_buffer_info.iNewestBufferedFullFrame, &d->video_frame_info);
+        MWGetVideoFrameInfo((HCHANNEL)current_channel, d->low_latency ? d->video_buffer_info.iNewestBuffering : d->video_buffer_info.iNewestBufferedFullFrame, &d->video_frame_info);
 
         //
 
@@ -423,8 +425,8 @@ bool MagewellDeviceWorker::step()
                     NULL,
                     0,
                     0,
-                    (MWCAP_VIDEO_COLOR_FORMAT)d->color_format,
-                    (MWCAP_VIDEO_QUANTIZATION_RANGE)d->quantization_range,
+                    (MWCAP_VIDEO_COLOR_FORMAT)d->color_format_out,
+                    (MWCAP_VIDEO_QUANTIZATION_RANGE)d->quantization_range_out,
                     MWCAP_VIDEO_SATURATION_UNKNOWN
                     );
 
@@ -555,9 +557,11 @@ void MagewellDeviceWorker::setDevice(MagewellDevice::Device dev)
 
     d->low_latency=dev.low_latency;
 
-    d->color_format=dev.color_format;
+    d->color_format_in=dev.color_format_in;
+    d->color_format_out=dev.color_format_out;
 
-    d->quantization_range=dev.quantization_range;
+    d->quantization_range_in=dev.quantization_range_in;
+    d->quantization_range_out=dev.quantization_range_out;
 
     d->pts_mode=dev.pts_mode;
 
@@ -576,6 +580,17 @@ void MagewellDeviceWorker::deviceStart()
 
     qDebug() << "current_channel" << current_channel;
 
+    //
+
+    if(MWSetVideoInputQuantizationRange((HCHANNEL)current_channel, (MWCAP_VIDEO_QUANTIZATION_RANGE)d->quantization_range_in)!=MW_SUCCEEDED) {
+        qCritical() << "MWSetVideoInputQuantizationRange err";
+    }
+
+    if(MWSetVideoInputColorFormat((HCHANNEL)current_channel, (MWCAP_VIDEO_COLOR_FORMAT)d->color_format_in)!=MW_SUCCEEDED) {
+        qCritical() << "MWSetVideoInputColorFormat err";
+    }
+
+    //
 
     d->event_capture=MWCreateEvent();
 
@@ -601,10 +616,8 @@ void MagewellDeviceWorker::deviceStart()
     else
         d->notify_flag=MWCAP_NOTIFY_VIDEO_FRAME_BUFFERED;
 
-    // qInfo() << current_channel << d->event_notify_buffering;
-
     d->notify_event_buf=MWRegisterNotify((HCHANNEL)current_channel, d->event_buf,
-                                         d->notify_flag | MWCAP_NOTIFY_VIDEO_SIGNAL_CHANGE);
+                                         d->notify_flag | MWCAP_NOTIFY_VIDEO_SIGNAL_CHANGE | MWCAP_NOTIFY_INPUT_SPECIFIC_CHANGE);
 
     if(d->notify_event_buf==0) {
         qCritical() << "MWRegisterNotify err";
@@ -617,8 +630,6 @@ void MagewellDeviceWorker::deviceStart()
         qCritical() << "MWStartVideoCapture err";
         goto stop;
     }
-
-    // updateVideoSignalInfo();
 
     //
 

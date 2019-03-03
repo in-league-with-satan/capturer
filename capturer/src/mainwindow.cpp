@@ -1079,16 +1079,23 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
         //
 
         set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="color format";
+        set_model_data.name="color format in";
 
         for(int i=0; i<MagewellDevice::Device::ColorFormat::size; ++i) {
             set_model_data.values << MagewellDevice::Device::ColorFormat::toString(i);
             set_model_data.values_data << i;
         }
 
-        set_model_data.value=&settings_device->magewell.color_format;
+        set_model_data.value=&settings_device->magewell.color_format_in;
 
         settings_model->insert(&settings_device->magewell.framesize, set_model_data);
+
+        //
+
+        set_model_data.name="color format out";
+        set_model_data.value=&settings_device->magewell.color_format_out;
+
+        settings_model->insert(&settings_device->magewell.color_format_in, set_model_data);
 
         //
 
@@ -1098,16 +1105,23 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
         //
 
         set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="quantization range";
+        set_model_data.name="quantization range in";
 
         for(int i=0; i<MagewellDevice::Device::QuantizationRange::size; ++i) {
             set_model_data.values << MagewellDevice::Device::QuantizationRange::toString(i);
             set_model_data.values_data << i;
         }
 
-        set_model_data.value=&settings_device->magewell.quantization_range;
+        set_model_data.value=&settings_device->magewell.quantization_range_in;
 
-        settings_model->insert(&settings_device->magewell.color_format, set_model_data);
+        settings_model->insert(&settings_device->magewell.color_format_out, set_model_data);
+
+        //
+
+        set_model_data.name="quantization range out";
+        set_model_data.value=&settings_device->magewell.quantization_range_out;
+
+        settings_model->insert(&settings_device->magewell.quantization_range_in, set_model_data);
 
         //
 
@@ -1126,7 +1140,7 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->magewell.pts_mode;
 
-        settings_model->insert(&settings_device->magewell.quantization_range, set_model_data);
+        settings_model->insert(&settings_device->magewell.quantization_range_out, set_model_data);
 
         //
 
@@ -1719,6 +1733,8 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
     if(data->value==&settings->rec.encoder_video) {
         // pix_fmt
 
+        qml=false;
+
         if(settings->rec.encoder_video>=data->values_data.size())
             settings->rec.encoder_video=data->values_data.size() - 1;
 
@@ -1867,8 +1883,10 @@ void MainWindow::deviceStart(bool primary)
 
         dev->pixel_format=settings_model->valueData(&settings_device->magewell.pixel_format, PixelFormat::nv12).toInt();;
         dev->framesize=settings_model->valueData(&settings_device->magewell.framesize, QSize()).value<QSize>();
-        dev->color_format=(MagewellDevice::Device::ColorFormat::T)settings_device->magewell.color_format;
-        dev->quantization_range=(MagewellDevice::Device::QuantizationRange::T)settings_device->magewell.quantization_range;
+        dev->color_format_in=(MagewellDevice::Device::ColorFormat::T)settings_device->magewell.color_format_in;
+        dev->color_format_out=(MagewellDevice::Device::ColorFormat::T)settings_device->magewell.color_format_out;
+        dev->quantization_range_in=(MagewellDevice::Device::QuantizationRange::T)settings_device->magewell.quantization_range_in;
+        dev->quantization_range_out=(MagewellDevice::Device::QuantizationRange::T)settings_device->magewell.quantization_range_out;
         dev->pts_mode=settings_device->magewell.pts_mode;
         dev->low_latency=settings_device->magewell.low_latency;
         dev->half_fps=settings_device->magewell.half_fps;

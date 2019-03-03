@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@ ShowHideRect {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             color: "white"
-            font.pixelSize: root.height*.8
+            font.pixelSize: root.height*.7
             font.bold: true
             style: Text.Outline
             text: ""

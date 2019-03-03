@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -123,8 +123,10 @@ public:
             }
         };
 
-        ColorFormat::T color_format=ColorFormat::unknown;
-        QuantizationRange::T quantization_range=QuantizationRange::unknown;
+        ColorFormat::T color_format_in=ColorFormat::unknown;
+        ColorFormat::T color_format_out=ColorFormat::unknown;
+        QuantizationRange::T quantization_range_in=QuantizationRange::unknown;
+        QuantizationRange::T quantization_range_out=QuantizationRange::unknown;
 
         QString name;
         QString path;

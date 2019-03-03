@@ -73,8 +73,10 @@ public:
             int index=0;
             int pixel_format=0;
             int framesize=0;
-            int color_format=0;
-            int quantization_range=0;
+            int color_format_in=0;
+            int color_format_out=0;
+            int quantization_range_in=0;
+            int quantization_range_out=0;
             int audio_remap_mode=0;
             int low_latency=0;
             int half_fps=0;
