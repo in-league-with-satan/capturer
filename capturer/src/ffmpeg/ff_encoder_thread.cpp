@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,9 +24,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "ff_encoder_thread.h"
 
-FFEncoderThread::FFEncoderThread(FFEncoder::Mode::T mode, FFEncoderBaseFilename *base_filename, QString encoding_tool_name, QObject *parent)
+FFEncoderThread::FFEncoderThread(FFEncoder::Mode::T mode, FFEncoderBaseFilename *base_filename, QString store_dir, QString encoding_tool_name, QObject *parent)
     : QThread(parent)
     , base_filename(base_filename)
+    , store_dir(store_dir)
     , encoding_tool_name(encoding_tool_name)
     , mode(mode)
 {
@@ -111,6 +112,7 @@ void FFEncoderThread::run()
     connect(this, SIGNAL(restartIn()), ffmpeg, SLOT(restartExt()), Qt::QueuedConnection);
 
 
+    ffmpeg->setStoreDir(store_dir);
     ffmpeg->setBaseFilename(base_filename);
     ffmpeg->setEncodingToolName(encoding_tool_name);
 

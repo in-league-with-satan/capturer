@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ class FFEncoderThread : public QThread
     Q_OBJECT
 
 public:
-    FFEncoderThread(FFEncoder::Mode::T mode=FFEncoder::Mode::primary, FFEncoderBaseFilename *base_filename=0, QString encoding_tool_name=QString(), QObject *parent=0);
+    FFEncoderThread(FFEncoder::Mode::T mode, FFEncoderBaseFilename *base_filename, QString store_dir, QString encoding_tool_name, QObject *parent=0);
     ~FFEncoderThread();
 
     FrameBuffer <Frame::ptr>::ptr frameBuffer();
@@ -53,6 +53,7 @@ private:
 
     std::atomic <bool> running;
 
+    QString store_dir;
     FFEncoderBaseFilename *base_filename;
     QString encoding_tool_name;
     FFEncoder::Mode::T mode;

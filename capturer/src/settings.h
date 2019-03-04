@@ -43,6 +43,7 @@ public:
         int dummy;
         int headless=0;
         int simplify_audio_for_send=0;
+        QString loacation_videos;
 
     } main;
 

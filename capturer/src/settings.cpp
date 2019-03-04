@@ -26,6 +26,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "data_types.h"
 #include "dialog_keyboard_shortcuts.h"
+#include "store_location.h"
 
 #include "settings.h"
 
@@ -49,7 +50,7 @@ Settings *Settings::instance()
 
 QString filename()
 {
-    return qApp->applicationDirPath() + "/capturer.json";
+    return store_location->config() + "/capturer.json";
 }
 
 //
@@ -110,6 +111,7 @@ bool Settings::load()
 
 
     main.simplify_audio_for_send=map_main.value(QStringLiteral("simplify_audio_for_send"), 0).toInt();
+    main.loacation_videos=map_main.value(QStringLiteral("loacation_videos"), store_location->videos()).toString();
 
     device_primary.index=map_device_primary.value(QStringLiteral("index"), 0).toInt();
 
@@ -253,6 +255,7 @@ bool Settings::save()
 
 
     map_main.insert(QStringLiteral("simplify_audio_for_send"), main.simplify_audio_for_send);
+    map_main.insert(QStringLiteral("loacation_videos"), main.loacation_videos);
 
     map_device_primary_dummy.insert(QStringLiteral("framesize"), device_primary.dummy_device.framesize);
     map_device_primary_dummy.insert(QStringLiteral("show_frame_counter"), device_primary.dummy_device.show_frame_counter);

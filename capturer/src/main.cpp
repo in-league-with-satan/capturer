@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "decklink_tools.h"
 #include "data_types.h"
 #include "mainwindow.h"
+#include "store_location.h"
 #include "settings.h"
 
 #ifdef __linux__
@@ -166,7 +167,11 @@ int main(int argc, char *argv[])
 
     initLibAV();
 
+    StoreLocation::createInstance();
+
     Settings::createInstance();
+
+    qputenv("QML_DISABLE_DISK_CACHE", "true");
 
     root_obj=new MainWindow();
 

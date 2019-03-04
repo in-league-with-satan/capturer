@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -194,6 +194,7 @@ public:
     static QString colorTransferCharacteristicToString(int value);
 
     void setEncodingToolName(const QString &encoding_tool);
+    void setStoreDir(const QString &dir);
     void setBaseFilename(FFEncoderBaseFilename *bf);
 
     QString lastErrorString() const;

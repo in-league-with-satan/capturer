@@ -113,6 +113,7 @@ public:
 
     qint64 last_stats_update_time;
 
+    QString store_dir;
     FFEncoderBaseFilename *base_filename;
     FFEncoder::Mode::T mode;
 
@@ -982,6 +983,11 @@ void FFEncoder::setEncodingToolName(const QString &encoding_tool)
     this->encoding_tool=encoding_tool;
 }
 
+void FFEncoder::setStoreDir(const QString &dir)
+{
+    context->store_dir=dir;
+}
+
 void FFEncoder::setBaseFilename(FFEncoderBaseFilename *bf)
 {
     context->base_filename=bf;
@@ -1199,8 +1205,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             name+=QLatin1String("_second");
 
 
-        context->filename=QString(QLatin1String("%1/videos/%2.mkv"))
-                .arg(qApp->applicationDirPath()).arg(name);
+        context->filename=QString(QLatin1String("%1/%2.mkv"))
+                .arg(context->store_dir).arg(name);
     }
 
     // context->filename="/dev/null";

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QFileInfo>
 #include <qcoreapplication.h>
 
+#include "store_location.h"
+
 #include "database.h"
 
 #define OnlyFilename(str) QFileInfo(str).fileName().toLower().toUtf8()
@@ -36,7 +38,7 @@ Database::Database(QObject *parent)
 
     QSqlDatabase db=QSqlDatabase::addDatabase("QSQLITE", dbname);
 
-    db.setDatabaseName(qApp->applicationDirPath() + "/capturer.sqlite");
+    db.setDatabaseName(store_location->temp() + "/capturer.sqlite");
 
     bool db_state=db.open();
 
