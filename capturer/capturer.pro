@@ -32,9 +32,21 @@ CONFIG += c++14
 DESTDIR = $$PWD/../bin
 
 
-GIT_VERSION = $$system(git --git-dir $$PWD/../.git --work-tree $$PWD describe --always --tags)
-DEFINES += VERSION_STRING=\\\"$$GIT_VERSION\\\"
+GIT_BRANCH = $$system(git --git-dir $$PWD/../.git rev-parse --abbrev-ref HEAD)
+GIT_LAST_TAG = $$system(git --git-dir $$PWD/../.git describe --abbrev=0 --tags)
+GIT_CMT_COUNT = $$system(git --git-dir $$PWD/../.git rev-list '$$GIT_LAST_TAG'.. --count)
 
+equals(GIT_BRANCH, master) {
+    VERSION = $$GIT_LAST_TAG"."$$GIT_CMT_COUNT
+
+} else {
+    #GIT_VERSION = $$system(git --git-dir $$PWD/../.git describe --always --tags)
+    VERSION = $$GIT_LAST_TAG"."-1
+}
+
+DEFINES += VERSION_STRING=\\\"$$VERSION\\\"
+
+#message(v$$VERSION)
 
 LINK_OPT=shared
 BUILD_OPT=release
@@ -70,6 +82,10 @@ linux {
 
 windows {
     DEFINES -= USE_PULSE_AUDIO
+
+    RC_ICONS += $$PWD/../icon/capturer.ico
+    QMAKE_TARGET = "capturer v$$VERSION"
+    QMAKE_TARGET_DESCRIPTION = "capturer"
 }
 
 
