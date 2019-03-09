@@ -1,0 +1,78 @@
+function onLoad()
+{
+    if(window.location.href.split('?').length>1) {
+        window.location.replace(location.pathname);
+    }
+
+    loadData();
+
+    setInterval('loadData()', 1000);
+}
+
+function loadData()
+{
+    var request=new XMLHttpRequest();
+    request.open('GET', 'http://' + window.location.host + '/data');
+
+    request.onreadystatechange=function () {
+        if(request.status!=200) {
+            document.getElementById('input_format').innerHTML=' offline';
+            document.getElementById('nv_stats').style.visibility='hidden';
+            document.getElementById('rec_stats').style.visibility='hidden';
+            document.getElementById('button_rec').innerHTML='start rec';
+        }
+    }
+
+    request.onload=function() {
+        var data=JSON.parse(request.responseText);
+
+        document.getElementById('input_format').innerHTML=' ' + data.input_format;
+
+        if(data.nv_state.dev_name.length) {
+            if(document.getElementById('nv_stats')!=null) {
+                var nv_state=data.nv_state;
+
+                document.getElementById('nv_stats').style.visibility='visible';
+
+                document.getElementById('nv_dev_name').innerHTML=nv_state.dev_name;
+                document.getElementById('nv_temperature').innerHTML=nv_state.temperature + '℃';
+                document.getElementById('nv_gpu').innerHTML=nv_state.graphic_processing_unit + '%';
+                document.getElementById('nv_mcu').innerHTML=nv_state.memory_controller_unit + '%';
+                document.getElementById('nv_vpu').innerHTML=nv_state.video_processing_unit + '%';
+            }
+
+        } else {
+            if(document.getElementById('nv_stats')!=null) {
+                document.getElementById('nv_stats').style.visibility='hidden';
+            }
+        }
+
+        if(data.rec_stats.time==null) {
+            document.getElementById('rec_stats').style.visibility='hidden';
+            document.getElementById('button_rec').innerHTML='start rec';
+
+        } else {
+            document.getElementById('rec_stats').style.visibility='visible';
+
+            document.getElementById('button_rec').innerHTML='stop rec';
+
+            var rec_stats=data.rec_stats;
+
+            document.getElementById('time').innerHTML=rec_stats.time.substring(0, 8);
+            document.getElementById('free_space').innerHTML=(data.free_space/1024/1024).toFixed(0) + ' MB';
+            document.getElementById('size').innerHTML=(rec_stats.size/1024/1024).toFixed(0) + ' MB';
+            document.getElementById('avg_bitrate').innerHTML=(rec_stats.avg_bitrate/8/1024/1024).toFixed(2) + ' MB/s';
+            document.getElementById('frame_buffer').innerHTML=rec_stats.frame_buffer_used + '/' + rec_stats.frame_buffer_size;
+            document.getElementById('frames_dropped').innerHTML=rec_stats.dropped_frames_counter;
+        }
+    };
+
+    request.send();
+}
+
+function sendCmd(key_code)
+{
+    var request=new XMLHttpRequest();
+    request.open('GET', 'http://' + window.location.host + '/index?key_code=' + key_code);
+    request.send();
+}

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -108,8 +108,10 @@ struct NRecStats {
     quint32 dropped_frames_counter;
     quint16 frame_buffer_size;
     quint16 frame_buffer_used;
+    QVariantMap bitrate_video;
 
-    NRecStats(QTime time=QTime(), double avg_bitrate=0., quint64 size=0, quint32 dropped_frames_counter=0, quint16 frame_buffer_size=0, quint16 frame_buffer_used=0);
+    NRecStats(QTime time=QTime(), double avg_bitrate=0., QVariantMap bitrate_video=QVariantMap(), quint64 size=0,
+                quint32 dropped_frames_counter=0, quint16 frame_buffer_size=0, quint16 frame_buffer_used=0);
 
     bool isNull() const;
 

@@ -129,7 +129,9 @@ HEADERS += \
 
 RESOURCES += \
     $$PWD/qml.qrc \
-    $$PWD/images.qrc
+    $$PWD/images.qrc \
+    $$PWD/html.qrc
 
 OTHER_FILES += \
     $$PWD/qml/*.qml
+    $$PWD/html/*

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -130,6 +130,7 @@ HttpServer::HttpServer(quint16 port, QObject *parent)
                                    [&](QHttpRequest *req, QHttpResponse *res) {
         if(req->method()==qhttp::THttpMethod::EHTTP_GET) {
             res->setStatusCode(qhttp::ESTATUS_OK);
+            res->addHeaderValue<QString>("Access-Control-Allow-Origin", "*");
 
             QUrlQuery url=QUrlQuery(req->url());
 
@@ -152,7 +153,17 @@ HttpServer::HttpServer(quint16 port, QObject *parent)
             }
 
             if(str_url.contains(QStringLiteral("index.css"), Qt::CaseInsensitive)) {
-                res->end(cssIndex());
+                res->end(getResource(QStringLiteral(":/html/index.css")));
+                return;
+            }
+
+            if(str_url.contains(QStringLiteral("index.js"), Qt::CaseInsensitive)) {
+                res->end(getResource(QStringLiteral(":/html/index.js.txt")));
+                return;
+            }
+
+            if(str_url.contains(QStringLiteral("br.js"), Qt::CaseInsensitive)) {
+                res->end(getResource(QStringLiteral(":/html/bitrate.js.txt")));
                 return;
             }
 
@@ -168,6 +179,11 @@ HttpServer::HttpServer(quint16 port, QObject *parent)
                     checkSettings(queryListToMap(url.queryItems()));
 
                 res->end(pageSettings());
+                return;
+            }
+
+            if(str_url.contains(QStringLiteral("bitrate"), Qt::CaseInsensitive)) {
+                res->end(getResource(QStringLiteral(":/html/bitrate.html")));
                 return;
             }
 
@@ -236,92 +252,19 @@ QByteArray HttpServer::pageIndex()
     QString page;
 
     page+=QStringLiteral("<html><head><meta http-equiv=\"content-type\" content=\"text/html; charset=UTF-8\"><title>capturer::state</title>"
-                         "<link rel='stylesheet' type='text/css' href='index.css'>"
+                         "<link rel='stylesheet' type='text/css' href='index.css'>");
+
+    page+=QStringLiteral("<script src='index.js'></script>"
                          "</head>");
-    page+=QStringLiteral("<script>");
-
-    page+=QStringLiteral("function onLoad() {\n"
-                         "  if(window.location.href.split(\"?\").length>1) {\n"
-                         "    window.location.replace(location.pathname);\n"
-                         "  }\n"
-                         "  loadData();\n"
-                         "  setInterval('loadData()', 1000);\n"
-                         "}\n");
-
-    page+=QStringLiteral("function loadData() {\n"
-                         "  var request=new XMLHttpRequest();\n"
-                         "  request.open('GET', 'http://' + window.location.host + '/data');\n"
-
-                         "  request.onreadystatechange=function () {\n"
-                         "    if(request.status!=200) {\n"
-                         "      document.getElementById('input_format').innerHTML=' offline';\n"
-                         "      document.getElementById('nv_stats').style.visibility='hidden';\n"
-                         "      document.getElementById('rec_stats').style.visibility='hidden';\n"
-                         "      document.getElementById('button_rec').innerHTML='start rec';\n"
-                         "    }\n"
-                         "  }\n"
-
-                         "  request.onload=function() {\n"
-
-                         "    var data=JSON.parse(request.responseText);\n"
-
-                         "    document.getElementById('input_format').innerHTML=' ' + data.input_format;\n"
-
-                         "    if(data.nv_state.dev_name.length) {\n"
-                         "      if(document.getElementById('nv_stats')!=null) {"
-                         "        var nv_state=data.nv_state;"
-
-                         "        document.getElementById('nv_stats').style.visibility='visible';\n"
-
-                         "        document.getElementById('nv_dev_name').innerHTML=nv_state.dev_name;\n"
-                         "        document.getElementById('nv_temperature').innerHTML=nv_state.temperature + '℃';\n"
-                         "        document.getElementById('nv_gpu').innerHTML=nv_state.graphic_processing_unit + '%';\n"
-                         "        document.getElementById('nv_mcu').innerHTML=nv_state.memory_controller_unit + '%';\n"
-                         "        document.getElementById('nv_vpu').innerHTML=nv_state.video_processing_unit + '%';\n"
-                         "      }"
-
-                         "    } else {\n"
-                         "      if(document.getElementById('nv_stats')!=null) {"
-                         "        document.getElementById('nv_stats').style.visibility='hidden';\n"
-                         "      }"
-                         "    }\n"
-
-                         "    if(data.rec_stats.time==null) {\n"
-                         "      document.getElementById('rec_stats').style.visibility='hidden';\n"
-                         "      document.getElementById('button_rec').innerHTML='start rec';\n"
-
-                         "    } else {\n"
-                         "      document.getElementById('rec_stats').style.visibility='visible';\n"
-
-                         "      document.getElementById('button_rec').innerHTML='stop rec';\n"
-
-                         "      var rec_stats=data.rec_stats;\n"
-
-                         "      document.getElementById('time').innerHTML=rec_stats.time.substring(0, 8);\n"
-                         "      document.getElementById('free_space').innerHTML=(data.free_space/1024/1024).toFixed(0) + ' MB';\n"
-                         "      document.getElementById('size').innerHTML=(rec_stats.size/1024/1024).toFixed(0) + ' MB';\n"
-                         "      document.getElementById('avg_bitrate').innerHTML=(rec_stats.avg_bitrate/8/1024/1024).toFixed(2) + ' MB/s';\n"
-                         "      document.getElementById('frame_buffer').innerHTML=rec_stats.frame_buffer_used + '/' + rec_stats.frame_buffer_size;\n"
-                         "      document.getElementById('frames_dropped').innerHTML=rec_stats.dropped_frames_counter;\n"
-                         "    }\n"
-                         "  };\n"
-
-                         "  request.send();\n"
-                         "}\n"
-                         );
-
-    page+=QStringLiteral("function sendCmd(key_code) {\n"
-                         "  var request=new XMLHttpRequest();\n"
-                         "  request.open('GET', 'http://' + window.location.host + '/index?key_code=' + key_code);\n"
-                         "  request.send();\n"
-                         "}\n");
-
-    page+=QStringLiteral("</script>");
 
     page+=QStringLiteral("<body class='root' onload='onLoad();'>");
 
 
-    page+=QStringLiteral("<div class='row_1'><form><button style='width:128' type='reset' onclick=\"location.href='/settings'\">settings</button></form></div>");
+    page+=QStringLiteral("<div class='row_1'><form><button style='width:128' type='reset' onclick=\"location.href='/settings'\">settings</button>&nbsp;"
+                         "<button style='width:128' type='reset' onclick=\"location.href='/bitrate'\">bitrate</button>"
+                         "</form></div>");
+
+
 
     page+=QString("<button class='button_rec' id='button_rec' onclick='sendCmd(%1);'></button>").arg(KeyCodeC::Rec);
 
@@ -467,7 +410,7 @@ QByteArray HttpServer::pageSettings()
     TableBuilder table_builder;
 
 
-    page+=QStringLiteral("<form><br><center><button style='width:128' type='reset' onclick=\"location.href='/'\">home</button></center><br></form>");
+    page+=QStringLiteral("<form><br><center><button style='width:128' type='reset' onclick=\"location.href='/'\">home</button></center></form>");
 
     page+=QStringLiteral("<form method='GET' action=''>");
 
@@ -556,61 +499,18 @@ QByteArray HttpServer::favicon()
     return d;
 }
 
-QByteArray HttpServer::cssIndex()
+QByteArray HttpServer::getResource(const QString &name)
 {
-    static QByteArray d;
+    static QMap <QString, QByteArray> res;
 
-    if(d.isEmpty()) {
-        d+=
-                ".root {"
-                "  background: linear-gradient(200deg, #c05c7c, #d56a59);"
-                "  display: grid;"
-                "  grid-template-columns: repeat(3, 1fr);"
-                "  grid-template-rows: repeat(3, 1fr);"
-                "  color: white;"
-                "  text-shadow: black 0.1em 0.1em 0.2em;"
-                "}"
+    if(res.contains(name))
+        return res.value(name);
 
-                ".button_rec {"
-                "  grid-column: 2;"
-                "  grid-row: 2;"
-                "  align-self: center;"
-                "  justify-self: center;"
-                "  // cursor: none;"
-                "  outline: none;"
-                "  background: radial-gradient(#aa0000, #bb0000, #ff0000);"
-                "  border-radius: 50%;"
-                "  border-width: 14px;"
-                "  border-color: #ff4242 #ff0000 #dd0000;"
-                "  padding: 64px;"
-                "  color: white;"
-                "  font-size: 20px;"
-                "  height: 240px;"
-                "  width: 240px;"
-                "}"
+    QFile f(name);
+    f.open(QFile::ReadOnly);
+    res[name]=f.readAll();
 
-                ".button_rec:active {"
-                "  border-width: 4px;"
-                "  font-size: 18px;"
-                "}"
-
-                ".row_1 {"
-                "  grid-column: 2;"
-                "  grid-row: 1;"
-                "  align-self: center;"
-                "  justify-self: center;"
-                "}"
-
-                ".row_3 {"
-                "  grid-column: 2;"
-                "  grid-row: 3;"
-                "  align-self: center;"
-                "  justify-self: center;"
-                "}"
-                ;
-    }
-
-    return d;
+    return res.value(name);
 }
 
 void HttpServer::checkSettings(QMap <QString, QString> new_settings)

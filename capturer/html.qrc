@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>html/bitrate.html</file>
+        <file>html/bitrate.js.txt</file>
+        <file>html/index.css</file>
+        <file>html/index.js.txt</file>
+    </qresource>
+</RCC>
