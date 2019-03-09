@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ public:
     void stopThread();
 
     bool setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst,
+               int color_space_src, int color_space_dst, int color_range_src, int color_range_dst,
                FFFormatConverter::Filter::T filter=FFFormatConverter::Filter::cNull,
                DecodeFrom210::Format::T format_210=DecodeFrom210::Format::Disabled);
 

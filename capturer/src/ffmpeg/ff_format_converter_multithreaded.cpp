@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -64,12 +64,13 @@ void FFFormatConverterMt::resetQueues()
 }
 
 bool FFFormatConverterMt::setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst,
+                                int color_space_src, int color_space_dst, int color_range_src, int color_range_dst,
                                 FFFormatConverter::Filter::T filter, DecodeFrom210::Format::T format_210)
 {
     index_thread_src=0;
     index_thread_dst=0;
 
-    if(compareParams(format_src, resolution_src, format_dst, resolution_dst, filter, format_210))
+    if(compareParams(format_src, resolution_src, format_dst, resolution_dst, color_space_src, color_space_dst, color_range_src, color_range_dst, filter, format_210))
         return true;
 
     qDebug() << "formats:" << av_get_pix_fmt_name(format_src) << av_get_pix_fmt_name(format_dst);
@@ -80,6 +81,12 @@ bool FFFormatConverterMt::setup(AVPixelFormat format_src, QSize resolution_src, 
     this->resolution_src=resolution_src;
     this->resolution_dst=resolution_dst;
 
+    this->color_space_src=color_space_src;
+    this->color_space_dst=color_space_dst;
+
+    this->color_range_src=color_range_src;
+    this->color_range_dst=color_range_dst;
+
     this->filter=filter;
 
     this->format_210=format_210;
@@ -87,7 +94,7 @@ bool FFFormatConverterMt::setup(AVPixelFormat format_src, QSize resolution_src, 
     bool result=true;
 
     for(int i=0; i<thread.size(); ++i) {
-        if(!thread[i]->setup(format_src, resolution_src, format_dst, resolution_dst, filter, format_210))
+        if(!thread[i]->setup(format_src, resolution_src, format_dst, resolution_dst, color_space_src, color_space_dst, color_range_src, color_range_dst, filter, format_210))
             result=false;
     }
 
@@ -95,10 +102,12 @@ bool FFFormatConverterMt::setup(AVPixelFormat format_src, QSize resolution_src, 
 }
 
 bool FFFormatConverterMt::compareParams(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst,
+                                        int color_space_src, int color_space_dst, int color_range_src, int color_range_dst,
                                         FFFormatConverter::Filter::T filter, DecodeFrom210::Format::T format_210)
 {
     if(this->format_src==format_src && this->format_dst==format_dst
             && this->resolution_src==resolution_src && this->resolution_dst==resolution_dst
+            && this->color_space_src==color_space_src && this->color_space_dst==color_space_dst && this->color_range_src==color_range_src && this->color_range_dst==color_range_dst
             && this->filter==filter
             && this->format_210==format_210)
         return true;

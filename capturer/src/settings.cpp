@@ -179,6 +179,10 @@ bool Settings::load()
     rec.color_primaries=map_rec.value(QStringLiteral("color_primaries"), 0).toInt();
     rec.color_space=map_rec.value(QStringLiteral("color_space"), 0).toInt();
     rec.color_transfer_characteristic=map_rec.value(QStringLiteral("color_transfer_characteristic"), 0).toInt();
+    rec.sws_color_space_src=map_rec.value(QStringLiteral("sws_color_space_src"), 0).toInt();
+    rec.sws_color_space_dst=map_rec.value(QStringLiteral("sws_color_space_dst"), 0).toInt();
+    rec.sws_color_range_src=map_rec.value(QStringLiteral("sws_color_range_src"), 0).toInt();
+    rec.sws_color_range_dst=map_rec.value(QStringLiteral("sws_color_range_dst"), 0).toInt();
 
 #ifdef LIB_QHTTP
     http_server.enabled=map_http_server.value(QStringLiteral("enabled"), true).toBool();
@@ -333,6 +337,11 @@ bool Settings::save()
     map_rec.insert(QStringLiteral("color_primaries"), rec.color_primaries);
     map_rec.insert(QStringLiteral("color_space"), rec.color_space);
     map_rec.insert(QStringLiteral("color_transfer_characteristic"), rec.color_transfer_characteristic);
+
+    map_rec.insert(QStringLiteral("sws_color_space_src"), rec.sws_color_space_src);
+    map_rec.insert(QStringLiteral("sws_color_space_dst"), rec.sws_color_space_dst);
+    map_rec.insert(QStringLiteral("sws_color_range_src"), rec.sws_color_range_src);
+    map_rec.insert(QStringLiteral("sws_color_range_dst"), rec.sws_color_range_dst);
 
 
 #ifdef LIB_QHTTP
