@@ -145,6 +145,12 @@ public:
         AVRational framerate_force={ 0, 0 };
         uint32_t input_type_flags=0;
 
+        int sws_color_space_src=SWS_CS_DEFAULT;
+        int sws_color_space_dst=SWS_CS_DEFAULT;
+
+        int sws_color_range_src=AVCOL_RANGE_UNSPECIFIED;
+        int sws_color_range_dst=AVCOL_RANGE_UNSPECIFIED;
+
         int color_primaries=-1;
         int color_space=-1;
         int color_transfer_characteristic=-1;

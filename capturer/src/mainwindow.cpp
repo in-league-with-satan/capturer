@@ -480,11 +480,63 @@ MainWindow::MainWindow(QObject *parent)
     //
 
     set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="scale filter";
+    set_model_data.name="sws scale filter";
     set_model_data.value=&settings->rec.scale_filter;
 
     for(int i=0; i<=FFEncoder::ScaleFilter::Spline; i++)
         set_model_data.values << FFEncoder::ScaleFilter::toString(i);
+
+    settings_model->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="sws color space src";
+    set_model_data.value=&settings->rec.sws_color_space_src;
+
+    for(int i=0; i<swsColorSpace::size; ++i)
+        set_model_data.values << swsColorSpace::toString(i);
+
+    settings_model->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="sws color space dst";
+    set_model_data.value=&settings->rec.sws_color_space_dst;
+
+    for(int i=0; i<swsColorSpace::size; ++i)
+        set_model_data.values << swsColorSpace::toString(i);
+
+    settings_model->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="sws color range src";
+    set_model_data.value=&settings->rec.sws_color_range_src;
+
+    for(int i=0; i<swsColorRange::size; ++i)
+        set_model_data.values << swsColorRange::toString(i);
+
+    settings_model->add(set_model_data);
+
+    set_model_data.values.clear();
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="sws color range dst";
+    set_model_data.value=&settings->rec.sws_color_range_dst;
+
+    for(int i=0; i<swsColorRange::size; ++i)
+        set_model_data.values << swsColorRange::toString(i);
 
     settings_model->add(set_model_data);
 
@@ -1979,6 +2031,10 @@ void MainWindow::startStopRecording()
             cfg.color_primaries=settings_model->valueData(&settings->rec.color_primaries).toInt();
             cfg.color_space=settings_model->valueData(&settings->rec.color_space).toInt();
             cfg.color_transfer_characteristic=settings_model->valueData(&settings->rec.color_transfer_characteristic).toInt();
+            cfg.sws_color_space_src=swsColorSpace::toff(settings->rec.sws_color_space_src);
+            cfg.sws_color_space_dst=swsColorSpace::toff(settings->rec.sws_color_space_dst);
+            cfg.sws_color_range_src=swsColorRange::toff(settings->rec.sws_color_range_src);
+            cfg.sws_color_range_dst=swsColorRange::toff(settings->rec.sws_color_range_dst);
             cfg.nvenc=settings->nvenc;
             cfg.audio_flac=settings->rec.encoder_audio==1;
             cfg.input_type_flags=device_primary->typeFlags();

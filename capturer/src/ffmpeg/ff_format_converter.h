@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -51,9 +51,13 @@ public:
         };
     };
 
-    bool setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, Filter::T filter=Filter::cNull);
+    bool setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst,
+               int color_space_src=SWS_CS_DEFAULT, int color_space_dst=SWS_CS_DEFAULT, int color_range_src=AVCOL_RANGE_UNSPECIFIED, int color_range_dst=AVCOL_RANGE_UNSPECIFIED,
+               Filter::T filter=Filter::cNull);
 
-    bool compareParams(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, Filter::T filter=Filter::cNull);
+    bool compareParams(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst,
+                       int color_space_src=SWS_CS_DEFAULT, int color_space_dst=SWS_CS_DEFAULT, int color_range_src=AVCOL_RANGE_UNSPECIFIED, int color_range_dst=AVCOL_RANGE_UNSPECIFIED,
+                       Filter::T filter=Filter::cNull);
 
     AVPixelFormat formatSrc() const;
     AVPixelFormat formatDst() const;
@@ -70,6 +74,12 @@ private:
 
     QSize resolution_src;
     QSize resolution_dst;
+
+    int color_space_src;
+    int color_space_dst;
+
+    int color_range_src;
+    int color_range_dst;
 
     Filter::T filter;
 

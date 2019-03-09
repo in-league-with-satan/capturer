@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -33,9 +33,11 @@ FFFormatConverter::~FFFormatConverter()
     free();
 }
 
-bool FFFormatConverter::setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, FFFormatConverter::Filter::T filter)
+bool FFFormatConverter::setup(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst,
+                              int color_space_src, int color_space_dst, int color_range_src, int color_range_dst,
+                              FFFormatConverter::Filter::T filter)
 {
-    if(compareParams(format_src, resolution_src, format_dst, resolution_dst, filter))
+    if(compareParams(format_src, resolution_src, format_dst, resolution_dst, color_space_src, color_space_dst, color_range_src, color_range_dst, filter))
         return true;
 
     free();
@@ -54,15 +56,20 @@ bool FFFormatConverter::setup(AVPixelFormat format_src, QSize resolution_src, AV
                                    format_dst,
                                    filter, nullptr, nullptr, nullptr);
 
+    sws_setColorspaceDetails(convert_context, sws_getCoefficients(color_space_src), color_range_src, sws_getCoefficients(color_space_dst), color_range_dst, 0, 1 << 16, 1 << 16);
+
     qDebug().noquote() << "convert_context ptr" << QString::number((quintptr)convert_context, 16);
 
     return convert_context!=nullptr;
 }
 
-bool FFFormatConverter::compareParams(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst, FFFormatConverter::Filter::T filter)
+bool FFFormatConverter::compareParams(AVPixelFormat format_src, QSize resolution_src, AVPixelFormat format_dst, QSize resolution_dst,
+                                      int color_space_src, int color_space_dst, int color_range_src, int color_range_dst,
+                                      FFFormatConverter::Filter::T filter)
 {
     if(this->format_src==format_src && this->format_dst==format_dst
             && this->resolution_src==resolution_src && this->resolution_dst==resolution_dst
+            && this->color_space_src==color_space_src && this->color_space_dst==color_space_dst && this->color_range_src==color_range_src && this->color_range_dst==color_range_dst
             && this->filter==filter)
         return true;
 

@@ -1175,6 +1175,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
     if(cfg.input_type_flags&SourceInterface::TypeFlag::video && !format_converter_ff->setup(
                 cfg.pixel_format_src.toAVPixelFormat(), cfg.frame_resolution_src, cfg.pixel_format_dst.toAVPixelFormat(), cfg.frame_resolution_dst,
+                cfg.sws_color_space_src, cfg.sws_color_space_dst, cfg.sws_color_range_src, cfg.sws_color_range_dst,
                 cfg.downscale==DownScale::Disabled ? FFFormatConverter::Filter::cNull : (FFFormatConverter::Filter::T)ScaleFilter::toSws(cfg.scale_filter),
                 cfg.pixel_format_src.is210() ? (cfg.pixel_format_src.isRgb() ? DecodeFrom210::Format::R210 : (cfg.pixel_format_src==PixelFormat::v410 ? DecodeFrom210::Format::V410 : DecodeFrom210::Format::V210)) : DecodeFrom210::Format::Disabled)) {
         emit errorString(last_error_string=QStringLiteral("err init format converter"));

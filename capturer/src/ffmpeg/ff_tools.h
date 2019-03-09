@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -62,5 +62,42 @@ bool checkEncoder(const QString &encoder_name, const AVPixelFormat &pixel_format
 bool isHighBitDepthBuild();
 
 bool operator==(const AVRational &l, const AVRational &r);
+
+struct swsColorSpace
+{
+    static QString toString(int value);
+    static int toff(int value);
+
+    int value=DEFAULT;
+
+    enum {
+        DEFAULT,
+        ITU709,
+        BT2020,
+        FCC,
+        ITU601,
+        ITU624,
+        SMPTE170M,
+        SMPTE240M,
+
+        size
+    };
+};
+
+struct swsColorRange
+{
+    static QString toString(int value);
+    static int toff(int value);
+
+    int value=unspecified;
+
+    enum {
+        unspecified,
+        full,
+        limited,
+
+        size
+    };
+};
 
 #endif // FF_TOOLS_H

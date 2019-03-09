@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -242,3 +242,108 @@ int ff_lock_callback(void **mutex, enum AVLockOp op)
     return 0;
 }
 
+QString swsColorSpace::toString(int value)
+{
+    switch(value) {
+    case DEFAULT:
+        return QStringLiteral("default");
+
+    case ITU709:
+        return QStringLiteral("ITU709");
+
+    case BT2020:
+        return QStringLiteral("BT2020");
+
+    case FCC:
+        return QStringLiteral("FCC");
+
+    case ITU601:
+        return QStringLiteral("ITU601");
+
+    case ITU624:
+        return QStringLiteral("ITU624");
+
+    case SMPTE170M:
+        return QStringLiteral("SMPTE170M");
+
+    case SMPTE240M:
+        return QStringLiteral("SMPTE240M");
+
+    default:
+        ;
+    }
+
+    return QStringLiteral("unknown");
+}
+
+int swsColorSpace::toff(int value)
+{
+    switch(value) {
+    case DEFAULT:
+        return SWS_CS_DEFAULT;
+
+    case ITU709:
+        return SWS_CS_ITU709;
+
+    case BT2020:
+        return SWS_CS_BT2020;
+
+    case FCC:
+        return SWS_CS_FCC;
+
+    case ITU601:
+        return SWS_CS_ITU601;
+
+    case ITU624:
+        return SWS_CS_ITU624;
+
+    case SMPTE170M:
+        return SWS_CS_SMPTE170M;
+
+    case SMPTE240M:
+        return SWS_CS_SMPTE240M;
+
+    default:
+        ;
+    }
+
+    return SWS_CS_DEFAULT;
+}
+
+QString swsColorRange::toString(int value)
+{
+    switch(value) {
+    case unspecified:
+        return QStringLiteral("unspecified");
+
+    case full:
+        return QStringLiteral("JPEG (full)");
+
+    case limited:
+        return QStringLiteral("MPEG (limited)");
+
+    default:
+        ;
+    }
+
+    return QStringLiteral("unknown");
+}
+
+int swsColorRange::toff(int value)
+{
+   switch(value) {
+    case unspecified:
+        return AVCOL_RANGE_UNSPECIFIED;
+
+    case full:
+        return AVCOL_RANGE_JPEG;
+
+    case limited:
+        return AVCOL_RANGE_MPEG;
+
+    default:
+        ;
+    }
+
+    return AVCOL_RANGE_UNSPECIFIED;
+}
