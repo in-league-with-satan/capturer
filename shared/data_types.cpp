@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -71,10 +71,11 @@ void KeyCodeC::declareQML()
 
 //
 
-NRecStats::NRecStats(QTime time, double avg_bitrate, quint64 size, quint32 dropped_frames_counter, quint16 frame_buffer_size, quint16 frame_buffer_used)
+NRecStats::NRecStats(QTime time, double avg_bitrate, QVariantMap bitrate_video, quint64 size, quint32 dropped_frames_counter, quint16 frame_buffer_size, quint16 frame_buffer_used)
 {
     this->time=time;
     this->avg_bitrate=avg_bitrate;
+    this->bitrate_video=bitrate_video;
     this->size=size;
     this->dropped_frames_counter=dropped_frames_counter;
     this->frame_buffer_size=frame_buffer_size;
@@ -92,6 +93,7 @@ QVariantMap NRecStats::toExt()
 
     map_root.insert(QStringLiteral("time"), time);
     map_root.insert(QStringLiteral("avg_bitrate"), avg_bitrate);
+    map_root.insert(QStringLiteral("bitrate_video"), bitrate_video);
     map_root.insert(QStringLiteral("size"), size);
     map_root.insert(QStringLiteral("dropped_frames_counter"), dropped_frames_counter);
     map_root.insert(QStringLiteral("frame_buffer_size"), frame_buffer_size);
@@ -104,6 +106,7 @@ NRecStats &NRecStats::fromExt(const QVariantMap &map_root)
 {
     time=map_root.value(QStringLiteral("time")).toTime();
     avg_bitrate=map_root.value(QStringLiteral("avg_bitrate")).toDouble();
+    bitrate_video=map_root.value(QStringLiteral("bitrate_video")).toMap();
     size=map_root.value(QStringLiteral("size")).toULongLong();
     dropped_frames_counter=map_root.value(QStringLiteral("dropped_frames_counter")).toUInt();
     frame_buffer_size=map_root.value(QStringLiteral("frame_buffer_size")).toUInt();

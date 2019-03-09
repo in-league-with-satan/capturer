@@ -66,6 +66,8 @@ int main(int argc, char *argv[])
 
     qSetMessagePattern("%{time hh:mm:ss.zzz}:%{qthreadptr}: %{file}(%{line}) %{function}: %{message}");
 
+    qputenv("QML_DISABLE_DISK_CACHE", "true");
+
     QCoreApplication *application=nullptr;
 
     bool headless=false;

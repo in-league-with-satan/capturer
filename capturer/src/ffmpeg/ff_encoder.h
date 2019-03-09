@@ -185,6 +185,7 @@ public:
         double avg_bitrate_video;
         size_t streams_size;
         int dropped_frames_counter;
+        QMap <uint32_t, uint32_t> bitrate_video;
     };
 
     static Framerate::T calcFps(int64_t frame_duration, int64_t frame_scale, bool half_fps);

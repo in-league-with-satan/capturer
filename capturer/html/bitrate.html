@@ -1,0 +1,41 @@
+<html>
+    <head>
+        <meta http-equiv='Content-Type' content='text/html; charset=utf-8'>
+        <title>capturer::bitrate</title>
+        <link rel='stylesheet' type='text/css' href='index.css'>
+    </head>
+    <body id='body' class='root2' onload='onLoad();'>
+        <script src='br.js'></script>
+        <center><div id='main'>
+            <br>
+            <form><button style='width:128' type='reset' onclick="location.href='/'">home</button></form>
+            <br>
+            <svg id='canvas' height='100' width='100' style='border:1px solid black; background-color:#aaaaaa;'>
+                <polyline
+                    id='grid'
+                    stroke='#cdcdcdff'
+                    stroke-width=1
+                    fill='none'/>
+
+                <polyline
+                    id='grpahic'
+                    stroke-linejoin='round'
+                    points=''
+                    stroke='red'
+                    stroke-width='2'
+                    fill='none'
+                    stroke-opacity='1'
+                    stroke-linecap='round'/>
+
+                <text id='text_bitrate_high' x='2' y='' font-weight='bold' fill='white'></text>
+                <text id='text_bitrate_low' x='2' y='' font-weight='bold' fill='white'></text>
+            </svg>
+            <br>
+            <label>window size (sec):</label>
+<!--
+            <br><input id='text_debug' type='text' style='height:48; width:100%' value=''>
+            <br><input id='text_debug_2' type='text' style='height:48; width:100%' value=''>
+-->
+        </div></center>
+    </body>
+</html>

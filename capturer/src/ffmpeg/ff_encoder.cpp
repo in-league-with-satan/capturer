@@ -121,6 +121,9 @@ public:
     uint32_t double_frames_counter;
 
     uint32_t counter_process_events;
+
+    uint64_t prev_stream_size_total;
+    QMap <uint64_t, uint64_t> bitrate_point;
 };
 
 static int write_frame(AVFormatContext *fmt_ctx, const AVRational *time_base, AVStream *st, AVPacket *pkt)
@@ -1301,6 +1304,11 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     context->out_stream_audio.pts_next=0;
     context->out_stream_audio.size_total=0;
 
+
+    context->prev_stream_size_total=0;
+    context->bitrate_point.clear();
+
+
     if(cfg.audio_sample_size!=0) {
         if(cfg.audio_dalay!=0)
             context->out_stream_audio.pts_next=cfg.audio_dalay/1000.*context->out_stream_audio.av_codec_context->sample_rate;
@@ -1542,6 +1550,37 @@ void FFEncoder::converterFrameSkip()
     // context->out_stream_video.next_pts++;
 }
 
+double bitrateForLastSec(const QMap <uint64_t, uint64_t> &bitrate_point, const int &duration, const uint64_t &now)
+{
+    if(bitrate_point.size()<2)
+        return 0.;
+
+    int index_start=bitrate_point.size() - duration - 1;
+
+    /*
+    if(duration==1) {
+        index_start=bitrate_point.size() - 2;
+
+    } else {
+        for(int i=0; i<bitrate_point.size(); ++i) {
+            if(((now - bitrate_point.keys()[i])*.001 - double(duration))<.1) {
+                index_start=i;
+                break;
+            }
+        }
+    }
+    */
+
+    if(index_start<0)
+        index_start=0;
+
+
+    const double time=(bitrate_point.keys().last() - bitrate_point.keys()[index_start])*.001;
+    const double size=bitrate_point.last() - bitrate_point.values()[index_start];
+
+    return size/time;
+}
+
 void FFEncoder::calcStats()
 {
     if(!context->canAcceptFrame())
@@ -1549,7 +1588,7 @@ void FFEncoder::calcStats()
 
     Stats s;
 
-    if(context->cfg.audio_sample_size!=0) {
+    if(context->out_stream_audio.av_stream) {
         double cf_a=av_stream_get_end_pts(context->out_stream_audio.av_stream)*av_q2d(context->out_stream_audio.av_stream->time_base);
 
         if(cf_a<.01)
@@ -1567,6 +1606,32 @@ void FFEncoder::calcStats()
     if(cf_v<.01)
         cf_v=.01;
 
+    uint64_t t=av_stream_get_end_pts(context->out_stream_video.av_stream)*av_q2d(context->out_stream_video.av_stream->time_base)*1000;
+
+
+    static QList <int> point=QList<int>() << 1 << 2 << 10 << 30 << 60;
+
+    static int max_time=(*std::max_element(point.begin(), point.end()) + 1)*1000;
+
+    foreach(const uint64_t &p, context->bitrate_point.keys()) {
+        if((t - p)>max_time)
+            context->bitrate_point.remove(p);
+
+        else
+            break;
+    }
+
+    context->bitrate_point[t]=context->out_stream_video.size_total;
+    context->prev_stream_size_total=context->out_stream_video.size_total;
+
+    foreach(int p, point) {
+        s.bitrate_video[p]=bitrateForLastSec(context->bitrate_point, p, t);
+
+        // qInfo() << p << s.bitrate_video[p];
+    }
+
+    // qInfo() << "--";
+
     s.avg_bitrate_video=(double)(context->out_stream_video.size_total*8)/cf_v;
     s.streams_size=context->out_stream_audio.size_total + context->out_stream_video.size_total;
 
@@ -1577,7 +1642,7 @@ void FFEncoder::calcStats()
 
 QTime FFEncoder::duration()
 {
-    if(context->cfg.audio_sample_size!=0)
+    if(context->out_stream_audio.av_stream && context->cfg.audio_sample_size!=0)
         return QTime(0, 0).addMSecs((double)context->out_stream_audio.frame->pts/(double)context->out_stream_audio.av_codec_context->sample_rate*1000);
 
     return QTime(0, 0).addMSecs((double)context->out_stream_video.pts_last*av_q2d(context->out_stream_video.av_codec_context->time_base)*1000);

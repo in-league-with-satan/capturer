@@ -1,0 +1,49 @@
+.root {
+    background: linear-gradient(200deg, #c05c7c, #d56a59);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    color: white;
+    text-shadow: black 0.1em 0.1em 0.2em;
+}
+
+.root2 {
+    background: linear-gradient(200deg, #c05c7c, #d56a59);
+}
+
+.button_rec {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    justify-self: center;
+    // cursor: none;
+    outline: none;
+    background: radial-gradient(#aa0000, #bb0000, #ff0000);
+    border-radius: 50%;
+    border-width: 14px;
+    border-color: #ff4242 #ff0000 #dd0000;
+    padding: 64px;
+    color: white;
+    font-size: 20px;
+    height: 240px;
+    width: 240px;
+}
+
+.button_rec:active {
+    border-width: 4px;
+    font-size: 18px;
+}
+
+.row_1 {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    justify-self: center;
+}
+
+.row_3 {
+    grid-column: 2;
+    grid-row: 3;
+    align-self: center;
+    justify-self: center;
+}

@@ -1790,8 +1790,9 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
     //
 
     if(data->value==&settings->rec.encoder_video) {
-        // pix_fmt
+        qml=false;
 
+        // pix_fmt
         qml=false;
 
         if(settings->rec.encoder_video>=data->values_data.size())
@@ -2185,7 +2186,12 @@ void MainWindow::updateStats(FFEncoder::Stats s)
 
     const QPair <int, int> buffer_size=ff_enc_primary->frameBuffer()->size();
 
-    emit recStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.streams_size, s.dropped_frames_counter, buffer_size.second, buffer_size.first));
+    QVariantMap map_bitrate_video;
+
+    for(int i=0; i<st_primary.bitrate_video.size(); ++i)
+        map_bitrate_video.insert(QString::number(st_primary.bitrate_video.keys()[i]), st_primary.bitrate_video.values()[i]);
+
+    emit recStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, map_bitrate_video, s.streams_size, s.dropped_frames_counter, buffer_size.second, buffer_size.first));
 
     if(settings->main.headless)
         return;
