@@ -1,21 +1,22 @@
-var graphic_width=0;
-var graphic_height=0;
-var bitrate=new Map;
-var bitrate_avg=[];
-var drop_data=false;
-var last_timestamp='';
-var max_br=0;
-var min_br=0
-var step=30;
-var window_size_lst=[];
-var grph_color=[ 'red', 'green', 'blue', 'yellow', 'black'];
+let graphic_width=0;
+let graphic_height=0;
+let bitrate=new Map;
+let bitrate_avg=[];
+let drop_data=false;
+let last_timestamp='';
+let max_br=0;
+let min_br=0
+let step=30;
+let window_size_lst=[];
+let grph_color=[ 'red', 'green', 'blue', 'yellow', 'black'];
+// let grph_color=[ '#ff000080', '#00aa0080', '#0000ff80', '#ffff0080', '#00000080'];
 
 function nextColor()
 {
     if(grph_color.length<1)
         return 'black';
 
-    var c=grph_color[0];
+    let c=grph_color[0];
 
     grph_color.shift();
 
@@ -32,8 +33,8 @@ function width()
 
 function addText(id, x, y)
 {
-    var parent=document.getElementById('canvas');
-    var obj=document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    let parent=document.getElementById('canvas');
+    let obj=document.createElementNS('http://www.w3.org/2000/svg', 'text');
 
     obj.setAttribute('id', id);
     obj.setAttribute('x', x);
@@ -49,8 +50,8 @@ function addText(id, x, y)
 
 function addPolyline(id, color)
 {
-    var parent=document.getElementById('canvas');
-    var obj=document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    let parent=document.getElementById('canvas');
+    let obj=document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
 
     obj.setAttribute('id', id);
     obj.setAttribute('stroke-linejoin', 'round');
@@ -66,8 +67,8 @@ function addPolyline(id, color)
 
 function addCheckbox(id, title, color)
 {
-    var parent=document.getElementById('main');
-    var obj=null;
+    let parent=document.getElementById('main');
+    let obj=null;
 
     //
 
@@ -98,7 +99,14 @@ function addCheckbox(id, title, color)
     //
 }
 
-function checkZeroe(value)
+function bringToTop(obj)
+{
+    let parent=obj.parentNode;
+    parent.removeChild(obj);
+    parent.appendChild(obj);
+}
+
+function checkZero(value)
 {
     if(value.length!=2)
         return value;
@@ -111,7 +119,7 @@ function checkZeroe(value)
 
 function getTime(date)
 {
-    var result;
+    let result;
 
 
     if(date.getHours()<=9)
@@ -142,17 +150,17 @@ function updateTimestamps(current_ts)
 {
     ts_tmp=current_ts.split(':');
 
-    var ts=new Date(1970, 1, 1, checkZeroe(ts_tmp[0]), checkZeroe(ts_tmp[1]), checkZeroe(ts_tmp[2].split('.')[0]), 0);
+    let ts=new Date(1970, 1, 1, checkZero(ts_tmp[0]), checkZero(ts_tmp[1]), checkZero(ts_tmp[2].split('.')[0]), 0);
 
-    var text_cntr=0;
+    let text_cntr=0;
 
-    for(var i=graphic_width; i>0; i-=step) {
+    for(let i=graphic_width; i>0; i-=step) {
         text_cntr++;
 
         if(text_cntr==2) {
-            var text=document.getElementById('text_' + i);
+            let text=document.getElementById('text_' + i);
 
-            var ts2=new Date(ts.getTime() - (graphic_width - i)*.5*1000.)
+            let ts2=new Date(ts.getTime() - (graphic_width - i)*.5*1000.)
 
 
             if(ts2.getTime()>=2667600000) {
@@ -171,11 +179,11 @@ function updateTimestamps(current_ts)
 
 function gridPoints()
 {
-    var result='';
+    let result='';
 
-    var text_cntr=0;
+    let text_cntr=0;
 
-    for(var i=graphic_width; i>0; i-=step) {
+    for(let i=graphic_width; i>0; i-=step) {
         result+=' ' + (i + step) + ',0 ' + i + ',0 ' + i + ',' + graphic_height;
 
         text_cntr++;
@@ -232,50 +240,59 @@ function objToMap(obj)
 
 function updateGraphics()
 {
-    var arr_summ=[];
+    let arr_sum=[];
 
-    for(var i=0; i<window_size_lst.length; ++i) {
-        var arr=bitrate.get(window_size_lst[i]);
-
-        while(arr.length>graphic_width*.5) {
-            arr.shift();
-        }
-
-        bitrate.set(window_size_lst[i], arr);
-
-        arr_summ=arr_summ.concat(arr);
-    }
-
-    while(bitrate_avg.length>graphic_width*.5) {
+    while(bitrate_avg.length>graphic_width*.5)
         bitrate_avg.shift();
+
+    if(document.getElementById('cb_graphic_avg').checked)
+       arr_sum=arr_sum.concat(bitrate_avg);
+
+    for(let i_grp=0; i_grp<window_size_lst.length; ++i_grp) {
+        let arr=bitrate.get(window_size_lst[i_grp]);
+
+        while(arr.length>graphic_width*.5)
+            arr.shift();
+
+        bitrate.set(window_size_lst[i_grp], arr);
+
+        if(document.getElementById('cb_' + window_size_lst[i_grp]).checked)
+            arr_sum=arr_sum.concat(arr);
     }
 
 
-    var arr=bitrate.get(window_size_lst[0]);
-    var arr=arr_summ;
-
-    if(arr_summ.length<1) {
+    if(arr_sum.length<1) {
         document.getElementById('text_bitrate_high').textContent=(0).toFixed(2);
         document.getElementById('text_bitrate_low').textContent=(0).toFixed(2);
+
+        document.getElementById('graphic_avg').setAttribute('points', '');
+
+        for(let i_grp=0; i_grp<window_size_lst.length; ++i_grp)
+            document.getElementById('graphic_' + window_size_lst[i_grp]).setAttribute('points', '');
+
         return;
     }
 
 
-    max_br=Math.max.apply(Math, arr);
-    min_br=Math.min.apply(Math, arr);
+    max_br=Math.max.apply(Math, arr_sum);
+    min_br=Math.min.apply(Math, arr_sum);
 
 
-    var kf=graphic_height/(max_br - min_br)*.95;
-    var space=Math.round(graphic_height*.05*.5);
+    document.getElementById('text_bitrate_high').textContent=(max_br/1024./1024.).toFixed(2);
+    document.getElementById('text_bitrate_low').textContent=(min_br/1024./1024.).toFixed(2);
 
-    var points='';
+
+    let kf=graphic_height/(max_br - min_br)*.95;
+    let space=Math.round(graphic_height*.05*.5);
+
+    let points='';
 
     if(document.getElementById('cb_graphic_avg').checked) {
-        for(var i=0; i<bitrate_avg.length; ++i) {
+        for(let i=0; i<bitrate_avg.length; ++i) {
             if(i!=0)
                 points+=', ';
 
-            var p=Math.round(kf*(bitrate_avg[i] - min_br));
+            let p=Math.round(kf*(bitrate_avg[i] - min_br));
 
             if(isNaN(p))
                 p=0;
@@ -287,7 +304,7 @@ function updateGraphics()
     document.getElementById('graphic_avg').setAttribute('points', points);
 
 
-    for(var i_grp=0; i_grp<window_size_lst.length; ++i_grp) {
+    for(let i_grp=0; i_grp<window_size_lst.length; ++i_grp) {
         if(!document.getElementById('cb_' + window_size_lst[i_grp]).checked) {
             document.getElementById('graphic_' + window_size_lst[i_grp]).setAttribute('points', '');
             continue;
@@ -295,13 +312,13 @@ function updateGraphics()
 
         points='';
 
-        arr=bitrate.get(window_size_lst[i_grp]);
+        let arr=bitrate.get(window_size_lst[i_grp]);
 
-        for(var i=0; i<arr.length; ++i) {
+        for(let i=0; i<arr.length; ++i) {
             if(i!=0)
                 points+=', ';
 
-            var p=Math.round(kf*(arr[i] - min_br));
+            let p=Math.round(kf*(arr[i] - min_br));
 
             if(isNaN(p))
                 p=0;
@@ -315,7 +332,7 @@ function updateGraphics()
 
 function loadData()
 {
-    var request=new XMLHttpRequest();
+    let request=new XMLHttpRequest();
     request.open('GET', 'http://' + window.location.host + '/data');
 
     request.onreadystatechange=function () {
@@ -325,7 +342,7 @@ function loadData()
     }
 
     request.onload=function() {
-        var data=JSON.parse(request.responseText);
+        let data=JSON.parse(request.responseText);
 
         if(data.rec_stats.time===null) {
             if(window_size_lst[0]) {
@@ -339,28 +356,32 @@ function loadData()
 
                 bitrate_avg=new Array;
 
-                for(var i=0; i<window_size_lst.length; ++i) {
+                for(let i=0; i<window_size_lst.length; ++i) {
                     bitrate.set(window_size_lst[i], new Array);
                 }
             }
 
             bitrate_avg.push(data.rec_stats.avg_bitrate/8);
 
-            var bitrate_video=data.rec_stats.bitrate_video;
+            let bitrate_video=data.rec_stats.bitrate_video;
 
             last_timestamp=data.rec_stats.time.substring(0, 8);
 
             window_size_lst=[...objToMap(bitrate_video).keys()];
 
-            for(var i=0; i<window_size_lst.length; ++i) {
-                var id='graphic_' + window_size_lst[i];
-                var obj_graphic=document.getElementById(id);
+            let graphic_added=false;
 
-                var color='black';
+            for(let i=0; i<window_size_lst.length; ++i) {
+                let id='graphic_' + window_size_lst[i];
+                let obj_graphic=document.getElementById(id);
+
+                let color='black';
 
                 if(!obj_graphic) {
                     color=nextColor();
                     addPolyline(id, color);
+
+                    graphic_added=true;
                 }
 
                 if(!bitrate.has(window_size_lst[i])) {
@@ -369,12 +390,15 @@ function loadData()
                     addCheckbox('cb_' + window_size_lst[i], window_size_lst[i], color);
                 }
 
-                var arr=bitrate.get(window_size_lst[i]);
+                let arr=bitrate.get(window_size_lst[i]);
 
                 arr.push(bitrate_video[window_size_lst[i]]);
 
                 bitrate.set(window_size_lst[i], arr);
             }
+
+            if(graphic_added)
+                bringToTop(document.getElementById('graphic_avg'));
         }
     };
 
@@ -388,9 +412,6 @@ function loadData()
 
     updateGraphics();
 
-
-    document.getElementById('text_bitrate_high').textContent=(max_br/1024./1024.).toFixed(2);
-    document.getElementById('text_bitrate_low').textContent=(min_br/1024./1024.).toFixed(2);
 
     updateTimestamps(last_timestamp);
 }
