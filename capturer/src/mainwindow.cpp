@@ -82,14 +82,14 @@ MainWindow::MainWindow(QObject *parent)
 
     //
 
-    if(!QDir().mkpath(settings->main.loacation_videos)) {
-        qCritical() << "err mkpath:" << settings->main.loacation_videos;
+    if(!QDir().mkpath(settings->main.location_videos)) {
+        qCritical() << "err mkpath:" << settings->main.location_videos;
         exit(4032);
     }
 
     //
 
-    ff_enc_primary=new FFEncoderThread(FFEncoder::Mode::primary, &enc_base_filename, settings->main.loacation_videos, QString("capturer %1").arg(VERSION_STRING), this);
+    ff_enc_primary=new FFEncoderThread(FFEncoder::Mode::primary, &enc_base_filename, settings->main.location_videos, QString("capturer %1").arg(VERSION_STRING), this);
 
     connect(&ff_enc_primary->frameBuffer()->signaler, SIGNAL(frameSkipped()), SLOT(encoderBufferOverload()), Qt::QueuedConnection);
     connect(ff_enc_primary, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
@@ -97,7 +97,7 @@ MainWindow::MainWindow(QObject *parent)
 
     //
 
-    ff_enc_secondary=new FFEncoderThread(FFEncoder::Mode::secondary, &enc_base_filename, settings->main.loacation_videos, QString("capturer %1").arg(VERSION_STRING), this);
+    ff_enc_secondary=new FFEncoderThread(FFEncoder::Mode::secondary, &enc_base_filename, settings->main.location_videos, QString("capturer %1").arg(VERSION_STRING), this);
 
     connect(ff_enc_secondary, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
     connect(ff_enc_secondary, SIGNAL(stateChanged(bool)), SLOT(encoderStateChanged(bool)), Qt::QueuedConnection);
