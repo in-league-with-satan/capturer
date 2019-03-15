@@ -172,13 +172,13 @@ PixelFormats MagewellDevice::supportedPixelFormats()
         list << PixelFormat::bgr24
              // << PixelFormat::rgb0
              << PixelFormat::bgra
-             // << PixelFormat::gbrp10le
+             // << PixelFormat::gbrp10
              << PixelFormat::yuv420p
              << PixelFormat::yuyv422
              << PixelFormat::uyvy422
-             // << PixelFormat::yuv422p10le
-             << PixelFormat::v410
-             << PixelFormat::p010le
+             // << PixelFormat::yuv422p10
+             << PixelFormat::yuv444p10
+             << PixelFormat::p010
              << PixelFormat::nv12;
     }
 

@@ -416,7 +416,10 @@ void Settings::checkEncoders()
     foreach(FFEncoder::VideoEncoder::T enc, FFEncoder::VideoEncoder::list()) {
         QStringList lst_fmt;
 
-        foreach(PixelFormat fmt, PixelFormat::list()) {
+        foreach(const PixelFormat &fmt, PixelFormat::list()) {
+            if(fmt.onlyForDevices())
+                continue;
+
             if(checkEncoder(FFEncoder::VideoEncoder::toEncName(enc), fmt.toAVPixelFormat()))
                 lst_fmt << fmt.toString();
         }

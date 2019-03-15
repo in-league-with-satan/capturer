@@ -77,11 +77,11 @@ AVPixelFormat PixelFormat::toAVPixelFormat() const
     case bgra:
         return AV_PIX_FMT_BGRA;
 
-    case gbrp10le:
-        return AV_PIX_FMT_GBRP10LE;
+    case gbrp10:
+        return AV_PIX_FMT_GBRP10;
 
-    case rgb48le:
-        return AV_PIX_FMT_RGB48LE;
+    case rgb48:
+        return AV_PIX_FMT_RGB48;
 
     case yuv420p:
         return AV_PIX_FMT_YUV420P;
@@ -98,26 +98,23 @@ AVPixelFormat PixelFormat::toAVPixelFormat() const
     case uyvy422:
         return AV_PIX_FMT_UYVY422;
 
+    case yuv422p10:
+        return AV_PIX_FMT_YUV422P10;
+
     case yuv444p:
         return AV_PIX_FMT_YUV444P;
-
-    case yuv422p10le:
-        return AV_PIX_FMT_YUV422P10LE;
 
     case yuv444p10:
         return AV_PIX_FMT_YUV444P10;
 
-    case yuv444p16le:
-        return AV_PIX_FMT_YUV444P16LE;
-
-    case v410:
-        return AV_PIX_FMT_YUV444P10LE;
-
-    case p010le:
-        return AV_PIX_FMT_P010LE;
+    case yuv444p16:
+        return AV_PIX_FMT_YUV444P16;
 
     case nv12:
         return AV_PIX_FMT_NV12;
+
+    case p010:
+        return AV_PIX_FMT_P010;
 
     case mjpeg:
         return AV_PIX_FMT_YUV422P;
@@ -150,12 +147,12 @@ bool PixelFormat::fromAVPixelFormat(AVPixelFormat value)
         d=bgra;
         return true;
 
-    case AV_PIX_FMT_GBRP10LE:
-        d=gbrp10le;
+    case AV_PIX_FMT_GBRP10:
+        d=gbrp10;
         return true;
 
-    case AV_PIX_FMT_RGB48LE:
-        d=rgb48le;
+    case AV_PIX_FMT_RGB48:
+        d=rgb48;
         return true;
 
     case AV_PIX_FMT_YUV420P:
@@ -179,28 +176,28 @@ bool PixelFormat::fromAVPixelFormat(AVPixelFormat value)
         d=uyvy422;
         return true;
 
-    case AV_PIX_FMT_YUV444P:
-        d=yuv444p;
+    case AV_PIX_FMT_YUV422P10:
+        d=yuv422p10;
         return true;
 
-    case AV_PIX_FMT_YUV422P10LE:
-        d=yuv422p10le;
+    case AV_PIX_FMT_YUV444P:
+        d=yuv444p;
         return true;
 
     case AV_PIX_FMT_YUV444P10:
         d=yuv444p10;
         return true;
 
-    case AV_PIX_FMT_YUV444P16LE:
-        d=yuv444p16le;
-        return true;
-
-    case AV_PIX_FMT_P010LE:
-        d=p010le;
+    case AV_PIX_FMT_YUV444P16:
+        d=yuv444p16;
         return true;
 
     case AV_PIX_FMT_NV12:
         d=nv12;
+        return true;
+
+    case AV_PIX_FMT_P010:
+        d=p010;
         return true;
     }
 
@@ -229,10 +226,10 @@ uint32_t PixelFormat::toV4L2PixelFormat() const
     case bgra:
         return V4L2_PIX_FMT_ABGR32;
 
-    case gbrp10le:
+    case gbrp10:
         return 0;
 
-    case rgb48le:
+    case rgb48:
         return 0;
 
     case yuv420p:
@@ -250,23 +247,23 @@ uint32_t PixelFormat::toV4L2PixelFormat() const
     case uyvy422:
         return V4L2_PIX_FMT_UYVY;
 
+    case yuv422p10:
+        return 0;
+
     case yuv444p:
         return V4L2_PIX_FMT_YUV444;
-
-    case yuv422p10le:
-        return 0;
 
     case yuv444p10:
         return 0;
 
-    case yuv444p16le:
-        return 0;
-
-    case p010le:
+    case yuv444p16:
         return 0;
 
     case nv12:
         return V4L2_PIX_FMT_NV12;
+
+    case p010:
+        return 0;
 
     case mjpeg:
         return V4L2_PIX_FMT_MJPEG;
@@ -344,13 +341,13 @@ uint32_t PixelFormat::toBMDPixelFormat() const
     case bgra:
         return bmdFormat8BitBGRA; // bmdFormat8BitARGB
 
-    case gbrp10le:
+    case gbrp10:
         return bmdFormat10BitRGB;
 
     case uyvy422:
         return bmdFormat8BitYUV;
 
-    case yuv422p10le:
+    case yuv422p10:
         return bmdFormat10BitYUV;
     }
 
@@ -369,7 +366,7 @@ bool PixelFormat::fromBMDPixelFormat(uint32_t value)
         return true;
 
     case bmdFormat10BitRGB:
-        d=gbrp10le;
+        d=gbrp10;
         return true;
 
     case bmdFormat8BitYUV:
@@ -377,7 +374,7 @@ bool PixelFormat::fromBMDPixelFormat(uint32_t value)
         return true;
 
     case bmdFormat10BitYUV:
-        d=yuv422p10le;
+        d=yuv422p10;
         return true;
     }
 
@@ -405,9 +402,9 @@ QVideoFrame::PixelFormat PixelFormat::toQPixelFormat() const
         return QVideoFrame::Format_ARGB32;
         // return QVideoFrame::Format_BGRA32;
 
-    // case gbrp10le:
+    // case gbrp10:
 
-    // case rgb48le:
+    // case rgb48:
 
     case yuv420p:
         return QVideoFrame::Format_YUV420P;
@@ -428,13 +425,13 @@ QVideoFrame::PixelFormat PixelFormat::toQPixelFormat() const
     case yuv444p:
         return QVideoFrame::Format_YUV444;
 
-    // case yuv422p10le:
+    // case yuv422p10:
 
     // case yuv444p10:
 
-    // case yuv444p16le:
+    // case yuv444p16:
 
-    // case p010le:
+    // case p010:
 
     case nv12:
         return QVideoFrame::Format_NV12;
@@ -516,11 +513,11 @@ QString PixelFormat::toString(int value)
     case bgra:
         return QStringLiteral("bgra");
 
-    case gbrp10le:
-        return QStringLiteral("gbrp10le");
+    case gbrp10:
+        return QStringLiteral("gbrp10");
 
-    case rgb48le:
-        return QStringLiteral("rgb48le");
+    case rgb48:
+        return QStringLiteral("rgb48");
 
     case yuv420p:
         return QStringLiteral("yuv420p");
@@ -537,26 +534,23 @@ QString PixelFormat::toString(int value)
     case uyvy422:
         return QStringLiteral("uyvy422");
 
+    case yuv422p10:
+        return QStringLiteral("yuv422p10");
+
     case yuv444p:
         return QStringLiteral("yuv444p");
-
-    case yuv422p10le:
-        return QStringLiteral("yuv422p10le");
 
     case yuv444p10:
         return QStringLiteral("yuv444p10");
 
-    case yuv444p16le:
-        return QStringLiteral("yuv444p16le");
-
-    case v410:
-        return QStringLiteral("v410");
-
-    case p010le:
-        return QStringLiteral("p010le");
+    case yuv444p16:
+        return QStringLiteral("yuv444p16");
 
     case nv12:
         return QStringLiteral("nv12");
+
+    case p010:
+        return QStringLiteral("p010");
 
     case mjpeg:
         return QStringLiteral("mjpeg");
@@ -585,11 +579,11 @@ QString PixelFormat::toStringView(int value)
     case bgra:
         return QStringLiteral("bgra");
 
-    case gbrp10le:
-        return QStringLiteral("gbrp10le (r210)");
+    case gbrp10:
+        return QStringLiteral("gbrp10 (r210)");
 
-    case rgb48le:
-        return QStringLiteral("rgb48le");
+    case rgb48:
+        return QStringLiteral("rgb48");
 
     case yuv420p:
         return QStringLiteral("yuv420p");
@@ -606,29 +600,26 @@ QString PixelFormat::toStringView(int value)
     case uyvy422:
         return QStringLiteral("uyvy422");
 
+    case yuv422p10:
+        return QStringLiteral("yuv422p10 (v210)");
+
     case yuv444p:
         return QStringLiteral("yuv444p");
 
-    case yuv422p10le:
-        return QStringLiteral("yuv422p10le (v210)");
-
     case yuv444p10:
-        return QStringLiteral("yuv444p10");
+        return QStringLiteral("yuv444p10 (v410)");
 
-    case yuv444p16le:
-        return QStringLiteral("yuv444p16le");
-
-    case v410:
-        return QStringLiteral("yuv444p10le (v410)");
-
-    case p010le:
-        return QStringLiteral("p010le");
+    case yuv444p16:
+        return QStringLiteral("yuv444p16");
 
     case nv12:
         return QStringLiteral("nv12");
 
+    case p010:
+        return QStringLiteral("p010");
+
     case mjpeg:
-        return QStringLiteral("mjpeg");
+        return QStringLiteral("mjpeg (yuv422p)");
     }
 
     return QStringLiteral("unknown");
@@ -677,25 +668,24 @@ bool PixelFormat::isRgb() const
             || d==rgb0
             || d==bgr0
             || d==bgra
-            || d==gbrp10le
-            || d==rgb48le;
+            || d==gbrp10
+            || d==rgb48;
 }
 
 bool PixelFormat::is10bit() const
 {
-    return d==gbrp10le
+    return d==gbrp10
             || d==yuv420p10
-            || d==yuv422p10le
+            || d==yuv422p10
             || d==yuv444p10
-            || d==yuv444p16le
-            || d==v410
-            || d==p010le;
+            || d==yuv444p16
+            || d==p010;
 }
 
 bool PixelFormat::is210() const
 {
-    return d==gbrp10le
-            || d==yuv422p10le || d==v410;
+    return d==gbrp10
+            || d==yuv422p10 || d==yuv444p10;
 }
 
 bool PixelFormat::isDirect() const
@@ -713,6 +703,11 @@ bool PixelFormat::isDirect() const
             || d==nv12;
 }
 
+bool PixelFormat::onlyForDevices() const
+{
+    return d==mjpeg;
+}
+
 PixelFormat &PixelFormat::operator=(int other)
 {
     if(isValid(other))
@@ -726,7 +721,7 @@ PixelFormat::operator int() const
     return (int)d;
 }
 
-int frameBufSize(QSize size, PixelFormat pixel_format)
+int frameBufSize(const QSize &size, const PixelFormat &pixel_format)
 {
     if(!pixel_format.isValid())
         return 0;

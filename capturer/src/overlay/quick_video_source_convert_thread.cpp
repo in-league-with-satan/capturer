@@ -189,7 +189,7 @@ void QuickVideoSourceConvertThread::run()
 
                 data_conv=(uint8_t*)ba_conv.constData();
 
-                if(frame_src->video.pixel_format!=PixelFormat::v410) {
+                if(frame_src->video.pixel_format!=PixelFormat::yuv444p10) {
                     format_converter_dl->init(bmdFormat10BitYUV, frame_src->video.size, bmdFormat8BitYUV, frame_src->video.size);
                     format_converter_dl->convert(frame_src->video.data_ptr, (void*)ba_conv.constData());
 
@@ -228,7 +228,7 @@ void QuickVideoSourceConvertThread::run()
                 ba_dst.resize(av_image_get_buffer_size(dst_pix_fmt, frame_src->video.size.width(), frame_src->video.size.height(), alignment));
 
 
-                if(frame_src->video.pixel_format==PixelFormat::v410) {
+                if(frame_src->video.pixel_format==PixelFormat::yuv444p10) {
                         from210->convert(DecodeFrom210::Format::V410, frame_src->video.data_ptr, frame_src->video.data_size,
                                          frame_src->video.size.width(), frame_src->video.size.height(), conv_src);
 

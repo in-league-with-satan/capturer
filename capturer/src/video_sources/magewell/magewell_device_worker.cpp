@@ -54,7 +54,7 @@ PixelFormat fromMagewellPixelFormat(uint32_t fmt)
         return PixelFormat::bgra;
 
     case MWFOURCC_BGR10:
-        return PixelFormat::gbrp10le;
+        return PixelFormat::gbrp10;
 
     case MWFOURCC_I420:
         return PixelFormat::yuv420p;
@@ -66,16 +66,16 @@ PixelFormat fromMagewellPixelFormat(uint32_t fmt)
         return PixelFormat::uyvy422;
 
     case MWFOURCC_P210:
-        return PixelFormat::yuv422p10le;
+        return PixelFormat::yuv422p10;
 
     case MWFOURCC_Y410:
         return PixelFormat::yuv444p10;
 
-    case MWFOURCC_P010:
-        return PixelFormat::p010le;
-
     case MWFOURCC_NV12:
         return PixelFormat::nv12;
+
+    case MWFOURCC_P010:
+        return PixelFormat::p010;
 
     default:
         break;
@@ -104,7 +104,7 @@ uint32_t toMagewellPixelFormat(PixelFormat fmt)
     case PixelFormat::bgra:
         return MWFOURCC_BGRA;
 
-    case PixelFormat::gbrp10le:
+    case PixelFormat::gbrp10:
         return MWFOURCC_BGR10;
 
     case PixelFormat::yuv420p:
@@ -116,17 +116,17 @@ uint32_t toMagewellPixelFormat(PixelFormat fmt)
     case PixelFormat::uyvy422:
         return MWFOURCC_UYVY;
 
-    case PixelFormat::yuv422p10le:
+    case PixelFormat::yuv422p10:
         return MWFOURCC_P210;
 
-    case PixelFormat::v410:
+    case PixelFormat::yuv444p10:
         return MWFOURCC_V410;
-
-    case PixelFormat::p010le:
-        return MWFOURCC_P010;
 
     case PixelFormat::nv12:
         return MWFOURCC_NV12;
+
+    case PixelFormat::p010:
+        return MWFOURCC_P010;
 
     default:
         break;

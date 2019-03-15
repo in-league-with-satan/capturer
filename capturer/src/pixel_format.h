@@ -36,20 +36,19 @@ struct PixelFormat {
         rgb0,
         bgr0,
         bgra,
-        gbrp10le,
-        rgb48le,
+        gbrp10,
+        rgb48,
         yuv420p,
         yuv420p10,
         yuv422p,
         yuyv422,
         uyvy422,
+        yuv422p10,
         yuv444p,
-        yuv422p10le,
         yuv444p10,
-        yuv444p16le,
-        v410,
-        p010le,
+        yuv444p16,
         nv12,
+        p010,
         mjpeg,
 
         size
@@ -88,6 +87,8 @@ struct PixelFormat {
 
     bool isDirect() const;
 
+    bool onlyForDevices() const;
+
     operator int() const;
     PixelFormat &operator=(int other);
 
@@ -99,6 +100,6 @@ typedef QList<PixelFormat> PixelFormats;
 
 Q_DECLARE_METATYPE(PixelFormats)
 
-int frameBufSize(QSize size, PixelFormat pixel_format);
+int frameBufSize(const QSize &size, const PixelFormat &pixel_format);
 
 #endif // PIXEL_FORMAT_H
