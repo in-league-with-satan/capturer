@@ -1596,46 +1596,48 @@ void FFEncoder::calcStats()
 
         s.avg_bitrate_audio=(double)(context->out_stream_audio.size_total*8)/cf_a;
         s.time=QTime(0, 0).addMSecs((double)context->out_stream_audio.frame->pts/(double)context->out_stream_audio.av_codec_context->sample_rate*1000);
+        s.streams_size=context->out_stream_audio.size_total;
 
     } else {
         s.time=QTime(0, 0).addMSecs((double)context->out_stream_video.pts_last*av_q2d(context->out_stream_video.av_codec_context->time_base)*1000);
     }
 
-    double cf_v=av_stream_get_end_pts(context->out_stream_video.av_stream)*av_q2d(context->out_stream_video.av_stream->time_base);
+    if(context->out_stream_video.av_stream) {
+        double cf_v=av_stream_get_end_pts(context->out_stream_video.av_stream)*av_q2d(context->out_stream_video.av_stream->time_base);
 
-    if(cf_v<.01)
-        cf_v=.01;
+        if(cf_v<.01)
+            cf_v=.01;
 
-    uint64_t t=av_stream_get_end_pts(context->out_stream_video.av_stream)*av_q2d(context->out_stream_video.av_stream->time_base)*1000;
+        uint64_t t=av_stream_get_end_pts(context->out_stream_video.av_stream)*av_q2d(context->out_stream_video.av_stream->time_base)*1000;
 
 
-    static QList <int> point=QList<int>() << 1 << 2 << 10 << 30 << 60;
+        static QList <int> point=QList<int>() << 1 << 2 << 10 << 30 << 60;
 
-    static int max_time=(*std::max_element(point.begin(), point.end()) + 1)*1000;
+        static uint64_t max_time=(*std::max_element(point.begin(), point.end()) + 1)*1000;
 
-    foreach(const uint64_t &p, context->bitrate_point.keys()) {
-        if((t - p)>max_time)
-            context->bitrate_point.remove(p);
+        foreach(const uint64_t &p, context->bitrate_point.keys()) {
+            if((t - p)>max_time)
+                context->bitrate_point.remove(p);
 
-        else
-            break;
+            else
+                break;
+        }
+
+        context->bitrate_point[t]=context->out_stream_video.size_total;
+        context->prev_stream_size_total=context->out_stream_video.size_total;
+
+        foreach(int p, point) {
+            s.bitrate_video[p]=bitrateForLastSec(context->bitrate_point, p, t);
+
+            // qInfo() << p << s.bitrate_video[p];
+        }
+
+        // qInfo() << "--";
+
+        s.avg_bitrate_video=(double)(context->out_stream_video.size_total*8)/cf_v;
+        s.streams_size+=context->out_stream_video.size_total;
+        s.dropped_frames_counter=context->dropped_frames_counter;
     }
-
-    context->bitrate_point[t]=context->out_stream_video.size_total;
-    context->prev_stream_size_total=context->out_stream_video.size_total;
-
-    foreach(int p, point) {
-        s.bitrate_video[p]=bitrateForLastSec(context->bitrate_point, p, t);
-
-        // qInfo() << p << s.bitrate_video[p];
-    }
-
-    // qInfo() << "--";
-
-    s.avg_bitrate_video=(double)(context->out_stream_video.size_total*8)/cf_v;
-    s.streams_size=context->out_stream_audio.size_total + context->out_stream_video.size_total;
-
-    s.dropped_frames_counter=context->dropped_frames_counter;
 
     emit stats(s);
 }

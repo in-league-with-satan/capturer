@@ -181,10 +181,10 @@ public:
 
     struct Stats {
         QTime time;
-        double avg_bitrate_audio;
-        double avg_bitrate_video;
-        size_t streams_size;
-        int dropped_frames_counter;
+        double avg_bitrate_audio=0.;
+        double avg_bitrate_video=0.;
+        size_t streams_size=0;
+        int dropped_frames_counter=0;
         QMap <uint32_t, uint32_t> bitrate_video;
     };
 
