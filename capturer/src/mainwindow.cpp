@@ -2098,6 +2098,9 @@ void MainWindow::updateEncList()
     }
 
     settingsModelDataChanged(settings_model->data_p_index(&settings->rec.encoder_video), 0, false);
+
+    QMetaObject::invokeMethod(dynamic_cast<QObject*>(this), "settingsModelDataChanged", Qt::QueuedConnection,
+                              Q_ARG(int, settings_model->data_p_index(&settings->rec.encoder_video)), Q_ARG(int, 0), Q_ARG(bool, false));
 }
 
 void MainWindow::encoderBufferOverload()

@@ -1,4 +1,4 @@
-#install mesa-common-dev libgl-dev libpulse-dev libbz2-dev liblzma-dev libnuma-dev
+# linux build dependencies: mesa-common-dev libgl-dev libpulse-dev libbz2-dev liblzma-dev
 
 QT += \
     core \
@@ -28,6 +28,8 @@ TEMPLATE = app
 
 CONFIG += c++14
 #windows:CONFIG += console
+CONFIG -= qtquickcompiler
+
 
 DESTDIR = $$PWD/../bin
 

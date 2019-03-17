@@ -788,6 +788,29 @@ QString FFEncoder::presetVisualNameToParamName(const QString &str)
     return str;
 }
 
+QString FFEncoder::presetParamNameToVisualName(const QString &str)
+{
+    if(str==QLatin1String("hq"))
+        return QLatin1String("high quality");
+
+    if(str==QLatin1String("hp"))
+        return QLatin1String("high performance");
+
+    if(str==QLatin1String("bd"))
+        return QLatin1String("bluray disk");
+
+    if(str==QLatin1String("ll"))
+        return QLatin1String("low latency");
+
+    if(str==QLatin1String("llhq"))
+        return QLatin1String("low latency high quality");
+
+    if(str==QLatin1String("llhp"))
+        return QLatin1String("low latency high performance");
+
+    return str;
+}
+
 QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
 {
     switch(encoder) {
@@ -1016,9 +1039,13 @@ QString FFEncoder::configString(const FFEncoder::Config &cfg)
         map.insert("scale_filter", ScaleFilter::toString(cfg.scale_filter));
     }
 
-    map.insert("crf", cfg.crf);
+    if(cfg.crf!=0xff)
+        map.insert("crf", cfg.crf);
+
+    if(cfg.preset!="--")
+        map.insert("preset", presetParamNameToVisualName(cfg.preset));
+
     map.insert("video_encoder", VideoEncoder::toString(cfg.video_encoder));
-    map.insert("preset", cfg.preset);
 
 
     AVRational fr=Framerate::toRational(cfg.framerate);
@@ -1153,6 +1180,14 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     int sws_flags=0;
 
 
+    if(cfg.video_encoder!=FFEncoder::VideoEncoder::libx264
+            && cfg.video_encoder!=FFEncoder::VideoEncoder::libx264rgb
+            && cfg.video_encoder!=FFEncoder::VideoEncoder::nvenc_h264
+            && cfg.video_encoder!=FFEncoder::VideoEncoder::nvenc_hevc
+            && cfg.video_encoder!=FFEncoder::VideoEncoder::qsv_h264) {
+            cfg.crf=0xff;
+    }
+
 
     context->out_stream_video.frame_fmt=cfg.pixel_format_dst.toAVPixelFormat();
 
@@ -1283,6 +1318,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
         emit errorString(last_error_string=QStringLiteral("error occurred when opening output file: ") + ffErrorString(ret));
         goto fail;
     }
+
+    qInfo().noquote() << "video params:" << configString(cfg);
 
 
     context->cfg=cfg;

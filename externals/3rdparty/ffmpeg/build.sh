@@ -38,7 +38,7 @@ PATH_ORIG=$PATH
 PATH=$PATH_ROOT/lib:$PATH_ROOT/include:$PATH_ROOT/bin:$PATH_ORIG
 
 
-cpu_count=`grep -c '^processor' /proc/cpuinfo`
+cpu_count=`nproc`
 
 export PKG_CONFIG_PATH="$PATH_BASE/lib/pkgconfig"
 
