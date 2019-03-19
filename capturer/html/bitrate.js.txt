@@ -2,8 +2,9 @@ let graphic_width=0;
 let graphic_height=0;
 let bitrate=new Map;
 let bitrate_avg=[];
-let drop_data=false;
+let timestamp=[];
 let last_timestamp='';
+let drop_data=false;
 let max_br=0;
 let min_br=0
 let step=30;
@@ -117,41 +118,8 @@ function checkZero(value)
     return value;
 }
 
-function getTime(date)
+function updateTimestamps()
 {
-    let result;
-
-
-    if(date.getHours()<=9)
-        result='0' + date.getHours() + ':'
-
-    else
-        result=date.getHours() + ':'
-
-
-    if(date.getMinutes()<=9)
-        result+='0' + date.getMinutes() + ':'
-
-    else
-        result+=date.getMinutes() + ':'
-
-
-    if(date.getSeconds()<=9)
-        result+='0' + date.getSeconds();
-
-    else
-        result+=date.getSeconds();
-
-
-    return result;
-}
-
-function updateTimestamps(current_ts)
-{
-    ts_tmp=current_ts.split(':');
-
-    let ts=new Date(1970, 1, 1, checkZero(ts_tmp[0]), checkZero(ts_tmp[1]), checkZero(ts_tmp[2].split('.')[0]), 0);
-
     let text_cntr=0;
 
     for(let i=graphic_width; i>0; i-=step) {
@@ -160,15 +128,13 @@ function updateTimestamps(current_ts)
         if(text_cntr==2) {
             let text=document.getElementById('text_' + i);
 
-            let ts2=new Date(ts.getTime() - (graphic_width - i)*.5*1000.)
+            let ts_index=timestamp.length - (graphic_width - i)*.5;
 
-
-            if(ts2.getTime()>=2667600000) {
-                text.textContent=getTime(ts2);
-
-            } else {
+            if(ts_index<0)
                 text.textContent='';
-            }
+
+            else
+                text.textContent=timestamp[ts_index];
         }
 
         if(text_cntr>=3) {
@@ -242,8 +208,10 @@ function updateGraphics()
 {
     let arr_sum=[];
 
-    while(bitrate_avg.length>graphic_width*.5)
+    while(bitrate_avg.length>graphic_width*.5) {
         bitrate_avg.shift();
+        timestamp.shift();
+    }
 
     if(document.getElementById('cb_graphic_avg').checked)
        arr_sum=arr_sum.concat(bitrate_avg);
@@ -367,6 +335,8 @@ function loadData()
 
             last_timestamp=data.rec_stats.time.substring(0, 8);
 
+            timestamp.push(last_timestamp);
+
             window_size_lst=[...objToMap(bitrate_video).keys()];
 
             let graphic_added=false;
@@ -412,6 +382,5 @@ function loadData()
 
     updateGraphics();
 
-
-    updateTimestamps(last_timestamp);
+    updateTimestamps();
 }
