@@ -191,11 +191,15 @@ void FFDecoderThread::_open()
 
     context.stream_video=context.format_context->streams[stream_video_pos];
 
+    bool hw_decoder=false;
+
     if(context.stream_video->codecpar->codec_id==AV_CODEC_ID_H264) {
         context.codec_video=avcodec_find_decoder_by_name("h264_cuvid");
+        hw_decoder=true;
 
     } else if(context.stream_video->codecpar->codec_id==AV_CODEC_ID_HEVC) {
         context.codec_video=avcodec_find_decoder_by_name("hevc_cuvid");
+        hw_decoder=true;
 
     } else {
         context.codec_video=avcodec_find_decoder(context.stream_video->codecpar->codec_id);
@@ -203,6 +207,10 @@ void FFDecoderThread::_open()
 
     if(!context.codec_video) {
         qWarning() << "hw decoder err";
+
+try_software_decoder:
+
+        hw_decoder=false;
         context.codec_video=avcodec_find_decoder(context.stream_video->codecpar->codec_id);
     }
 
@@ -231,6 +239,12 @@ void FFDecoderThread::_open()
 
     if(err<0) {
         qCritical() << "avcodec_open2 err:" << ffErrorString(err);
+
+        if(hw_decoder) {
+            avcodec_free_context(&context.codec_context_video);
+            goto try_software_decoder;
+        }
+
         freeContext();
         return;
     }

@@ -329,7 +329,7 @@ function loadData()
                 }
             }
 
-            bitrate_avg.push(data.rec_stats.avg_bitrate/8);
+            bitrate_avg.push(data.rec_stats.avg_bitrate_video/8);
 
             let bitrate_video=data.rec_stats.bitrate_video;
 

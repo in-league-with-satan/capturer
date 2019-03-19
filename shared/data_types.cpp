@@ -71,10 +71,11 @@ void KeyCodeC::declareQML()
 
 //
 
-NRecStats::NRecStats(QTime time, double avg_bitrate, QVariantMap bitrate_video, quint64 size, quint32 dropped_frames_counter, quint16 frame_buffer_size, quint16 frame_buffer_used)
+NRecStats::NRecStats(QTime time, double avg_bitrate, double avg_bitrate_video, QVariantMap bitrate_video, quint64 size, quint32 dropped_frames_counter, quint16 frame_buffer_size, quint16 frame_buffer_used)
 {
     this->time=time;
     this->avg_bitrate=avg_bitrate;
+    this->avg_bitrate_video=avg_bitrate_video;
     this->bitrate_video=bitrate_video;
     this->size=size;
     this->dropped_frames_counter=dropped_frames_counter;
@@ -93,6 +94,7 @@ QVariantMap NRecStats::toExt()
 
     map_root.insert(QStringLiteral("time"), time);
     map_root.insert(QStringLiteral("avg_bitrate"), avg_bitrate);
+    map_root.insert(QStringLiteral("avg_bitrate_video"), avg_bitrate_video);
     map_root.insert(QStringLiteral("bitrate_video"), bitrate_video);
     map_root.insert(QStringLiteral("size"), size);
     map_root.insert(QStringLiteral("dropped_frames_counter"), dropped_frames_counter);
@@ -106,6 +108,7 @@ NRecStats &NRecStats::fromExt(const QVariantMap &map_root)
 {
     time=map_root.value(QStringLiteral("time")).toTime();
     avg_bitrate=map_root.value(QStringLiteral("avg_bitrate")).toDouble();
+    avg_bitrate_video=map_root.value(QStringLiteral("avg_bitrate_video")).toDouble();
     bitrate_video=map_root.value(QStringLiteral("bitrate_video")).toMap();
     size=map_root.value(QStringLiteral("size")).toULongLong();
     dropped_frames_counter=map_root.value(QStringLiteral("dropped_frames_counter")).toUInt();

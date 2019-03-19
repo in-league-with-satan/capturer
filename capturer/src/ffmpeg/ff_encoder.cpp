@@ -1222,14 +1222,6 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
     format_converter_ff->resetQueues();
 
-
-    {
-        QDir dir(qApp->applicationDirPath() + "/videos");
-
-        if(!dir.exists())
-            dir.mkdir(dir.dirName());
-    }
-
     {
         QString name;
 

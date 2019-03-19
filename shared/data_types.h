@@ -104,13 +104,14 @@ struct InputFormat {
 struct NRecStats {
     QTime time;
     double avg_bitrate;
+    double avg_bitrate_video;
     quint64 size;
     quint32 dropped_frames_counter;
     quint16 frame_buffer_size;
     quint16 frame_buffer_used;
     QVariantMap bitrate_video;
 
-    NRecStats(QTime time=QTime(), double avg_bitrate=0., QVariantMap bitrate_video=QVariantMap(), quint64 size=0,
+    NRecStats(QTime time=QTime(), double avg_bitrate=0., double avg_bitrate_video=0., QVariantMap bitrate_video=QVariantMap(), quint64 size=0,
                 quint32 dropped_frames_counter=0, quint16 frame_buffer_size=0, quint16 frame_buffer_used=0);
 
     bool isNull() const;

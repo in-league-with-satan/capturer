@@ -239,7 +239,7 @@ void NvTools::run()
     d->timer->moveToThread(this);
     d->timer->setInterval(1000);
 
-    connect(d->timer, SIGNAL(timeout()), SLOT(onTimer()));
+    connect(d->timer, SIGNAL(timeout()), SLOT(onTimer()), Qt::DirectConnection);
 
     d->timer->start();
 

@@ -23,6 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QNetworkInterface>
 
 #include "ff_tools.h"
+#include "settings.h"
 
 #include "qml_messenger.h"
 
@@ -131,7 +132,7 @@ void QmlMessenger::fileBrowserVisibleState(bool visible)
 
 QString QmlMessenger::getRootPath()
 {
-    return qApp->applicationDirPath() + "/videos";
+    return settings->main.location_videos;
 }
 
 void QmlMessenger::keyEvent(const Qt::Key &key)

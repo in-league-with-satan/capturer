@@ -48,6 +48,12 @@ bool FFFormatConverter::setup(AVPixelFormat format_src, QSize resolution_src, AV
     this->resolution_src=resolution_src;
     this->resolution_dst=resolution_dst;
 
+    this->color_space_src=color_space_src;
+    this->color_space_dst=color_space_dst;
+
+    this->color_range_src=color_range_src;
+    this->color_range_dst=color_range_dst;
+
     this->filter=filter;
 
     convert_context=sws_getContext(resolution_src.width(), resolution_src.height(),

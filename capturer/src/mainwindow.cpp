@@ -50,13 +50,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 MainWindow::MainWindow(QObject *parent)
     : QObject(parent)
 {
-    QDir dir(qApp->applicationDirPath() + "/videos");
-
-    if(!dir.exists())
-        dir.mkdir(dir.absolutePath());
-
-    //
-
     qmlRegisterType<SettingsModel>("FuckTheSystem", 0, 0, "SettingsModel");
     qmlRegisterType<FileSystemModel>("FuckTheSystem", 0, 0, "FileSystemModel");
     qmlRegisterType<SnapshotListModel>("FuckTheSystem", 0, 0, "SnapshotListModel");
@@ -794,6 +787,17 @@ MainWindow::MainWindow(QObject *parent)
 
 MainWindow::~MainWindow()
 {
+    deviceStop(true);
+    deviceStop(false);
+
+    qApp->processEvents();
+
+    while(device_primary && device_primary->isActive())
+        QThread::msleep(10);
+
+    while(device_secondary && device_secondary->isActive())
+        QThread::msleep(10);
+
     settings->save();
 
     MagewellDevice::release();
@@ -1567,7 +1571,7 @@ void MainWindow::checkEncoders()
 
 void MainWindow::checkFreeSpace()
 {
-    QStorageInfo info=QStorageInfo(QApplication::applicationDirPath() + "/videos");
+    QStorageInfo info(settings->main.location_videos);
 
     emit freeSpace(info.bytesAvailable());
     emit freeSpaceStr(QString("%1 MB").arg(QLocale().toString(qint64(info.bytesAvailable()/1024./1024.))));
@@ -1968,6 +1972,7 @@ void MainWindow::deviceStart(bool primary)
         dev->source_10bit=settings_model->valueData(&settings_device->decklink.video_bitdepth, 0).toBool();
         dev->audio_sample_size=(SourceInterface::AudioSampleSize::T)
                 settings_model->valueData(&settings_device->decklink.audio_sample_size, SourceInterface::AudioSampleSize::bitdepth_16).toInt();
+
         (*device)->setHalfFps(false);
 
         (*device)->setDevice(dev);
@@ -2194,7 +2199,8 @@ void MainWindow::updateStats(FFEncoder::Stats s)
     for(int i=0; i<st_primary.bitrate_video.size(); ++i)
         map_bitrate_video.insert(QString::number(st_primary.bitrate_video.keys()[i]), st_primary.bitrate_video.values()[i]);
 
-    emit recStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, map_bitrate_video, s.streams_size, s.dropped_frames_counter, buffer_size.second, buffer_size.first));
+    emit recStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.avg_bitrate_video, map_bitrate_video,
+                            s.streams_size, s.dropped_frames_counter, buffer_size.second, buffer_size.first));
 
     if(settings->main.headless)
         return;
