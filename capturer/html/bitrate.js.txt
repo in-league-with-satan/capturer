@@ -180,13 +180,16 @@ function onLoad()
     document.getElementById('canvas').setAttribute('width', graphic_width);
     document.getElementById('canvas').setAttribute('height', graphic_height + 24);
 
+    document.getElementById('line_avg_br').setAttribute('x1', 0);
+    document.getElementById('line_avg_br').setAttribute('x2', graphic_width);
+
     document.getElementById('grid').setAttribute('points', gridPoints());
 
     document.getElementById('text_bitrate_high').setAttribute('y', 20);
     document.getElementById('text_bitrate_low').setAttribute('y', graphic_height - 10);
 
     addPolyline('graphic_avg', 'magenta');
-    addCheckbox('cb_graphic_avg', '∞', 'magenta');
+    addCheckbox('cb_graphic_avg', '∞', '#ffbbdd');
 
     loadData();
 
@@ -235,6 +238,10 @@ function updateGraphics()
 
         document.getElementById('graphic_avg').setAttribute('points', '');
 
+        document.getElementById('line_avg_br').setAttribute('y1', -1);
+        document.getElementById('line_avg_br').setAttribute('y2', -1);
+        document.getElementById('text_bitrate_avg').textContent='';
+
         for(let i_grp=0; i_grp<window_size_lst.length; ++i_grp)
             document.getElementById('graphic_' + window_size_lst[i_grp]).setAttribute('points', '');
 
@@ -255,6 +262,8 @@ function updateGraphics()
 
     let points='';
 
+    let last_point=0;
+
     if(document.getElementById('cb_graphic_avg').checked) {
         for(let i=0; i<bitrate_avg.length; ++i) {
             if(i!=0)
@@ -265,8 +274,29 @@ function updateGraphics()
             if(isNaN(p))
                 p=0;
 
+            last_point=graphic_height - p - space;
+
             points+=(graphic_width - bitrate_avg.length*2 + i*2) + ' ' + (graphic_height - p - space);
         }
+
+        document.getElementById('line_avg_br').setAttribute('y1', last_point);
+        document.getElementById('line_avg_br').setAttribute('y2', last_point);
+        document.getElementById('text_bitrate_avg').setAttribute('y', last_point);
+        document.getElementById('text_bitrate_avg').textContent=(bitrate_avg[bitrate_avg.length - 1]/1024./1024.).toFixed(2);
+
+        if(last_point>graphic_height*.5) {
+            document.getElementById('text_bitrate_avg').setAttribute('dy', '-2');
+            // document.getElementById('text_bitrate_avg').setAttribute('alignment-baseline', 'baseline');
+
+        } else {
+            document.getElementById('text_bitrate_avg').setAttribute('dy', '14');
+            // document.getElementById('text_bitrate_avg').setAttribute('alignment-baseline', 'hanging');
+        }
+
+    } else {
+        document.getElementById('line_avg_br').setAttribute('y1', -1);
+        document.getElementById('line_avg_br').setAttribute('y2', -1);
+        document.getElementById('text_bitrate_avg').textContent='';
     }
 
     document.getElementById('graphic_avg').setAttribute('points', points);
@@ -323,6 +353,7 @@ function loadData()
                 drop_data=false;
 
                 bitrate_avg=new Array;
+                timestamp=new Array;
 
                 for(let i=0; i<window_size_lst.length; ++i) {
                     bitrate.set(window_size_lst[i], new Array);
@@ -367,8 +398,12 @@ function loadData()
                 bitrate.set(window_size_lst[i], arr);
             }
 
-            if(graphic_added)
+            if(graphic_added) {
                 bringToTop(document.getElementById('graphic_avg'));
+                bringToTop(document.getElementById('text_bitrate_high'));
+                bringToTop(document.getElementById('text_bitrate_low'));
+                bringToTop(document.getElementById('text_bitrate_avg'));
+            }
         }
     };
 

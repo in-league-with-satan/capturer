@@ -9,6 +9,8 @@
 
 .root2 {
     background: linear-gradient(200deg, #c05c7c, #d56a59);
+    color: white;
+    text-shadow: black 0.1em 0.1em 0.2em;
 }
 
 .button_rec {
