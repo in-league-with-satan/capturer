@@ -336,30 +336,40 @@ MW_RESULT MWGetTemperature(HCHANNEL hChannel, unsigned int *pnTemp)
 
 
 MagewellLib::MagewellLib()
+#ifdef LIB_MWCAPTURE
     : d(new MagewellLibPrivate())
+#endif
 {
     load();
 }
 
 void MagewellLib::init()
 {
+#ifdef LIB_MWCAPTURE
+
     magewell_lib=new MagewellLib();
+
+#endif
 }
 
 bool MagewellLib::isLoaded()
 {
-#ifdef __WIN32__
+#ifdef LIB_MWCAPTURE
+#  ifdef __WIN32__
 
     if(magewell_lib)
         return magewell_lib->d->lib.isLoaded();
 
     return false;
 
-#else
+#  else
 
     return true;
 
+#  endif
 #endif
+
+    return false;
 }
 
 void MagewellLib::load()
