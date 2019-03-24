@@ -22,8 +22,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "magewell_lib.h"
 
-
 #ifdef LIB_MWCAPTURE
+#  ifdef __WIN32__
 
 #include "MWCapture.h"
 
@@ -58,9 +58,12 @@ typedef MW_RESULT TMWCaptureAudioFrame(HCHANNEL, MWCAP_AUDIO_CAPTURE_FRAME*);
 typedef MW_RESULT TMWStopAudioCapture(HCHANNEL);
 typedef MW_RESULT TMWGetTemperature(HCHANNEL, unsigned int*);
 
+#  endif // __WIN32__
 
 struct MagewellLibPrivate
 {
+#  ifdef __WIN32__
+
     TMWCaptureInitInstance *f_CaptureInitInstance=nullptr;
     TMWCaptureExitInstance *f_CaptureExitInstance=nullptr;
     TMWRefreshDevice *f_RefreshDevice=nullptr;
@@ -91,9 +94,15 @@ struct MagewellLibPrivate
     TMWGetTemperature *f_GetTemperature=nullptr;
 
     QLibrary lib;
+
+#  endif // __WIN32__
 };
 
+
 MagewellLib *magewell_lib=nullptr;
+
+
+#  ifdef __WIN32__
 
 BOOL MWCaptureInitInstance()
 {
@@ -322,6 +331,7 @@ MW_RESULT MWGetTemperature(HCHANNEL hChannel, unsigned int *pnTemp)
     return MW_FAILED;
 }
 
+#  endif // __WIN32__
 #endif // LIB_MWCAPTURE
 
 
@@ -331,22 +341,31 @@ MagewellLib::MagewellLib()
     load();
 }
 
-MagewellLib::init()
+void MagewellLib::init()
 {
     magewell_lib=new MagewellLib();
 }
 
 bool MagewellLib::isLoaded()
 {
+#ifdef __WIN32__
+
     if(magewell_lib)
         return magewell_lib->d->lib.isLoaded();
 
     return false;
+
+#else
+
+    return true;
+
+#endif
 }
 
 void MagewellLib::load()
 {
 #ifdef LIB_MWCAPTURE
+#  ifdef __WIN32__
 
     d->lib.setFileName("LibMWCapture");
 
@@ -551,18 +570,20 @@ void MagewellLib::load()
         goto err;
     }
 
-#endif
-
     return;
 
 err:
 
     unload();
+
+#  endif // __WIN32__
+#endif // LIB_MWCAPTURE
 }
 
 void MagewellLib::unload()
 {
 #ifdef LIB_MWCAPTURE
+#  ifdef __WIN32__
 
     d->f_CaptureInitInstance=nullptr;
     d->f_CaptureExitInstance=nullptr;
@@ -596,5 +617,6 @@ void MagewellLib::unload()
     if(d->lib.isLoaded())
         d->lib.unload();
 
-#endif
+#  endif // __WIN32__
+#endif // LIB_MWCAPTURE
 }

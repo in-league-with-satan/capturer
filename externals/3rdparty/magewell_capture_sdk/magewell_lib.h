@@ -26,7 +26,7 @@ struct MagewellLib
 {
     MagewellLib();
 
-    static init();
+    static void init();
     static bool isLoaded();
 
     void load();
