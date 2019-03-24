@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "frame_buffer.h"
 #include "ff_tools.h"
+#include "magewell_lib.h"
 
 class SourceInterface
 {
@@ -86,7 +87,7 @@ public:
         return Type::disabled;
     }
 
-    bool isImplemented() const {
+    virtual bool isImplemented() const {
         return isImplemented(type());
     }
 
@@ -103,7 +104,7 @@ public:
 
         case Type::magewell:
 #ifdef LIB_MWCAPTURE
-            return true;
+            return MagewellLib::isLoaded();
 #else
             return false;
 #endif

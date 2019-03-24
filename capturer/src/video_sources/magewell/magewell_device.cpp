@@ -26,6 +26,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #endif
 
+#include "magewell_lib.h"
+
 #include "magewell_device_worker.h"
 
 #include "magewell_device.h"
@@ -61,6 +63,15 @@ MagewellDevice::~MagewellDevice()
 SourceInterface::Type::T MagewellDevice::type() const
 {
     return Type::magewell;
+}
+
+bool MagewellDevice::isImplemented() const
+{
+#ifndef LIB_MWCAPTURE
+    return false;
+#endif
+
+    return MagewellLib::isLoaded();
 }
 
 void MagewellDevice::init()
