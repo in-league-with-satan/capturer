@@ -32,6 +32,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "mainwindow.h"
 #include "store_location.h"
 #include "settings.h"
+#include "magewell_lib.h"
 
 #ifdef __linux__
 
@@ -126,6 +127,8 @@ int main(int argc, char *argv[])
         });
     }
 
+
+    MagewellLib::init();
 
     MagewellDevice::init();
 

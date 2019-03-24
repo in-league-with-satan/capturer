@@ -44,6 +44,8 @@ public:
 
     Type::T type() const;
 
+    bool isImplemented() const;
+
     static void init();
     static void release();
 

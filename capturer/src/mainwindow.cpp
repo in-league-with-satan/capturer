@@ -1938,7 +1938,7 @@ void MainWindow::deviceStart(bool primary)
         MagewellDevice::Devices list=MagewellDevice::availableDevices();
 
         if(settings_device->magewell.index>=list.size()) {
-            qInfo() << "magewell.index out of range";
+            qDebug() << "magewell.index out of range";
             return;
         }
 

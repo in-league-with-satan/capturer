@@ -4,6 +4,9 @@ INCLUDEPATH += \
 HEADERS += \
     $$PWD/*.h
 
+SOURCES += \
+    $$PWD/*.cpp
+
 linux {
     DEFINES += LIB_MWCAPTURE
 
@@ -42,6 +45,6 @@ windows {
 
 
 #        LIBS += $$PWD/win/Lib/Win32/LibMWCapture.lib
-        LIBS += $$PWD/win/Lib/x64/LibMWCapture.lib
+#        LIBS += $$PWD/win/Lib/x64/LibMWCapture.lib
     }
 }
