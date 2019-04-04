@@ -25,7 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <qcoreapplication.h>
 
 #include "data_types.h"
-#include "dialog_keyboard_shortcuts.h"
+#include "keyboard_shortcuts.h"
 #include "store_location.h"
 
 #include "settings.h"
@@ -198,7 +198,7 @@ bool Settings::load()
     keyboard_shortcuts.need_setup=map_keyboard_shortcuts.isEmpty();
 
     for(int i=0; i<KeyCodeC::enm_size; ++i) {
-        keyboard_shortcuts.code.insert(DialogKeyboardShortcuts::defaultQtKey(i), i);
+        keyboard_shortcuts.code.insert(KeyboardShortcuts::defaultQtKey(i), i);
     }
 
     for(int i=0; i<map_keyboard_shortcuts.size(); ++i) {
@@ -354,7 +354,7 @@ bool Settings::save()
     for(int i=0; i<KeyCodeC::enm_size; ++i)
         map_keyboard_shortcuts.insert(
                     KeyCodeC::toString(i),
-                    QKeySequence(keyboard_shortcuts.code.key(i, DialogKeyboardShortcuts::defaultQtKey(i))).toString()
+                    QKeySequence(keyboard_shortcuts.code.key(i, KeyboardShortcuts::defaultQtKey(i))).toString()
                     );
 
     map_nvenc.insert(QStringLiteral("enabled"), (bool)nvenc.enabled);

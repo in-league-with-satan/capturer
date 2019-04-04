@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -29,10 +29,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "data_types.h"
 
-#include "dialog_keyboard_shortcuts.h"
+#include "keyboard_shortcuts.h"
 
-DialogKeyboardShortcuts::DialogKeyboardShortcuts(QWidget *parent)
-    : QDialog(parent)
+KeyboardShortcuts::KeyboardShortcuts(QWidget *parent)
+    : QWidget(parent)
 {
     QGridLayout *la_lines=new QGridLayout();
 
@@ -48,29 +48,17 @@ DialogKeyboardShortcuts::DialogKeyboardShortcuts(QWidget *parent)
     }
 
     QPushButton *b_set_default=new QPushButton("reset to default");
-    QPushButton *b_ok=new QPushButton(qApp->style()->standardIcon(QStyle::SP_DialogOkButton), "Ok");
-    QPushButton *b_cancel=new QPushButton(qApp->style()->standardIcon(QStyle::SP_DialogCancelButton), "Cancel");
 
     connect(b_set_default, SIGNAL(clicked(bool)), SLOT(toDefault()));
-    connect(b_ok, SIGNAL(clicked(bool)), SLOT(accept()));
-    connect(b_cancel, SIGNAL(clicked(bool)), SLOT(reject()));
-
-
-    QHBoxLayout *la_ok_cancel=new QHBoxLayout();
-    la_ok_cancel->addWidget(b_ok);
-    la_ok_cancel->addWidget(b_cancel);
 
     QVBoxLayout *la_main=new QVBoxLayout();
-    la_main->addStretch(1);
     la_main->addLayout(la_lines);
     la_main->addWidget(b_set_default);
-    la_main->addLayout(la_ok_cancel);
-    la_main->addStretch(1);
 
     setLayout(la_main);
 }
 
-DialogKeyboardShortcuts::~DialogKeyboardShortcuts()
+KeyboardShortcuts::~KeyboardShortcuts()
 {
     for(int i=0; i<KeyCodeC::enm_size; ++i) {
         row[i]->label->deleteLater();
@@ -82,17 +70,17 @@ DialogKeyboardShortcuts::~DialogKeyboardShortcuts()
     row.clear();
 }
 
-Qt::Key DialogKeyboardShortcuts::toQtKey(int code)
+Qt::Key KeyboardShortcuts::toQtKey(int code)
 {
     if(code<0 || code>=KeyCodeC::enm_size)
         return Qt::Key_F1;
 
     QKeySequence seq(row[code]->line_edit->text());
 
-    return seq.count()==1 ? (Qt::Key)seq[0] : Qt::Key_F1;
+    return seq.count()==1 ? (Qt::Key)seq[0] : defaultQtKey(code);
 }
 
-void DialogKeyboardShortcuts::setKey(int code, Qt::Key key)
+void KeyboardShortcuts::setKey(int code, Qt::Key key)
 {
     if(code<0 || code>=KeyCodeC::enm_size)
         return;
@@ -100,7 +88,7 @@ void DialogKeyboardShortcuts::setKey(int code, Qt::Key key)
     row[code]->line_edit->setText(QKeySequence(key).toString());
 }
 
-Qt::Key DialogKeyboardShortcuts::defaultQtKey(int code)
+Qt::Key KeyboardShortcuts::defaultQtKey(int code)
 {
     switch(code) {
     case KeyCodeC::About:
@@ -176,7 +164,7 @@ Qt::Key DialogKeyboardShortcuts::defaultQtKey(int code)
     return Qt::Key_unknown;
 }
 
-bool DialogKeyboardShortcuts::eventFilter(QObject *obj, QEvent *event)
+bool KeyboardShortcuts::eventFilter(QObject *obj, QEvent *event)
 {
     QLineEdit *line_edit=nullptr;
 
@@ -203,10 +191,10 @@ bool DialogKeyboardShortcuts::eventFilter(QObject *obj, QEvent *event)
         }
     }
 
-    return QDialog::eventFilter(obj, event);
+    return QWidget::eventFilter(obj, event);
 }
 
-void DialogKeyboardShortcuts::toDefault()
+void KeyboardShortcuts::toDefault()
 {
     for(int i=0; i<row.size(); ++i)
         row[i]->line_edit->setText(QKeySequence(defaultQtKey(i)).toString());

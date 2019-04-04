@@ -35,7 +35,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "qml_messenger.h"
 #include "overlay_view.h"
 #include "http_server.h"
-#include "dialog_keyboard_shortcuts.h"
+#include "dialog_setup.h"
 #include "audio_sender.h"
 #include "tools_ff_source.h"
 #include "ff_source.h"
@@ -58,6 +58,13 @@ MainWindow::MainWindow(QObject *parent)
     //
 
     settings->load();
+
+    //
+
+    if(!settings->main.headless && (settings->keyboard_shortcuts.need_setup || qApp->arguments().contains("--setup", Qt::CaseInsensitive))) {
+        DialogSetup ds;
+        ds.exec();
+    }
 
     //
 
@@ -166,20 +173,6 @@ MainWindow::MainWindow(QObject *parent)
 
         connect(audio_level_secondary, SIGNAL(levels(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)),
                 messenger, SIGNAL(audioLevelSecondary(qreal,qreal,qreal,qreal,qreal,qreal,qreal,qreal)), Qt::QueuedConnection);
-
-        //
-
-        if(settings->keyboard_shortcuts.need_setup || qApp->arguments().contains("--setup_shortcuts", Qt::CaseInsensitive)) {
-            DialogKeyboardShortcuts dlg;
-
-            for(int i=0; i<KeyCodeC::enm_size; ++i)
-                dlg.setKey(i, (Qt::Key)settings->keyboard_shortcuts.code.key(i, DialogKeyboardShortcuts::defaultQtKey(i)));
-
-            if(dlg.exec()==DialogKeyboardShortcuts::Accepted) {
-                for(int i=0; i<KeyCodeC::enm_size; ++i)
-                    settings->keyboard_shortcuts.code.insert(dlg.toQtKey(i), i);
-            }
-        }
     }
 
 
@@ -214,6 +207,9 @@ MainWindow::MainWindow(QObject *parent)
             set_model_data.values_data << i;
         }
     }
+
+    if(settings->device_primary.index>=set_model_data.values.size())
+        settings->device_primary.index=0;
 
     set_model_data.value=&settings->device_primary.index;
 
@@ -270,6 +266,9 @@ MainWindow::MainWindow(QObject *parent)
             set_model_data.values_data << i;
         }
     }
+
+    if(settings->device_secondary.index>=set_model_data.values.size())
+        settings->device_secondary.index=0;
 
     set_model_data.value=&settings->device_secondary.index;
 

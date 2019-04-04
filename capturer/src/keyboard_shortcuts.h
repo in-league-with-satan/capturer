@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,21 +17,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
-#ifndef DIALOG_KEYBOARD_SHORTCUTS_H
-#define DIALOG_KEYBOARD_SHORTCUTS_H
+#ifndef KEYBOARD_SHORTCUTS_H
+#define KEYBOARD_SHORTCUTS_H
 
-#include <QDialog>
+#include <QWidget>
 
 class QLabel;
 class QLineEdit;
 
-class DialogKeyboardShortcuts : public QDialog
+class KeyboardShortcuts : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit DialogKeyboardShortcuts(QWidget *parent=0);
-    ~DialogKeyboardShortcuts();
+    explicit KeyboardShortcuts(QWidget *parent=0);
+    ~KeyboardShortcuts();
 
     Qt::Key toQtKey(int code);
     void setKey(int code, Qt::Key key);
@@ -52,4 +52,4 @@ private:
     QVector <Row*> row;
 };
 
-#endif // DIALOG_KEYBOARD_SHORTCUTS_H
+#endif // KEYBOARD_SHORTCUTS_H

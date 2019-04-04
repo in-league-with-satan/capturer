@@ -56,7 +56,8 @@ MainWindow *root_obj=nullptr;
 
 void signal_handler(int signum)
 {
-    root_obj->deleteLater();
+    if(root_obj)
+        root_obj->deleteLater();
 
     qApp->exit(signum);
 }
@@ -69,6 +70,9 @@ int main(int argc, char *argv[])
 
     qputenv("QML_DISABLE_DISK_CACHE", "true");
 
+    QGuiApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+    QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+
     QCoreApplication *application=nullptr;
 
     bool headless=false;
@@ -78,14 +82,24 @@ int main(int argc, char *argv[])
             headless=true;
     }
 
-    if(headless)
+    if(headless) {
+#ifdef __WIN32__
+
+        // AttachConsole(ATTACH_PARENT_PROCESS);
+        AllocConsole();
+
+        freopen("CONOUT$", "w", stdout);
+        freopen("CONOUT$", "w", stderr);
+
+#endif
+
         application=new QCoreApplication(argc, argv);
 
-    else
+    } else
         application=new QApplication(argc, argv);
 
 
-    application->setApplicationName(QString("capturer (%1)").arg(QString(VERSION_STRING).split("-").first()));
+    application->setApplicationName(QString("capturer (%1)").arg(QString(VERSION_STRING)));
     application->setApplicationVersion(QString(VERSION_STRING));
 
     if(application->arguments().contains("--log-file", Qt::CaseInsensitive)) {
@@ -175,8 +189,6 @@ int main(int argc, char *argv[])
     StoreLocation::createInstance();
 
     Settings::createInstance();
-
-    qputenv("QML_DISABLE_DISK_CACHE", "true");
 
     root_obj=new MainWindow();
 
