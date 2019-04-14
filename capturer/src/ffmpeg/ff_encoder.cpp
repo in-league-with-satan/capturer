@@ -1352,6 +1352,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     if(!encoding_tool.isEmpty())
         av_dict_set(&context->av_format_context->metadata, "encoding_tool", encoding_tool.toLatin1().constData(), 0);
 
+    av_dict_set(&context->av_format_context->metadata, "writing_date", QDateTime::fromString(*context->base_filename, "yyyy-MM-dd_hh-mm-ss")
+                .toUTC().toString("UTC yyyy-MM-dd hh:mm:ss").toLatin1().data(), 0);
 
     ret=avformat_write_header(context->av_format_context, &context->opt);
 
