@@ -149,11 +149,11 @@ build_ff() {
     --enable-nonfree \
     --enable-nvenc \
     --enable-cuvid \
-    `#--enable-libmfx` \
+    --disable-libmfx \
     --enable-libx264 \
     --disable-libfreetype \
     --disable-crystalhd \
-    --disable-vaapi \
+    --enable-vaapi \
     --disable-vdpau \
     --disable-zlib \
     --disable-bzlib \

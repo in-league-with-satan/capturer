@@ -33,60 +33,32 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "ff_encoder.h"
 
-class OutputStream
+struct OutputStream
 {
-public:
-    OutputStream() {
-        av_stream=nullptr;
-        av_codec_context=nullptr;
+    AVStream *av_stream=nullptr;
+    AVCodecContext *av_codec_context=nullptr;
 
-        pts_start=AV_NOPTS_VALUE;
-        pts_next=AV_NOPTS_VALUE;
-        pts_last=AV_NOPTS_VALUE;
+    AVBufferRef *hw_device_ctx=nullptr;
 
-        frame=nullptr;
-        frame_converted=nullptr;
-
-        pkt=nullptr;
-    }
-
-    AVStream *av_stream;
-    AVCodecContext *av_codec_context;
-
-    int64_t pts_start;
-    int64_t pts_next;
-    int64_t pts_last;
+    int64_t pts_start=0;
+    int64_t pts_next=0;
+    int64_t pts_last=0;
 
     QByteArray ba_audio_prev_part;
 
-    AVPixelFormat frame_fmt;
+    AVPixelFormat frame_fmt=AV_PIX_FMT_NONE;
 
+    AVFrame *frame=nullptr;
+    AVFrame *frame_converted=nullptr;
+    AVFrame *frame_hw=nullptr;
 
-    AVFrame *frame;
-    AVFrame *frame_converted;
+    AVPacket *pkt=nullptr;
 
-    AVPacket *pkt;
-
-    uint64_t size_total;
+    uint64_t size_total=0;
 };
 
-class FFMpegContext
+struct FFMpegContext
 {
-public:
-    FFMpegContext() {
-        av_output_format=nullptr;
-        av_format_context=nullptr;
-
-        av_codec_audio=nullptr;
-        av_codec_video=nullptr;
-
-        opt=nullptr;
-
-        skip_frame=false;
-
-        last_stats_update_time=0;
-    }
-
     bool canAcceptFrame() {
         if(av_format_context)
             return true;
@@ -99,30 +71,30 @@ public:
     OutputStream out_stream_video;
     OutputStream out_stream_audio;
 
-    AVOutputFormat *av_output_format;
-    AVFormatContext *av_format_context;
+    AVOutputFormat *av_output_format=nullptr;
+    AVFormatContext *av_format_context=nullptr;
 
-    AVCodec *av_codec_audio;
-    AVCodec *av_codec_video;
+    AVCodec *av_codec_audio=nullptr;
+    AVCodec *av_codec_video=nullptr;
 
-    AVDictionary *opt;
+    AVDictionary *opt=nullptr;
 
     FFEncoder::Config cfg;
 
-    bool skip_frame;
+    bool skip_frame=false;
 
-    qint64 last_stats_update_time;
+    qint64 last_stats_update_time=0;
 
     QString store_dir;
-    FFEncoderBaseFilename *base_filename;
-    FFEncoder::Mode::T mode;
+    FFEncoderBaseFilename *base_filename=nullptr;
+    FFEncoder::Mode::T mode=FFEncoder::Mode::primary;
 
-    uint32_t dropped_frames_counter;
-    uint32_t double_frames_counter;
+    uint32_t dropped_frames_counter=0;
+    uint32_t double_frames_counter=0;
 
-    uint32_t counter_process_events;
+    uint32_t counter_process_events=0;
 
-    uint64_t prev_stream_size_total;
+    uint64_t prev_stream_size_total=0;
     QMap <uint64_t, uint64_t> bitrate_point;
 };
 
@@ -206,34 +178,7 @@ static QString add_stream_audio(OutputStream *out_stream, AVFormatContext *forma
 
 static QString add_stream_video(OutputStream *out_stream, AVFormatContext *format_context, AVCodec **codec, const FFEncoder::Config &cfg)
 {
-    switch(cfg.video_encoder) {
-    case FFEncoder::VideoEncoder::libx264:
-        *codec=avcodec_find_encoder_by_name("libx264");
-        break;
-
-    case FFEncoder::VideoEncoder::libx264rgb:
-        *codec=avcodec_find_encoder_by_name("libx264rgb");
-        break;
-
-    case FFEncoder::VideoEncoder::nvenc_h264:
-        *codec=avcodec_find_encoder_by_name("h264_nvenc");
-        break;
-
-    case FFEncoder::VideoEncoder::nvenc_hevc:
-        *codec=avcodec_find_encoder_by_name("hevc_nvenc");
-        break;
-
-    case FFEncoder::VideoEncoder::qsv_h264:
-        *codec=avcodec_find_encoder_by_name("h264_qsv");
-        break;
-
-    case FFEncoder::VideoEncoder::ffvhuff:
-        *codec=avcodec_find_encoder_by_name("ffvhuff");
-        break;
-
-    default:
-        break;
-    }
+    (*codec)=avcodec_find_encoder_by_name(FFEncoder::VideoEncoder::toEncName(cfg.video_encoder).toLatin1().data());
 
     if(!(*codec))
         return QStringLiteral("could not find encoder");
@@ -253,12 +198,11 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
     if(!out_stream->av_codec_context)
         return QStringLiteral("could not allocate an encoding context");
 
-
-
     out_stream->av_codec_context->codec_id=(*codec)->id;
 
     out_stream->av_codec_context->width=cfg.frame_resolution_dst.width();
     out_stream->av_codec_context->height=cfg.frame_resolution_dst.height();
+
 
     AVRational target_framerate;
 
@@ -281,11 +225,60 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
     // tbc?
     out_stream->av_codec_context->time_base=target_framerate;
 
-    out_stream->av_stream->avg_frame_rate=av_inv_q(target_framerate);
-    // out_stream->av_codec_context->framerate;
+    out_stream->av_codec_context->framerate=av_inv_q(target_framerate);
+    out_stream->av_codec_context->sample_aspect_ratio={ 1, 1 };
 
+    out_stream->av_stream->avg_frame_rate=av_inv_q(target_framerate);
 
     out_stream->av_codec_context->pix_fmt=cfg.pixel_format_dst.toAVPixelFormat();
+
+
+    if(cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_h264
+            || cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_hevc
+            || cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_vp8
+            || cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_vp9) {
+        int ret=av_hwdevice_ctx_create(&out_stream->hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI, nullptr, nullptr, 0);
+
+        if(ret<0)
+            return QString("Failed to create a VAAPI device: %1").arg(ffErrorString(ret));
+
+        out_stream->av_codec_context->pix_fmt=AV_PIX_FMT_VAAPI;
+
+        AVBufferRef *hw_frames_ref;
+
+        if(!(hw_frames_ref=av_hwframe_ctx_alloc(out_stream->hw_device_ctx)))
+            return "Failed to create VAAPI frame context";
+
+        AVHWFramesContext *frames_ctx=
+                (AVHWFramesContext*)hw_frames_ref->data;
+
+        frames_ctx->format=AV_PIX_FMT_VAAPI;
+        frames_ctx->sw_format=cfg.pixel_format_dst.toAVPixelFormat();
+        frames_ctx->width=cfg.frame_resolution_dst.width();
+        frames_ctx->height=cfg.frame_resolution_dst.height();
+        frames_ctx->initial_pool_size=20; // ???
+
+        if((ret=av_hwframe_ctx_init(hw_frames_ref))<0) {
+            av_buffer_unref(&hw_frames_ref);
+            return QString("Failed to initialize VAAPI frame context: %1").arg(ffErrorString(ret));
+        }
+
+        out_stream->av_codec_context->hw_frames_ctx=av_buffer_ref(hw_frames_ref);
+
+        av_buffer_unref(&hw_frames_ref);
+
+        if(!out_stream->av_codec_context->hw_frames_ctx)
+            return ffErrorString(AVERROR(ENOMEM));
+
+        if(!(out_stream->frame_hw=av_frame_alloc()))
+            return ffErrorString(AVERROR(ENOMEM));
+
+        if((ret=av_hwframe_get_buffer(out_stream->av_codec_context->hw_frames_ctx, out_stream->frame_hw, 0))<0)
+            return QString("av_hwframe_get_buffer err: %1").arg(ffErrorString(ret));
+
+        if(!out_stream->frame_hw->hw_frames_ctx)
+            return ffErrorString(AVERROR(ENOMEM));
+    }
 
     if(cfg.video_encoder==FFEncoder::VideoEncoder::libx264 || cfg.video_encoder==FFEncoder::VideoEncoder::libx264rgb) {
         av_opt_set(out_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
@@ -400,7 +393,6 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
                 // out_stream->av_codec_context->qmax=cfg.crf;
                 // out_stream->av_codec_context->max_qdiff=out_stream->av_codec_context->qmax - out_stream->av_codec_context->qmin;
 
-
             } else {
                 av_opt_set(out_stream->av_codec_context->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i - 1).toLatin1().constData(), 0);
                 av_opt_set(out_stream->av_codec_context->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p - 1).toLatin1().constData(), 0);
@@ -455,6 +447,22 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
 
         av_opt_set(out_stream->av_codec_context->priv_data, "look_ahead", "0", 0);
         av_opt_set(out_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+
+    } else if(cfg.video_encoder==FFEncoder::VideoEncoder::qsv_hevc) {
+        out_stream->av_codec_context->flags|=AV_CODEC_FLAG_QSCALE;
+        out_stream->av_codec_context->global_quality=FF_QP2LAMBDA*cfg.crf;
+
+        av_opt_set(out_stream->av_codec_context->priv_data, "look_ahead", "1", 0);
+        av_opt_set(out_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+
+    } else if(cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_h264 || cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_hevc) {
+        av_opt_set(out_stream->av_codec_context->priv_data, "rc_mode", "CQP", 0);
+        // av_opt_set(out_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
+        out_stream->av_codec_context->global_quality=cfg.crf;
+
+    } else if(cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_vp8 || cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_vp9) {
+        av_opt_set(out_stream->av_codec_context->priv_data, "rc_mode", "CQP", 0);
+        out_stream->av_codec_context->global_quality=cfg.crf;
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::ffvhuff) {
         out_stream->av_codec_context->thread_count=QThread::idealThreadCount() - 1;
@@ -621,7 +629,20 @@ static QString write_video_frame(AVFormatContext *oc, OutputStream *ost)
     int ret;
     int ret_2;
 
-    ret=avcodec_send_frame(ost->av_codec_context, ost->frame_converted);
+
+    if(ost->frame_hw) {
+        if((ret=av_hwframe_transfer_data(ost->frame_hw, ost->frame_converted, 0)) < 0) {
+            return  QString("Error while transferring frame data to surface: %1").arg(ffErrorString(ret));
+        }
+
+        ost->frame_hw->pts=ost->frame_converted->pts;
+
+        ret=avcodec_send_frame(ost->av_codec_context, ost->frame_hw);
+
+    } else {
+        ret=avcodec_send_frame(ost->av_codec_context, ost->frame_converted);
+
+    }
 
     if(ret<0) {
         qCritical() << "write_video_frame err:" << ffErrorString(ret);
@@ -649,6 +670,11 @@ static QString write_video_frame(AVFormatContext *oc, OutputStream *ost)
 
 static void close_stream(OutputStream *ost)
 {
+    if(ost->hw_device_ctx) {
+        av_buffer_unref(&ost->hw_device_ctx);
+        ost->hw_device_ctx=nullptr;
+    }
+
     if(ost->av_codec_context) {
         avcodec_free_context(&ost->av_codec_context);
         ost->av_codec_context=nullptr;
@@ -833,6 +859,7 @@ QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
                              << QLatin1String("lossless");
 
     case VideoEncoder::qsv_h264:
+    case VideoEncoder::qsv_hevc:
         return QStringList() << QLatin1String("veryfast") << QLatin1String("faster") << QLatin1String("fast")
                              << QLatin1String("medium")
                              << QLatin1String("slow") << QLatin1String("slower") << QLatin1String("veryslow");
@@ -1177,6 +1204,28 @@ void FFEncoder::restart(Frame::ptr frame)
     emit restartReq();
 }
 
+void checkCrfValue(FFEncoder::Config *cfg)
+{
+    if(cfg->video_encoder==FFEncoder::VideoEncoder::ffvhuff) {
+        cfg->crf=0xff;
+        return;
+    }
+
+    if(cfg->video_encoder==FFEncoder::VideoEncoder::nvenc_h264 || cfg->video_encoder==FFEncoder::VideoEncoder::nvenc_hevc) {
+        if(cfg->crf>51)
+            cfg->crf=51;
+
+        return;
+    }
+
+    if(cfg->video_encoder==FFEncoder::VideoEncoder::vaapi_h264 || cfg->video_encoder==FFEncoder::VideoEncoder::vaapi_hevc) {
+        if(cfg->crf>52)
+            cfg->crf=52;
+
+        return;
+    }
+}
+
 bool FFEncoder::setConfig(FFEncoder::Config cfg)
 {
     if(cfg.input_type_flags&SourceInterface::TypeFlag::video && (!cfg.pixel_format_src.isValid() || !cfg.pixel_format_dst.isValid()))
@@ -1184,18 +1233,10 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
     last_error_string.clear();
 
+    checkCrfValue(&cfg);
+
     int ret;
     int sws_flags=0;
-
-
-    if(cfg.video_encoder!=FFEncoder::VideoEncoder::libx264
-            && cfg.video_encoder!=FFEncoder::VideoEncoder::libx264rgb
-            && cfg.video_encoder!=FFEncoder::VideoEncoder::nvenc_h264
-            && cfg.video_encoder!=FFEncoder::VideoEncoder::nvenc_hevc
-            && cfg.video_encoder!=FFEncoder::VideoEncoder::qsv_h264) {
-            cfg.crf=0xff;
-    }
-
 
     context->out_stream_video.frame_fmt=cfg.pixel_format_dst.toAVPixelFormat();
 
@@ -1705,6 +1746,21 @@ QString FFEncoder::VideoEncoder::toString(uint32_t enc)
     case qsv_h264:
         return QLatin1String("qsv_h264");
 
+    case qsv_hevc:
+        return QLatin1String("qsv_hevc");
+
+    case vaapi_h264:
+        return QLatin1String("vaapi_h264");
+
+    case vaapi_hevc:
+        return QLatin1String("vaapi_hevc");
+
+    case vaapi_vp8:
+        return QLatin1String("vaapi_vp8");
+
+    case vaapi_vp9:
+        return QLatin1String("vaapi_vp9");
+
     case ffvhuff:
         return QLatin1String("ffvhuff");
     }
@@ -1730,6 +1786,21 @@ QString FFEncoder::VideoEncoder::toEncName(uint32_t enc)
     case qsv_h264:
         return QLatin1String("h264_qsv");
 
+    case qsv_hevc:
+        return QLatin1String("hevc_qsv");
+
+    case vaapi_h264:
+        return QLatin1String("h264_vaapi");
+
+    case vaapi_hevc:
+        return QLatin1String("hevc_vaapi");
+
+    case vaapi_vp8:
+        return QLatin1String("vp8_vaapi");
+
+    case vaapi_vp9:
+        return QLatin1String("vp9_vaapi");
+
     case ffvhuff:
         return QLatin1String("ffvhuff");
     }
@@ -1754,6 +1825,21 @@ uint64_t FFEncoder::VideoEncoder::fromString(QString value)
     else if(value==QLatin1String("qsv_h264"))
         return qsv_h264;
 
+    else if(value==QLatin1String("qsv_hevc"))
+        return qsv_hevc;
+
+    else if(value==QLatin1String("vaapi_h264"))
+        return vaapi_h264;
+
+    else if(value==QLatin1String("vaapi_hevc"))
+        return vaapi_hevc;
+
+    else if(value==QLatin1String("vaapi_vp8"))
+        return vaapi_vp8;
+
+    else if(value==QLatin1String("vaapi_vp9"))
+        return vaapi_vp9;
+
     else if(value==QLatin1String("ffvhuff"))
         return ffvhuff;
 
@@ -1763,7 +1849,11 @@ uint64_t FFEncoder::VideoEncoder::fromString(QString value)
 QList <FFEncoder::VideoEncoder::T> FFEncoder::VideoEncoder::list()
 {
     QList <FFEncoder::VideoEncoder::T> res=
-            QList <FFEncoder::VideoEncoder::T>() << libx264 << libx264rgb << nvenc_h264 << nvenc_hevc << qsv_h264 << ffvhuff;
+            QList <FFEncoder::VideoEncoder::T>() << libx264 << libx264rgb
+                                                 << nvenc_h264 << nvenc_hevc
+                                                 << qsv_h264 << qsv_hevc
+                                                 << vaapi_h264 << vaapi_hevc << vaapi_vp8 << vaapi_vp9
+                                                 << ffvhuff;
 
     return res;
 }

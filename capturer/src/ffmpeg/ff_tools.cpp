@@ -149,24 +149,101 @@ bool checkEncoder(const QString &encoder_name, const uint64_t &pixel_format)
     return checkEncoder(encoder_name, (AVPixelFormat)pixel_format);
 }
 
-bool checkEncoder(const QString &encoder_name, const AVPixelFormat &pixel_format)
+bool checkEncoderVaapi(const QString &encoder_name, const AVPixelFormat &pixel_format)
 {
     bool result=false;
 
     AVCodec *codec=
             avcodec_find_encoder_by_name(encoder_name.toLatin1().constData());
 
-    /*
-    if(!codec)
-        return false;
 
-    for(int i=0; codec->pix_fmts[i]!=AV_PIX_FMT_NONE; ++i) {
-        if(codec->pix_fmts[i]==pixel_format)
-            return true;
+    AVCodecContext *codec_context=nullptr;
+    AVBufferRef *hw_device_ctx=nullptr;
+    AVBufferRef *hw_frames_ref=nullptr;
+    AVHWFramesContext *frames_ctx=nullptr;
+
+    int ret=0;
+
+    if(!codec)
+        goto exit;
+
+
+    ret=av_hwdevice_ctx_create(&hw_device_ctx, AV_HWDEVICE_TYPE_VAAPI, NULL, NULL, 0);
+
+    if(ret<0) {
+        // qCritical() << "Failed to create a VAAPI device. Error code:" << ffErrorString(ret);
+        goto exit;
     }
 
-    return false;
-    */
+    codec_context=avcodec_alloc_context3(codec);
+
+    if(!codec_context)
+        goto exit;
+
+    codec_context->width=640;
+    codec_context->height=480;
+    codec_context->time_base={ 1, 15 };
+    codec_context->framerate={ 15, 1 };
+    codec_context->sample_aspect_ratio={ 1, 1 };
+    codec_context->pix_fmt=AV_PIX_FMT_VAAPI;
+
+    if(!(hw_frames_ref=av_hwframe_ctx_alloc(hw_device_ctx))) {
+        // qCritical() << "Failed to create VAAPI frame context";
+        goto exit;
+    }
+
+    frames_ctx=(AVHWFramesContext*)(hw_frames_ref->data);
+    frames_ctx->format=AV_PIX_FMT_VAAPI;
+    frames_ctx->sw_format=pixel_format;
+    frames_ctx->width=codec_context->width;
+    frames_ctx->height=codec_context->width;
+    frames_ctx->initial_pool_size=20;
+
+    ret=av_hwframe_ctx_init(hw_frames_ref);
+
+    if(ret<0) {
+        // qCritical() << "Failed to initialize VAAPI frame context:" << ffErrorString(ret);
+        goto exit;
+    }
+
+    codec_context->hw_frames_ctx=av_buffer_ref(hw_frames_ref);
+
+    if(!codec_context->hw_frames_ctx) {
+        // qCritical() << "Failed to initialize VAAPI frame context:" << ffErrorString(AVERROR(ENOMEM));
+        goto exit;
+    }
+
+    ret=avcodec_open2(codec_context, codec, nullptr);
+
+    if(ret==0) {
+        result=true;
+
+    } else {
+        // qCritical() << "avcodec_open2 err:" << ffErrorString(ret);
+    }
+
+exit:
+    if(hw_frames_ref)
+        av_buffer_unref(&hw_frames_ref);
+
+    if(hw_device_ctx)
+        av_buffer_unref(&hw_device_ctx);
+
+    if(codec_context)
+        avcodec_free_context(&codec_context);
+
+    return result;
+}
+
+bool checkEncoder(const QString &encoder_name, const AVPixelFormat &pixel_format)
+{
+    if(encoder_name.contains("vaapi", Qt::CaseInsensitive))
+        return checkEncoderVaapi(encoder_name, pixel_format);
+
+    bool result=false;
+
+    AVCodec *codec=
+            avcodec_find_encoder_by_name(encoder_name.toLatin1().constData());
 
     AVCodecContext *codec_context=nullptr;
 
@@ -182,7 +259,9 @@ bool checkEncoder(const QString &encoder_name, const AVPixelFormat &pixel_format
 
     codec_context->width=640;
     codec_context->height=480;
-    codec_context->time_base={ 1000, 15000 };
+    codec_context->time_base={ 1, 15 };
+    codec_context->framerate={ 15, 1 };
+    codec_context->sample_aspect_ratio={ 1, 1 };
     codec_context->pix_fmt=pixel_format;
 
     ret=avcodec_open2(codec_context, codec, nullptr);
