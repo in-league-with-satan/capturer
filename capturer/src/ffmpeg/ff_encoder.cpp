@@ -1206,7 +1206,7 @@ void FFEncoder::restart(Frame::ptr frame)
 
 void checkCrfValue(FFEncoder::Config *cfg)
 {
-    if(cfg->video_encoder==FFEncoder::VideoEncoder::ffvhuff) {
+    if(cfg->video_encoder==FFEncoder::VideoEncoder::ffvhuff || cfg->video_encoder==FFEncoder::VideoEncoder::magicyuv) {
         cfg->crf=0xff;
         return;
     }
@@ -1763,6 +1763,9 @@ QString FFEncoder::VideoEncoder::toString(uint32_t enc)
 
     case ffvhuff:
         return QLatin1String("ffvhuff");
+
+    case magicyuv:
+        return QLatin1String("magicyuv");
     }
 
     return QLatin1String("");
@@ -1803,6 +1806,9 @@ QString FFEncoder::VideoEncoder::toEncName(uint32_t enc)
 
     case ffvhuff:
         return QLatin1String("ffvhuff");
+
+    case magicyuv:
+        return QLatin1String("magicyuv");
     }
 
     return QLatin1String("");
@@ -1843,6 +1849,9 @@ uint64_t FFEncoder::VideoEncoder::fromString(QString value)
     else if(value==QLatin1String("ffvhuff"))
         return ffvhuff;
 
+    else if(value==QLatin1String("magicyuv"))
+        return magicyuv;
+
     return 0;
 }
 
@@ -1853,7 +1862,7 @@ QList <FFEncoder::VideoEncoder::T> FFEncoder::VideoEncoder::list()
                                                  << nvenc_h264 << nvenc_hevc
                                                  << qsv_h264 << qsv_hevc
                                                  << vaapi_h264 << vaapi_hevc << vaapi_vp8 << vaapi_vp9
-                                                 << ffvhuff;
+                                                 << ffvhuff << magicyuv;
 
     return res;
 }

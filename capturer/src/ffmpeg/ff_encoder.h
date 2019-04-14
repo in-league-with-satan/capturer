@@ -88,8 +88,8 @@ public:
             vaapi_hevc,
             vaapi_vp8,
             vaapi_vp9,
-            ffvhuff
-            // magicyuv
+            ffvhuff,
+            magicyuv
         };
 
         static QString toString(uint32_t enc);
