@@ -34,17 +34,11 @@ CONFIG -= qtquickcompiler
 DESTDIR = $$PWD/../bin
 
 
-GIT_BRANCH = $$system(git --git-dir $$PWD/../.git rev-parse --abbrev-ref HEAD)
+GIT_HASH = $$system(git --git-dir $$PWD/../.git log -1 --pretty=format:%h)
 GIT_LAST_TAG = $$system(git --git-dir $$PWD/../.git describe --abbrev=0 --tags)
 GIT_CMT_COUNT = $$system(git --git-dir $$PWD/../.git rev-list '$$GIT_LAST_TAG'.. --count)
 
-equals(GIT_BRANCH, master) {
-    VERSION = $$GIT_LAST_TAG"."$$GIT_CMT_COUNT
-
-} else {
-    #GIT_VERSION = $$system(git --git-dir $$PWD/../.git describe --always --tags)
-    VERSION = $$GIT_LAST_TAG"."-1
-}
+VERSION = $$GIT_LAST_TAG"."$$GIT_CMT_COUNT-$$GIT_HASH
 
 DEFINES += VERSION_STRING=\\\"$$VERSION\\\"
 
