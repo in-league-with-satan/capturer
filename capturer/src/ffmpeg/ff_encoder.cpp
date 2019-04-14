@@ -442,6 +442,13 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
         av_opt_set(out_stream->av_codec_context->priv_data, "look_ahead", "0", 0);
         av_opt_set(out_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
+    } else if(cfg.video_encoder==FFEncoder::VideoEncoder::qsv_hevc) {
+        out_stream->av_codec_context->flags|=AV_CODEC_FLAG_QSCALE;
+        out_stream->av_codec_context->global_quality=FF_QP2LAMBDA*cfg.crf;
+
+        av_opt_set(out_stream->av_codec_context->priv_data, "look_ahead", "1", 0);
+        av_opt_set(out_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_h264 || cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_hevc) {
         av_opt_set(out_stream->av_codec_context->priv_data, "rc_mode", "CQP", 0);
         // av_opt_set(out_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
@@ -846,6 +853,7 @@ QStringList FFEncoder::compatiblePresets(FFEncoder::VideoEncoder::T encoder)
                              << QLatin1String("lossless");
 
     case VideoEncoder::qsv_h264:
+    case VideoEncoder::qsv_hevc:
         return QStringList() << QLatin1String("veryfast") << QLatin1String("faster") << QLatin1String("fast")
                              << QLatin1String("medium")
                              << QLatin1String("slow") << QLatin1String("slower") << QLatin1String("veryslow");
@@ -1730,6 +1738,9 @@ QString FFEncoder::VideoEncoder::toString(uint32_t enc)
     case qsv_h264:
         return QLatin1String("qsv_h264");
 
+    case qsv_hevc:
+        return QLatin1String("qsv_hevc");
+
     case vaapi_h264:
         return QLatin1String("vaapi_h264");
 
@@ -1767,6 +1778,9 @@ QString FFEncoder::VideoEncoder::toEncName(uint32_t enc)
     case qsv_h264:
         return QLatin1String("h264_qsv");
 
+    case qsv_hevc:
+        return QLatin1String("hevc_qsv");
+
     case vaapi_h264:
         return QLatin1String("h264_vaapi");
 
@@ -1803,6 +1817,9 @@ uint64_t FFEncoder::VideoEncoder::fromString(QString value)
     else if(value==QLatin1String("qsv_h264"))
         return qsv_h264;
 
+    else if(value==QLatin1String("qsv_hevc"))
+        return qsv_hevc;
+
     else if(value==QLatin1String("vaapi_h264"))
         return vaapi_h264;
 
@@ -1826,7 +1843,7 @@ QList <FFEncoder::VideoEncoder::T> FFEncoder::VideoEncoder::list()
     QList <FFEncoder::VideoEncoder::T> res=
             QList <FFEncoder::VideoEncoder::T>() << libx264 << libx264rgb
                                                  << nvenc_h264 << nvenc_hevc
-                                                 << qsv_h264
+                                                 << qsv_h264 << qsv_hevc
                                                  << vaapi_h264 << vaapi_hevc << vaapi_vp8 << vaapi_vp9
                                                  << ffvhuff;
 

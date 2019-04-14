@@ -83,6 +83,7 @@ public:
             nvenc_h264,
             nvenc_hevc,
             qsv_h264,
+            qsv_hevc,
             vaapi_h264,
             vaapi_hevc,
             vaapi_vp8,
