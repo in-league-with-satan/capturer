@@ -160,6 +160,7 @@ public:
             int device=0;
             int b_frames=0;
             int ref_frames=0;
+            int b_ref_mode=0;
             int gop_size=12;
             int qp_i=0;
             int qp_p=0;

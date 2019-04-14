@@ -616,6 +616,18 @@ MainWindow::MainWindow(QObject *parent)
         //
 
         set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="use b frames as references";
+        set_model_data.value=&settings->nvenc.b_ref_mode;
+
+        set_model_data.values << "disabled" << "each" << "middle";
+
+        settings_model->add(set_model_data);
+
+        set_model_data.values.clear();
+
+        //
+
+        set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="gop size";
         set_model_data.value=&settings->nvenc.gop_size;
 

@@ -302,6 +302,9 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
             if(cfg.nvenc.weighted_pred==0 && cfg.nvenc.b_frames>0)
                 out_stream->av_codec_context->max_b_frames=cfg.nvenc.b_frames;
 
+            if(cfg.nvenc.b_ref_mode>0)
+                av_opt_set(out_stream->av_codec_context->priv_data, "b_ref_mode", QString::number(cfg.nvenc.b_ref_mode).toLatin1().constData(), 0);
+
             out_stream->av_codec_context->refs=cfg.nvenc.ref_frames;
 
             out_stream->av_codec_context->gop_size=cfg.nvenc.gop_size;
@@ -376,6 +379,9 @@ static QString add_stream_video(OutputStream *out_stream, AVFormatContext *forma
 
             if(cfg.nvenc.weighted_pred==0 && cfg.nvenc.b_frames>0)
                 out_stream->av_codec_context->max_b_frames=cfg.nvenc.b_frames;
+
+            if(cfg.nvenc.b_ref_mode>0)
+                av_opt_set(out_stream->av_codec_context->priv_data, "b_ref_mode", QString::number(cfg.nvenc.b_ref_mode).toLatin1().constData(), 0);
 
             out_stream->av_codec_context->refs=cfg.nvenc.ref_frames;
 
@@ -1081,12 +1087,14 @@ QString FFEncoder::configString(const FFEncoder::Config &cfg)
         map.insert("ref_frames", cfg.nvenc.ref_frames);
         map.insert("gop_size", cfg.nvenc.gop_size);
 
+        if(cfg.nvenc.b_ref_mode>0)
+            map.insert("b_ref_mode", cfg.nvenc.b_ref_mode==1 ? "each" : "middle");
+
         if(cfg.nvenc.rc_lookahead>0)
             map.insert("rc_lookahead", cfg.nvenc.rc_lookahead - 1);
 
         if(cfg.nvenc.surfaces>0)
             map.insert("surfaces", cfg.nvenc.surfaces - 1);
-
 
         if(cfg.nvenc.no_scenecut!=0)
             map.insert("no-scenecut", QVariant());

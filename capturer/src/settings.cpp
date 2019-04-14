@@ -212,6 +212,7 @@ bool Settings::load()
     nvenc.device=map_nvenc.value(QStringLiteral("device"), 0).toInt();
     nvenc.b_frames=map_nvenc.value(QStringLiteral("b_frames"), 0).toInt();
     nvenc.ref_frames=map_nvenc.value(QStringLiteral("ref_frames"), 0).toInt();
+    nvenc.b_ref_mode=map_nvenc.value(QStringLiteral("b_ref_mode"), 0).toInt();
     nvenc.gop_size=map_nvenc.value(QStringLiteral("gop_size"), 0).toInt();
     nvenc.qp_i=map_nvenc.value(QStringLiteral("qp_i"), 0).toInt();
     nvenc.qp_p=map_nvenc.value(QStringLiteral("qp_p"), 0).toInt();
@@ -361,6 +362,7 @@ bool Settings::save()
     map_nvenc.insert(QStringLiteral("device"), nvenc.device);
     map_nvenc.insert(QStringLiteral("b_frames"), nvenc.b_frames);
     map_nvenc.insert(QStringLiteral("ref_frames"), nvenc.ref_frames);
+    map_nvenc.insert(QStringLiteral("b_ref_mode"), nvenc.b_ref_mode);
     map_nvenc.insert(QStringLiteral("gop_size"), nvenc.gop_size);
     map_nvenc.insert(QStringLiteral("qp_i"), nvenc.qp_i);
     map_nvenc.insert(QStringLiteral("qp_p"), nvenc.qp_p);
