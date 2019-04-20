@@ -38,11 +38,12 @@ GIT_HASH = $$system(git --git-dir $$PWD/../.git log -1 --pretty=format:%h)
 GIT_LAST_TAG = $$system(git --git-dir $$PWD/../.git describe --abbrev=0 --tags)
 GIT_CMT_COUNT = $$system(git --git-dir $$PWD/../.git rev-list '$$GIT_LAST_TAG'.. --count)
 
-VERSION = $$GIT_LAST_TAG"."$$GIT_CMT_COUNT-$$GIT_HASH
+VERSION_APP = $$GIT_LAST_TAG"."$$GIT_CMT_COUNT-$$GIT_HASH
+VERSION = $$GIT_LAST_TAG"."$$GIT_CMT_COUNT
 
-DEFINES += VERSION_STRING=\\\"$$VERSION\\\"
+DEFINES += VERSION_STRING=\\\"$$VERSION_APP\\\"
 
-#message(v$$VERSION)
+#message(v$$VERSION_APP)
 
 LINK_OPT=shared
 BUILD_OPT=release
