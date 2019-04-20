@@ -174,6 +174,7 @@ bool Settings::load()
     rec.preset=map_rec.value(QStringLiteral("preset")).toMap();
     rec.crf=map_rec.value(QStringLiteral("crf"), 0).toInt();
     rec.half_fps=map_rec.value(QStringLiteral("half_fps"), 0).toInt();
+    rec.direct_stream_copy=map_rec.value(QStringLiteral("direct_stream_copy"), 0).toInt();
     rec.downscale=map_rec.value(QStringLiteral("downscale"), FFEncoder::DownScale::Disabled).toInt();
     rec.scale_filter=map_rec.value(QStringLiteral("scale_filter"), FFEncoder::ScaleFilter::FastBilinear).toInt();
     rec.color_primaries=map_rec.value(QStringLiteral("color_primaries"), 0).toInt();
@@ -332,6 +333,7 @@ bool Settings::save()
     map_rec.insert(QStringLiteral("preset"), rec.preset);
     map_rec.insert(QStringLiteral("crf"), rec.crf);
     map_rec.insert(QStringLiteral("half_fps"), (bool)rec.half_fps);
+    map_rec.insert(QStringLiteral("direct_stream_copy"), (bool)rec.direct_stream_copy);
     map_rec.insert(QStringLiteral("downscale"), rec.downscale);
     map_rec.insert(QStringLiteral("scale_filter"), rec.scale_filter);
 

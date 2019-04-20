@@ -284,7 +284,7 @@ AVRational FFSource::currentFrameRate()
     return d->currentFrameRate();
 }
 
-PixelFormat FFSource::pixelFormat()
+PixelFormat FFSource::currentPixelFormat()
 {
     QMutexLocker ml(&mutex);
 

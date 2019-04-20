@@ -415,9 +415,6 @@ AVRational FFSourceWorker::currentFrameRate() const
 
 PixelFormat FFSourceWorker::pixelFormat() const
 {
-    if(cfg.pixel_format==PixelFormat::mjpeg)
-        return PixelFormat(AV_PIX_FMT_YUV422P);
-
     return cfg.pixel_format;
 }
 
@@ -557,6 +554,18 @@ bool FFSourceWorker::step()
                     }
 
                     if(frame) {
+                        if(cfg.pixel_format==PixelFormat::mjpeg) {
+                            frame->video.av_packet=av_packet_clone(&packet);
+                            frame->video.pixel_format_pkt=cfg.pixel_format;
+/*
+                            QFile f;
+                            f.setFileName(QString("%1.jpg").arg(packet.pts));
+                            f.open(QFile::ReadWrite);
+                            f.write((const char*)packet.data, packet.size);
+                            f.close();
+*/
+                        }
+
                         foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
                             buf->append(frame);
                     }

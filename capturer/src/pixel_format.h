@@ -58,6 +58,8 @@ struct PixelFormat {
     PixelFormat(const int &value);
     PixelFormat(const AVPixelFormat &value);
 
+    static PixelFormat normalizeFormat(const int &value);
+
     static QList <PixelFormat> list();
 
     AVPixelFormat toAVPixelFormat() const;

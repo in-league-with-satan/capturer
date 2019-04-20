@@ -537,6 +537,14 @@ MainWindow::MainWindow(QObject *parent)
     //
 
     set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="direct stream copy (for mjpeg or h264)";
+    set_model_data.value=&settings->rec.direct_stream_copy;
+
+    settings_model->add(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::checkbox;
     set_model_data.name="half-fps";
     set_model_data.value=&settings->rec.half_fps;
 
@@ -2041,6 +2049,7 @@ void MainWindow::startStopRecording()
             cfg.video_encoder=(FFEncoder::VideoEncoder::T)settings_model->valueData(&settings->rec.encoder_video).toInt();
             cfg.crf=settings->rec.crf;
             cfg.pixel_format_src=device_primary->currentPixelFormat();
+            cfg.direct_stream_copy=settings->rec.direct_stream_copy;
             cfg.audio_sample_size=device_primary->currentAudioSampleSize();
             cfg.audio_channels_size=device_primary->currentAudioChannels();
             cfg.downscale=settings->rec.downscale;
@@ -2069,6 +2078,7 @@ void MainWindow::startStopRecording()
             cfg.framerate=FFEncoder::calcFps(framerate.num, framerate.den, settings->rec.half_fps);
             cfg.frame_resolution_src=device_secondary->currentFramesize();
             cfg.pixel_format_dst=settings_model->valueData(&settings->rec.pixel_format_current).toInt();
+            cfg.direct_stream_copy=settings->rec.direct_stream_copy;
             cfg.preset=settings_model->valueData(&settings->rec.preset_current).toString();
             cfg.video_encoder=(FFEncoder::VideoEncoder::T)settings_model->valueData(&settings->rec.encoder_video).toInt();
             cfg.crf=settings->rec.crf;

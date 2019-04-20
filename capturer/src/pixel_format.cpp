@@ -47,6 +47,14 @@ PixelFormat::PixelFormat(const AVPixelFormat &value)
     fromAVPixelFormat(value);
 }
 
+PixelFormat PixelFormat::normalizeFormat(const int &value)
+{
+    if(value==PixelFormat::mjpeg)
+        return PixelFormat(AV_PIX_FMT_YUV422P);
+
+    return PixelFormat(value);
+}
+
 QList <PixelFormat> PixelFormat::list()
 {
     static QList <PixelFormat> res;
@@ -117,8 +125,7 @@ AVPixelFormat PixelFormat::toAVPixelFormat() const
         return AV_PIX_FMT_P010;
 
     case mjpeg:
-        return AV_PIX_FMT_YUV422P;
-        return AV_PIX_FMT_NONE;
+        return AV_PIX_FMT_YUVJ422P;
     }
 
     return AV_PIX_FMT_NONE;
