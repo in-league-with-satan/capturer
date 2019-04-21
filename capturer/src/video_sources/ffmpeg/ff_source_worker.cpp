@@ -490,19 +490,18 @@ bool FFSourceWorker::step()
                         if(d->audio_device) {
                             QByteArray ba_audio=d->audio_device->readAll();
 
-                            if(!ba_audio.isEmpty()) {
-                                if(d->audio_input->format()!=default_format) {
-                                    QByteArray ba_audio_conv;
+                            if(d->audio_input->format()!=default_format) {
+                                QByteArray ba_audio_conv;
 
-                                    d->audio_converter.convert(&ba_audio, &ba_audio_conv);
-                                    ba_audio=ba_audio_conv;
-                                }
-
-                                frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
+                                d->audio_converter.convert(&ba_audio, &ba_audio_conv);
+                                ba_audio=ba_audio_conv;
                             }
 
-                        } else
+                            frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
+
+                        } else {
                             frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), QByteArray(), 0, 0);
+                        }
 
 
                         frame->video.pts=d->frame->pts - d->stream->start_time;

@@ -702,9 +702,11 @@ static QString write_video_packet(AVFormatContext *format_context, OutputStream 
 {
     output_stream->size_total+=packet->size;
 
-    packet->dts=
-            packet->pts=
-            pts;
+    if(pts!=AV_NOPTS_VALUE) {
+        packet->dts=
+                packet->pts=
+                pts;
+    }
 
     int ret=interleaved_write_frame(format_context, &output_stream->av_stream->time_base, output_stream->av_stream, packet);
 
@@ -743,7 +745,7 @@ static QString write_video_frame(AVFormatContext *format_context, OutputStream *
         ret=avcodec_receive_packet(output_stream->av_codec_context, output_stream->pkt);
 
         if(!ret) {
-            err_string=write_video_packet(format_context, output_stream, output_stream->pkt, pts);
+            err_string=write_video_packet(format_context, output_stream, output_stream->pkt, AV_NOPTS_VALUE);
 
             if(!err_string.isEmpty()) {
                 return err_string;
@@ -1621,7 +1623,8 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
     } else {
         if(frame->video.data_ptr==nullptr) {
-            context->out_stream_video.pts_next++;
+            // qDebug() << "frame->video.data_ptr nullptr";
+            // context->out_stream_video.pts_next++;
             return true;
         }
 
