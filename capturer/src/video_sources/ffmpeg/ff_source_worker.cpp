@@ -558,6 +558,8 @@ bool FFSourceWorker::step()
                     if(frame) {
                         if(cfg.pixel_format==PixelFormat::mjpeg || cfg.pixel_format==PixelFormat::h264) {
                             frame->video.av_packet=av_packet_clone(&packet);
+                            av_packet_make_refcounted(frame->video.av_packet);
+                            av_packet_make_writable(frame->video.av_packet);
                             frame->video.av_packet->flags=d->frame->pict_type;
                             frame->video.pixel_format_pkt=cfg.pixel_format;
                         }

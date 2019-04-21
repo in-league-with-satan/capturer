@@ -340,6 +340,10 @@ bool PixelFormat::fromV4L2PixelFormat(uint32_t value)
     case V4L2_PIX_FMT_MJPEG:
         d=mjpeg;
         return true;
+
+    case V4L2_PIX_FMT_H264:
+        d=h264;
+        return true;
     }
 
 #endif
