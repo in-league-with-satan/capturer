@@ -2161,6 +2161,10 @@ void MainWindow::encoderStateChanged(bool state)
         return;
 
     messenger->setRecStarted(state);
+
+    if(state && device_primary && device_primary->currentPixelFormat().isCompressed() && settings->rec.direct_stream_copy) {
+        messenger->updateRecStats("awaiting intra frame");
+    }
 }
 
 void MainWindow::playerStateChanged(int state)
