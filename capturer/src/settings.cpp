@@ -421,7 +421,7 @@ void Settings::checkEncoders()
         QStringList lst_fmt;
 
         foreach(const PixelFormat &fmt, PixelFormat::list()) {
-            if(fmt.onlyForDevices())
+            if(fmt.isCompressed())
                 continue;
 
             if(checkEncoder(FFEncoder::VideoEncoder::toEncName(enc), fmt.toAVPixelFormat()))

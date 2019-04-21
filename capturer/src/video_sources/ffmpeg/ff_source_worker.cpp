@@ -251,6 +251,9 @@ void FFSourceWorker::deviceStart()
     if(cfg.pixel_format==PixelFormat::mjpeg) {
         d->format_context->video_codec_id=AV_CODEC_ID_MJPEG;
 
+    } else if(cfg.pixel_format==PixelFormat::h264) {
+        d->format_context->video_codec_id=AV_CODEC_ID_H264;
+
     } else {
         d->format_context->video_codec_id=AV_CODEC_ID_RAWVIDEO;
         av_dict_set(&d->dictionary, "pixel_format", cfg.pixel_format.toString().toLatin1().data(), 0);
@@ -554,16 +557,10 @@ bool FFSourceWorker::step()
                     }
 
                     if(frame) {
-                        if(cfg.pixel_format==PixelFormat::mjpeg) {
+                        if(cfg.pixel_format==PixelFormat::mjpeg || cfg.pixel_format==PixelFormat::h264) {
                             frame->video.av_packet=av_packet_clone(&packet);
+                            frame->video.av_packet->flags=d->frame->pict_type;
                             frame->video.pixel_format_pkt=cfg.pixel_format;
-/*
-                            QFile f;
-                            f.setFileName(QString("%1.jpg").arg(packet.pts));
-                            f.open(QFile::ReadWrite);
-                            f.write((const char*)packet.data, packet.size);
-                            f.close();
-*/
                         }
 
                         foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)

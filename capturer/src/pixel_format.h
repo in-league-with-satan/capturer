@@ -50,6 +50,7 @@ struct PixelFormat {
         nv12,
         p010,
         mjpeg,
+        h264,
 
         size
     };
@@ -89,7 +90,7 @@ struct PixelFormat {
 
     bool isDirect() const;
 
-    bool onlyForDevices() const;
+    bool isCompressed() const;
 
     operator int() const;
     PixelFormat &operator=(int other);
