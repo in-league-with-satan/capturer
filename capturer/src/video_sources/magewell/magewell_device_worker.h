@@ -88,6 +88,8 @@ signals:
     void framerateChanged(AVRational fr);
     void framesizeChanged(QSize r);
 
+    void setMasteringDisplayMetadata(AVMasteringDisplayMetadata meta);
+
     void audioSampleSizeChanged(SourceInterface::AudioSampleSize::T value);
     void audioChannelsChanged(SourceInterface::AudioChannels::T value);
 

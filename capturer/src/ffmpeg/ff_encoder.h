@@ -160,6 +160,8 @@ public:
         int color_space=-1;
         int color_transfer_characteristic=-1;
 
+        AVMasteringDisplayMetadata mastering_display_metadata={};
+
         struct NVEnc {
             int enabled=false;
             int device=0;

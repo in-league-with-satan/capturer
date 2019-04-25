@@ -2052,6 +2052,7 @@ void MainWindow::startStopRecording()
             cfg.sws_color_space_dst=swsColorSpace::toff(settings->rec.sws_color_space_dst);
             cfg.sws_color_range_src=swsColorRange::toff(settings->rec.sws_color_range_src);
             cfg.sws_color_range_dst=swsColorRange::toff(settings->rec.sws_color_range_dst);
+            cfg.mastering_display_metadata=device_primary->currentMasteringDisplayMetadata();
             cfg.nvenc=settings->nvenc;
             cfg.audio_flac=settings->rec.encoder_audio==1;
             cfg.input_type_flags=device_primary->typeFlags();
@@ -2080,6 +2081,7 @@ void MainWindow::startStopRecording()
             cfg.color_primaries=settings_model->valueData(&settings->rec.color_primaries).toInt();
             cfg.color_space=settings_model->valueData(&settings->rec.color_space).toInt();
             cfg.color_transfer_characteristic=settings_model->valueData(&settings->rec.color_transfer_characteristic).toInt();
+            cfg.mastering_display_metadata=device_secondary->currentMasteringDisplayMetadata();
             cfg.nvenc=settings->nvenc;
             cfg.audio_flac=settings->rec.encoder_audio==1;
             cfg.input_type_flags=device_secondary->typeFlags();

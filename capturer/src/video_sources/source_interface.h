@@ -29,6 +29,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "frame_buffer.h"
 #include "ff_tools.h"
 #include "magewell_lib.h"
+#include "protect.h"
 
 class SourceInterface
 {
@@ -201,6 +202,10 @@ public:
         return framesize;
     }
 
+    virtual AVMasteringDisplayMetadata currentMasteringDisplayMetadata() {
+        return mastering_display_metadata;
+    }
+
     virtual void setHalfFps(bool value) {
         half_fps=value;
     }
@@ -246,6 +251,7 @@ protected:
     std::atomic <AVRational> framerate;
     std::atomic <QSize> framesize;
     std::atomic <bool> half_fps;
+    Protect <AVMasteringDisplayMetadata> mastering_display_metadata;
 
     std::atomic <AudioSampleSize::T> audio_sample_size;
     std::atomic <AudioChannels::T> audio_channels;

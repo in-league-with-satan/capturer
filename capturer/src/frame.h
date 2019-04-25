@@ -92,6 +92,8 @@ struct Frame
 
         PixelFormat pixel_format;
 
+        AVMasteringDisplayMetadata mastering_display_metadata={};
+
         QByteArray dummy;
 
     } video;
