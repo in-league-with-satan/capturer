@@ -42,14 +42,7 @@ class FFEncoder : public QObject
     Q_OBJECT
 
 public:
-    struct Mode {
-        enum T {
-            primary,
-            secondary
-        };
-    };
-
-    FFEncoder(FFEncoder::Mode::T mode, QObject *parent=0);
+    FFEncoder(int enc_num, QObject *parent=0);
     ~FFEncoder();
 
     struct Framerate {

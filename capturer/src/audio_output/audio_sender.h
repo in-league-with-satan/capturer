@@ -33,7 +33,7 @@ class AudioSender : public QThread
     Q_OBJECT
 
 public:
-    explicit AudioSender(QObject *parent=0);
+    explicit AudioSender(int dev_num, QObject *parent=0);
     ~AudioSender();
 
     FrameBuffer<Frame::ptr>::ptr frameBuffer();
@@ -52,6 +52,8 @@ private:
     std::atomic <bool> running;
 
     std::atomic <bool> simplify;
+
+    int dev_num;
 };
 
 #endif // AUDIO_RESENDER_H

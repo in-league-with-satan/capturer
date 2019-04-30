@@ -89,30 +89,6 @@ MainWindow::MainWindow(QObject *parent)
 
     //
 
-    ff_enc_primary=new FFEncoderThread(FFEncoder::Mode::primary, &enc_base_filename, settings->main.location_videos, QString("capturer %1").arg(VERSION_STRING), this);
-
-    connect(&ff_enc_primary->frameBuffer()->signaler, SIGNAL(frameSkipped()), SLOT(encoderBufferOverload()), Qt::QueuedConnection);
-    connect(ff_enc_primary, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
-    connect(ff_enc_primary, SIGNAL(stateChanged(bool)), SLOT(encoderStateChanged(bool)), Qt::QueuedConnection);
-
-    //
-
-    ff_enc_secondary=new FFEncoderThread(FFEncoder::Mode::secondary, &enc_base_filename, settings->main.location_videos, QString("capturer %1").arg(VERSION_STRING), this);
-
-    connect(ff_enc_secondary, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
-    connect(ff_enc_secondary, SIGNAL(stateChanged(bool)), SLOT(encoderStateChanged(bool)), Qt::QueuedConnection);
-
-    //
-
-    connect(ff_enc_primary, SIGNAL(restartOut()), ff_enc_secondary, SIGNAL(restartIn()), Qt::QueuedConnection);
-
-    //
-
-    audio_sender=new AudioSender(this);
-    audio_sender->setSimplify(settings->main.simplify_audio_for_send);
-
-    //
-
     http_server=new HttpServer(settings->http_server.enabled ? settings->http_server.port : 0, this);
     http_server->setSettingsModel(settings_model);
     connect(http_server, SIGNAL(keyPressed(int)), SLOT(keyPressed(int)));
@@ -128,7 +104,6 @@ MainWindow::MainWindow(QObject *parent)
         connect(this, SIGNAL(freeSpace(qint64)), messenger, SIGNAL(freeSpace(qint64)));
         connect(this, SIGNAL(freeSpaceStr(QString)), messenger, SIGNAL(freeSpaceStr(QString)));
         connect(this, SIGNAL(signalLost(bool)), messenger, SIGNAL(signalLost(bool)));
-        connect(ff_enc_secondary, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
 
         //
 
@@ -140,10 +115,6 @@ MainWindow::MainWindow(QObject *parent)
         //
 
         audio_output=newAudioOutput(this);
-
-        //
-
-        connect(ff_enc_primary, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
 
         //
 
@@ -186,603 +157,20 @@ MainWindow::MainWindow(QObject *parent)
 
     SettingsModel::Data set_model_data;
 
-    // { primary device
-
-    set_model_data.type=SettingsModel::Type::title;
-    set_model_data.value=&settings->main.dummy;
-    set_model_data.priority=SettingsModel::Priority::low;
-    set_model_data.name="primary device";
-    set_model_data.group="primary device";
-
-    settings_model->add(set_model_data);
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="source type";
-
-    for(int i=0; i<SourceInterface::Type::size; ++i) {
-        if(SourceInterface::isImplemented(i)) {
-            set_model_data.values << SourceInterface::title(i);
-            set_model_data.values_data << i;
-        }
-    }
-
-    if(settings->device_primary.index>=set_model_data.values.size())
-        settings->device_primary.index=0;
-
-    set_model_data.value=&settings->device_primary.index;
-
-    int index_device_primary=
-            settings_model->add(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
+    set_model_data.group="global";
 
     set_model_data.type=SettingsModel::Type::button;
-    set_model_data.name="start device";
-    set_model_data.value=&settings->device_primary.start;
+    set_model_data.name="device add";
+    set_model_data.value=&settings->main.source_device_add;
+
+    settings_model->add(set_model_data);
+
+    set_model_data.name="device remove";
+    set_model_data.value=&settings->main.source_device_remove;
 
     settings_model->add(set_model_data);
 
     //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::button;
-    set_model_data.name="stop device";
-    set_model_data.value=&settings->device_primary.stop;
-
-    settings_model->add(set_model_data);
-
-    // } primary device
-
-    set_model_data.type=SettingsModel::Type::divider;
-    set_model_data.name="dummy";
-    set_model_data.value=&settings->main.dummy;
-    settings_model->add(set_model_data);
-
-    // { secondary device
-
-    set_model_data.type=SettingsModel::Type::title;
-    set_model_data.value=&settings->main.dummy;
-    set_model_data.priority=SettingsModel::Priority::low;
-    set_model_data.name="secondary device";
-    set_model_data.group="secondary device";
-
-    settings_model->add(set_model_data);
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="source type";
-
-    for(int i=0; i<SourceInterface::Type::size; ++i) {
-        if(SourceInterface::isImplemented(i)) {
-            set_model_data.values << SourceInterface::title(i);
-            set_model_data.values_data << i;
-        }
-    }
-
-    if(settings->device_secondary.index>=set_model_data.values.size())
-        settings->device_secondary.index=0;
-
-    set_model_data.value=&settings->device_secondary.index;
-
-    int index_device_secondary=
-            settings_model->add(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::button;
-    set_model_data.name="start device";
-    set_model_data.value=&settings->device_secondary.start;
-
-    settings_model->add(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::button;
-    set_model_data.name="stop device";
-    set_model_data.value=&settings->device_secondary.stop;
-
-    settings_model->add(set_model_data);
-
-    // } secondary device
-
-    set_model_data.type=SettingsModel::Type::divider;
-    set_model_data.name="dummy";
-    set_model_data.value=&settings->main.dummy;
-    settings_model->add(set_model_data);
-
-    // { rec
-
-    set_model_data.type=SettingsModel::Type::title;
-    set_model_data.value=&settings->main.dummy;
-    set_model_data.name="rec";
-
-    settings_model->add(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::button;
-    set_model_data.name="check encoders";
-    set_model_data.group="rec";
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.value=&settings->rec.check_encoders;
-
-    settings_model->add(set_model_data);
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.group="rec";
-    set_model_data.name="audio encoder";
-
-    set_model_data.values << "pcm" << "flac";
-
-    set_model_data.value=&settings->rec.encoder_audio;
-
-    settings_model->add(set_model_data);
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.group="rec";
-    set_model_data.name="video encoder";
-    set_model_data.priority=SettingsModel::Priority::high;
-
-
-    set_model_data.value=&settings->rec.encoder_video;
-
-    settings_model->add(set_model_data);
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.group="rec";
-    set_model_data.name="preset";
-    set_model_data.priority=SettingsModel::Priority::low;
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.value=&settings->rec.preset_current;
-
-    settings_model->add(set_model_data);
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="pixel format";
-    set_model_data.value=&settings->rec.pixel_format_current;
-
-    settings_model->add(set_model_data);
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    //
-
-    updateEncList();
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="constant rate factor / quality";
-    set_model_data.value=&settings->rec.crf;
-
-    for(int i=0; i<=42; ++i)
-        set_model_data.values.append(QString::number(i));
-
-    settings_model->add(set_model_data);
-
-    set_model_data.values.clear();
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="color primaries";
-    set_model_data.value=&settings->rec.color_primaries;
-
-    set_model_data.values << "disabled";
-    set_model_data.values_data << -1;
-
-    foreach(int value, FFEncoder::availableColorPrimaries()) {
-        set_model_data.values << FFEncoder::colorPrimariesToString(value);
-        set_model_data.values_data << value;
-    }
-
-    settings_model->add(set_model_data);
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="color space";
-    set_model_data.value=&settings->rec.color_space;
-
-    set_model_data.values << "disabled";
-    set_model_data.values_data << -1;
-
-    foreach(int value, FFEncoder::availableColorSpaces()) {
-        set_model_data.values << FFEncoder::colorSpaceToString(value);
-        set_model_data.values_data << value;
-    }
-
-    settings_model->add(set_model_data);
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="color transfer characteristic";
-    set_model_data.value=&settings->rec.color_transfer_characteristic;
-
-    set_model_data.values << "disabled";
-    set_model_data.values_data << -1;
-
-    foreach(int value, FFEncoder::availableColorTransferCharacteristics()) {
-        set_model_data.values << FFEncoder::colorTransferCharacteristicToString(value);
-        set_model_data.values_data << value;
-    }
-
-    settings_model->add(set_model_data);
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="downscale";
-    set_model_data.value=&settings->rec.downscale;
-
-    for(int i=0; i<=FFEncoder::DownScale::to1800; i++)
-        set_model_data.values << FFEncoder::DownScale::toString(i);
-
-    settings_model->add(set_model_data);
-
-    set_model_data.values.clear();
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="sws scale filter";
-    set_model_data.value=&settings->rec.scale_filter;
-
-    for(int i=0; i<=FFEncoder::ScaleFilter::Spline; i++)
-        set_model_data.values << FFEncoder::ScaleFilter::toString(i);
-
-    settings_model->add(set_model_data);
-
-    set_model_data.values.clear();
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="sws color space src";
-    set_model_data.value=&settings->rec.sws_color_space_src;
-
-    for(int i=0; i<swsColorSpace::size; ++i)
-        set_model_data.values << swsColorSpace::toString(i);
-
-    settings_model->add(set_model_data);
-
-    set_model_data.values.clear();
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="sws color space dst";
-    set_model_data.value=&settings->rec.sws_color_space_dst;
-
-    for(int i=0; i<swsColorSpace::size; ++i)
-        set_model_data.values << swsColorSpace::toString(i);
-
-    settings_model->add(set_model_data);
-
-    set_model_data.values.clear();
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="sws color range src";
-    set_model_data.value=&settings->rec.sws_color_range_src;
-
-    for(int i=0; i<swsColorRange::size; ++i)
-        set_model_data.values << swsColorRange::toString(i);
-
-    settings_model->add(set_model_data);
-
-    set_model_data.values.clear();
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="sws color range dst";
-    set_model_data.value=&settings->rec.sws_color_range_dst;
-
-    for(int i=0; i<swsColorRange::size; ++i)
-        set_model_data.values << swsColorRange::toString(i);
-
-    settings_model->add(set_model_data);
-
-    set_model_data.values.clear();
-
-    //
-
-    set_model_data.type=SettingsModel::Type::checkbox;
-    set_model_data.name="direct stream copy (for mjpeg or h264)";
-    set_model_data.value=&settings->rec.direct_stream_copy;
-
-    settings_model->add(set_model_data);
-
-    //
-
-    set_model_data.type=SettingsModel::Type::checkbox;
-    set_model_data.name="half-fps";
-    set_model_data.value=&settings->rec.half_fps;
-
-    settings_model->add(set_model_data);
-
-    // } rec
-
-    set_model_data.type=SettingsModel::Type::divider;
-    set_model_data.name="dummy";
-    set_model_data.value=&settings->main.dummy;
-
-    settings_model->add(set_model_data);
-
-    // { nvenc
-    if(!cuda_devices.isEmpty()) {
-        set_model_data.type=SettingsModel::Type::title;
-        set_model_data.value=&settings->main.dummy;
-        set_model_data.name="nvenc";
-
-        settings_model->add(set_model_data);
-
-        //
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.group="nvenc";
-        set_model_data.name="enabled";
-        set_model_data.value=&settings->nvenc.enabled;
-
-        settings_model->add(set_model_data);
-
-        //
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="device";
-        set_model_data.value=&settings->nvenc.device;
-
-        set_model_data.values << "any";
-
-        foreach(QString val, cuda_devices)
-            set_model_data.values << val;
-
-        settings_model->add(set_model_data);
-
-        set_model_data.values.clear();
-
-        //
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="b frames";
-        set_model_data.value=&settings->nvenc.b_frames;
-
-        for(int i=0; i<6; i++)
-            set_model_data.values << QString::number(i);
-
-        settings_model->add(set_model_data);
-
-        set_model_data.values.clear();
-
-        //
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="ref frames";
-        set_model_data.value=&settings->nvenc.ref_frames;
-
-        for(int i=0; i<16; i++) {
-            if(i>5)
-                set_model_data.values << QString("%1 hevc only").arg(i);
-
-            else
-                set_model_data.values << QString::number(i);
-        }
-
-        settings_model->add(set_model_data);
-
-        set_model_data.values.clear();
-
-        //
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="use b frames as references";
-        set_model_data.value=&settings->nvenc.b_ref_mode;
-
-        set_model_data.values << "disabled" << "each" << "middle";
-
-        settings_model->add(set_model_data);
-
-        set_model_data.values.clear();
-
-        //
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="gop size";
-        set_model_data.value=&settings->nvenc.gop_size;
-
-        for(int i=0; i<601; i++)
-            set_model_data.values << QString::number(i);
-
-        settings_model->add(set_model_data);
-
-        set_model_data.values.clear();
-
-        //
-
-        for(int i=-1; i<52; i++)
-            set_model_data.values << QString::number(i);
-
-        //
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="qpI";
-        set_model_data.value=&settings->nvenc.qp_i;
-
-        settings_model->add(set_model_data);
-
-        //
-
-        set_model_data.name="qpP";
-        set_model_data.value=&settings->nvenc.qp_p;
-
-        settings_model->add(set_model_data);
-
-        //
-
-        set_model_data.name="qpB";
-        set_model_data.value=&settings->nvenc.qp_b;
-
-        settings_model->add(set_model_data);
-
-        set_model_data.values.clear();
-
-        //
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="aq mode";
-        set_model_data.value=&settings->nvenc.aq_mode;
-        set_model_data.values << "disabled" << "spatial" << "temporal. not working with constqp?";
-
-        settings_model->add(set_model_data);
-
-        set_model_data.values.clear();
-
-        //
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="aq strength";
-        set_model_data.value=&settings->nvenc.aq_strength;
-
-        for(int i=0; i<16; i++)
-            set_model_data.values << QString::number(i);
-
-        settings_model->add(set_model_data);
-
-        set_model_data.values.clear();
-
-        //
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="rc lookahead";
-        set_model_data.value=&settings->nvenc.rc_lookahead;
-
-        for(int i=-1; i<33; i++)
-            set_model_data.values << QString::number(i);
-
-        settings_model->add(set_model_data);
-
-        set_model_data.values.clear();
-
-        //
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="surfaces";
-        set_model_data.value=&settings->nvenc.surfaces;
-
-        for(int i=-1; i<65; i++)
-            set_model_data.values << QString::number(i);
-
-        settings_model->add(set_model_data);
-
-        set_model_data.values.clear();
-
-        //
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="no scenecut";
-        set_model_data.value=&settings->nvenc.no_scenecut;
-
-        settings_model->add(set_model_data);
-
-        //
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="forced idr";
-        set_model_data.value=&settings->nvenc.forced_idr;
-
-        settings_model->add(set_model_data);
-
-        //
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="b adapt";
-        set_model_data.value=&settings->nvenc.b_adapt;
-
-        settings_model->add(set_model_data);
-
-        //
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="nonref p";
-        set_model_data.value=&settings->nvenc.nonref_p;
-
-        settings_model->add(set_model_data);
-
-        //
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="strict gop";
-        set_model_data.value=&settings->nvenc.strict_gop;
-
-        settings_model->add(set_model_data);
-
-        //
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="weighted pred (disables bframes)";
-        set_model_data.value=&settings->nvenc.weighted_pred;
-
-        settings_model->add(set_model_data);
-
-        //
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="bluray compatibility workarounds";
-        set_model_data.value=&settings->nvenc.bluray_compat;
-
-        settings_model->add(set_model_data);
-    }
-
-    // } nvenc
 
     if(!settings->main.headless) {
         QApplication::instance()->installEventFilter(this);
@@ -799,62 +187,49 @@ MainWindow::MainWindow(QObject *parent)
         emit signalLost(true);
     }
 
-
-    settingsModelDataChanged(index_device_secondary, 0, 0);
-    settingsModelDataChanged(index_device_primary, 0, 0);
+    for(int i=0; i<settings->source_device.size(); ++i) {
+        sourceDeviceAdd();
+        settingsModelDataChanged(settings_model->data_p_index(&settings->source_device[i].index), 0, 0);
+    }
 }
 
 MainWindow::~MainWindow()
 {
-    deviceStop(true);
-    deviceStop(false);
+    for(int i=0; i<stream.size(); ++i) {
+        deviceStop(i);
+        qApp->processEvents();
 
-    qApp->processEvents();
-
-    while(device_primary && device_primary->isActive())
-        QThread::msleep(10);
-
-    while(device_secondary && device_secondary->isActive())
-        QThread::msleep(10);
+        while(stream[i].source_device && stream[i].source_device->isActive())
+            QThread::msleep(10);
+    }
 
     settings->save();
 
     MagewellDevice::release();
 }
 
-void MainWindow::setDevicePrimary(SourceInterface::Type::T type)
-{
-    emit signalLost(true);
-
-    if(!settings->main.headless)
-        messenger->formatChanged("no signal");
-
-    setDevice(true, type);
-}
-
-void MainWindow::setDeviceSecondary(SourceInterface::Type::T type)
-{
-    setDevice(false, type);
-}
-
-void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
+void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
 {
     SourceInterface **device;
     Settings::SourceDevice *settings_device;
 
-    if(primary) {
-        device=&device_primary;
-        settings_device=&settings->device_primary;
+    if(!settings->main.headless)
+        messenger->formatChanged("no signal");
 
-    } else {
-        device=&device_secondary;
-        settings_device=&settings->device_secondary;
+    while(stream.size()<index + 1) {
+        sourceDeviceAdd();
     }
+
+    device=&stream[index].source_device;
+    settings_device=settings->sourceDevice(index);
 
     if(*device) {
         (*device)->deviceStop();
 
         delete (*device);
+
+        if(0==index)
+            emit signalLost(true);
     }
 
     (*device)=nullptr;
@@ -883,26 +258,24 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
         break;
     }
 
-
     settings_model->removeGroup(settings_device->group_settings);
 
     if(!(*device))
         return;
 
+
+    QList <SettingsModel::Data> list_set_model_data;
     SettingsModel::Data set_model_data;
 
+    set_model_data.type=SettingsModel::Type::title;
+    set_model_data.value=&settings_device->dummy;
+    set_model_data.priority=SettingsModel::Priority::low;
+    set_model_data.name="device setup";
+    set_model_data.group=settings_device->group_settings;
+
+    list_set_model_data.append(set_model_data);
 
     if(type==SourceInterface::Type::dummy) {
-        set_model_data.type=SettingsModel::Type::title;
-        set_model_data.value=&settings_device->dummy;
-        set_model_data.priority=SettingsModel::Priority::low;
-        set_model_data.name=settings_device->group_settings;
-        set_model_data.group=settings_device->group_settings;
-
-        settings_model->insert(&settings_device->stop, set_model_data);
-
-        //
-
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.value=&settings_device->dummy_device.framesize;
         set_model_data.name="frame size";
@@ -915,38 +288,27 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
             set_model_data.values_data << var;
         }
 
-        settings_model->insert(&settings_device->dummy, set_model_data);
+        list_set_model_data.append(set_model_data);
 
         //
 
         set_model_data.values.clear();
         set_model_data.values_data.clear();
 
-        //
-
         set_model_data.type=SettingsModel::Type::checkbox;
         set_model_data.name="show frame counter";
         set_model_data.value=&settings_device->dummy_device.show_frame_counter;
 
-        settings_model->insert(&settings_device->dummy_device.framesize, set_model_data);
+        list_set_model_data.append(set_model_data);
     }
 
     if(type==SourceInterface::Type::ffmpeg) {
         FFSource *ff_device=static_cast<FFSource*>(*device);
 
-        set_model_data.type=SettingsModel::Type::title;
-        set_model_data.value=&settings_device->dummy;
-        set_model_data.priority=SettingsModel::Priority::low;
-        set_model_data.name=settings_device->group_settings;
-        set_model_data.group=settings_device->group_settings;
-
-        settings_model->insert(&settings_device->stop, set_model_data);
-
         //
 
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="audio device";
-
 
         QStringList ff_devices=FFSource::availableAudioInput();
 
@@ -960,14 +322,16 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->ff_device.index_audio;
 
-        settings_model->insert(&settings_device->dummy, set_model_data);
+        list_set_model_data.append(set_model_data);
 
-        ff_device->setAudioDevice(settings_model->valueData(&settings_device->ff_device.index_audio).toInt());
+        //
+
+        ff_device->setAudioDevice(settings_model->valueData(&settings_device->ff_device.index_audio, -1).toInt());
+
+        //
 
         set_model_data.values.clear();
         set_model_data.values_data.clear();
-
-        //
 
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="video device";
@@ -986,22 +350,21 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->ff_device.index_video;
 
-        int model_index_ff_video=
-                settings_model->insert(&settings_device->ff_device.index_audio, set_model_data);
+        list_set_model_data.append(set_model_data);
 
-        ff_device->setVideoDevice(settings_model->valueData(&settings_device->ff_device.index_video).toInt());
+        ff_device->setVideoDevice(settings_model->valueData(&settings_device->ff_device.index_video, -1).toInt());
+
+        //
 
         set_model_data.values.clear();
         set_model_data.values_data.clear();
 
-        //
-
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="resolution";
 
-        QList <QSize> supported_resolutions=ff_device->supportedResolutions();
+        const QList <QSize> supported_resolutions=ff_device->supportedResolutions();
 
-        foreach(QSize val, supported_resolutions) {
+        foreach(const QSize &val, supported_resolutions) {
             set_model_data.values << QString("%1x%2").arg(val.width()).arg(val.height());
             set_model_data.values_data << val;
         }
@@ -1016,17 +379,17 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
         if(!supported_resolutions.isEmpty())
             resolution=supported_resolutions[settings_device->ff_device.framesize];
 
-        settings_model->insert(&settings_device->ff_device.index_video, set_model_data);
+        list_set_model_data.append(set_model_data);
+
+        //
 
         set_model_data.values.clear();
         set_model_data.values_data.clear();
 
-        //
-
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="pixel format";
 
-        QList <int> supported_pix_fmts=ff_device->supportedPixelFormats(resolution);
+        const QList <int> supported_pix_fmts=ff_device->supportedPixelFormats(resolution);
 
         if(settings_device->ff_device.pixel_format>=supported_pix_fmts.size())
             settings_device->ff_device.pixel_format=0;
@@ -1043,7 +406,7 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->ff_device.pixel_format;
 
-        settings_model->insert(&settings_device->ff_device.framesize, set_model_data);
+        list_set_model_data.append(set_model_data);
 
         set_model_data.values.clear();
         set_model_data.values_data.clear();
@@ -1054,51 +417,40 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
         set_model_data.name="framerate";
         set_model_data.priority=SettingsModel::Priority::low;
 
-        QList <AVRational> framerate=ff_device->supportedFramerates(resolution, pix_fmt);
+        const QList <AVRational> framerate=ff_device->supportedFramerates(resolution, pix_fmt);
 
-        foreach(AVRational val, framerate) {
+        foreach(const AVRational &val, framerate) {
             set_model_data.values << QString::number(Framerate::fromRational(val));
             set_model_data.values_data << QVariant::fromValue<AVRational>(val);
         }
 
+
         if(settings_device->ff_device.framerate>=framerate.size())
             settings_device->ff_device.framerate=0;
 
+
         set_model_data.value=&settings_device->ff_device.framerate;
 
-        settings_model->insert(&settings_device->ff_device.pixel_format, set_model_data);
-
-        set_model_data.values.clear();
+        list_set_model_data.append(set_model_data);
 
         //
 
-        if(!ff_devices.isEmpty())
-            settingsModelDataChanged(model_index_ff_video, 0, false);
+        set_model_data.values.clear();
     }
 
     if(type==SourceInterface::Type::magewell) {
-        set_model_data.type=SettingsModel::Type::title;
-        set_model_data.value=&settings_device->dummy;
-        set_model_data.priority=SettingsModel::Priority::low;
-        set_model_data.name=settings_device->group_settings;
-        set_model_data.group=settings_device->group_settings;
-
-        settings_model->insert(&settings_device->stop, set_model_data);
-
-        //
-
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.value=&settings_device->magewell.index;
         set_model_data.name="name";
 
-        MagewellDevice::Devices devices=MagewellDevice::availableDevices();
+        const MagewellDevice::Devices devices=MagewellDevice::availableDevices();
 
         if(devices.isEmpty()) {
             set_model_data.values << "null";
 
         } else {
             for(int i=0; i<devices.size(); ++i) {
-                MagewellDevice::Device dev=devices[i];
+                const MagewellDevice::Device dev=devices[i];
 
                 QVariant var;
                 var.setValue(dev);
@@ -1108,19 +460,17 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
             }
         }
 
-        settings_model->insert(&settings_device->dummy, set_model_data);
+        list_set_model_data.append(set_model_data);
 
         //
 
         set_model_data.values.clear();
         set_model_data.values_data.clear();
 
-        //
-
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="pixel format";
 
-        PixelFormats pixel_formats=MagewellDevice::supportedPixelFormats();
+        const PixelFormats pixel_formats=MagewellDevice::supportedPixelFormats();
 
         foreach(PixelFormat pf, pixel_formats) {
             set_model_data.values << pf.toStringView();
@@ -1129,14 +479,12 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->magewell.pixel_format;
 
-        settings_model->insert(&settings_device->magewell.index, set_model_data);
+        list_set_model_data.append(set_model_data);
 
         //
 
         set_model_data.values.clear();
         set_model_data.values_data.clear();
-
-        //
 
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="frame size";
@@ -1151,14 +499,12 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->magewell.framesize;
 
-        settings_model->insert(&settings_device->magewell.pixel_format, set_model_data);
+        list_set_model_data.append(set_model_data);
 
         //
 
         set_model_data.values.clear();
         set_model_data.values_data.clear();
-
-        //
 
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="color format in";
@@ -1170,21 +516,19 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->magewell.color_format_in;
 
-        settings_model->insert(&settings_device->magewell.framesize, set_model_data);
+        list_set_model_data.append(set_model_data);
 
         //
 
         set_model_data.name="color format out";
         set_model_data.value=&settings_device->magewell.color_format_out;
 
-        settings_model->insert(&settings_device->magewell.color_format_in, set_model_data);
+        list_set_model_data.append(set_model_data);
 
         //
 
         set_model_data.values.clear();
         set_model_data.values_data.clear();
-
-        //
 
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="quantization range in";
@@ -1196,21 +540,19 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->magewell.quantization_range_in;
 
-        settings_model->insert(&settings_device->magewell.color_format_out, set_model_data);
+        list_set_model_data.append(set_model_data);
 
         //
 
         set_model_data.name="quantization range out";
         set_model_data.value=&settings_device->magewell.quantization_range_out;
 
-        settings_model->insert(&settings_device->magewell.quantization_range_in, set_model_data);
+        list_set_model_data.append(set_model_data);
 
         //
 
         set_model_data.values.clear();
         set_model_data.values_data.clear();
-
-        //
 
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="pts mode";
@@ -1222,14 +564,12 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->magewell.pts_mode;
 
-        settings_model->insert(&settings_device->magewell.quantization_range_out, set_model_data);
+        list_set_model_data.append(set_model_data);
 
         //
 
         set_model_data.values.clear();
         set_model_data.values_data.clear();
-
-        //
 
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="remap audio channels";
@@ -1241,7 +581,7 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->magewell.audio_remap_mode;
 
-        settings_model->insert(&settings_device->magewell.pts_mode, set_model_data);
+        list_set_model_data.append(set_model_data);
 
         //
 
@@ -1250,7 +590,7 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->magewell.low_latency;
 
-        settings_model->insert(&settings_device->magewell.audio_remap_mode, set_model_data);
+        list_set_model_data.append(set_model_data);
 
         //
 
@@ -1259,26 +599,16 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->magewell.half_fps;
 
-        settings_model->insert(&settings_device->magewell.low_latency, set_model_data);
+        list_set_model_data.append(set_model_data);
     }
 
 
     if(type==SourceInterface::Type::decklink) {
-        set_model_data.type=SettingsModel::Type::title;
-        set_model_data.value=&settings_device->dummy;
-        set_model_data.priority=SettingsModel::Priority::low;
-        set_model_data.name=settings_device->group_settings;
-        set_model_data.group=settings_device->group_settings;
-
-        settings_model->insert(&settings_device->stop, set_model_data);
-
-        //
-
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.value=&settings_device->decklink.index;
         set_model_data.name="name";
 
-        Decklink::Devices devices=Decklink::getDevices();
+        const Decklink::Devices devices=Decklink::getDevices();
 
         if(devices.isEmpty()) {
             set_model_data.values << "null";
@@ -1295,14 +625,12 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
             }
         }
 
-        settings_model->insert(&settings_device->dummy, set_model_data);
+        list_set_model_data.append(set_model_data);
 
         //
 
         set_model_data.values.clear();
         set_model_data.values_data.clear();
-
-        //
 
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="audio sample size";
@@ -1311,14 +639,12 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->decklink.audio_sample_size;
 
-        settings_model->insert(&settings_device->decklink.index, set_model_data);
+        list_set_model_data.append(set_model_data);
 
         //
 
         set_model_data.values.clear();
         set_model_data.values_data.clear();
-
-        //
 
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="video depth";
@@ -1327,11 +653,13 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->decklink.video_bitdepth;
 
-        settings_model->insert(&settings_device->decklink.audio_sample_size, set_model_data);
+        list_set_model_data.append(set_model_data);
     }
 
+    settings_model->insert(&settings_device->stop, list_set_model_data);
+
     if(!settings->main.headless) {
-        if(primary) {
+        if(index==0) {
             connect(dynamic_cast<QObject*>(*device),
                     SIGNAL(formatChanged(QString)),
                     messenger, SIGNAL(formatChanged(QString)), Qt::QueuedConnection);
@@ -1343,7 +671,7 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
             (*device)->subscribe(audio_output->frameBuffer());
             (*device)->subscribe(audio_level_primary->frameBuffer());
 
-        } else {
+        } else if(index==1) {
             (*device)->subscribe(messenger->videoSourceSecondary()->frameBuffer());
             (*device)->subscribe(audio_level_secondary->frameBuffer());
         }
@@ -1352,17 +680,654 @@ void MainWindow::setDevice(bool primary, SourceInterface::Type::T type)
                 SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
     }
 
-    if(primary) {
+    (*device)->subscribe(stream[index].encoder->frameBuffer());
+    (*device)->subscribe(stream[index].audio_sender->frameBuffer());
+
+    if(index==0) {
         connect(dynamic_cast<QObject*>(*device),
                 SIGNAL(formatChanged(QString)),
                 http_server, SLOT(formatChanged(QString)), Qt::QueuedConnection);
-
-        (*device)->subscribe(ff_enc_primary->frameBuffer());
-        (*device)->subscribe(audio_sender->frameBuffer());
-
-    } else {
-        (*device)->subscribe(ff_enc_secondary->frameBuffer());
     }
+}
+
+void MainWindow::sourceDeviceAddModel(uint8_t index)
+{
+    const QStringList cuda_devices=nv_tools->availableDevices();
+
+    Settings::SourceDevice *settings_device=settings->sourceDevice(index);
+
+    QList <SettingsModel::Data> list_set_model_data;
+    SettingsModel::Data set_model_data;
+
+    set_model_data.group=settings_device->group;
+
+    //
+
+    set_model_data.type=SettingsModel::Type::divider;
+    set_model_data.name="dummy";
+    set_model_data.value=&settings->main.dummy;
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::title;
+    set_model_data.value=&settings->main.dummy;
+    set_model_data.priority=SettingsModel::Priority::low;
+    set_model_data.name=QString("device #%1").arg(index + 1);
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="source type";
+
+    for(int i=0; i<SourceInterface::Type::size; ++i) {
+        if(SourceInterface::isImplemented(i)) {
+            set_model_data.values << SourceInterface::title(i);
+            set_model_data.values_data << i;
+        }
+    }
+
+    if(settings_device->index>=set_model_data.values.size())
+        settings_device->index=0;
+
+    set_model_data.value=&settings_device->index;
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::button;
+    set_model_data.name="start device";
+    set_model_data.value=&settings_device->start;
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::button;
+    set_model_data.name="stop device";
+    set_model_data.value=&settings_device->stop;
+
+    list_set_model_data.append(set_model_data);
+
+    // { rec
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::title;
+    set_model_data.value=&settings->main.dummy;
+    set_model_data.name="rec";
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::button;
+    set_model_data.name="check encoders";
+
+    set_model_data.value=&settings_device->rec.check_encoders;
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="audio encoder";
+
+    set_model_data.values << "pcm" << "flac";
+
+    set_model_data.value=&settings_device->rec.encoder_audio;
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="video encoder";
+    set_model_data.priority=SettingsModel::Priority::high;
+    set_model_data.value=&settings_device->rec.encoder_video;
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="preset";
+    set_model_data.priority=SettingsModel::Priority::low;
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.value=&settings_device->rec.preset_current;
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="pixel format";
+    set_model_data.value=&settings_device->rec.pixel_format_current;
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="constant rate factor / quality";
+    set_model_data.value=&settings_device->rec.crf;
+
+    for(int i=0; i<=42; ++i)
+        set_model_data.values.append(QString::number(i));
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="color primaries";
+    set_model_data.value=&settings_device->rec.color_primaries;
+
+    set_model_data.values << "disabled";
+    set_model_data.values_data << -1;
+
+    foreach(int value, FFEncoder::availableColorPrimaries()) {
+        set_model_data.values << FFEncoder::colorPrimariesToString(value);
+        set_model_data.values_data << value;
+    }
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="color space";
+    set_model_data.value=&settings_device->rec.color_space;
+
+    set_model_data.values << "disabled";
+    set_model_data.values_data << -1;
+
+    foreach(int value, FFEncoder::availableColorSpaces()) {
+        set_model_data.values << FFEncoder::colorSpaceToString(value);
+        set_model_data.values_data << value;
+    }
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="color transfer characteristic";
+    set_model_data.value=&settings_device->rec.color_transfer_characteristic;
+
+    set_model_data.values << "disabled";
+    set_model_data.values_data << -1;
+
+    foreach(int value, FFEncoder::availableColorTransferCharacteristics()) {
+        set_model_data.values << FFEncoder::colorTransferCharacteristicToString(value);
+        set_model_data.values_data << value;
+    }
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="downscale";
+    set_model_data.value=&settings_device->rec.downscale;
+
+    for(int i=0; i<=FFEncoder::DownScale::to1800; i++)
+        set_model_data.values << FFEncoder::DownScale::toString(i);
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="sws scale filter";
+    set_model_data.value=&settings_device->rec.scale_filter;
+
+    for(int i=0; i<=FFEncoder::ScaleFilter::Spline; i++)
+        set_model_data.values << FFEncoder::ScaleFilter::toString(i);
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="sws color space src";
+    set_model_data.value=&settings_device->rec.sws_color_space_src;
+
+    for(int i=0; i<swsColorSpace::size; ++i)
+        set_model_data.values << swsColorSpace::toString(i);
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="sws color space dst";
+    set_model_data.value=&settings_device->rec.sws_color_space_dst;
+
+    for(int i=0; i<swsColorSpace::size; ++i)
+        set_model_data.values << swsColorSpace::toString(i);
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="sws color range src";
+    set_model_data.value=&settings_device->rec.sws_color_range_src;
+
+    for(int i=0; i<swsColorRange::size; ++i)
+        set_model_data.values << swsColorRange::toString(i);
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="sws color range dst";
+    set_model_data.value=&settings_device->rec.sws_color_range_dst;
+
+    for(int i=0; i<swsColorRange::size; ++i)
+        set_model_data.values << swsColorRange::toString(i);
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="direct stream copy (for mjpeg or h264)";
+    set_model_data.value=&settings_device->rec.direct_stream_copy;
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="half-fps";
+    set_model_data.value=&settings_device->rec.half_fps;
+
+    list_set_model_data.append(set_model_data);
+
+    // } rec
+
+    // { nvenc
+    if(!cuda_devices.isEmpty()) {
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::title;
+        set_model_data.value=&settings->main.dummy;
+        set_model_data.name="nvenc";
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="enabled";
+        set_model_data.value=&settings_device->rec.nvenc.enabled;
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="device";
+        set_model_data.value=&settings_device->rec.nvenc.device;
+
+        set_model_data.values << "any";
+
+        foreach(QString val, cuda_devices)
+            set_model_data.values << val;
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="b frames";
+        set_model_data.value=&settings_device->rec.nvenc.b_frames;
+
+        for(int i=0; i<6; i++)
+            set_model_data.values << QString::number(i);
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="ref frames";
+        set_model_data.value=&settings_device->rec.nvenc.ref_frames;
+
+        for(int i=0; i<16; i++) {
+            if(i>5)
+                set_model_data.values << QString("%1 hevc only").arg(i);
+
+            else
+                set_model_data.values << QString::number(i);
+        }
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="use b frames as references";
+        set_model_data.value=&settings_device->rec.nvenc.b_ref_mode;
+
+        set_model_data.values << "disabled" << "each" << "middle";
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="gop size";
+        set_model_data.value=&settings_device->rec.nvenc.gop_size;
+
+        for(int i=0; i<601; i++)
+            set_model_data.values << QString::number(i);
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        for(int i=-1; i<52; i++)
+            set_model_data.values << QString::number(i);
+
+        //
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="qpI";
+        set_model_data.value=&settings_device->rec.nvenc.qp_i;
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.name="qpP";
+        set_model_data.value=&settings_device->rec.nvenc.qp_p;
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.name="qpB";
+        set_model_data.value=&settings_device->rec.nvenc.qp_b;
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="aq mode";
+        set_model_data.value=&settings_device->rec.nvenc.aq_mode;
+        set_model_data.values << "disabled" << "spatial" << "temporal. not working with constqp?";
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="aq strength";
+        set_model_data.value=&settings_device->rec.nvenc.aq_strength;
+
+        for(int i=0; i<16; i++)
+            set_model_data.values << QString::number(i);
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="rc lookahead";
+        set_model_data.value=&settings_device->rec.nvenc.rc_lookahead;
+
+        for(int i=-1; i<33; i++)
+            set_model_data.values << QString::number(i);
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="surfaces";
+        set_model_data.value=&settings_device->rec.nvenc.surfaces;
+
+        for(int i=-1; i<65; i++)
+            set_model_data.values << QString::number(i);
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="no scenecut";
+        set_model_data.value=&settings_device->rec.nvenc.no_scenecut;
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="forced idr";
+        set_model_data.value=&settings_device->rec.nvenc.forced_idr;
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="b adapt";
+        set_model_data.value=&settings_device->rec.nvenc.b_adapt;
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="nonref p";
+        set_model_data.value=&settings_device->rec.nvenc.nonref_p;
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="strict gop";
+        set_model_data.value=&settings_device->rec.nvenc.strict_gop;
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="weighted pred (disables bframes)";
+        set_model_data.value=&settings_device->rec.nvenc.weighted_pred;
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="bluray compatibility workarounds";
+        set_model_data.value=&settings_device->rec.nvenc.bluray_compat;
+
+        list_set_model_data.append(set_model_data);
+    }
+
+    // } nvenc
+
+    settings_model->add(list_set_model_data);
+}
+
+void MainWindow::sourceDeviceAdd()
+{
+    if(stream.size()>=Settings::SourceDevice::MaxNum)
+        return;
+
+    stream.append(ObjGrp());
+
+    while(settings->source_device.size()<stream.size())
+        settings->sourceDeviceAdd();
+
+    ObjGrp *str=&stream.last();
+
+    str->audio_sender=new AudioSender(stream.size() - 1);
+    str->audio_sender->setSimplify(settings->main.simplify_audio_for_send);
+
+    str->encoder=new FFEncoderThread(stream.size() - 1, &enc_base_filename, settings->main.location_videos, QString("capturer %1").arg(VERSION_STRING), this);
+
+    if(stream.size()==1) {
+        connect(&str->encoder->frameBuffer()->signaler, SIGNAL(frameSkipped()), SLOT(encoderBufferOverload()), Qt::QueuedConnection);
+        connect(str->encoder, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
+    }
+
+    connect(str->encoder, SIGNAL(stateChanged(bool)), SLOT(encoderStateChanged(bool)), Qt::QueuedConnection);
+
+    if(stream.size()>1) {
+        connect(stream.first().encoder, SIGNAL(restartOut()), str->encoder, SIGNAL(restartIn()), Qt::QueuedConnection);
+    }
+
+    sourceDeviceAddModel(stream.size() - 1);
+
+    updateEncList();
+}
+
+void MainWindow::sourceDeviceRemove()
+{
+    if(stream.size()<=1)
+        return;
+
+    ObjGrp str=stream.takeLast();
+
+    if(str.source_device) {
+        QMetaObject::invokeMethod(dynamic_cast<QObject*>(str.source_device), "deviceStop", Qt::QueuedConnection);
+        QMetaObject::invokeMethod(dynamic_cast<QObject*>(str.source_device), "deleteLater", Qt::QueuedConnection);
+    }
+
+    str.audio_sender->deleteLater();
+    str.encoder->deleteLater();
+
+    settings_model->removeGroup(settings->source_device.last().group);
+    settings_model->removeGroup(settings->source_device.last().group_settings);
+
+    settings->sourceDeviceRemove();
 }
 
 bool MainWindow::eventFilter(QObject *object, QEvent *event)
@@ -1613,31 +1578,21 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
     Q_UNUSED(tmp);
 
+    for(int i=0; i<settings->source_device.size(); ++i) {
+        if(data->value==&settings->source_device[i].index) {
+            setDevice(i, (SourceInterface::Type::T)settings_model->data_p(&settings->source_device[i].index)->values_data[settings->source_device[i].index].toInt());
 
-    if(data->value==&settings->device_primary.index) {
-        setDevicePrimary((SourceInterface::Type::T)settings_model->data_p(
-                             &settings->device_primary.index)->values_data[settings->device_primary.index].toInt());
-        deviceStart(true);
+            if(i==0)
+                deviceStart(0);
+        }
     }
 
-    if(data->value==&settings->device_secondary.index) {
-        setDeviceSecondary((SourceInterface::Type::T)settings_model->data_p(
-                               &settings->device_secondary.index)->values_data[settings->device_secondary.index].toInt());
-    }
-
-
-    for(int i_dev=0; i_dev<2; ++i_dev) {
+    for(int i_dev=0; i_dev<stream.size(); ++i_dev) {
         SourceInterface **device;
         Settings::SourceDevice *settings_device;
 
-        if(i_dev==0) {
-            device=&device_primary;
-            settings_device=&settings->device_primary;
-
-        } else {
-            device=&device_secondary;
-            settings_device=&settings->device_secondary;
-        }
+        device=&stream[i_dev].source_device;
+        settings_device=settings->sourceDevice(i_dev);
 
         if((*device) && (*device)->type()==SourceInterface::Type::ffmpeg) {
             FFSource *ff_device=static_cast<FFSource*>(*device);
@@ -1666,7 +1621,6 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
                         list_values_data << val;
                     }
 
-
                     settings_model->setData(&settings_device->ff_device.framesize, SettingsModel::Role::values, list_values, false, true);
                     settings_model->setData(&settings_device->ff_device.framesize, SettingsModel::Role::values_data, list_values_data, false, true);
 
@@ -1688,10 +1642,8 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
                             list_values_data << val;
                         }
 
-
                         settings_model->setData(&settings_device->ff_device.pixel_format, SettingsModel::Role::values, list_values, false, true);
                         settings_model->setData(&settings_device->ff_device.pixel_format, SettingsModel::Role::values_data, list_values_data, false, true);
-
 
                         if(settings_device->ff_device.pixel_format<0)
                             settings_device->ff_device.pixel_format=0;
@@ -1737,7 +1689,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             if(data->value==&settings_device->ff_device.framesize) {
                 qml=false;
 
-                QSize size=data->values_data.value(settings_device->ff_device.framesize).toSize();
+                const QSize size=data->values_data.value(settings_device->ff_device.framesize).toSize();
 
                 QStringList list_values;
                 QVariantList list_values_data;
@@ -1808,118 +1760,110 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
                 }
             }
         }
-    }
 
-    //
+        if(data->value==&settings_device->rec.encoder_video) {
+            qml=false;
 
-    if(data->value==&settings->rec.encoder_video) {
-        qml=false;
+            // pix_fmt
 
-        // pix_fmt
-        qml=false;
+            if(settings_device->rec.encoder_video>=data->values_data.size())
+                settings_device->rec.encoder_video=data->values_data.size() - 1;
 
-        if(settings->rec.encoder_video>=data->values_data.size())
-            settings->rec.encoder_video=data->values_data.size() - 1;
+            const int index_encoder=
+                data->values_data[settings_device->rec.encoder_video].toInt();
 
-        const int index_encoder=data->values_data[settings->rec.encoder_video].toInt();
+            QList <PixelFormat> fmts;
+            PixelFormat pf;
 
-        QList <PixelFormat> fmts;
-        PixelFormat pf;
+            foreach(const QString &fmt_str, settings->main.supported_enc[FFEncoder::VideoEncoder::toString(index_encoder)].toStringList()) {
+                if(pf.fromString(fmt_str))
+                    fmts << pf;
+            }
 
-        foreach(const QString &fmt_str, settings->rec.supported_enc[FFEncoder::VideoEncoder::toString(index_encoder)].toStringList()) {
-            if(pf.fromString(fmt_str))
-                fmts << pf;
-        }
+            QStringList list_values;
+            QVariantList list_values_data;
 
-        QStringList list_values;
-        QVariantList list_values_data;
+            for(int i=0; i<fmts.size(); ++i) {
+                list_values << fmts[i].toStringView();
+                list_values_data << (int)fmts[i];
+            }
 
-        for(int i=0; i<fmts.size(); ++i) {
-            list_values << fmts[i].toStringView();
-            list_values_data << (int)fmts[i];
-        }
+            for(int i=0; i<settings_model->rowCount(); ++i) {
+                if(settings_model->data_p(i)->value==&settings_device->rec.pixel_format_current) {
+                    settings_model->setData(i, SettingsModel::Role::values_data, list_values_data, false, true);
+                    settings_model->setData(i, SettingsModel::Role::values, list_values, false, true);
+                    settings_model->setData(i, SettingsModel::Role::value, settings_device->rec.pixel_format.value(QString::number(settings_device->rec.encoder_video), 0), false, true);
 
-        for(int i=0; i<settings_model->rowCount(); ++i) {
-            if(settings_model->data_p(i)->value==&settings->rec.pixel_format_current) {
-                settings_model->setData(i, SettingsModel::Role::values_data, list_values_data, false, true);
-                settings_model->setData(i, SettingsModel::Role::values, list_values, false, true);
-                settings_model->setData(i, SettingsModel::Role::value, settings->rec.pixel_format.value(QString::number(settings->rec.encoder_video), 0), false, true);
+                    break;
+                }
+            }
 
-                break;
+            // preset
+            list_values.clear();
+            list_values_data.clear();
+
+            const QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)data->values_data.value(settings_device->rec.encoder_video, 0).toInt());
+
+            foreach(const QString &preset, presets) {
+                list_values << preset;
+                list_values_data << FFEncoder::presetVisualNameToParamName(preset);
+            }
+
+            for(int i=0; i<settings_model->rowCount(); ++i) {
+                if(settings_model->data_p(i)->value==&settings_device->rec.preset_current) {
+                    settings_model->setData(i, SettingsModel::Role::values_data, list_values_data, false, true);
+                    settings_model->setData(i, SettingsModel::Role::values, list_values, false, true);
+                    settings_model->setData(i, SettingsModel::Role::value, settings_device->rec.preset.value(QString::number(settings_device->rec.encoder_video), 0), false, true);
+
+                    break;
+                }
             }
         }
 
-        // preset
-        list_values.clear();
-        list_values_data.clear();
 
-        QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)data->values_data.value(settings->rec.encoder_video, 0).toInt());
+        if(data->value==&settings_device->rec.pixel_format_current)
+            if(role==SettingsModel::Role::value)
+                settings_device->rec.pixel_format[QString::number(settings_device->rec.encoder_video)]=settings_device->rec.pixel_format_current;
 
-        foreach(const QString &preset, presets) {
-            list_values << preset;
-            list_values_data << FFEncoder::presetVisualNameToParamName(preset);
-        }
+        if(data->value==&settings_device->rec.preset_current)
+            if(role==SettingsModel::Role::value)
+                settings_device->rec.preset[QString::number(settings_device->rec.encoder_video)]=settings_device->rec.preset_current;
 
-        for(int i=0; i<settings_model->rowCount(); ++i) {
-            if(settings_model->data_p(i)->value==&settings->rec.preset_current) {
-                settings_model->setData(i, SettingsModel::Role::values_data, list_values_data, false, true);
-                settings_model->setData(i, SettingsModel::Role::values, list_values, false, true);
-                settings_model->setData(i, SettingsModel::Role::value, settings->rec.preset.value(QString::number(settings->rec.encoder_video), 0), false, true);
+        if(data->value==&settings_device->start)
+            deviceStart(i_dev);
 
-                break;
-            }
-        }
+        if(data->value==&settings_device->stop)
+            deviceStop(i_dev);
+
+        if(data->value==&settings_device->rec.check_encoders)
+            checkEncoders();
     }
 
 
-    if(data->value==&settings->rec.pixel_format_current)
-        if(role==SettingsModel::Role::value)
-            settings->rec.pixel_format[QString::number(settings->rec.encoder_video)]=settings->rec.pixel_format_current;
+    if(data->value==&settings->main.source_device_add)
+        sourceDeviceAdd();
 
+    if(data->value==&settings->main.source_device_remove)
+        sourceDeviceRemove();
 
-    if(data->value==&settings->rec.preset_current)
-        if(role==SettingsModel::Role::value)
-            settings->rec.preset[QString::number(settings->rec.encoder_video)]=settings->rec.preset_current;
-
-
-    if(data->value==&settings->device_primary.start) {
-        deviceStart(true);
-    }
-
-    if(data->value==&settings->device_primary.stop) {
-        deviceStop(true);
-    }
-
-    if(data->value==&settings->device_secondary.start) {
-        deviceStart(false);
-    }
-
-    if(data->value==&settings->device_secondary.stop) {
-        deviceStop(false);
-    }
-
-    if(data->value==&settings->rec.check_encoders) {
-        checkEncoders();
-    }
-
-    if(!qml) {
+    if(!qml)
         settings_model->updateQml();
-    }
 }
 
-void MainWindow::deviceStart(bool primary)
+void MainWindow::deviceStart(uint8_t index)
 {
+    if(stream.size()<=index)
+        return;
+
+    if(!stream[index].source_device)
+        return;
+
     SourceInterface **device;
     Settings::SourceDevice *settings_device;
 
-    if(primary) {
-        device=&device_primary;
-        settings_device=&settings->device_primary;
+    device=&stream[index].source_device;
 
-    } else {
-        device=&device_secondary;
-        settings_device=&settings->device_secondary;
-    }
+    settings_device=settings->sourceDevice(index);
 
     if(!(*device))
         return;
@@ -2000,30 +1944,30 @@ void MainWindow::deviceStart(bool primary)
     QMetaObject::invokeMethod(dynamic_cast<QObject*>(*device), "deviceStart", Qt::QueuedConnection);
 }
 
-void MainWindow::deviceStop(bool primary)
+void MainWindow::deviceStop(uint8_t index)
 {
-    SourceInterface **device;
-
-    if(primary) {
-        device=&device_primary;
-
-    } else {
-        device=&device_secondary;
-    }
-
-    if(!(*device))
+    if(stream.size()<=index)
         return;
 
-    QMetaObject::invokeMethod(dynamic_cast<QObject*>(*device), "deviceStop", Qt::QueuedConnection);
+    if(!stream[index].source_device)
+        return;
+
+    QMetaObject::invokeMethod(dynamic_cast<QObject*>(stream[index].source_device), "deviceStop", Qt::QueuedConnection);
 }
 
 void MainWindow::startStopRecording()
 {
-    const bool enc_running=ff_enc_primary->isWorking() || ff_enc_secondary->isWorking();
+    bool enc_running=false;
+
+    for(int i=0; i<stream.size(); ++i) {
+        if(stream[i].encoder->isWorking())
+            enc_running=true;
+    }
 
     if(enc_running) {
-        ff_enc_primary->stopCoder();
-        ff_enc_secondary->stopCoder();
+        for(int i=0; i<stream.size(); ++i)
+            stream[i].encoder->stopCoder();
+
         return;
     }
 
@@ -2032,108 +1976,92 @@ void MainWindow::startStopRecording()
 
     enc_base_filename.reset();
 
-    if(device_primary) {
-        if(device_primary->gotSignal()) {
-            FFEncoder::Config cfg;
 
-            AVRational framerate=device_primary->currentFramerate();
+    FFEncoderThread *enc=nullptr;
+    SourceInterface *dev=nullptr;
 
-            cfg.framerate=FFEncoder::calcFps(framerate.num, framerate.den, settings->rec.half_fps);
+    for(int i=0; i<stream.size(); ++i) {
+        enc=stream[i].encoder;
+        dev=stream[i].source_device;
 
-            if(cfg.framerate==FFEncoder::Framerate::unknown)
-                cfg.framerate_force=framerate;
+        if(!enc || !dev)
+            continue;
 
-            cfg.frame_resolution_src=device_primary->currentFramesize();
-            cfg.pixel_format_dst=settings_model->valueData(&settings->rec.pixel_format_current).toInt();
-            cfg.preset=settings_model->valueData(&settings->rec.preset_current).toString();
-            cfg.video_encoder=(FFEncoder::VideoEncoder::T)settings_model->valueData(&settings->rec.encoder_video).toInt();
-            cfg.crf=settings->rec.crf;
-            cfg.pixel_format_src=device_primary->currentPixelFormat();
-            cfg.direct_stream_copy=settings->rec.direct_stream_copy;
-            cfg.audio_sample_size=device_primary->currentAudioSampleSize();
-            cfg.audio_channels_size=device_primary->currentAudioChannels();
-            cfg.downscale=settings->rec.downscale;
-            cfg.scale_filter=settings->rec.scale_filter;
-            cfg.color_primaries=settings_model->valueData(&settings->rec.color_primaries).toInt();
-            cfg.color_space=settings_model->valueData(&settings->rec.color_space).toInt();
-            cfg.color_transfer_characteristic=settings_model->valueData(&settings->rec.color_transfer_characteristic).toInt();
-            cfg.sws_color_space_src=swsColorSpace::toff(settings->rec.sws_color_space_src);
-            cfg.sws_color_space_dst=swsColorSpace::toff(settings->rec.sws_color_space_dst);
-            cfg.sws_color_range_src=swsColorRange::toff(settings->rec.sws_color_range_src);
-            cfg.sws_color_range_dst=swsColorRange::toff(settings->rec.sws_color_range_dst);
-            cfg.mastering_display_metadata=device_primary->currentMasteringDisplayMetadata();
-            cfg.nvenc=settings->nvenc;
-            cfg.audio_flac=settings->rec.encoder_audio==1;
-            cfg.input_type_flags=device_primary->typeFlags();
+        if(!dev->gotSignal())
+            continue;
 
-            ff_enc_primary->setConfig(cfg);
-        }
-    }
+        FFEncoder::Config cfg;
 
-    if(device_secondary) {
-        if(device_secondary->gotSignal()) {
-            FFEncoder::Config cfg;
+        AVRational framerate=dev->currentFramerate();
 
-            AVRational framerate=device_secondary->currentFramerate();
+        cfg.framerate=FFEncoder::calcFps(framerate.num, framerate.den, settings->source_device[i].rec.half_fps);
 
-            cfg.framerate=FFEncoder::calcFps(framerate.num, framerate.den, settings->rec.half_fps);
-            cfg.frame_resolution_src=device_secondary->currentFramesize();
-            cfg.pixel_format_dst=settings_model->valueData(&settings->rec.pixel_format_current).toInt();
-            cfg.direct_stream_copy=settings->rec.direct_stream_copy;
-            cfg.preset=settings_model->valueData(&settings->rec.preset_current).toString();
-            cfg.video_encoder=(FFEncoder::VideoEncoder::T)settings_model->valueData(&settings->rec.encoder_video).toInt();
-            cfg.crf=settings->rec.crf;
-            cfg.pixel_format_src=device_secondary->currentPixelFormat();
-            cfg.audio_sample_size=device_secondary->currentAudioSampleSize();
-            cfg.audio_channels_size=device_secondary->currentAudioChannels();
-            cfg.downscale=settings->rec.downscale;
-            cfg.scale_filter=settings->rec.scale_filter;
-            cfg.color_primaries=settings_model->valueData(&settings->rec.color_primaries).toInt();
-            cfg.color_space=settings_model->valueData(&settings->rec.color_space).toInt();
-            cfg.color_transfer_characteristic=settings_model->valueData(&settings->rec.color_transfer_characteristic).toInt();
-            cfg.mastering_display_metadata=device_secondary->currentMasteringDisplayMetadata();
-            cfg.nvenc=settings->nvenc;
-            cfg.audio_flac=settings->rec.encoder_audio==1;
-            cfg.input_type_flags=device_secondary->typeFlags();
+        if(cfg.framerate==FFEncoder::Framerate::unknown)
+            cfg.framerate_force=framerate;
 
-            ff_enc_secondary->setConfig(cfg);
-        }
+        cfg.frame_resolution_src=dev->currentFramesize();
+        cfg.pixel_format_dst=settings_model->valueData(&settings->source_device[i].rec.pixel_format_current).toInt();
+        cfg.preset=settings_model->valueData(&settings->source_device[i].rec.preset_current).toString();
+        cfg.video_encoder=(FFEncoder::VideoEncoder::T)settings_model->valueData(&settings->source_device[i].rec.encoder_video).toInt();
+        cfg.crf=settings->source_device[i].rec.crf;
+        cfg.pixel_format_src=dev->currentPixelFormat();
+        cfg.direct_stream_copy=settings->source_device[i].rec.direct_stream_copy;
+        cfg.audio_sample_size=dev->currentAudioSampleSize();
+        cfg.audio_channels_size=dev->currentAudioChannels();
+        cfg.downscale=settings->source_device[i].rec.downscale;
+        cfg.scale_filter=settings->source_device[i].rec.scale_filter;
+        cfg.color_primaries=settings_model->valueData(&settings->source_device[i].rec.color_primaries).toInt();
+        cfg.color_space=settings_model->valueData(&settings->source_device[i].rec.color_space).toInt();
+        cfg.color_transfer_characteristic=settings_model->valueData(&settings->source_device[i].rec.color_transfer_characteristic).toInt();
+        cfg.sws_color_space_src=swsColorSpace::toff(settings->source_device[i].rec.sws_color_space_src);
+        cfg.sws_color_space_dst=swsColorSpace::toff(settings->source_device[i].rec.sws_color_space_dst);
+        cfg.sws_color_range_src=swsColorRange::toff(settings->source_device[i].rec.sws_color_range_src);
+        cfg.sws_color_range_dst=swsColorRange::toff(settings->source_device[i].rec.sws_color_range_dst);
+        cfg.nvenc=settings->source_device[i].rec.nvenc;
+        cfg.audio_flac=settings->source_device[i].rec.encoder_audio==1;
+        cfg.input_type_flags=dev->typeFlags();
+
+        enc->setConfig(cfg);
     }
 }
 
 void MainWindow::updateEncList()
 {
-    if(settings->rec.supported_enc.isEmpty()) {
+    if(settings->main.supported_enc.isEmpty()) {
         qCritical() << "supported_enc.isEmpty";
         exit(1);
         return;
     }
 
-    SettingsModel::Data *set_model_data=
-            settings_model->data_p(&settings->rec.encoder_video);
+    SettingsModel::Data *set_model_data=nullptr;
 
-    if(!set_model_data) {
-        qCritical() << "set_model_data null pointer";
-        return;
+    for(int i_dev=0; i_dev<settings->source_device.size(); ++i_dev) {
+        set_model_data=
+            settings_model->data_p(&settings->source_device[i_dev].rec.encoder_video);
+
+        if(!set_model_data) {
+            qCritical() << "set_model_data null pointer" << i_dev;
+            return;
+        }
+
+        set_model_data->values.clear();
+        set_model_data->values_data.clear();
+
+        for(int i_enc=0; i_enc<settings->main.supported_enc.size(); ++i_enc) {
+            set_model_data->values << settings->main.supported_enc.keys()[i_enc];
+            set_model_data->values_data << (quint64)FFEncoder::VideoEncoder::fromString(settings->main.supported_enc.keys()[i_enc]);
+        }
+
+        settingsModelDataChanged(settings_model->data_p_index(&settings->source_device[i_dev].rec.encoder_video), 0, false);
+
+        QMetaObject::invokeMethod(dynamic_cast<QObject*>(this), "settingsModelDataChanged", Qt::QueuedConnection,
+                                  Q_ARG(int, settings_model->data_p_index(&settings->source_device[i_dev].rec.encoder_video)), Q_ARG(int, 0), Q_ARG(bool, false));
     }
-
-    set_model_data->values.clear();
-    set_model_data->values_data.clear();
-
-    for(int i=0; i<settings->rec.supported_enc.size(); ++i) {
-        set_model_data->values << settings->rec.supported_enc.keys()[i];
-        set_model_data->values_data << (quint64)FFEncoder::VideoEncoder::fromString(settings->rec.supported_enc.keys()[i]);
-    }
-
-    settingsModelDataChanged(settings_model->data_p_index(&settings->rec.encoder_video), 0, false);
-
-    QMetaObject::invokeMethod(dynamic_cast<QObject*>(this), "settingsModelDataChanged", Qt::QueuedConnection,
-                              Q_ARG(int, settings_model->data_p_index(&settings->rec.encoder_video)), Q_ARG(int, 0), Q_ARG(bool, false));
 }
 
 void MainWindow::encoderBufferOverload()
 {
-    ff_enc_primary->stopCoder();
+    // ff_enc_primary->stopCoder();
 
     emit messenger->errorString("encoder buffer overload, recording stopped");
 }
@@ -2164,13 +2092,18 @@ void MainWindow::encoderStateChanged(bool state)
 
     messenger->setRecStarted(state);
 
-    if(state && device_primary && device_primary->currentPixelFormat().isCompressed() && settings->rec.direct_stream_copy) {
+    if(state && stream.first().source_device && stream.first().source_device->currentPixelFormat().isCompressed() && settings->source_device.first().rec.direct_stream_copy) {
         messenger->updateRecStats("awaiting intra frame");
     }
 }
 
 void MainWindow::playerStateChanged(int state)
 {
+    SourceInterface *device_primary=nullptr;
+
+    if(!stream.isEmpty())
+        device_primary=stream.first().source_device;
+
     if(state!=FFDecoderThread::ST_STOPPED) {
         emit signalLost(false);
 
@@ -2196,35 +2129,12 @@ void MainWindow::playerStateChanged(int state)
 
 void MainWindow::updateStats(FFEncoder::Stats s)
 {
-    static FFEncoder::Stats st_primary={ };
-    static FFEncoder::Stats st_secondary={ };
-    static qint64 last_update=0;
-
-    if(sender()==ff_enc_primary)
-        st_primary=s;
-
-    else
-        st_secondary=s;
-
-    s.avg_bitrate_audio=st_primary.avg_bitrate_audio + st_secondary.avg_bitrate_audio;
-    s.avg_bitrate_video=st_primary.avg_bitrate_video + st_secondary.avg_bitrate_video;
-    s.streams_size=st_primary.streams_size + st_secondary.streams_size;
-    s.time=st_primary.time;
-
-    if(s.time.isNull())
-        s.time=st_secondary.time;
-
-    if(QDateTime::currentMSecsSinceEpoch() - last_update<1000)
-        return;
-
-    last_update=QDateTime::currentMSecsSinceEpoch();
-
-    const QPair <int, int> buffer_size=ff_enc_primary->frameBuffer()->size();
+    const QPair <int, int> buffer_size=stream.first().encoder->frameBuffer()->size();
 
     QVariantMap map_bitrate_video;
 
-    for(int i=0; i<st_primary.bitrate_video.size(); ++i)
-        map_bitrate_video.insert(QString::number(st_primary.bitrate_video.keys()[i]), st_primary.bitrate_video.values()[i]);
+    for(int i=0; i<s.bitrate_video.size(); ++i)
+        map_bitrate_video.insert(QString::number(s.bitrate_video.keys()[i]), s.bitrate_video.values()[i]);
 
     emit recStats(NRecStats(s.time, s.avg_bitrate_video + s.avg_bitrate_audio, s.avg_bitrate_video, map_bitrate_video,
                             s.streams_size, s.dropped_frames_counter, buffer_size.second, buffer_size.first));

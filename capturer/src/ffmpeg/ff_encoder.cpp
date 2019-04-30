@@ -89,7 +89,7 @@ struct FFMpegContext
 
     QString store_dir;
     FFEncoderBaseFilename *base_filename=nullptr;
-    FFEncoder::Mode::T mode=FFEncoder::Mode::primary;
+    int enc_num=0;
 
     uint32_t dropped_frames_counter=0;
     uint32_t double_frames_counter=0;
@@ -561,7 +561,7 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
     if(cfg.mastering_display_metadata.has_luminance || cfg.mastering_display_metadata.has_luminance) {
         AVMasteringDisplayMetadata *mastering_display_metadata=(AVMasteringDisplayMetadata*)av_malloc(sizeof(AVMasteringDisplayMetadata));
         memcpy(mastering_display_metadata, &cfg.mastering_display_metadata, sizeof(cfg.mastering_display_metadata));
-        av_stream_add_side_data(out_stream->av_stream, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, (uint8_t*)mastering_display_metadata, sizeof(AVMasteringDisplayMetadata));
+        av_stream_add_side_data(output_stream->av_stream, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, (uint8_t*)mastering_display_metadata, sizeof(AVMasteringDisplayMetadata));
     }
 
     if(format_context->oformat->flags & AVFMT_GLOBALHEADER)
@@ -787,7 +787,7 @@ static void close_stream(OutputStream *ost)
 
 // ------------------------------
 
-FFEncoder::FFEncoder(FFEncoder::Mode::T mode, QObject *parent) :
+FFEncoder::FFEncoder(int enc_num, QObject *parent) :
     QObject(parent)
 {
     context=new FFMpegContext();
@@ -806,7 +806,7 @@ FFEncoder::FFEncoder(FFEncoder::Mode::T mode, QObject *parent) :
     format_converter_ff->useMultithreading(true);
 
     context->base_filename=nullptr;
-    context->mode=mode;
+    context->enc_num=enc_num;
 }
 
 FFEncoder::~FFEncoder()
@@ -1398,8 +1398,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             name=QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss");
 
 
-        if(context->mode==Mode::secondary)
-            name+=QLatin1String("_second");
+        if(context->enc_num>0)
+            name+=QString("_%1").arg(context->enc_num + 1);
 
 
         context->filename=QString(QLatin1String("%1/%2.mkv"))

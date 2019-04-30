@@ -156,7 +156,7 @@ int SettingsModel::focusPrev(int index) const
     while(true) {
         index--;
 
-        if(index<1)
+        if(index<0)
             index=d.size() - 1;
 
         if(d[index].type!=Type::title && d[index].type!=Type::divider)
@@ -168,11 +168,21 @@ int SettingsModel::focusPrev(int index) const
 
 int SettingsModel::focusNext(int index) const
 {
+    if(d.isEmpty())
+        return -1;
+
+    bool reset=false;
+
     while(true) {
         index++;
 
-        if(index>=d.size())
+        if(index>=d.size()) {
+            if(reset)
+                return -1;
+
+            reset=true;
             index=0;
+        }
 
         if(d[index].type!=Type::title && d[index].type!=Type::divider)
             break;
@@ -255,6 +265,17 @@ int SettingsModel::add(const SettingsModel::Data &data)
     return d.size() - 1;
 }
 
+int SettingsModel::add(const QList <SettingsModel::Data> &data)
+{
+    beginInsertRows(QModelIndex(), d.size(), d.size() + data.size() - 1);
+
+    d.append(data);
+
+    endInsertRows();
+
+    return d.size() - 1;
+}
+
 int SettingsModel::insert(int *ptr_value_pos, const SettingsModel::Data &data)
 {
     for(int i=0; i<d.size(); ++i) {
@@ -270,6 +291,36 @@ int SettingsModel::insert(int *ptr_value_pos, const SettingsModel::Data &data)
     }
 
     return 0;
+}
+
+int SettingsModel::insert(int *ptr_value_pos, const QList <SettingsModel::Data> &data)
+{
+    for(int i=0; i<d.size(); ++i) {
+        if(d[i].value==ptr_value_pos) {
+            beginInsertRows(QModelIndex(), i + 1, i + data.size() );
+
+            for(int j=data.size() - 1; j>=0; --j) {
+                d.insert(i + 1, data[j]);
+            }
+
+            endInsertRows();
+
+            return i + data.size();
+        }
+    }
+
+    return 0;
+}
+
+void SettingsModel::insert(int pos, const QList <SettingsModel::Data> &data)
+{
+    beginInsertRows(QModelIndex(), pos + data.size(), pos + data.size());
+
+    for(int j=data.size() - 1; j>=0; --j) {
+        d.insert(pos, data[j]);
+    }
+
+    endInsertRows();
 }
 
 void SettingsModel::removeRow(int *ptr_value)
