@@ -558,6 +558,12 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
     if(cfg.color_transfer_characteristic>-1)
         output_stream->av_codec_context->color_trc=(AVColorTransferCharacteristic)cfg.color_transfer_characteristic;
 
+    if(cfg.mastering_display_metadata.has_luminance || cfg.mastering_display_metadata.has_luminance) {
+        AVMasteringDisplayMetadata *mastering_display_metadata=(AVMasteringDisplayMetadata*)av_malloc(sizeof(AVMasteringDisplayMetadata));
+        memcpy(mastering_display_metadata, &cfg.mastering_display_metadata, sizeof(cfg.mastering_display_metadata));
+        av_stream_add_side_data(out_stream->av_stream, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, (uint8_t*)mastering_display_metadata, sizeof(AVMasteringDisplayMetadata));
+    }
+
     if(format_context->oformat->flags & AVFMT_GLOBALHEADER)
         output_stream->av_codec_context->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
 

@@ -38,6 +38,7 @@ extern "C" {
 #include <libswresample/swresample.h>
 #include <libavdevice/avdevice.h>
 #include <libavutil/bswap.h>
+#include <libavutil/mastering_display_metadata.h>
 }
 
 Q_DECLARE_METATYPE(AVRational)
