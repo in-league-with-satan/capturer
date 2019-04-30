@@ -1494,7 +1494,9 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
         goto fail;
     }
 
-    qInfo().noquote() << "video params:" << configString(cfg);
+    if(cfg.input_type_flags&SourceInterface::TypeFlag::video) {
+        qInfo().noquote() << "video params:" << configString(cfg);
+    }
 
 
     context->cfg=cfg;

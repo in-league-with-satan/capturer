@@ -204,6 +204,13 @@ void FFSourceWorker::deviceStart()
             d->audio_device=d->audio_input->start();
 
             parent_interface->type_flags|=SourceInterface::TypeFlag::audio;
+
+            if(d->audio_device) {
+                qInfo() << "audio input started:" << dev_list[index_device_audio].deviceName() << d->audio_input->format();
+
+            } else {
+                qInfo() << "audio input err." << dev_list[index_device_audio].deviceName();
+            }
         }
 
     } else {

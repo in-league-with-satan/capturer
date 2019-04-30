@@ -121,6 +121,7 @@ bool FFSource::setVideoDevice(int index)
     if(index_device_video<0) {
         d->setVideoDevice(FFDevice::Dev());
         type_flags&=~TypeFlag::video;
+        qDebug() << "no video";
 
     } else {
         d->setVideoDevice(dev_list[index_device_video]);

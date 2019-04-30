@@ -1682,7 +1682,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
 
             if(data->value==&settings_device->ff_device.index_audio) {
-                ff_device->setAudioDevice(settings_model->valueData(&settings_device->ff_device.index_audio).toInt());
+                ff_device->setAudioDevice(settings_model->valueData(&settings_device->ff_device.index_audio, -1).toInt());
             }
 
 
@@ -1886,12 +1886,17 @@ void MainWindow::deviceStart(uint8_t index)
     }
 
     if((*device)->type()==SourceInterface::Type::ffmpeg) {
-        if(settings_model->valueData(&settings_device->ff_device.index_video).toInt()>=0) {
+        if(settings_model->valueData(&settings_device->ff_device.index_video).toInt()>=0
+                || settings_model->valueData(&settings_device->ff_device.index_audio).toInt()>=0) {
             FFSource::Device *dev=new FFSource::Device();
+            FFSource *ff_device=static_cast<FFSource*>(*device);
 
-            dev->framerate=settings_model->valueData(&settings_device->ff_device.framerate).value<AVRational>();
+            dev->framerate=settings_model->valueData(&settings_device->ff_device.framerate, QVariant::fromValue<AVRational>({ 30000, 1000 })).value<AVRational>();
             dev->pixel_format=settings_model->valueData(&settings_device->ff_device.pixel_format, 0).toInt();
             dev->size=settings_model->valueData(&settings_device->ff_device.framesize, QSize(640, 480)).toSize();
+
+            ff_device->setAudioDevice(settings_model->valueData(&settings_device->ff_device.index_audio, -1).toInt());
+            ff_device->setVideoDevice(settings_model->valueData(&settings_device->ff_device.index_video, -1).toInt());
 
             (*device)->setDevice(dev);
         }
