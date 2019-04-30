@@ -45,7 +45,7 @@ QVariant SettingsModel::valueData(int *ptr_value, QVariant default_value)
     if(dp->values_data.isEmpty())
         return default_value;
 
-    if(dp->values_data.size()<(*ptr_value))
+    if(dp->values_data.size()<=(*ptr_value))
         return default_value;
 
     return dp->values_data[*ptr_value];
