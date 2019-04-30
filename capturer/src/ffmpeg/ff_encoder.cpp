@@ -87,7 +87,7 @@ struct FFMpegContext
 
     QString store_dir;
     FFEncoderBaseFilename *base_filename=nullptr;
-    FFEncoder::Mode::T mode=FFEncoder::Mode::primary;
+    int enc_num=0;
 
     uint32_t dropped_frames_counter=0;
     uint32_t double_frames_counter=0;
@@ -693,7 +693,7 @@ static void close_stream(OutputStream *ost)
 
 // ------------------------------
 
-FFEncoder::FFEncoder(FFEncoder::Mode::T mode, QObject *parent) :
+FFEncoder::FFEncoder(int enc_num, QObject *parent) :
     QObject(parent)
 {
     context=new FFMpegContext();
@@ -712,7 +712,7 @@ FFEncoder::FFEncoder(FFEncoder::Mode::T mode, QObject *parent) :
     format_converter_ff->useMultithreading(true);
 
     context->base_filename=nullptr;
-    context->mode=mode;
+    context->enc_num=enc_num;
 }
 
 FFEncoder::~FFEncoder()
@@ -1281,8 +1281,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             name=QDateTime::currentDateTime().toString("yyyy-MM-dd_hh-mm-ss");
 
 
-        if(context->mode==Mode::secondary)
-            name+=QLatin1String("_second");
+        if(context->enc_num>0)
+            name+=QString("_%1").arg(context->enc_num + 1);
 
 
         context->filename=QString(QLatin1String("%1/%2.mkv"))

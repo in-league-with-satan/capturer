@@ -28,7 +28,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "ff_decoder_thread.h"
 #include "source_interface.h"
 
-
 class SourceInterface;
 class AudioOutputInterface;
 class AudioLevel;
@@ -49,17 +48,22 @@ public:
     ~MainWindow();
 
 private:
-    void setDevicePrimary(SourceInterface::Type::T type);
-    void setDeviceSecondary(SourceInterface::Type::T type);
-    void setDevice(bool primary, SourceInterface::Type::T type);
+    void setDevice(uint8_t index, SourceInterface::Type::T type);
 
-    SourceInterface *device_primary=nullptr;
-    SourceInterface *device_secondary=nullptr;
+    void sourceDeviceAddModel(uint8_t index);
+
+    void sourceDeviceAdd();
+    void sourceDeviceRemove();
+
+    struct ObjGrp {
+        SourceInterface *source_device=nullptr;
+        FFEncoderThread *encoder=nullptr;
+        AudioSender *audio_sender=nullptr;
+    };
+
+    QList <ObjGrp> stream;
 
     SettingsModel *settings_model;
-
-    FFEncoderThread *ff_enc_primary;
-    FFEncoderThread *ff_enc_secondary;
 
     FFDecoderThread *ff_dec;
 
@@ -70,8 +74,6 @@ private:
     AudioLevel *audio_level_secondary;
 
     AudioOutputInterface *audio_output;
-
-    AudioSender *audio_sender;
 
     HttpServer *http_server;
 
@@ -88,8 +90,8 @@ private slots:
 
     void settingsModelDataChanged(int index, int role, bool qml);
 
-    void deviceStart(bool primary);
-    void deviceStop(bool primary);
+    void deviceStart(uint8_t index);
+    void deviceStop(uint8_t index);
 
     void startStopRecording();
     void updateEncList();

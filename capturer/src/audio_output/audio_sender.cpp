@@ -29,8 +29,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "audio_sender.h"
 
-AudioSender::AudioSender(QObject *parent)
+AudioSender::AudioSender(int dev_num, QObject *parent)
     : QThread(parent)
+    , dev_num(dev_num)
 {
     frame_buffer=FrameBuffer<Frame::ptr>::make();
     frame_buffer->setMaxSize(1);
@@ -69,7 +70,7 @@ void AudioSender::run()
 
     socket.moveToThread(this);
 
-    if(!socket.bind(QHostAddress::Any, 4142)) {
+    if(!socket.bind(QHostAddress::Any, 4142 + dev_num)) {
         qCritical() << socket.errorString();
         return;
     }
