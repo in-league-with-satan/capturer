@@ -25,6 +25,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #ifdef __WIN32__
 
+#include <initguid.h>
+
+DEFINE_GUID(MEDIASUBTYPE_H264_alt, 0x34363248, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
+
 GUID toDshowPixelFormat(uint32_t pix_fmt)
 {
     switch(pix_fmt) {
@@ -79,6 +83,9 @@ uint32_t fromDshowPixelFormat(const GUID &value)
 
     } else if(IsEqualGUID(value, MEDIASUBTYPE_MJPG)) {
         return PixelFormat::mjpeg;
+
+    } else if(IsEqualGUID(value, MEDIASUBTYPE_H264_alt)) {
+        return PixelFormat::h264;
     }
 
     return PixelFormat::undefined;

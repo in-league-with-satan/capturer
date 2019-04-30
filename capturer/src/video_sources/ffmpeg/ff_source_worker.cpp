@@ -251,6 +251,9 @@ void FFSourceWorker::deviceStart()
     if(cfg.pixel_format==PixelFormat::mjpeg) {
         d->format_context->video_codec_id=AV_CODEC_ID_MJPEG;
 
+    } else if(cfg.pixel_format==PixelFormat::h264) {
+        d->format_context->video_codec_id=AV_CODEC_ID_H264;
+
     } else {
         d->format_context->video_codec_id=AV_CODEC_ID_RAWVIDEO;
         av_dict_set(&d->dictionary, "pixel_format", cfg.pixel_format.toString().toLatin1().data(), 0);
@@ -415,9 +418,6 @@ AVRational FFSourceWorker::currentFrameRate() const
 
 PixelFormat FFSourceWorker::pixelFormat() const
 {
-    if(cfg.pixel_format==PixelFormat::mjpeg)
-        return PixelFormat(AV_PIX_FMT_YUV422P);
-
     return cfg.pixel_format;
 }
 
@@ -490,19 +490,18 @@ bool FFSourceWorker::step()
                         if(d->audio_device) {
                             QByteArray ba_audio=d->audio_device->readAll();
 
-                            if(!ba_audio.isEmpty()) {
-                                if(d->audio_input->format()!=default_format) {
-                                    QByteArray ba_audio_conv;
+                            if(d->audio_input->format()!=default_format) {
+                                QByteArray ba_audio_conv;
 
-                                    d->audio_converter.convert(&ba_audio, &ba_audio_conv);
-                                    ba_audio=ba_audio_conv;
-                                }
-
-                                frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
+                                d->audio_converter.convert(&ba_audio, &ba_audio_conv);
+                                ba_audio=ba_audio_conv;
                             }
 
-                        } else
+                            frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
+
+                        } else {
                             frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), QByteArray(), 0, 0);
+                        }
 
 
                         frame->video.pts=d->frame->pts - d->stream->start_time;
@@ -557,6 +556,14 @@ bool FFSourceWorker::step()
                     }
 
                     if(frame) {
+                        if(cfg.pixel_format==PixelFormat::mjpeg || cfg.pixel_format==PixelFormat::h264) {
+                            frame->video.av_packet=av_packet_clone(&packet);
+                            av_packet_make_refcounted(frame->video.av_packet);
+                            av_packet_make_writable(frame->video.av_packet);
+                            frame->video.av_packet->flags=d->frame->pict_type;
+                            frame->video.pixel_format_pkt=cfg.pixel_format;
+                        }
+
                         foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
                             buf->append(frame);
                     }

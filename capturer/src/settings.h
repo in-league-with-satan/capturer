@@ -105,6 +105,7 @@ public:
         int encoder_audio;
         int encoder_video;
         int half_fps;
+        int direct_stream_copy;
         int downscale;
         int scale_filter;
         int check_encoders;

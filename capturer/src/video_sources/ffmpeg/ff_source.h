@@ -71,7 +71,7 @@ public:
     bool gotSignal();
 
     AVRational currentFrameRate();
-    PixelFormat pixelFormat();
+    PixelFormat currentPixelFormat();
 
 public slots:
 

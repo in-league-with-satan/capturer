@@ -97,7 +97,7 @@ QList <FFDevice::Dev> ToolsV4L2::devList()
                 case V4L2_FRMSIZE_TYPE_CONTINUOUS:
                 case V4L2_FRMSIZE_TYPE_STEPWISE:
                     res=ToolsFFSource::resBuildSequence(QSize(frmsizeenum.stepwise.min_width, frmsizeenum.stepwise.min_height),
-                                                   QSize(frmsizeenum.stepwise.max_width, frmsizeenum.stepwise.max_height));
+                                                          QSize(frmsizeenum.stepwise.max_width, frmsizeenum.stepwise.max_height));
                     break;
 
                 default:

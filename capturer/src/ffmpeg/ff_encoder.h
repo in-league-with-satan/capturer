@@ -140,6 +140,7 @@ public:
         uint8_t audio_sample_size=16;
         int audio_dalay=0;
         bool audio_flac=false;
+        bool direct_stream_copy=true;
         uint8_t crf;
         uint8_t downscale=DownScale::Disabled;
         int scale_filter=ScaleFilter::FastBilinear;
@@ -232,6 +233,7 @@ private:
     QString configString(const FFEncoder::Config &cfg);
 
     bool checkFrameParams(Frame::ptr frame) const;
+    int64_t calcPts(int64_t pts, AVRational time_base);
     void restart(Frame::ptr frame);
 
     FFMpegContext *context;

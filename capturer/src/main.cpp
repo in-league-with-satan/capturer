@@ -192,5 +192,7 @@ int main(int argc, char *argv[])
 
     root_obj=new MainWindow();
 
+    QObject::connect(application, SIGNAL(aboutToQuit()), root_obj, SLOT(deleteLater()));
+
     return application->exec();
 }

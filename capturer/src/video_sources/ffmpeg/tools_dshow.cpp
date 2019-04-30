@@ -182,7 +182,7 @@ QList <FFDevice::Format> getDeviceCapabilities(const QString &dev_name)
                                     << ToolsFFSource::framerateBuildSequence(1e7/vcaps->MaxFrameInterval, 1e7/vcaps->MinFrameInterval);
 
                     } else {
-                        qDebug() << "unknown pix fmt" << guidToStr(type->formattype);
+                        qDebug() << "unknown pix fmt" << guidToStr(type->formattype) << guidToStr(type->subtype);
                     }
                 }
 
