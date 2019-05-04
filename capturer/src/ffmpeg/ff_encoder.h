@@ -23,6 +23,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QObject>
 #include <QImage>
 #include <QDateTime>
+#include <QMutex>
+#include <QMutexLocker>
 
 #include "frame.h"
 #include "ff_encoder_base_filename.h"
@@ -37,12 +39,64 @@ class FFFormatConverterMt;
 class DecklinkFrameConverter;
 class DecodeFrom210;
 
+class FFEncStartSync
+{
+public:
+    void setReady(int index) {
+        QMutexLocker ml(&mutex);
+
+        if(state[index]==ST_RESTART)
+            return;
+
+        state[index]=ST_READY;
+    }
+
+    bool isReady() {
+        QMutexLocker ml(&mutex);
+
+        foreach(const int &st, state.values()) {
+            if(st!=ST_READY) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    void clear() {
+        QMutexLocker ml(&mutex);
+        state.clear();
+    }
+
+    void restart() {
+        QMutexLocker ml(&mutex);
+
+        for(int i=0; i<state.size(); ++i)
+            state.values()[i]=ST_RESTART;
+    }
+
+    void add(int index) {
+        QMutexLocker ml(&mutex);
+        state[index]=ST_NOT_READY;
+    }
+
+private:
+    enum {
+        ST_NOT_READY,
+        ST_READY,
+        ST_RESTART
+    };
+
+    QMap <int, int> state;
+    QMutex mutex;
+};
+
 class FFEncoder : public QObject
 {
     Q_OBJECT
 
 public:
-    FFEncoder(int enc_num, QObject *parent=0);
+    FFEncoder(int enc_num, FFEncStartSync *start_sync, QObject *parent=0);
     ~FFEncoder();
 
     struct Framerate {
@@ -209,7 +263,6 @@ public:
 
     QString lastErrorString() const;
 
-
 public slots:
     bool setConfig(FFEncoder::Config cfg);
 
@@ -233,6 +286,8 @@ private:
 
     FFMpegContext *context;
     FFFormatConverterMt *format_converter_ff;
+
+    FFEncStartSync *start_sync;
 
     QSize last_frame_size;
 

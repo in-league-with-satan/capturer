@@ -31,6 +31,7 @@ QuickVideoSourceConvertThread::QuickVideoSourceConvertThread(QObject *parent)
     , half_fps(false)
     , skip_frame(false)
     , conv_src(nullptr)
+    , conv_src_tmp(nullptr)
     , conv_dst(nullptr)
     , format_converter_ff(new FFFormatConverter())
     , format_converter_dl(new DecklinkFrameConverter())
@@ -56,6 +57,9 @@ QuickVideoSourceConvertThread::~QuickVideoSourceConvertThread()
 
     if(conv_src)
         av_frame_free(&conv_src);
+
+    if(conv_src_tmp)
+        av_frame_free(&conv_src_tmp);
 
     if(conv_dst)
         av_frame_free(&conv_dst);
@@ -207,10 +211,14 @@ void QuickVideoSourceConvertThread::run()
                 if(conv_src)
                     av_frame_free(&conv_src);
 
+                if(conv_src_tmp)
+                    av_frame_free(&conv_src_tmp);
+
                 if(conv_dst)
                     av_frame_free(&conv_dst);
 
-                conv_src=alloc_frame(src_pix_fmt, frame_src->video.size.width(), frame_src->video.size.height(), false);
+                conv_src=alloc_frame(src_pix_fmt, frame_src->video.size.width(), frame_src->video.size.height(), true);
+                conv_src_tmp=alloc_frame(src_pix_fmt, frame_src->video.size.width(), frame_src->video.size.height(), false);
                 conv_dst=alloc_frame(dst_pix_fmt, frame_src->video.size.width(), frame_src->video.size.height(), true);
 
                 conv_src->linesize[0]=av_image_get_linesize(src_pix_fmt, frame_src->video.size.width(), 0);
@@ -233,7 +241,8 @@ void QuickVideoSourceConvertThread::run()
                                          frame_src->video.size.width(), frame_src->video.size.height(), conv_src);
 
                 } else {
-                    av_image_fill_arrays(conv_src->data, conv_src->linesize, data_conv, src_pix_fmt, frame_src->video.size.width(), frame_src->video.size.height(), alignment);
+                    av_image_fill_arrays(conv_src_tmp->data, conv_src_tmp->linesize, data_conv, src_pix_fmt, frame_src->video.size.width(), frame_src->video.size.height(), alignment);
+                    av_image_copy(conv_src->data, conv_src->linesize, (const uint8_t**)conv_src_tmp->data, conv_src_tmp->linesize, (AVPixelFormat)conv_src->format, conv_src->width, conv_src->height);
                 }
 
                 format_converter_ff->convert(conv_src, conv_dst);

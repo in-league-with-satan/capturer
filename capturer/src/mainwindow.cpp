@@ -210,9 +210,6 @@ MainWindow::~MainWindow()
 
 void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
 {
-    SourceInterface **device;
-    Settings::SourceDevice *settings_device;
-
     if(!settings->main.headless)
         messenger->formatChanged("no signal");
 
@@ -220,8 +217,10 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
         sourceDeviceAdd();
     }
 
-    device=&stream[index].source_device;
-    settings_device=settings->sourceDevice(index);
+    SourceInterface **device=&stream[index].source_device;
+    Settings::SourceDevice *settings_device=settings->sourceDevice(index);
+    FFEncoderThread *encoder=stream[index].encoder;
+    AudioSender *audio_sender=stream[index].audio_sender;
 
     if(*device) {
         (*device)->deviceStop();
@@ -680,8 +679,8 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
                 SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
     }
 
-    (*device)->subscribe(stream[index].encoder->frameBuffer());
-    (*device)->subscribe(stream[index].audio_sender->frameBuffer());
+    (*device)->subscribe(encoder->frameBuffer());
+    (*device)->subscribe(audio_sender->frameBuffer());
 
     if(index==0) {
         connect(dynamic_cast<QObject*>(*device),
@@ -1291,7 +1290,7 @@ void MainWindow::sourceDeviceAdd()
     str->audio_sender=new AudioSender(stream.size() - 1);
     str->audio_sender->setSimplify(settings->main.simplify_audio_for_send);
 
-    str->encoder=new FFEncoderThread(stream.size() - 1, &enc_base_filename, settings->main.location_videos, QString("capturer %1").arg(VERSION_STRING), this);
+    str->encoder=new FFEncoderThread(stream.size() - 1, &enc_base_filename, &enc_start_sync, settings->main.location_videos, QString("capturer %1").arg(VERSION_STRING), this);
 
     if(stream.size()==1) {
         connect(&str->encoder->frameBuffer()->signaler, SIGNAL(frameSkipped()), SLOT(encoderBufferOverload()), Qt::QueuedConnection);
@@ -1980,7 +1979,7 @@ void MainWindow::startStopRecording()
         return;
 
     enc_base_filename.reset();
-
+    enc_start_sync.clear();
 
     FFEncoderThread *enc=nullptr;
     SourceInterface *dev=nullptr;
@@ -2027,6 +2026,7 @@ void MainWindow::startStopRecording()
         cfg.input_type_flags=dev->typeFlags();
 
         enc->setConfig(cfg);
+        enc_start_sync.add(i);
     }
 }
 

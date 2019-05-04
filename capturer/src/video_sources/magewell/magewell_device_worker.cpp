@@ -555,6 +555,26 @@ bool MagewellDeviceWorker::step()
 
         //
 
+        /*
+        {
+            QFile f;
+
+            f.setFileName(QString("frame_%1_%2x%3.raw")
+                          .arg(frame->video.pixel_format.toString())
+                          .arg(frame->video.size.width())
+                          .arg(frame->video.size.height())
+                          );
+
+            f.open(QFile::ReadWrite | QFile::Truncate);
+
+            f.write((char*)frame->video.data_ptr, frame->video.data_size);
+
+            f.close();
+        }
+        */
+
+        //
+
         foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
             buf->append(frame);
 

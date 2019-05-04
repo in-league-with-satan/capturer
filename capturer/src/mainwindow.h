@@ -80,6 +80,7 @@ private:
     NvTools *nv_tools;
 
     FFEncoderBaseFilename enc_base_filename;
+    FFEncStartSync enc_start_sync;
 
 protected:
     virtual bool eventFilter(QObject *object, QEvent *event);

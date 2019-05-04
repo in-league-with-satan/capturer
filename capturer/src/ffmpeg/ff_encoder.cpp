@@ -787,7 +787,7 @@ static void close_stream(OutputStream *ost)
 
 // ------------------------------
 
-FFEncoder::FFEncoder(int enc_num, QObject *parent) :
+FFEncoder::FFEncoder(int enc_num, FFEncStartSync *start_sync, QObject *parent) :
     QObject(parent)
 {
     context=new FFMpegContext();
@@ -807,6 +807,7 @@ FFEncoder::FFEncoder(int enc_num, QObject *parent) :
 
     context->base_filename=nullptr;
     context->enc_num=enc_num;
+    this->start_sync=start_sync;
 }
 
 FFEncoder::~FFEncoder()
@@ -1293,6 +1294,8 @@ void FFEncoder::restart(Frame::ptr frame)
 
     Config cfg=context->cfg;
 
+    start_sync->restart();
+
     if(frame->video.data_ptr) {
         cfg.frame_resolution_src=frame->video.size;
 
@@ -1506,11 +1509,11 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     context->dropped_frames_counter=0;
     context->double_frames_counter=0;
 
-    context->out_stream_video.pts_next=AV_NOPTS_VALUE;
+    context->out_stream_video.pts_next=0;
     context->out_stream_video.size_total=0;
 
-    context->out_stream_video.pts_last=AV_NOPTS_VALUE;
-    context->out_stream_audio.pts_last=AV_NOPTS_VALUE;
+    context->out_stream_video.pts_last=0;
+    context->out_stream_audio.pts_last=0;
     context->out_stream_video.pts_start=AV_NOPTS_VALUE;
     context->out_stream_audio.pts_start=AV_NOPTS_VALUE;
 
@@ -1528,6 +1531,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             context->out_stream_audio.pts_next=cfg.audio_dalay/1000.*context->out_stream_audio.av_codec_context->sample_rate;
     }
 
+    start_sync->add(context->enc_num);
+
     emit stateChanged(true);
 
     return true;
@@ -1543,8 +1548,11 @@ int64_t FFEncoder::calcPts(int64_t pts, AVRational time_base)
 {
     int64_t pts_res;
 
-    if(pts==AV_NOPTS_VALUE)
-        return context->out_stream_video.pts_next++;
+    if(pts==AV_NOPTS_VALUE) {
+        return context->out_stream_video.pts_last=av_rescale_q(context->out_stream_video.pts_next++,
+                                                               context->out_stream_video.av_codec_context->time_base,
+                                                               context->out_stream_video.av_stream->time_base);
+    }
 
     if(context->out_stream_video.pts_start==AV_NOPTS_VALUE) {
         context->out_stream_video.pts_start=pts;
@@ -1552,7 +1560,7 @@ int64_t FFEncoder::calcPts(int64_t pts, AVRational time_base)
 
     context->out_stream_video.pts_next=pts - context->out_stream_video.pts_start;
 
-//    context->out_stream_video.pts_next+=context->double_frames_counter;
+    // context->out_stream_video.pts_next+=context->double_frames_counter;
 
     if(context->out_stream_video.pts_next<0) {
         qWarning() << "wrong pts" << context->out_stream_video.pts_next;
@@ -1590,6 +1598,11 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 {
     if(!context->canAcceptFrame())
         return false;
+
+    if(!start_sync->isReady()) {
+        start_sync->setReady(context->enc_num);
+        return false;
+    }
 
 
     if(!checkFrameParams(frame)) {
@@ -1661,6 +1674,7 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
             AVFrame *frame_orig=context->out_stream_video.frame_converted;
 
+            context->out_stream_video.frame_converted->pts=frame_out->d->pts;
             context->out_stream_video.frame_converted=frame_out->d;
 
 

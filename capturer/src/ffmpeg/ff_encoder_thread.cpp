@@ -24,9 +24,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "ff_encoder_thread.h"
 
-FFEncoderThread::FFEncoderThread(int enc_num, FFEncoderBaseFilename *base_filename, QString store_dir, QString encoding_tool_name, QObject *parent)
+FFEncoderThread::FFEncoderThread(int enc_num, FFEncoderBaseFilename *base_filename, FFEncStartSync *start_sync, QString store_dir, QString encoding_tool_name, QObject *parent)
     : QThread(parent)
     , base_filename(base_filename)
+    , start_sync(start_sync)
     , store_dir(store_dir)
     , encoding_tool_name(encoding_tool_name)
     , enc_num(enc_num)
@@ -97,7 +98,7 @@ void FFEncoderThread::onStateChanged(bool state)
 
 void FFEncoderThread::run()
 {
-    FFEncoder *ffmpeg=new FFEncoder(enc_num);
+    FFEncoder *ffmpeg=new FFEncoder(enc_num, start_sync);
 
     ffmpeg->moveToThread(this);
 
