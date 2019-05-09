@@ -151,7 +151,7 @@ QList <FFDevice::Format> getDeviceCapabilities(const QString &dev_name)
             if(config->GetNumberOfCapabilities(&n, &size)!=S_OK)
                 goto end_pin;
 
-            assert(size==sizeof(VIDEO_STREAM_CONFIG_CAPS));
+            // assert(size==sizeof(VIDEO_STREAM_CONFIG_CAPS));
 
             vcaps=new VIDEO_STREAM_CONFIG_CAPS;
 
@@ -288,6 +288,8 @@ QList <FFDevice::Dev> ToolsDirectShow::devList()
                 dev.dev=QString::fromWCharArray(ole_str);
 
                 dev.dev=dev.dev.replace(":", "_");
+
+                qDebug() << dev.name;
 
                 dev.format=getDeviceCapabilities(dev.dev);
 
