@@ -351,7 +351,7 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
 
         list_set_model_data.append(set_model_data);
 
-        ff_device->setVideoDevice(settings_model->valueData(&settings_device->ff_device.index_video, -1).toInt());
+        ff_device->setVideoDevice(settings_device->ff_device.index_video - 1);
 
         //
 
@@ -431,10 +431,6 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
         set_model_data.value=&settings_device->ff_device.framerate;
 
         list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
     }
 
     if(type==SourceInterface::Type::magewell) {

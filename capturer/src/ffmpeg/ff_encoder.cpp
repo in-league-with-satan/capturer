@@ -334,7 +334,7 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
         frames_ctx->sw_format=cfg.pixel_format_dst.toAVPixelFormat();
         frames_ctx->width=cfg.frame_resolution_dst.width();
         frames_ctx->height=cfg.frame_resolution_dst.height();
-        frames_ctx->initial_pool_size=20; // ???
+        // frames_ctx->initial_pool_size=20; // ???
 
         if((ret=av_hwframe_ctx_init(hw_frames_ref))<0) {
             av_buffer_unref(&hw_frames_ref);
@@ -535,8 +535,8 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_h264 || cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_hevc) {
         av_opt_set(output_stream->av_codec_context->priv_data, "rc_mode", "CQP", 0);
-        // av_opt_set(output_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
-        output_stream->av_codec_context->global_quality=cfg.crf;
+        av_opt_set(output_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
+        // output_stream->av_codec_context->global_quality=cfg.crf;
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_vp8 || cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_vp9) {
         av_opt_set(output_stream->av_codec_context->priv_data, "rc_mode", "CQP", 0);
@@ -782,6 +782,11 @@ static void close_stream(OutputStream *ost)
     if(ost->frame_converted) {
         av_frame_free(&ost->frame_converted);
         ost->frame_converted=nullptr;
+    }
+
+    if(ost->frame_hw) {
+        av_frame_free(&ost->frame_hw);
+        ost->frame_hw=nullptr;
     }
 }
 
@@ -1683,6 +1688,8 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
             if(!last_error_string.isEmpty()) {
                 // stopCoder();
+
+                qCritical() << "write_video_frame error: " + last_error_string;
 
                 emit errorString("write_video_frame error: " + last_error_string);
 

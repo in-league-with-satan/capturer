@@ -250,7 +250,7 @@ uint32_t PixelFormat::toV4L2PixelFormat() const
         return V4L2_PIX_FMT_YUV420;
 
     case yuv420p10:
-        return AV_PIX_FMT_YUV420P10;
+        return 0;
 
     case yuv422p:
         return 0;
@@ -315,10 +315,6 @@ bool PixelFormat::fromV4L2PixelFormat(uint32_t value)
 
     case V4L2_PIX_FMT_YUV420:
         d=yuv420p;
-        return true;
-
-    case AV_PIX_FMT_YUV420P10:
-        d=yuv420p10;
         return true;
 
     case V4L2_PIX_FMT_YUYV:
