@@ -55,6 +55,9 @@ public:
 
     static void updateDevList();
 
+    static int indexVideoInput(const QString &name);
+    static int indexAudioInput(const QString &name);
+
     bool setVideoDevice(int index);
     void setAudioDevice(int index);
 

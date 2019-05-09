@@ -106,6 +106,31 @@ QStringList FFSource::availableAudioInput()
     return future.get();
 }
 
+int FFSource::indexVideoInput(const QString &name)
+{
+    if(dev_list.isEmpty())
+        updateDevList();
+
+    for(int i=0; i<dev_list.size(); ++i) {
+        if(QString::compare(dev_list[i].name, name, Qt::CaseInsensitive)==0)
+            return i;
+    }
+
+    return -1;
+}
+
+int FFSource::indexAudioInput(const QString &name)
+{
+    QStringList dev_list=availableAudioInput();
+
+    for(int i=0; i<dev_list.size(); ++i) {
+        if(QString::compare(dev_list[i], name, Qt::CaseInsensitive)==0)
+            return i;
+    }
+
+    return -1;
+}
+
 bool FFSource::setVideoDevice(int index)
 {
     if(index>=dev_list.size())

@@ -48,13 +48,6 @@ public:
     ~MainWindow();
 
 private:
-    void setDevice(uint8_t index, SourceInterface::Type::T type);
-
-    void sourceDeviceAddModel(uint8_t index);
-
-    void sourceDeviceAdd();
-    void sourceDeviceRemove();
-
     struct ObjGrp {
         SourceInterface *source_device=nullptr;
         FFEncoderThread *encoder=nullptr;
@@ -91,6 +84,13 @@ private slots:
 
     void settingsModelDataChanged(int index, int role, bool qml);
 
+    void setDevice(uint8_t index, SourceInterface::Type::T type);
+
+    void sourceDeviceAddModel(uint8_t index);
+
+    void sourceDeviceAdd();
+    void sourceDeviceRemove();
+
     void deviceStart(uint8_t index);
     void deviceStop(uint8_t index);
 
@@ -108,6 +108,7 @@ private slots:
     void updateStats(FFEncoder::Stats s);
 
     void checkEncoders();
+    void reloadFFDevices();
 
     void checkFreeSpace();
 

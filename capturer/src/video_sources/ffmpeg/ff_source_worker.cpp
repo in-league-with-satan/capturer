@@ -456,7 +456,9 @@ bool FFSourceWorker::step()
     if(d->format_context && d->codec_context) {
         AVPacket packet;
 
-        if(av_read_frame(d->format_context, &packet)>=0) {
+        int ret=av_read_frame(d->format_context, &packet);
+
+        if(ret>=0) {
             if(packet.stream_index==d->stream->index) {
                 int frame_finished=0;
 
@@ -578,6 +580,14 @@ bool FFSourceWorker::step()
             }
 
             av_packet_unref(&packet);
+
+        } else {
+            // qCritical() << "av_read_frame err:" << ret << ENODEV << ffErrorString(ret);
+
+            if(AVUNERROR(ret)==ENODEV) {
+                deviceStop();
+                return false;
+            }
         }
 
         return true;

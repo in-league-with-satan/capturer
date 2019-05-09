@@ -69,8 +69,11 @@ public:
         } dummy_device;
 
         struct FFDevice {
-            int index_video=0;
+            QString name_audio;
+            QString name_video;
+            int reload_devices=0;
             int index_audio=0;
+            int index_video=0;
             int framesize=0;
             int framerate=0;
             int pixel_format=0;
@@ -100,6 +103,7 @@ public:
         } decklink;
 
         struct Rec {
+            int check_encoders;
             int pixel_format_current;
             int preset_current;
             int crf;
@@ -109,7 +113,6 @@ public:
             int direct_stream_copy;
             int downscale;
             int scale_filter;
-            int check_encoders;
             int color_primaries;
             int color_space;
             int color_transfer_characteristic;

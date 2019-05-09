@@ -248,8 +248,8 @@ QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &devi
     map_dummy.insert(QStringLiteral("framesize"), device.dummy_device.framesize);
     map_dummy.insert(QStringLiteral("show_frame_counter"), device.dummy_device.show_frame_counter);
 
-    map_ff.insert(QStringLiteral("index_video"), device.ff_device.index_video);
-    map_ff.insert(QStringLiteral("index_audio"), device.ff_device.index_audio);
+    map_ff.insert(QStringLiteral("name_audio"), device.ff_device.name_audio);
+    map_ff.insert(QStringLiteral("name_video"), device.ff_device.name_video);
     map_ff.insert(QStringLiteral("framesize"), device.ff_device.framesize);
     map_ff.insert(QStringLiteral("framerate"), device.ff_device.framerate);
     map_ff.insert(QStringLiteral("pixel_format"), device.ff_device.pixel_format);
@@ -337,8 +337,8 @@ void Settings::setSourceDeviceSettings(Settings::SourceDevice *device, const QVa
     device->dummy_device.framesize=map_dummy.value(QStringLiteral("framesize"), 0).toUInt();
     device->dummy_device.show_frame_counter=map_dummy.value(QStringLiteral("show_frame_counter"), false).toBool();
 
-    device->ff_device.index_video=map_ff.value(QStringLiteral("index_video"), 0).toUInt();
-    device->ff_device.index_audio=map_ff.value(QStringLiteral("index_audio"), 0).toUInt();
+    device->ff_device.name_audio=map_ff.value(QStringLiteral("name_audio")).toString();
+    device->ff_device.name_video=map_ff.value(QStringLiteral("name_video")).toString();
     device->ff_device.framesize=map_ff.value(QStringLiteral("framesize"), 0).toUInt();
     device->ff_device.framerate=map_ff.value(QStringLiteral("framerate"), 0).toUInt();
     device->ff_device.pixel_format=map_ff.value(QStringLiteral("pixel_format"), 0).toUInt();

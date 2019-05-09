@@ -306,6 +306,14 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
 
         //
 
+        set_model_data.type=SettingsModel::Type::button;
+        set_model_data.name="reload devices";
+        set_model_data.value=&settings_device->ff_device.reload_devices;
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
         set_model_data.type=SettingsModel::Type::combobox;
         set_model_data.name="audio device";
 
@@ -321,11 +329,19 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
 
         set_model_data.value=&settings_device->ff_device.index_audio;
 
+        settings_device->ff_device.index_audio=FFSource::indexAudioInput(settings_device->ff_device.name_audio);
+
+        if(settings_device->ff_device.index_audio<0)
+            settings_device->ff_device.index_audio=0;
+
+        else
+            settings_device->ff_device.index_audio++;
+
         list_set_model_data.append(set_model_data);
 
         //
 
-        ff_device->setAudioDevice(settings_model->valueData(&settings_device->ff_device.index_audio, -1).toInt());
+        ff_device->setAudioDevice(settings_device->ff_device.index_audio - 1);
 
         //
 
@@ -348,6 +364,15 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
         }
 
         set_model_data.value=&settings_device->ff_device.index_video;
+
+        settings_device->ff_device.index_video=FFSource::indexVideoInput(settings_device->ff_device.name_video);
+
+        if(settings_device->ff_device.index_video<0)
+            settings_device->ff_device.index_video=0;
+
+        else
+            settings_device->ff_device.index_video++;
+
 
         list_set_model_data.append(set_model_data);
 
@@ -1548,6 +1573,82 @@ void MainWindow::checkEncoders()
     updateEncList();
 }
 
+void MainWindow::reloadFFDevices()
+{
+    FFSource::updateDevList();
+
+    Settings::SourceDevice *settings_device;
+    SettingsModel::Data *set_model_data;
+
+    for(int i=0; i<stream.size(); ++i) {
+        settings_device=settings->sourceDevice(i);
+
+        if(!settings_device)
+            continue;
+
+        if(settings_device->index!=SourceInterface::Type::ffmpeg)
+            continue;
+
+        //
+
+        set_model_data=settings_model->data_p(&settings_device->ff_device.index_audio);
+
+        set_model_data->values.clear();
+        set_model_data->values_data.clear();
+
+        QStringList ff_devices=FFSource::availableAudioInput();
+
+        set_model_data->values << "disabled";
+        set_model_data->values_data << -1;
+
+        for(int i=0; i<ff_devices.size(); ++i) {
+            set_model_data->values << ff_devices[i];
+            set_model_data->values_data << i;
+        }
+
+        settings_device->ff_device.index_audio=FFSource::indexAudioInput(settings_device->ff_device.name_audio);
+
+        if(settings_device->ff_device.index_audio<0)
+            settings_device->ff_device.index_audio=0;
+
+        else
+            settings_device->ff_device.index_audio++;
+
+        //
+
+        set_model_data=settings_model->data_p(&settings_device->ff_device.index_video);
+
+        set_model_data->values.clear();
+        set_model_data->values_data.clear();
+
+        ff_devices=FFSource::availableVideoInput();
+
+        set_model_data->values << "disabled";
+        set_model_data->values_data << -1;
+
+        for(int i=0; i<ff_devices.size(); ++i) {
+            set_model_data->values << ff_devices[i];
+            set_model_data->values_data << i;
+        }
+
+        settings_device->ff_device.index_video=FFSource::indexVideoInput(settings_device->ff_device.name_video);
+
+        if(settings_device->ff_device.index_video<0)
+            settings_device->ff_device.index_video=0;
+
+        else
+            settings_device->ff_device.index_video++;
+
+        //
+
+        QMetaObject::invokeMethod(dynamic_cast<QObject*>(this), "settingsModelDataChanged", Qt::QueuedConnection,
+                                  Q_ARG(int, settings_model->data_p_index(&settings_device->ff_device.index_audio)), Q_ARG(int, 0), Q_ARG(bool, false));
+
+        QMetaObject::invokeMethod(dynamic_cast<QObject*>(this), "settingsModelDataChanged", Qt::QueuedConnection,
+                                  Q_ARG(int, settings_model->data_p_index(&settings_device->ff_device.index_video)), Q_ARG(int, 0), Q_ARG(bool, false));
+    }
+}
+
 void MainWindow::checkFreeSpace()
 {
     QStorageInfo info(settings->main.location_videos);
@@ -1597,6 +1698,9 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
                 QVariantList list_values_data;
 
                 qml=false;
+
+                settings_device->ff_device.name_video=
+                        data->values.value(*data->value);
 
                 if(settings_model->valueData(&settings_device->ff_device.index_video).toInt()<0) {
                     settings_model->setData(&settings_device->ff_device.framesize, SettingsModel::Role::values, list_values, false, true);
@@ -1677,6 +1781,9 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
 
             if(data->value==&settings_device->ff_device.index_audio) {
+                settings_device->ff_device.name_audio=
+                        data->values.value(*data->value);
+
                 ff_device->setAudioDevice(settings_model->valueData(&settings_device->ff_device.index_audio, -1).toInt());
             }
 
@@ -1753,6 +1860,10 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
                     if(settings_device->ff_device.framerate>=list_values.size())
                         settings_device->ff_device.framerate=list_values.size() - 1;
                 }
+            }
+
+            if(data->value==&settings_device->ff_device.reload_devices) {
+                reloadFFDevices();
             }
         }
 
