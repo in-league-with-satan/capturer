@@ -261,6 +261,10 @@ void FFSourceWorker::deviceStart()
     } else if(cfg.pixel_format==PixelFormat::h264) {
         d->format_context->video_codec_id=AV_CODEC_ID_H264;
 
+    } else if(cfg.pixel_format==PixelFormat::yvu420p) {
+        d->format_context->video_codec_id=AV_CODEC_ID_RAWVIDEO;
+        av_dict_set(&d->dictionary, "pixel_format", "yuv420p", 0);
+
     } else {
         d->format_context->video_codec_id=AV_CODEC_ID_RAWVIDEO;
         av_dict_set(&d->dictionary, "pixel_format", cfg.pixel_format.toString().toLatin1().data(), 0);
@@ -480,6 +484,10 @@ bool FFSourceWorker::step()
                     tmp_fmt.fromAVPixelFormat((AVPixelFormat)d->frame->format);
 
                     if(tmp_fmt.isDirect()) {
+                        if(cfg.pixel_format==PixelFormat::yvu420p) {
+                            FFSWAP(uint8_t*, d->frame->data[1], d->frame->data[2]);
+                        }
+
                         QByteArray ba_frame;
 
                         const int buf_size=

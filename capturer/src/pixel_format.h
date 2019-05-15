@@ -39,6 +39,7 @@ struct PixelFormat {
         gbrp10,
         rgb48,
         yuv420p,
+        yvu420p,
         yuv420p10,
         yuv422p,
         yuyv422,

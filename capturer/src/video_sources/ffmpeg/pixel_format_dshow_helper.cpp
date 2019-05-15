@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -72,6 +72,9 @@ uint32_t fromDshowPixelFormat(const GUID &value)
 
     } else if(IsEqualGUID(value, MEDIASUBTYPE_IYUV)) {
         return PixelFormat::yuv420p;
+
+    } else if(IsEqualGUID(value, MEDIASUBTYPE_YV12)) {
+        return PixelFormat::yvu420p;
 
     } else if(IsEqualGUID(value, MEDIASUBTYPE_YUY2)) {
         return PixelFormat::yuyv422;

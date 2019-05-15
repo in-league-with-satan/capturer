@@ -97,6 +97,9 @@ AVPixelFormat PixelFormat::toAVPixelFormat() const
     case yuv420p:
         return AV_PIX_FMT_YUV420P;
 
+    case yvu420p:
+        return AV_PIX_FMT_YUV420P;
+
     case yuv420p10:
         return AV_PIX_FMT_YUV420P10;
 
@@ -249,6 +252,9 @@ uint32_t PixelFormat::toV4L2PixelFormat() const
     case yuv420p:
         return V4L2_PIX_FMT_YUV420;
 
+    case yvu420p:
+        return V4L2_PIX_FMT_YVU420;
+
     case yuv420p10:
         return 0;
 
@@ -315,6 +321,10 @@ bool PixelFormat::fromV4L2PixelFormat(uint32_t value)
 
     case V4L2_PIX_FMT_YUV420:
         d=yuv420p;
+        return true;
+
+    case V4L2_PIX_FMT_YVU420:
+        d=yvu420p;
         return true;
 
     case V4L2_PIX_FMT_YUYV:
@@ -421,6 +431,9 @@ QVideoFrame::PixelFormat PixelFormat::toQPixelFormat() const
     // case rgb48:
 
     case yuv420p:
+        return QVideoFrame::Format_YUV420P;
+
+    case yvu420p:
         return QVideoFrame::Format_YUV420P;
 
     // case yuv420p10:
@@ -542,6 +555,9 @@ QString PixelFormat::toString(int value)
     case yuv420p:
         return QStringLiteral("yuv420p");
 
+    case yvu420p:
+        return QStringLiteral("yvu420p");
+
     case yuv420p10:
         return QStringLiteral("yuv420p10");
 
@@ -613,6 +629,9 @@ QString PixelFormat::toStringView(int value)
 
     case yuv420p:
         return QStringLiteral("yuv420p");
+
+    case yvu420p:
+        return QStringLiteral("yvu420p");
 
     case yuv420p10:
         return QStringLiteral("yuv420p10");
@@ -725,6 +744,7 @@ bool PixelFormat::isDirect() const
             || d==bgr0
             || d==bgra
             || d==yuv420p
+            || d==yvu420p
             || d==yuv422p
             || d==yuyv422
             || d==uyvy422
