@@ -861,7 +861,7 @@ void MainWindow::sourceDeviceAddModel(uint8_t index)
     set_model_data.name="constant rate factor / quality";
     set_model_data.value=&settings_device->rec.crf;
 
-    for(int i=0; i<=42; ++i)
+    for(int i=0; i<=80; ++i)
         set_model_data.values.append(QString::number(i));
 
     list_set_model_data.append(set_model_data);

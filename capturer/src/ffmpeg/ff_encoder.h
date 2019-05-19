@@ -271,7 +271,6 @@ public slots:
     bool stopCoder();
 
 private slots:
-    void converterFrameSkip();
     void processAudio(Frame::ptr frame);
     void restartExt();
 
@@ -281,7 +280,7 @@ private:
     QString configString(const FFEncoder::Config &cfg);
 
     bool checkFrameParams(Frame::ptr frame) const;
-    int64_t calcPts(int64_t pts, AVRational time_base);
+    int64_t calcPts(int64_t pts, AVRational time_base_in, AVRational time_base_out);
     void restart(Frame::ptr frame);
 
     FFMpegContext *context;
