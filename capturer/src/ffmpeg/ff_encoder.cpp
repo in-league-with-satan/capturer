@@ -711,12 +711,11 @@ static QString write_video_packet(AVFormatContext *format_context, OutputStream 
 {
     output_stream->size_total+=packet->size;
 
-    packet->stream_index=output_stream->av_stream->index;
-
     if(pts!=AV_NOPTS_VALUE) {
         packet->dts=
                 packet->pts=
                 pts;
+
     } else {
         av_packet_rescale_ts(packet, output_stream->av_codec_context->time_base, output_stream->av_stream->time_base);
     }
@@ -737,11 +736,11 @@ static QString write_video_frame(AVFormatContext *format_context, OutputStream *
     QString err_string;
 
     if(output_stream->frame_hw) {
+        output_stream->frame_hw->pts=pts;
+
         if((ret=av_hwframe_transfer_data(output_stream->frame_hw, output_stream->frame_converted, 0))<0) {
             return QString("error while transferring frame data to surface: %1").arg(ffErrorString(ret));
         }
-
-        output_stream->frame_hw->pts=pts;
 
         ret=avcodec_send_frame(output_stream->av_codec_context, output_stream->frame_hw);
 
@@ -754,11 +753,13 @@ static QString write_video_frame(AVFormatContext *format_context, OutputStream *
         return QString("error encoding video frame: %1").arg(ffErrorString(ret));
     }
 
-    while(!ret) {
+    while(ret>=0) {
         ret=avcodec_receive_packet(output_stream->av_codec_context, output_stream->pkt);
 
-        if(!ret) {
+        if(ret>=0) {
             err_string=write_video_packet(format_context, output_stream, output_stream->pkt, AV_NOPTS_VALUE);
+
+            av_packet_unref(output_stream->pkt);
 
             if(!err_string.isEmpty()) {
                 return err_string;
