@@ -324,7 +324,7 @@ void Settings::setSourceDeviceSettings(Settings::SourceDevice *device, const QVa
 {
     device->index=map_root.value(QStringLiteral("index"), 0).toUInt();
 
-    if(device->index>3)
+    if(device->index<0)
         device->index=0;
 
     QVariantMap map_dummy=map_root.value(QStringLiteral("dummy")).toMap();
