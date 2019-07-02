@@ -142,7 +142,7 @@ static QString add_stream_audio(OutputStream *output_stream, AVFormatContext *fo
         return QStringLiteral("could not alloc an encoding context");
 
 
-    output_stream->av_codec_context->compression_level=8;
+    output_stream->av_codec_context->compression_level=12;
 
 
     if(cfg.audio_sample_size==16)
