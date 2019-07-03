@@ -53,6 +53,8 @@ struct OutputStream
     AVFrame *frame_converted=nullptr;
     AVFrame *frame_hw=nullptr;
 
+    AVFrameSP::ptr frame_current;
+
     AVPacket *pkt=nullptr;
 
     uint64_t size_total=0;
@@ -83,8 +85,6 @@ struct FFMpegContext
     FFEncoder::Config cfg;
 
     bool skip_frame=false;
-
-    bool direct_stream_copy=false;
 
     qint64 last_stats_update_time=0;
 
@@ -633,6 +633,8 @@ static QString open_audio(AVFormatContext *oc, AVCodec *codec, OutputStream *ost
 
     if(ret<0)
         return QStringLiteral("could not copy the stream parameters");
+
+    c->frame_size=nb_samples;
 
     if(!ost->pkt)
         ost->pkt=av_packet_alloc();
@@ -1331,6 +1333,47 @@ void FFEncoder::restart(Frame::ptr frame)
     emit restartReq();
 }
 
+void FFEncoder::fillDroppedFrames(int size)
+{
+    if(!context->cfg.fill_dropped_frames)
+        return;
+
+    if(context->cfg.direct_stream_copy)
+        return;
+
+    if(!context->out_stream_video.frame_current)
+        return;
+
+    switch(context->cfg.framerate) {
+    case Framerate::half_50:
+    case Framerate::half_59:
+    case Framerate::half_60:
+        return;
+
+    default:
+        break;
+    }
+
+    AVFrame *frame_orig=context->out_stream_video.frame_converted;
+
+    context->out_stream_video.frame_converted=context->out_stream_video.frame_current->d;
+
+    int framenum=1;
+
+    while(size--) {
+        context->out_stream_video.frame_converted->pts=
+                context->out_stream_video.pts_last + framenum++;
+
+        last_error_string=write_video_frame(context->av_format_context, &context->out_stream_video, context->out_stream_video.frame_converted->pts);
+
+        if(!last_error_string.isEmpty()) {
+            qCritical() << "write_video_frame error: " + last_error_string;
+        }
+    }
+
+    context->out_stream_video.frame_converted=frame_orig;
+}
+
 void checkCrfValue(FFEncoder::Config *cfg)
 {
     if(cfg->video_encoder==FFEncoder::VideoEncoder::ffvhuff || cfg->video_encoder==FFEncoder::VideoEncoder::magicyuv) {
@@ -1365,8 +1408,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     int ret;
     int sws_flags=0;
 
-    context->direct_stream_copy=cfg.direct_stream_copy && cfg.pixel_format_src.isCompressed();
-    cfg.direct_stream_copy=context->direct_stream_copy;
+    cfg.direct_stream_copy=cfg.direct_stream_copy && cfg.pixel_format_src.isCompressed();
 
     if(!cfg.direct_stream_copy)
         cfg.pixel_format_src=PixelFormat::normalizeFormat(cfg.pixel_format_src);
@@ -1375,7 +1417,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
     cfg.frame_resolution_dst=cfg.frame_resolution_src;
 
-    if(!context->direct_stream_copy && cfg.downscale!=DownScale::Disabled) {
+    if(!cfg.direct_stream_copy && cfg.downscale!=DownScale::Disabled) {
         if(cfg.frame_resolution_dst.height()>DownScale::toWidth(cfg.downscale)) {
             cfg.frame_resolution_dst.setHeight(DownScale::toWidth(cfg.downscale));
             cfg.frame_resolution_dst.setWidth(cfg.frame_resolution_dst.height()*(16./9.));
@@ -1393,11 +1435,11 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             cfg.nvenc.aq_mode=0;
     }
 
-    if(!context->direct_stream_copy && cfg.input_type_flags&SourceInterface::TypeFlag::video && !format_converter_ff->setup(
-                                                                       PixelFormat::normalizeFormat(cfg.pixel_format_src).toAVPixelFormat(), cfg.frame_resolution_src, cfg.pixel_format_dst.toAVPixelFormat(), cfg.frame_resolution_dst,
-                                                                       cfg.sws_color_space_src, cfg.sws_color_space_dst, cfg.sws_color_range_src, cfg.sws_color_range_dst,
-                                                                       cfg.downscale==DownScale::Disabled ? FFFormatConverter::Filter::cNull : (FFFormatConverter::Filter::T)ScaleFilter::toSws(cfg.scale_filter),
-                                                                       cfg.pixel_format_src.is210() ? (cfg.pixel_format_src.isRgb() ? DecodeFrom210::Format::R210 : (cfg.pixel_format_src==PixelFormat::yuv444p10 ? DecodeFrom210::Format::V410 : DecodeFrom210::Format::V210)) : DecodeFrom210::Format::Disabled)) {
+    if(!cfg.direct_stream_copy && cfg.input_type_flags&SourceInterface::TypeFlag::video && !format_converter_ff->setup(
+                PixelFormat::normalizeFormat(cfg.pixel_format_src).toAVPixelFormat(), cfg.frame_resolution_src, cfg.pixel_format_dst.toAVPixelFormat(), cfg.frame_resolution_dst,
+                cfg.sws_color_space_src, cfg.sws_color_space_dst, cfg.sws_color_range_src, cfg.sws_color_range_dst,
+                cfg.downscale==DownScale::Disabled ? FFFormatConverter::Filter::cNull : (FFFormatConverter::Filter::T)ScaleFilter::toSws(cfg.scale_filter),
+                cfg.pixel_format_src.is210() ? (cfg.pixel_format_src.isRgb() ? DecodeFrom210::Format::R210 : (cfg.pixel_format_src==PixelFormat::yuv444p10 ? DecodeFrom210::Format::V410 : DecodeFrom210::Format::V210)) : DecodeFrom210::Format::Disabled)) {
         emit errorString(last_error_string=QStringLiteral("err init format converter"));
         goto fail;
     }
@@ -1434,7 +1476,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
     context->av_output_format=context->av_format_context->oformat;
 
-    if(context->direct_stream_copy && cfg.input_type_flags&SourceInterface::TypeFlag::video) {
+    if(cfg.direct_stream_copy && cfg.input_type_flags&SourceInterface::TypeFlag::video) {
         last_error_string=add_stream_video_dsc(&context->out_stream_video, context->av_format_context, &context->av_codec_video, cfg);
 
         if(!last_error_string.isEmpty()) {
@@ -1535,6 +1577,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     context->out_stream_audio.pts_next=0;
     context->out_stream_audio.size_total=0;
 
+    context->out_stream_audio.ba_audio_prev_part.clear();
 
     context->prev_stream_size_total=0;
     context->bitrate_point.clear();
@@ -1603,6 +1646,8 @@ int64_t FFEncoder::calcPts(int64_t pts, AVRational time_base_in, AVRational time
     if(pts_dif>1) {
         context->dropped_frames_counter+=pts_dif - 1;
         qWarning().noquote() << "frames dropped" << duration().toString(QStringLiteral("hh:mm:ss.zzz")) << context->dropped_frames_counter << context->out_stream_video.pts_last << pts_res << pts;
+
+        fillDroppedFrames(pts_dif - 1);
     }
 
     context->out_stream_video.pts_last=pts_res;
@@ -1630,14 +1675,14 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
     if(context->cfg.input_type_flags&SourceInterface::TypeFlag::audio)
         if((!(context->cfg.pixel_format_src==PixelFormat::h264
              && context->out_stream_video.pts_last==AV_NOPTS_VALUE
-             && frame->video.av_packet->flags!=AV_PICTURE_TYPE_I) && context->direct_stream_copy) || !context->direct_stream_copy)
+             && frame->video.av_packet->flags!=AV_PICTURE_TYPE_I) && context->cfg.direct_stream_copy) || !context->cfg.direct_stream_copy)
             processAudio(frame);
 
 
     if((context->cfg.input_type_flags&SourceInterface::TypeFlag::video)==0)
         return true;
 
-    if(context->direct_stream_copy) {
+    if(context->cfg.direct_stream_copy) {
         if(!frame->video.av_packet) {
             emit errorString("frame->video.av_packet null pointer");
             stopCoder();
@@ -1687,7 +1732,13 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
             if(!context->canAcceptFrame())
                 continue;
 
+
+            context->out_stream_video.frame_current=frame_out;
+
             frame_out->d->pts=calcPts(frame_out->d->pts, frame_out->time_base, context->out_stream_video.av_codec_context->time_base);
+
+            context->out_stream_video.frame_current.reset();
+
 
             AVFrame *frame_orig=context->out_stream_video.frame_converted;
 
@@ -1740,7 +1791,7 @@ void FFEncoder::processAudio(Frame::ptr frame)
 
         int default_nb_samples=context->out_stream_audio.frame->nb_samples;
 
-        while(true) {
+        while(context->out_stream_audio.frame->nb_samples) {
             buffer_size=av_samples_get_buffer_size(nullptr, context->out_stream_audio.frame->channels, context->out_stream_audio.frame->nb_samples,
                                                    sample_format, 0);
 
@@ -1750,6 +1801,7 @@ void FFEncoder::processAudio(Frame::ptr frame)
 
             context->out_stream_audio.frame->nb_samples--;
         }
+
 
         QByteArray ba_audio_tmp=ba_audio.left(buffer_size);
 

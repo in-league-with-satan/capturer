@@ -1024,6 +1024,17 @@ void MainWindow::sourceDeviceAddModel(uint8_t index)
     set_model_data.values_data.clear();
 
     set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="fill dropped frames";
+    set_model_data.value=&settings_device->rec.fill_dropped_frames;
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::checkbox;
     set_model_data.name="half-fps";
     set_model_data.value=&settings_device->rec.half_fps;
 
@@ -2117,6 +2128,7 @@ void MainWindow::startStopRecording()
         cfg.crf=settings->source_device[i].rec.crf;
         cfg.pixel_format_src=dev->currentPixelFormat();
         cfg.direct_stream_copy=settings->source_device[i].rec.direct_stream_copy;
+        cfg.fill_dropped_frames=settings->source_device[i].rec.fill_dropped_frames;
         cfg.audio_sample_size=dev->currentAudioSampleSize();
         cfg.audio_channels_size=dev->currentAudioChannels();
         cfg.downscale=settings->source_device[i].rec.downscale;

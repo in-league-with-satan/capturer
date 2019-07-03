@@ -187,7 +187,8 @@ public:
         uint8_t audio_sample_size=16;
         int audio_dalay=0;
         bool audio_flac=false;
-        bool direct_stream_copy=true;
+        bool direct_stream_copy=false;
+        bool fill_dropped_frames=false;
         uint8_t crf;
         uint8_t downscale=DownScale::Disabled;
         int scale_filter=ScaleFilter::FastBilinear;
@@ -282,6 +283,8 @@ private:
     bool checkFrameParams(Frame::ptr frame) const;
     int64_t calcPts(int64_t pts, AVRational time_base_in, AVRational time_base_out);
     void restart(Frame::ptr frame);
+
+    void fillDroppedFrames(int size);
 
     FFMpegContext *context;
     FFFormatConverterMt *format_converter_ff;

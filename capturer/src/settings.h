@@ -111,6 +111,7 @@ public:
             int encoder_video;
             int half_fps;
             int direct_stream_copy;
+            int fill_dropped_frames;
             int downscale;
             int scale_filter;
             int color_primaries;

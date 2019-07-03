@@ -503,6 +503,23 @@ bool MagewellDeviceWorker::step()
         }
 
         //
+        /*
+
+        static bool skip_frame=true;
+        static int chain_size=0;
+
+        skip_frame=!skip_frame;
+        skip_frame=rand()%2;
+
+        if(skip_frame && chain_size<2) {
+            chain_size++;
+            return true;
+        }
+
+        chain_size=0;
+
+        */
+        //
 
         frame->video.pixel_format=d->pixel_format;
 

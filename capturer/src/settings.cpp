@@ -299,6 +299,7 @@ QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &devi
     map_rec.insert(QStringLiteral("crf"), device.rec.crf);
     map_rec.insert(QStringLiteral("half_fps"), device.rec.half_fps);
     map_rec.insert(QStringLiteral("direct_stream_copy"), device.rec.direct_stream_copy);
+    map_rec.insert(QStringLiteral("fill_dropped_frames"), device.rec.fill_dropped_frames);
     map_rec.insert(QStringLiteral("downscale"), device.rec.downscale);
     map_rec.insert(QStringLiteral("scale_filter"), device.rec.scale_filter);
     map_rec.insert(QStringLiteral("color_primaries"), device.rec.color_primaries);
@@ -366,6 +367,7 @@ void Settings::setSourceDeviceSettings(Settings::SourceDevice *device, const QVa
     device->rec.crf=map_rec.value(QStringLiteral("crf"), 0).toInt();
     device->rec.half_fps=map_rec.value(QStringLiteral("half_fps"), 0).toInt();
     device->rec.direct_stream_copy=map_rec.value(QStringLiteral("direct_stream_copy"), 0).toInt();
+    device->rec.fill_dropped_frames=map_rec.value(QStringLiteral("fill_dropped_frames"), 0).toInt();
     device->rec.downscale=map_rec.value(QStringLiteral("downscale"), FFEncoder::DownScale::Disabled).toInt();
     device->rec.scale_filter=map_rec.value(QStringLiteral("scale_filter"), FFEncoder::ScaleFilter::FastBilinear).toInt();
     device->rec.color_primaries=map_rec.value(QStringLiteral("color_primaries"), 0).toInt();
