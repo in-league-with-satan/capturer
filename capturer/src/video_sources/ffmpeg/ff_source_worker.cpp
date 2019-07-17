@@ -398,6 +398,18 @@ void FFSourceWorker::deviceStop()
     emit formatChanged("NONE");
 }
 
+void FFSourceWorker::deviceHold()
+{
+    on_hold=true;
+}
+
+void FFSourceWorker::deviceResume()
+{
+    on_hold=false;
+
+    emit signalLost(!isActive());
+}
+
 void FFSourceWorker::subscribe(FrameBuffer<Frame::ptr>::ptr obj)
 {
     if(!subscription_list.contains(obj))
@@ -437,7 +449,7 @@ bool FFSourceWorker::step()
     if((parent_interface->type_flags&SourceInterface::TypeFlag::video)==0 && d->audio_device) {
         QByteArray ba_audio=d->audio_device->readAll();
 
-        if(!ba_audio.isEmpty()) {
+        if(!ba_audio.isEmpty() && !on_hold) {
             if(d->audio_input->format()!=default_format) {
                 QByteArray ba_audio_conv;
 
@@ -477,7 +489,12 @@ bool FFSourceWorker::step()
                         frame_finished=1;
                 }
 
-                if(frame_finished) {
+                if(on_hold) {
+                    if(d->audio_device) {
+                        d->audio_device->readAll();
+                    }
+
+                } else if(frame_finished) {
                     Frame::ptr frame=Frame::make();
 
                     PixelFormat tmp_fmt;

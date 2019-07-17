@@ -336,6 +336,9 @@ void FFSource::run()
     connect(this, SIGNAL(deviceStart()), d, SLOT(deviceStart()), Qt::QueuedConnection);
     connect(this, SIGNAL(deviceStop()), d, SLOT(deviceStop()), Qt::QueuedConnection);
 
+    connect(this, SIGNAL(deviceHold()), d, SLOT(deviceHold()), Qt::QueuedConnection);
+    connect(this, SIGNAL(deviceResume()), d, SLOT(deviceResume()), Qt::QueuedConnection);
+
     connect(d, SIGNAL(formatChanged(QString)), SIGNAL(formatChanged(QString)), Qt::QueuedConnection);
     connect(d, SIGNAL(errorString(QString)), SIGNAL(errorString(QString)), Qt::QueuedConnection);
     connect(d, SIGNAL(signalLost(bool)), SIGNAL(signalLost(bool)), Qt::QueuedConnection);

@@ -265,6 +265,19 @@ void DeckLinkThread::deviceStop()
 #endif
 }
 
+void DeckLinkThread::deviceHold()
+{
+    on_hold=true;
+}
+
+void DeckLinkThread::deviceResume()
+{
+    on_hold=false;
+
+    emit signalLost(signal_lost);
+    emit formatChanged(format);
+}
+
 void DeckLinkThread::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayMode *mode, uint32_t format_flags)
 {
     Q_UNUSED(events)
@@ -335,7 +348,7 @@ void DeckLinkThread::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fram
 {
 #ifdef LIB_DECKLINK
 
-    if(!video_frame || !audio_packet)
+    if(on_hold || !video_frame || !audio_packet)
         return;
 
     const BMDFrameFlags frame_flags=video_frame->GetFlags();
@@ -581,6 +594,8 @@ void DeckLinkThread::init()
     }
 
     running=true;
+
+    on_hold=false;
 
     qDebug() << "started";
 

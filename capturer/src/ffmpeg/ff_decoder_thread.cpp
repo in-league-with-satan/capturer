@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -417,7 +417,7 @@ void FFDecoderThread::_play()
                 }
 
                 if(frame_finished) {
-                    int64_t ts=av_frame_get_best_effort_timestamp(context.frame_video);
+                    int64_t ts=context.frame_video->pts;
 
                     if(ts!=AV_NOPTS_VALUE)
                         context.pts_video=ts;
@@ -431,13 +431,13 @@ void FFDecoderThread::_play()
 
                     context.video_frame_duration=computeDelay();
 
-                    if(context.frame_video->format!=AV_PIX_FMT_YUV420P) {
+                    if(context.frame_video->format!=AV_PIX_FMT_YUV420P && context.frame_video->format!=AV_PIX_FMT_NV12) {
                         if(!context.frame_cnv)
                             context.frame_cnv=alloc_frame(AV_PIX_FMT_NV12, context.target_size.width(), context.target_size.height());
 
                         if(!context.convert_context_video) {
                             context.convert_context_video=sws_getContext(context.codec_context_video->width, context.codec_context_video->height,
-                                                                         context.codec_context_video->pix_fmt,
+                                                                         (AVPixelFormat)context.frame_video->format,
                                                                          context.target_size.width(), context.target_size.height(),
                                                                          (AVPixelFormat)context.frame_cnv->format, context.scale_filter,
                                                                          nullptr, nullptr, nullptr);
@@ -448,8 +448,10 @@ void FFDecoderThread::_play()
                                   0, context.codec_context_video->height,
                                   context.frame_cnv->data, context.frame_cnv->linesize);
 
-                        context.wait_video=true;
+                        context.frame_cnv->pts=context.frame_video->pts;
                     }
+
+                    context.wait_video=true;
                 }
 
                 av_packet_unref(&packet);
@@ -457,6 +459,7 @@ void FFDecoderThread::_play()
                 do_nothing=false;
             }
         }
+
 
         if(context.wait_video) {
             if(av_gettime() - context.last_video_out_time>=context.video_frame_duration)

@@ -2232,6 +2232,8 @@ void MainWindow::playerStateChanged(int state)
         emit signalLost(false);
 
     } else {
+        emit messenger->showPlayerState(false);
+
         if(device_primary && device_primary->gotSignal())
             emit signalLost(false);
 
@@ -2242,8 +2244,6 @@ void MainWindow::playerStateChanged(int state)
     if(device_primary) {
         if(state==FFDecoderThread::ST_STOPPED) {
             QMetaObject::invokeMethod(dynamic_cast<QObject*>(device_primary), "deviceResume", Qt::QueuedConnection);
-
-            emit messenger->showPlayerState(false);
 
         } else {
             QMetaObject::invokeMethod(dynamic_cast<QObject*>(device_primary), "deviceHold", Qt::QueuedConnection);
