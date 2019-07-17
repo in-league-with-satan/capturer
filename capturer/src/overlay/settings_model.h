@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -67,7 +67,12 @@ public:
     void updateQml();
 
     int add(const SettingsModel::Data &data);
+    int add(const QList <SettingsModel::Data> &data);
+
     int insert(int *ptr_value_pos, const SettingsModel::Data &data);
+    int insert(int *ptr_value_pos, const QList <SettingsModel::Data> &data);
+    void insert(int pos, const QList <SettingsModel::Data> &data);
+
     void removeRow(int *ptr_value);
     void removeGroup(QString group);
 

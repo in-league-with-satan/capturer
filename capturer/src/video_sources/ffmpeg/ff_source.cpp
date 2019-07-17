@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -106,6 +106,31 @@ QStringList FFSource::availableAudioInput()
     return future.get();
 }
 
+int FFSource::indexVideoInput(const QString &name)
+{
+    if(dev_list.isEmpty())
+        updateDevList();
+
+    for(int i=0; i<dev_list.size(); ++i) {
+        if(QString::compare(dev_list[i].name, name, Qt::CaseInsensitive)==0)
+            return i;
+    }
+
+    return -1;
+}
+
+int FFSource::indexAudioInput(const QString &name)
+{
+    QStringList dev_list=availableAudioInput();
+
+    for(int i=0; i<dev_list.size(); ++i) {
+        if(QString::compare(dev_list[i], name, Qt::CaseInsensitive)==0)
+            return i;
+    }
+
+    return -1;
+}
+
 bool FFSource::setVideoDevice(int index)
 {
     if(index>=dev_list.size())
@@ -121,6 +146,7 @@ bool FFSource::setVideoDevice(int index)
     if(index_device_video<0) {
         d->setVideoDevice(FFDevice::Dev());
         type_flags&=~TypeFlag::video;
+        qDebug() << "no video";
 
     } else {
         d->setVideoDevice(dev_list[index_device_video]);
@@ -284,7 +310,7 @@ AVRational FFSource::currentFrameRate()
     return d->currentFrameRate();
 }
 
-PixelFormat FFSource::pixelFormat()
+PixelFormat FFSource::currentPixelFormat()
 {
     QMutexLocker ml(&mutex);
 
@@ -309,6 +335,9 @@ void FFSource::run()
     connect(this, SIGNAL(setConfig(QSize,AVRational,int64_t)), d, SLOT(setConfig(QSize,AVRational,int64_t)), Qt::QueuedConnection);
     connect(this, SIGNAL(deviceStart()), d, SLOT(deviceStart()), Qt::QueuedConnection);
     connect(this, SIGNAL(deviceStop()), d, SLOT(deviceStop()), Qt::QueuedConnection);
+
+    connect(this, SIGNAL(deviceHold()), d, SLOT(deviceHold()), Qt::QueuedConnection);
+    connect(this, SIGNAL(deviceResume()), d, SLOT(deviceResume()), Qt::QueuedConnection);
 
     connect(d, SIGNAL(formatChanged(QString)), SIGNAL(formatChanged(QString)), Qt::QueuedConnection);
     connect(d, SIGNAL(errorString(QString)), SIGNAL(errorString(QString)), Qt::QueuedConnection);

@@ -294,9 +294,11 @@ void MagewellDevice::run()
     connect(d, SIGNAL(errorString(QString)), SIGNAL(errorString(QString)), Qt::QueuedConnection);
     connect(d, SIGNAL(formatChanged(QString)), SIGNAL(formatChanged(QString)), Qt::QueuedConnection);
 
-    connect(d, &MagewellDeviceWorker::signalLost, [this](bool value){ signal_lost=value; });
-    connect(d, &MagewellDeviceWorker::audioSampleSizeChanged, [this](AudioSampleSize::T value){ audio_sample_size=value; });
-    connect(d, &MagewellDeviceWorker::audioChannelsChanged, [this](AudioChannels::T value){ audio_channels=value; });
+    connect(d, &MagewellDeviceWorker::setMasteringDisplayMetadata, [this](AVMasteringDisplayMetadata value) { mastering_display_metadata=value; });
+
+    connect(d, &MagewellDeviceWorker::signalLost, [this](bool value) { signal_lost=value; });
+    connect(d, &MagewellDeviceWorker::audioSampleSizeChanged, [this](AudioSampleSize::T value) { audio_sample_size=value; });
+    connect(d, &MagewellDeviceWorker::audioChannelsChanged, [this](AudioChannels::T value) { audio_channels=value; });
 
     connect(d, SIGNAL(framerateChanged(AVRational)), SLOT(setFramerate(AVRational)), Qt::QueuedConnection);
     connect(d, SIGNAL(framesizeChanged(QSize)), SLOT(setFramesize(QSize)), Qt::QueuedConnection);

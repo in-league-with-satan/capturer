@@ -204,6 +204,13 @@ void FFSourceWorker::deviceStart()
             d->audio_device=d->audio_input->start();
 
             parent_interface->type_flags|=SourceInterface::TypeFlag::audio;
+
+            if(d->audio_device) {
+                qInfo() << "audio input started:" << dev_list[index_device_audio].deviceName() << d->audio_input->format();
+
+            } else {
+                qInfo() << "audio input err." << dev_list[index_device_audio].deviceName();
+            }
         }
 
     } else {
@@ -250,6 +257,13 @@ void FFSourceWorker::deviceStart()
 
     if(cfg.pixel_format==PixelFormat::mjpeg) {
         d->format_context->video_codec_id=AV_CODEC_ID_MJPEG;
+
+    } else if(cfg.pixel_format==PixelFormat::h264) {
+        d->format_context->video_codec_id=AV_CODEC_ID_H264;
+
+    } else if(cfg.pixel_format==PixelFormat::yvu420p) {
+        d->format_context->video_codec_id=AV_CODEC_ID_RAWVIDEO;
+        av_dict_set(&d->dictionary, "pixel_format", "yuv420p", 0);
 
     } else {
         d->format_context->video_codec_id=AV_CODEC_ID_RAWVIDEO;
@@ -384,6 +398,18 @@ void FFSourceWorker::deviceStop()
     emit formatChanged("NONE");
 }
 
+void FFSourceWorker::deviceHold()
+{
+    on_hold=true;
+}
+
+void FFSourceWorker::deviceResume()
+{
+    on_hold=false;
+
+    emit signalLost(!isActive());
+}
+
 void FFSourceWorker::subscribe(FrameBuffer<Frame::ptr>::ptr obj)
 {
     if(!subscription_list.contains(obj))
@@ -415,9 +441,6 @@ AVRational FFSourceWorker::currentFrameRate() const
 
 PixelFormat FFSourceWorker::pixelFormat() const
 {
-    if(cfg.pixel_format==PixelFormat::mjpeg)
-        return PixelFormat(AV_PIX_FMT_YUV422P);
-
     return cfg.pixel_format;
 }
 
@@ -426,7 +449,7 @@ bool FFSourceWorker::step()
     if((parent_interface->type_flags&SourceInterface::TypeFlag::video)==0 && d->audio_device) {
         QByteArray ba_audio=d->audio_device->readAll();
 
-        if(!ba_audio.isEmpty()) {
+        if(!ba_audio.isEmpty() && !on_hold) {
             if(d->audio_input->format()!=default_format) {
                 QByteArray ba_audio_conv;
 
@@ -449,7 +472,9 @@ bool FFSourceWorker::step()
     if(d->format_context && d->codec_context) {
         AVPacket packet;
 
-        if(av_read_frame(d->format_context, &packet)>=0) {
+        int ret=av_read_frame(d->format_context, &packet);
+
+        if(ret>=0) {
             if(packet.stream_index==d->stream->index) {
                 int frame_finished=0;
 
@@ -464,13 +489,22 @@ bool FFSourceWorker::step()
                         frame_finished=1;
                 }
 
-                if(frame_finished) {
+                if(on_hold) {
+                    if(d->audio_device) {
+                        d->audio_device->readAll();
+                    }
+
+                } else if(frame_finished) {
                     Frame::ptr frame=Frame::make();
 
                     PixelFormat tmp_fmt;
                     tmp_fmt.fromAVPixelFormat((AVPixelFormat)d->frame->format);
 
                     if(tmp_fmt.isDirect()) {
+                        if(cfg.pixel_format==PixelFormat::yvu420p) {
+                            FFSWAP(uint8_t*, d->frame->data[1], d->frame->data[2]);
+                        }
+
                         QByteArray ba_frame;
 
                         const int buf_size=
@@ -490,19 +524,18 @@ bool FFSourceWorker::step()
                         if(d->audio_device) {
                             QByteArray ba_audio=d->audio_device->readAll();
 
-                            if(!ba_audio.isEmpty()) {
-                                if(d->audio_input->format()!=default_format) {
-                                    QByteArray ba_audio_conv;
+                            if(d->audio_input->format()!=default_format) {
+                                QByteArray ba_audio_conv;
 
-                                    d->audio_converter.convert(&ba_audio, &ba_audio_conv);
-                                    ba_audio=ba_audio_conv;
-                                }
-
-                                frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
+                                d->audio_converter.convert(&ba_audio, &ba_audio_conv);
+                                ba_audio=ba_audio_conv;
                             }
 
-                        } else
+                            frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
+
+                        } else {
                             frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), QByteArray(), 0, 0);
+                        }
 
 
                         frame->video.pts=d->frame->pts - d->stream->start_time;
@@ -557,6 +590,14 @@ bool FFSourceWorker::step()
                     }
 
                     if(frame) {
+                        if(cfg.pixel_format==PixelFormat::mjpeg || cfg.pixel_format==PixelFormat::h264) {
+                            frame->video.av_packet=av_packet_clone(&packet);
+                            av_packet_make_refcounted(frame->video.av_packet);
+                            av_packet_make_writable(frame->video.av_packet);
+                            frame->video.av_packet->flags=d->frame->pict_type;
+                            frame->video.pixel_format_pkt=cfg.pixel_format;
+                        }
+
                         foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
                             buf->append(frame);
                     }
@@ -564,6 +605,14 @@ bool FFSourceWorker::step()
             }
 
             av_packet_unref(&packet);
+
+        } else {
+            // qCritical() << "av_read_frame err:" << ret << ENODEV << ffErrorString(ret);
+
+            if(AVUNERROR(ret)==ENODEV) {
+                deviceStop();
+                return false;
+            }
         }
 
         return true;

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -265,6 +265,19 @@ void DeckLinkThread::deviceStop()
 #endif
 }
 
+void DeckLinkThread::deviceHold()
+{
+    on_hold=true;
+}
+
+void DeckLinkThread::deviceResume()
+{
+    on_hold=false;
+
+    emit signalLost(signal_lost);
+    emit formatChanged(format);
+}
+
 void DeckLinkThread::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayMode *mode, uint32_t format_flags)
 {
     Q_UNUSED(events)
@@ -335,7 +348,7 @@ void DeckLinkThread::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fram
 {
 #ifdef LIB_DECKLINK
 
-    if(!video_frame || !audio_packet)
+    if(on_hold || !video_frame || !audio_packet)
         return;
 
     const BMDFrameFlags frame_flags=video_frame->GetFlags();
@@ -364,6 +377,65 @@ void DeckLinkThread::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fram
 
         frame->video.pts=frame->audio.pts=frame_time/frame_duration;
         frame->video.time_base=frame->audio.time_base={ (int)frame_duration, (int)frame_scale };
+
+        //
+
+        if(frame_flags&bmdFrameContainsHDRMetadata) {
+            IDeckLinkVideoFrameMetadataExtensions *me=nullptr;
+
+            if(video_frame->QueryInterface(IID_IDeckLinkVideoFrameMetadataExtensions, (void**)&me)==S_OK) {
+                double value=0.;
+
+                static const int den=1000;
+
+                if(me->GetFloat(bmdDeckLinkFrameMetadataHDRDisplayPrimariesRedX, &value)==S_OK)
+                    frame->video.mastering_display_metadata.display_primaries[0][0]=av_make_q(value*den, den);
+
+                if(me->GetFloat(bmdDeckLinkFrameMetadataHDRDisplayPrimariesRedY, &value)==S_OK)
+                    frame->video.mastering_display_metadata.display_primaries[0][1]=av_make_q(value*den, den);
+
+                if(me->GetFloat(bmdDeckLinkFrameMetadataHDRDisplayPrimariesGreenX, &value)==S_OK)
+                    frame->video.mastering_display_metadata.display_primaries[1][0]=av_make_q(value*den, den);
+
+                if(me->GetFloat(bmdDeckLinkFrameMetadataHDRDisplayPrimariesGreenY, &value)==S_OK)
+                    frame->video.mastering_display_metadata.display_primaries[1][1]=av_make_q(value*den, den);
+
+                if(me->GetFloat(bmdDeckLinkFrameMetadataHDRDisplayPrimariesBlueX, &value)==S_OK)
+                    frame->video.mastering_display_metadata.display_primaries[2][0]=av_make_q(value*den, den);
+
+                if(me->GetFloat(bmdDeckLinkFrameMetadataHDRDisplayPrimariesBlueY, &value)==S_OK)
+                    frame->video.mastering_display_metadata.display_primaries[2][1]=av_make_q(value*den, den);
+
+                if(me->GetFloat(bmdDeckLinkFrameMetadataHDRWhitePointX, &value)==S_OK)
+                    frame->video.mastering_display_metadata.white_point[0]=av_make_q(value*den, den);
+
+                if(me->GetFloat(bmdDeckLinkFrameMetadataHDRWhitePointY, &value)==S_OK)
+                    frame->video.mastering_display_metadata.white_point[1]=av_make_q(value*den, den);
+
+                if(me->GetFloat(bmdDeckLinkFrameMetadataHDRMinDisplayMasteringLuminance, &value)==S_OK)
+                    frame->video.mastering_display_metadata.min_luminance=av_make_q(value*den, den);
+
+                if(me->GetFloat(bmdDeckLinkFrameMetadataHDRMaxDisplayMasteringLuminance, &value)==S_OK)
+                    frame->video.mastering_display_metadata.max_luminance=av_make_q(value*den, den);
+
+                me->Release();
+
+                for(int plane=0; plane<3; ++plane) {
+                    if(frame->video.mastering_display_metadata.display_primaries[0][0].num || frame->video.mastering_display_metadata.display_primaries[0][1].num) {
+                        frame->video.mastering_display_metadata.has_primaries=true;
+                        break;
+                    }
+                }
+
+                if(frame->video.mastering_display_metadata.white_point[0].num || frame->video.mastering_display_metadata.white_point[1].num)
+                    frame->video.mastering_display_metadata.has_primaries=true;
+
+                if(frame->video.mastering_display_metadata.min_luminance.num || frame->video.mastering_display_metadata.max_luminance.num)
+                    frame->video.mastering_display_metadata.has_luminance=true;
+            }
+        }
+
+        // mastering_display_metadata=frame->video.mastering_display_metadata;
 
         //
 
@@ -522,6 +594,8 @@ void DeckLinkThread::init()
     }
 
     running=true;
+
+    on_hold=false;
 
     qDebug() << "started";
 

@@ -62,7 +62,7 @@ ShowHideRect {
             from: .9
             to: 1
             duration: 100
-            running: root.state_visible
+            // running: root.state_visible
 
             onStopped: {
                 if(root.state_visible)

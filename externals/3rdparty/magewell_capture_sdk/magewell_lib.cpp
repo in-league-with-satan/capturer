@@ -38,6 +38,7 @@ typedef MW_RESULT TMWGetChannelInfo(HCHANNEL, MWCAP_CHANNEL_INFO*);
 typedef MW_RESULT TMWGetInputSpecificStatus(HCHANNEL, MWCAP_INPUT_SPECIFIC_STATUS*);
 typedef MW_RESULT TMWGetVideoSignalStatus(HCHANNEL, MWCAP_VIDEO_SIGNAL_STATUS*);
 typedef MW_RESULT TMWGetAudioSignalStatus(HCHANNEL, MWCAP_AUDIO_SIGNAL_STATUS*);
+typedef MW_RESULT TMWGetHDMIInfoFramePacket(HCHANNEL, MWCAP_HDMI_INFOFRAME_ID, HDMI_INFOFRAME_PACKET*);
 typedef MW_RESULT TMWSetVideoInputColorFormat(HCHANNEL, MWCAP_VIDEO_COLOR_FORMAT);
 typedef MW_RESULT TMWSetVideoInputQuantizationRange(HCHANNEL, MWCAP_VIDEO_QUANTIZATION_RANGE);
 typedef HCHANNEL TMWOpenChannel(int, int);
@@ -75,6 +76,7 @@ struct MagewellLibPrivate
     TMWGetInputSpecificStatus *f_GetInputSpecificStatus=nullptr;
     TMWGetVideoSignalStatus *f_GetVideoSignalStatus=nullptr;
     TMWGetAudioSignalStatus *f_GetAudioSignalStatus=nullptr;
+    TMWGetHDMIInfoFramePacket *f_GetHDMIInfoFramePacket=nullptr;
     TMWSetVideoInputColorFormat *f_SetVideoInputColorFormat=nullptr;
     TMWSetVideoInputQuantizationRange *f_SetVideoInputQuantizationRange=nullptr;
     TMWOpenChannel *f_OpenChannel=nullptr;
@@ -184,6 +186,14 @@ MW_RESULT MWGetAudioSignalStatus(HCHANNEL hChannel, MWCAP_AUDIO_SIGNAL_STATUS *p
 {
     if(magewell_lib && magewell_lib->d->f_GetAudioSignalStatus)
         return magewell_lib->d->f_GetAudioSignalStatus(hChannel, pSignalStatus);
+
+    return MW_FAILED;
+}
+
+MW_RESULT MWGetHDMIInfoFramePacket(HCHANNEL hChannel, MWCAP_HDMI_INFOFRAME_ID id, HDMI_INFOFRAME_PACKET *pPacket)
+{
+    if(magewell_lib && magewell_lib->d->f_GetHDMIInfoFramePacket)
+        return magewell_lib->d->f_GetHDMIInfoFramePacket(hChannel, id, pPacket);
 
     return MW_FAILED;
 }
@@ -458,6 +468,13 @@ void MagewellLib::load()
 
     if(!d->f_GetAudioSignalStatus) {
         qWarning() << "MWGetAudioSignalStatus resolve error:" << d->lib.errorString();
+        goto err;
+    }
+
+    d->f_GetHDMIInfoFramePacket=(TMWGetHDMIInfoFramePacket*)d->lib.resolve("MWGetHDMIInfoFramePacket");
+
+    if(!d->f_GetHDMIInfoFramePacket) {
+        qWarning() << "MWGetHDMIInfoFramePacket resolve error:" << d->lib.errorString();
         goto err;
     }
 

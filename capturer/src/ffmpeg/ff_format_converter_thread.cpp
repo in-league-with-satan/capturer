@@ -139,15 +139,21 @@ void FFFormatConverterThread::work(Frame::ptr *frame_src, AVFrameSP::ptr *frame_
             (*frame_src)=from_210->convert(format_210, (*frame_src));
 
         if((*frame_src)) {
-            AVFrameSP::ptr av_frame_src;
-
-            av_frame_src=
+            AVFrameSP::ptr av_frame_tmp=
                     AVFrameSP::make(cnv_ff->formatSrc(),
                                     (*frame_src)->video.size.width(),
                                     (*frame_src)->video.size.height(), false);
 
-            av_image_fill_arrays(av_frame_src->d->data, av_frame_src->d->linesize, (*frame_src)->video.data_ptr, cnv_ff->formatSrc(),
-                                 (*frame_src)->video.size.width(), (*frame_src)->video.size.height(), alignment);
+            AVFrameSP::ptr av_frame_src=
+                    AVFrameSP::make(cnv_ff->formatSrc(),
+                                    av_frame_tmp->d->width,
+                                    av_frame_tmp->d->height, true);
+
+            av_image_fill_arrays(av_frame_tmp->d->data, av_frame_tmp->d->linesize, (*frame_src)->video.data_ptr,
+                                 (AVPixelFormat)av_frame_tmp->d->format, av_frame_tmp->d->width, av_frame_tmp->d->height, alignment);
+
+            av_image_copy(av_frame_src->d->data, av_frame_src->d->linesize, (const uint8_t**)av_frame_tmp->d->data, av_frame_tmp->d->linesize,
+                          (AVPixelFormat)av_frame_tmp->d->format, av_frame_tmp->d->width, av_frame_tmp->d->height);
 
             (*frame_dst)=
                     cnv_ff->convert(av_frame_src->d);

@@ -23,6 +23,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QObject>
 #include <QImage>
 #include <QDateTime>
+#include <QMutex>
+#include <QMutexLocker>
 
 #include "frame.h"
 #include "ff_encoder_base_filename.h"
@@ -31,25 +33,70 @@ extern "C" {
 #include <libavformat/avformat.h>
 }
 
-class FFMpegContext;
+struct FFMpegContext;
 class FFFormatConverter;
 class FFFormatConverterMt;
 class DecklinkFrameConverter;
 class DecodeFrom210;
+
+class FFEncStartSync
+{
+public:
+    void setReady(int index) {
+        QMutexLocker ml(&mutex);
+
+        if(state[index]==ST_RESTART)
+            return;
+
+        state[index]=ST_READY;
+    }
+
+    bool isReady() {
+        QMutexLocker ml(&mutex);
+
+        foreach(const int &st, state.values()) {
+            if(st!=ST_READY) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    void clear() {
+        QMutexLocker ml(&mutex);
+        state.clear();
+    }
+
+    void restart() {
+        QMutexLocker ml(&mutex);
+
+        for(int i=0; i<state.size(); ++i)
+            state.values()[i]=ST_RESTART;
+    }
+
+    void add(int index) {
+        QMutexLocker ml(&mutex);
+        state[index]=ST_NOT_READY;
+    }
+
+private:
+    enum {
+        ST_NOT_READY,
+        ST_READY,
+        ST_RESTART
+    };
+
+    QMap <int, int> state;
+    QMutex mutex;
+};
 
 class FFEncoder : public QObject
 {
     Q_OBJECT
 
 public:
-    struct Mode {
-        enum T {
-            primary,
-            secondary
-        };
-    };
-
-    FFEncoder(FFEncoder::Mode::T mode, QObject *parent=0);
+    FFEncoder(int enc_num, FFEncStartSync *start_sync, QObject *parent=0);
     ~FFEncoder();
 
     struct Framerate {
@@ -83,8 +130,13 @@ public:
             nvenc_h264,
             nvenc_hevc,
             qsv_h264,
-            ffvhuff
-            // magicyuv
+            qsv_hevc,
+            vaapi_h264,
+            vaapi_hevc,
+            vaapi_vp8,
+            vaapi_vp9,
+            ffvhuff,
+            magicyuv
         };
 
         static QString toString(uint32_t enc);
@@ -135,6 +187,8 @@ public:
         uint8_t audio_sample_size=16;
         int audio_dalay=0;
         bool audio_flac=false;
+        bool direct_stream_copy=false;
+        bool fill_dropped_frames=false;
         uint8_t crf;
         uint8_t downscale=DownScale::Disabled;
         int scale_filter=ScaleFilter::FastBilinear;
@@ -155,11 +209,14 @@ public:
         int color_space=-1;
         int color_transfer_characteristic=-1;
 
+        AVMasteringDisplayMetadata mastering_display_metadata={};
+
         struct NVEnc {
             int enabled=false;
             int device=0;
             int b_frames=0;
             int ref_frames=0;
+            int b_ref_mode=0;
             int gop_size=12;
             int qp_i=0;
             int qp_p=0;
@@ -207,7 +264,6 @@ public:
 
     QString lastErrorString() const;
 
-
 public slots:
     bool setConfig(FFEncoder::Config cfg);
 
@@ -216,7 +272,6 @@ public slots:
     bool stopCoder();
 
 private slots:
-    void converterFrameSkip();
     void processAudio(Frame::ptr frame);
     void restartExt();
 
@@ -226,10 +281,15 @@ private:
     QString configString(const FFEncoder::Config &cfg);
 
     bool checkFrameParams(Frame::ptr frame) const;
+    int64_t calcPts(int64_t pts, AVRational time_base_in, AVRational time_base_out);
     void restart(Frame::ptr frame);
+
+    void fillDroppedFrames(int size);
 
     FFMpegContext *context;
     FFFormatConverterMt *format_converter_ff;
+
+    FFEncStartSync *start_sync;
 
     QSize last_frame_size;
 

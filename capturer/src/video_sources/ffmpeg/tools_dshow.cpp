@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -151,7 +151,7 @@ QList <FFDevice::Format> getDeviceCapabilities(const QString &dev_name)
             if(config->GetNumberOfCapabilities(&n, &size)!=S_OK)
                 goto end_pin;
 
-            assert(size==sizeof(VIDEO_STREAM_CONFIG_CAPS));
+            // assert(size==sizeof(VIDEO_STREAM_CONFIG_CAPS));
 
             vcaps=new VIDEO_STREAM_CONFIG_CAPS;
 
@@ -182,7 +182,7 @@ QList <FFDevice::Format> getDeviceCapabilities(const QString &dev_name)
                                     << ToolsFFSource::framerateBuildSequence(1e7/vcaps->MaxFrameInterval, 1e7/vcaps->MinFrameInterval);
 
                     } else {
-                        qDebug() << "unknown pix fmt" << guidToStr(type->formattype);
+                        qDebug() << "unknown pix fmt" << guidToStr(type->formattype) << guidToStr(type->subtype);
                     }
                 }
 
@@ -288,6 +288,8 @@ QList <FFDevice::Dev> ToolsDirectShow::devList()
                 dev.dev=QString::fromWCharArray(ole_str);
 
                 dev.dev=dev.dev.replace(":", "_");
+
+                qDebug() << dev.name;
 
                 dev.format=getDeviceCapabilities(dev.dev);
 

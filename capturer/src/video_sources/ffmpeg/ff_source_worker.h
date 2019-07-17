@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -60,6 +60,9 @@ public slots:
     void deviceStart();
     void deviceStop();
 
+    void deviceHold();
+    void deviceResume();
+
 private:
     struct Cfg {
         QSize size;
@@ -78,6 +81,8 @@ private:
 
     FFSourceContext *d;
     FFSource *parent_interface;
+
+    bool on_hold=false;
 
 signals:
     void signalLost(bool value);

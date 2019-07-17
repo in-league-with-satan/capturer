@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -215,9 +215,13 @@ void FFSnapshot::checkQueue()
         AVFrame *frame_rgb=nullptr;
         AVPacket packet;
 
+        bool hw_decoder=false;
+
         unsigned int stream_video_index;
 
         QByteArray ba_frame;
+
+        QSize dst_size;
 
         double per_10_min_count;
         int shots_count;
@@ -256,7 +260,32 @@ void FFSnapshot::checkQueue()
 
         stream_video=format_context->streams[stream_video_index];
 
-        codec_video=avcodec_find_decoder(stream_video->codecpar->codec_id);
+        if(stream_video->codecpar->codec_id==AV_CODEC_ID_H264) {
+            codec_video=avcodec_find_decoder_by_name("h264_cuvid");
+            hw_decoder=true;
+
+        } else if(stream_video->codecpar->codec_id==AV_CODEC_ID_HEVC) {
+            codec_video=avcodec_find_decoder_by_name("hevc_cuvid");
+            hw_decoder=true;
+
+        } else {
+            codec_video=avcodec_find_decoder(stream_video->codecpar->codec_id);
+        }
+
+        if(!codec_video) {
+            qWarning() << "hw decoder err";
+
+try_software_decoder:
+
+            hw_decoder=false;
+            codec_video=avcodec_find_decoder(stream_video->codecpar->codec_id);
+        }
+
+        if(!codec_video) {
+            qCritical() << "decoder err";
+            return;
+        }
+
 
         codec_context_video=avcodec_alloc_context3(codec_video);
 
@@ -292,27 +321,25 @@ void FFSnapshot::checkQueue()
 
         if(ret<0) {
             qCritical() << "avcodec_open2 err:" << ffErrorString(ret);
-            goto end;
-        }
 
+            if(hw_decoder) {
+                avcodec_free_context(&codec_context_video);
+                goto try_software_decoder;
+            }
 
-        convert_context=sws_getContext(codec_context_video->width, codec_context_video->height,
-                                       correctPixelFormat(codec_context_video->pix_fmt),
-                                       codec_context_video->width, codec_context_video->height,
-                                       AV_PIX_FMT_BGRA, SWS_FAST_BILINEAR,
-                                       nullptr, nullptr, nullptr);
-
-        if(convert_context==nullptr) {
-            qCritical() << "sws_getContext nullptr";
+            qCritical() << "avcodec_open2 err:" << ffErrorString(ret);
             goto end;
         }
 
 
         if(codec_context_video->width%8!=0 || codec_context_video->height%8!=0)
-            frame_rgb=alloc_frame(AV_PIX_FMT_BGRA, ceil(codec_context_video->width/8.)*8, ceil(codec_context_video->height/8.)*8);
+            dst_size=QSize(ceil(codec_context_video->width/8.)*8, ceil(codec_context_video->height/8.)*8);
 
         else
-            frame_rgb=alloc_frame(AV_PIX_FMT_BGRA, codec_context_video->width, codec_context_video->height);
+            dst_size=QSize(codec_context_video->width, codec_context_video->height);
+
+
+        frame_rgb=alloc_frame(AV_PIX_FMT_RGB24, dst_size.width(), dst_size.height());
 
 
         // } video init
@@ -390,6 +417,19 @@ void FFSnapshot::checkQueue()
                             }
 
                             if(abs(timestamp - pts)<=packet.duration || pts>timestamp) {
+                                if(convert_context==nullptr) {
+                                    convert_context=sws_getContext(frame->width, frame->height,
+                                                                   correctPixelFormat((AVPixelFormat)frame->format),
+                                                                   dst_size.width(), dst_size.height(),
+                                                                   AV_PIX_FMT_RGB24, SWS_POINT,
+                                                                   nullptr, nullptr, nullptr);
+                                }
+
+                                if(convert_context==nullptr) {
+                                    qCritical() << "sws_getContext nullptr";
+                                    goto end;
+                                }
+
                                 sws_scale(convert_context,
                                           frame->data, frame->linesize,
                                           0, codec_context_video->height,
@@ -397,11 +437,11 @@ void FFSnapshot::checkQueue()
 
                                 //
 
-                                int data_size=av_image_get_buffer_size(AV_PIX_FMT_BGRA, frame_rgb->width, frame_rgb->height, alignment);
+                                int data_size=av_image_get_buffer_size(AV_PIX_FMT_RGB24, frame_rgb->width, frame_rgb->height, alignment);
 
                                 ba_frame.resize(data_size);
 
-                                av_image_copy_to_buffer((uint8_t*)ba_frame.constData(), data_size, frame_rgb->data, frame_rgb->linesize, AV_PIX_FMT_BGRA, frame_rgb->width, frame_rgb->height, alignment);
+                                av_image_copy_to_buffer((uint8_t*)ba_frame.constData(), data_size, frame_rgb->data, frame_rgb->linesize, AV_PIX_FMT_RGB24, frame_rgb->width, frame_rgb->height, alignment);
                             }
                         }
                     }
@@ -412,11 +452,11 @@ void FFSnapshot::checkQueue()
                         QImage img=QImage((uchar*)ba_frame.constData(),
                                           frame_rgb->width,
                                           frame_rgb->height,
-                                          QImage::Format_ARGB32).scaledToWidth(640, Qt::SmoothTransformation);
+                                          QImage::Format_RGB888).scaledToWidth(640, Qt::SmoothTransformation);
 
                         images.append(img);
 
-                        emit ready(filename, img.convertToFormat(QImage::Format_RGB16));
+                        emit ready(filename, img.convertToFormat(QImage::Format_RGB888));
 
                         QApplication::processEvents();
 

@@ -47,6 +47,17 @@ PixelFormat::PixelFormat(const AVPixelFormat &value)
     fromAVPixelFormat(value);
 }
 
+PixelFormat PixelFormat::normalizeFormat(const int &value)
+{
+    if(value==PixelFormat::mjpeg)
+        return PixelFormat(AV_PIX_FMT_YUV422P);
+
+    else if(value==PixelFormat::h264)
+        return PixelFormat(AV_PIX_FMT_YUV420P);
+
+    return PixelFormat(value);
+}
+
 QList <PixelFormat> PixelFormat::list()
 {
     static QList <PixelFormat> res;
@@ -86,6 +97,9 @@ AVPixelFormat PixelFormat::toAVPixelFormat() const
     case yuv420p:
         return AV_PIX_FMT_YUV420P;
 
+    case yvu420p:
+        return AV_PIX_FMT_YUV420P;
+
     case yuv420p10:
         return AV_PIX_FMT_YUV420P10;
 
@@ -117,8 +131,10 @@ AVPixelFormat PixelFormat::toAVPixelFormat() const
         return AV_PIX_FMT_P010;
 
     case mjpeg:
-        return AV_PIX_FMT_YUV422P;
-        return AV_PIX_FMT_NONE;
+        return AV_PIX_FMT_YUVJ422P;
+
+    case h264:
+        return AV_PIX_FMT_YUV420P;
     }
 
     return AV_PIX_FMT_NONE;
@@ -155,6 +171,7 @@ bool PixelFormat::fromAVPixelFormat(AVPixelFormat value)
         d=rgb48;
         return true;
 
+    case AV_PIX_FMT_YUVJ420P:
     case AV_PIX_FMT_YUV420P:
         d=yuv420p;
         return true;
@@ -235,8 +252,11 @@ uint32_t PixelFormat::toV4L2PixelFormat() const
     case yuv420p:
         return V4L2_PIX_FMT_YUV420;
 
+    case yvu420p:
+        return V4L2_PIX_FMT_YVU420;
+
     case yuv420p10:
-        return AV_PIX_FMT_YUV420P10;
+        return 0;
 
     case yuv422p:
         return 0;
@@ -303,8 +323,8 @@ bool PixelFormat::fromV4L2PixelFormat(uint32_t value)
         d=yuv420p;
         return true;
 
-    case AV_PIX_FMT_YUV420P10:
-        d=yuv420p10;
+    case V4L2_PIX_FMT_YVU420:
+        d=yvu420p;
         return true;
 
     case V4L2_PIX_FMT_YUYV:
@@ -325,6 +345,10 @@ bool PixelFormat::fromV4L2PixelFormat(uint32_t value)
 
     case V4L2_PIX_FMT_MJPEG:
         d=mjpeg;
+        return true;
+
+    case V4L2_PIX_FMT_H264:
+        d=h264;
         return true;
     }
 
@@ -409,6 +433,9 @@ QVideoFrame::PixelFormat PixelFormat::toQPixelFormat() const
     case yuv420p:
         return QVideoFrame::Format_YUV420P;
 
+    case yvu420p:
+        return QVideoFrame::Format_YUV420P;
+
     // case yuv420p10:
 
     case yuv422p:
@@ -438,6 +465,9 @@ QVideoFrame::PixelFormat PixelFormat::toQPixelFormat() const
 
     case mjpeg:
         return QVideoFrame::Format_Jpeg;
+
+    case h264:
+        return QVideoFrame::Format_YUV420P;
     }
 
     return QVideoFrame::Format_Invalid;
@@ -498,6 +528,9 @@ bool PixelFormat::fromQPixelFormat(QVideoFrame::PixelFormat value)
 QString PixelFormat::toString(int value)
 {
     switch(value) {
+    case undefined:
+        return QStringLiteral("undefined");
+
     case rgb24:
         return QStringLiteral("rgb24");
 
@@ -521,6 +554,9 @@ QString PixelFormat::toString(int value)
 
     case yuv420p:
         return QStringLiteral("yuv420p");
+
+    case yvu420p:
+        return QStringLiteral("yvu420p");
 
     case yuv420p10:
         return QStringLiteral("yuv420p10");
@@ -554,6 +590,9 @@ QString PixelFormat::toString(int value)
 
     case mjpeg:
         return QStringLiteral("mjpeg");
+
+    case h264:
+        return QStringLiteral("h264");
     }
 
     qWarning() << "unknown" << value;
@@ -564,6 +603,9 @@ QString PixelFormat::toString(int value)
 QString PixelFormat::toStringView(int value)
 {
     switch(value) {
+    case undefined:
+        return QStringLiteral("undefined");
+
     case rgb24:
         return QStringLiteral("rgb24");
 
@@ -587,6 +629,9 @@ QString PixelFormat::toStringView(int value)
 
     case yuv420p:
         return QStringLiteral("yuv420p");
+
+    case yvu420p:
+        return QStringLiteral("yvu420p");
 
     case yuv420p10:
         return QStringLiteral("yuv420p10");
@@ -620,6 +665,9 @@ QString PixelFormat::toStringView(int value)
 
     case mjpeg:
         return QStringLiteral("mjpeg (yuv422p)");
+
+    case h264:
+        return QStringLiteral("h264 (yuv420p)");
     }
 
     return QStringLiteral("unknown");
@@ -696,6 +744,7 @@ bool PixelFormat::isDirect() const
             || d==bgr0
             || d==bgra
             || d==yuv420p
+            || d==yvu420p
             || d==yuv422p
             || d==yuyv422
             || d==uyvy422
@@ -703,9 +752,9 @@ bool PixelFormat::isDirect() const
             || d==nv12;
 }
 
-bool PixelFormat::onlyForDevices() const
+bool PixelFormat::isCompressed() const
 {
-    return d==mjpeg;
+    return d==mjpeg || d==h264;
 }
 
 PixelFormat &PixelFormat::operator=(int other)

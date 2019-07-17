@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -75,9 +75,10 @@ QList <FFDevice::Dev> ToolsV4L2::devList()
 
             FFDevice::Format format;
 
-            if(!format.pixel_format.fromV4L2PixelFormat(fmtdesc.pixelformat))
+            if(!format.pixel_format.fromV4L2PixelFormat(fmtdesc.pixelformat)) {
+                qDebug().noquote() << "unknown pixel format:" << fmtdesc.pixelformat << QString::number(fmtdesc.pixelformat, 16);
                 continue;
-
+            }
 
             FFDevice::Resolution resolution={};
             v4l2_frmsizeenum frmsizeenum={};
@@ -97,7 +98,7 @@ QList <FFDevice::Dev> ToolsV4L2::devList()
                 case V4L2_FRMSIZE_TYPE_CONTINUOUS:
                 case V4L2_FRMSIZE_TYPE_STEPWISE:
                     res=ToolsFFSource::resBuildSequence(QSize(frmsizeenum.stepwise.min_width, frmsizeenum.stepwise.min_height),
-                                                   QSize(frmsizeenum.stepwise.max_width, frmsizeenum.stepwise.max_height));
+                                                          QSize(frmsizeenum.stepwise.max_width, frmsizeenum.stepwise.max_height));
                     break;
 
                 default:
@@ -150,20 +151,7 @@ QList <FFDevice::Dev> ToolsV4L2::devList()
         }
 
         if(!dev.format.isEmpty()) {
-//            qInfo() << "aaaa";
-
-//            foreach(FFDevice::Format f, dev.format) {
-//                qInfo() << f.pixel_format.toString();
-//            }
-
             std::sort(dev.format.begin(), dev.format.end(), [](const FFDevice::Format &l, const FFDevice::Format &r) { return l.pixel_format.toString()<r.pixel_format.toString(); });
-
-//            qInfo() << "bbbb";
-
-//            foreach(FFDevice::Format f, dev.format) {
-//                qInfo() << f.pixel_format.toString();
-//            }
-
             list << dev;
         }
 

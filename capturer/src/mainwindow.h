@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -28,7 +28,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "ff_decoder_thread.h"
 #include "source_interface.h"
 
-
 class SourceInterface;
 class AudioOutputInterface;
 class AudioLevel;
@@ -49,17 +48,15 @@ public:
     ~MainWindow();
 
 private:
-    void setDevicePrimary(SourceInterface::Type::T type);
-    void setDeviceSecondary(SourceInterface::Type::T type);
-    void setDevice(bool primary, SourceInterface::Type::T type);
+    struct ObjGrp {
+        SourceInterface *source_device=nullptr;
+        FFEncoderThread *encoder=nullptr;
+        AudioSender *audio_sender=nullptr;
+    };
 
-    SourceInterface *device_primary=nullptr;
-    SourceInterface *device_secondary=nullptr;
+    QList <ObjGrp> stream;
 
     SettingsModel *settings_model;
-
-    FFEncoderThread *ff_enc_primary;
-    FFEncoderThread *ff_enc_secondary;
 
     FFDecoderThread *ff_dec;
 
@@ -71,13 +68,12 @@ private:
 
     AudioOutputInterface *audio_output;
 
-    AudioSender *audio_sender;
-
     HttpServer *http_server;
 
     NvTools *nv_tools;
 
     FFEncoderBaseFilename enc_base_filename;
+    FFEncStartSync enc_start_sync;
 
 protected:
     virtual bool eventFilter(QObject *object, QEvent *event);
@@ -88,8 +84,15 @@ private slots:
 
     void settingsModelDataChanged(int index, int role, bool qml);
 
-    void deviceStart(bool primary);
-    void deviceStop(bool primary);
+    void setDevice(uint8_t index, SourceInterface::Type::T type);
+
+    void sourceDeviceAddModel(uint8_t index);
+
+    void sourceDeviceAdd();
+    void sourceDeviceRemove();
+
+    void deviceStart(uint8_t index);
+    void deviceStop(uint8_t index);
 
     void startStopRecording();
     void updateEncList();
@@ -105,6 +108,7 @@ private slots:
     void updateStats(FFEncoder::Stats s);
 
     void checkEncoders();
+    void reloadFFDevices();
 
     void checkFreeSpace();
 

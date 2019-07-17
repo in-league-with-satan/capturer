@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,6 +24,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "pixel_format_dshow_helper.h"
 
 #ifdef __WIN32__
+
+#include <initguid.h>
+
+DEFINE_GUID(MEDIASUBTYPE_H264_alt, 0x34363248, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
+DEFINE_GUID(MEDIASUBTYPE_I420_alt, 0x30323449, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
 
 GUID toDshowPixelFormat(uint32_t pix_fmt)
 {
@@ -62,8 +67,14 @@ uint32_t fromDshowPixelFormat(const GUID &value)
     } else if(IsEqualGUID(value, MEDIASUBTYPE_RGB32)) {
         return PixelFormat::rgb0;
 
+    } else if(IsEqualGUID(value, MEDIASUBTYPE_I420_alt)) {
+        return PixelFormat::yuv420p;
+
     } else if(IsEqualGUID(value, MEDIASUBTYPE_IYUV)) {
         return PixelFormat::yuv420p;
+
+    } else if(IsEqualGUID(value, MEDIASUBTYPE_YV12)) {
+        return PixelFormat::yvu420p;
 
     } else if(IsEqualGUID(value, MEDIASUBTYPE_YUY2)) {
         return PixelFormat::yuyv422;
@@ -79,6 +90,9 @@ uint32_t fromDshowPixelFormat(const GUID &value)
 
     } else if(IsEqualGUID(value, MEDIASUBTYPE_MJPG)) {
         return PixelFormat::mjpeg;
+
+    } else if(IsEqualGUID(value, MEDIASUBTYPE_H264_alt)) {
+        return PixelFormat::h264;
     }
 
     return PixelFormat::undefined;

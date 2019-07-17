@@ -39,6 +39,7 @@ struct PixelFormat {
         gbrp10,
         rgb48,
         yuv420p,
+        yvu420p,
         yuv420p10,
         yuv422p,
         yuyv422,
@@ -50,6 +51,7 @@ struct PixelFormat {
         nv12,
         p010,
         mjpeg,
+        h264,
 
         size
     };
@@ -57,6 +59,8 @@ struct PixelFormat {
     PixelFormat();
     PixelFormat(const int &value);
     PixelFormat(const AVPixelFormat &value);
+
+    static PixelFormat normalizeFormat(const int &value);
 
     static QList <PixelFormat> list();
 
@@ -87,7 +91,7 @@ struct PixelFormat {
 
     bool isDirect() const;
 
-    bool onlyForDevices() const;
+    bool isCompressed() const;
 
     operator int() const;
     PixelFormat &operator=(int other);

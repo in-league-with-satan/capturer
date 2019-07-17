@@ -6,7 +6,8 @@ linux {
 
     LIBS += -lavdevice -lavfilter -lpostproc -lavformat -lavcodec -lavutil -lswscale -lswresample
     LIBS += -ldl -lx264
-    # LIBS += -lmfx -lva -lva-drm
+    LIBS += -lva -lva-drm
+    # LIBS += -lmfx
 }
 
 windows {

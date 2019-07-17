@@ -382,21 +382,68 @@ bool MagewellDeviceWorker::step()
 
         //
 
-        // HDMI_INFOFRAME_PACKET hdmi_infoframe_packet;
-
-        // int ret=MWGetHDMIInfoFramePacket((HCHANNEL)current_channel, MWCAP_HDMI_INFOFRAME_ID_HDR, &hdmi_infoframe_packet);
-
-        // qDebug() << (ret==MW_SUCCEEDED) << (hdmi_infoframe_packet.hdrInfoFramePayload.maximum_content_light_level_lsb | (hdmi_infoframe_packet.hdrInfoFramePayload.maximum_content_light_level_lsb << 8));
-
-        //
-
-
         Frame::ptr frame=Frame::make();
 
         frame->video.dummy.resize(d->frame_buffer_size);
         frame->video.data_ptr=(uint8_t*)frame->video.dummy.constData();
         frame->video.data_size=d->frame_buffer_size;
         frame->video.size=d->framesize;
+
+
+        HDMI_INFOFRAME_PACKET hdmi_infoframe_packet;
+
+        int ret=MWGetHDMIInfoFramePacket((HCHANNEL)current_channel, MWCAP_HDMI_INFOFRAME_ID_HDR, &hdmi_infoframe_packet);
+
+        if(ret==MW_SUCCEEDED) {
+            static const int den=1000;
+
+            frame->video.mastering_display_metadata.display_primaries[0][0]=av_make_q((hdmi_infoframe_packet.hdrInfoFramePayload.display_primaries_msb_x0 << 8) | hdmi_infoframe_packet.hdrInfoFramePayload.display_primaries_lsb_x0, den);
+            frame->video.mastering_display_metadata.display_primaries[0][1]=av_make_q((hdmi_infoframe_packet.hdrInfoFramePayload.display_primaries_msb_y0 << 8) | hdmi_infoframe_packet.hdrInfoFramePayload.display_primaries_lsb_y0, den);
+
+            frame->video.mastering_display_metadata.display_primaries[1][0]=av_make_q((hdmi_infoframe_packet.hdrInfoFramePayload.display_primaries_msb_x1 << 8) | hdmi_infoframe_packet.hdrInfoFramePayload.display_primaries_lsb_x1, den);
+            frame->video.mastering_display_metadata.display_primaries[1][1]=av_make_q((hdmi_infoframe_packet.hdrInfoFramePayload.display_primaries_msb_y1 << 8) | hdmi_infoframe_packet.hdrInfoFramePayload.display_primaries_lsb_y1, den);
+
+            frame->video.mastering_display_metadata.display_primaries[2][0]=av_make_q((hdmi_infoframe_packet.hdrInfoFramePayload.display_primaries_msb_x2 << 8) | hdmi_infoframe_packet.hdrInfoFramePayload.display_primaries_lsb_x2, den);
+            frame->video.mastering_display_metadata.display_primaries[2][1]=av_make_q((hdmi_infoframe_packet.hdrInfoFramePayload.display_primaries_msb_y2 << 8) | hdmi_infoframe_packet.hdrInfoFramePayload.display_primaries_lsb_y2, den);
+
+            frame->video.mastering_display_metadata.white_point[0]=av_make_q((hdmi_infoframe_packet.hdrInfoFramePayload.white_point_msb_x << 8) | hdmi_infoframe_packet.hdrInfoFramePayload.white_point_lsb_x, den);
+            frame->video.mastering_display_metadata.white_point[1]=av_make_q((hdmi_infoframe_packet.hdrInfoFramePayload.white_point_msb_y << 8) | hdmi_infoframe_packet.hdrInfoFramePayload.white_point_lsb_y, den);
+
+            frame->video.mastering_display_metadata.min_luminance=av_make_q((hdmi_infoframe_packet.hdrInfoFramePayload.min_display_mastering_msb_luminance << 8) | hdmi_infoframe_packet.hdrInfoFramePayload.min_display_mastering_lsb_luminance, den);
+            frame->video.mastering_display_metadata.max_luminance=av_make_q((hdmi_infoframe_packet.hdrInfoFramePayload.max_display_mastering_msb_luminance << 8) | hdmi_infoframe_packet.hdrInfoFramePayload.max_display_mastering_lsb_luminance, den);
+
+            for(int plane=0; plane<3; ++plane) {
+                if(frame->video.mastering_display_metadata.display_primaries[0][0].num || frame->video.mastering_display_metadata.display_primaries[0][1].num) {
+                    frame->video.mastering_display_metadata.has_primaries=true;
+                    break;
+                }
+            }
+
+            if(frame->video.mastering_display_metadata.white_point[0].num || frame->video.mastering_display_metadata.white_point[1].num)
+                frame->video.mastering_display_metadata.has_primaries=true;
+
+            if(frame->video.mastering_display_metadata.min_luminance.num || frame->video.mastering_display_metadata.max_luminance.num)
+                frame->video.mastering_display_metadata.has_luminance=true;
+
+/*
+            qInfo()
+                    << av_q2d(frame->video.mastering_display_metadata.display_primaries[0][0])
+                    << av_q2d(frame->video.mastering_display_metadata.display_primaries[0][1])
+                    << av_q2d(frame->video.mastering_display_metadata.display_primaries[1][0])
+                    << av_q2d(frame->video.mastering_display_metadata.display_primaries[1][1])
+                    << av_q2d(frame->video.mastering_display_metadata.display_primaries[2][0])
+                    << av_q2d(frame->video.mastering_display_metadata.display_primaries[2][1])
+                    << av_q2d(frame->video.mastering_display_metadata.white_point[0])
+                    << av_q2d(frame->video.mastering_display_metadata.white_point[1])
+                    << av_q2d(frame->video.mastering_display_metadata.max_luminance)
+                    << av_q2d(frame->video.mastering_display_metadata.min_luminance)
+                    ;
+*/
+        } else {
+            // qInfo() << "no hdr";
+        }
+
+        // emit setMasteringDisplayMetadata(frame->video.mastering_display_metadata);
 
 
         ret=MWCaptureVideoFrameToVirtualAddressEx(
@@ -456,6 +503,23 @@ bool MagewellDeviceWorker::step()
         }
 
         //
+        /*
+
+        static bool skip_frame=true;
+        static int chain_size=0;
+
+        skip_frame=!skip_frame;
+        skip_frame=rand()%2;
+
+        if(skip_frame && chain_size<2) {
+            chain_size++;
+            return true;
+        }
+
+        chain_size=0;
+
+        */
+        //
 
         frame->video.pixel_format=d->pixel_format;
 
@@ -505,6 +569,26 @@ bool MagewellDeviceWorker::step()
             frame->setDataAudio(d->ba_audio, a->channels(), a->sampleSize());
             break;
         }
+
+        //
+
+        /*
+        {
+            QFile f;
+
+            f.setFileName(QString("frame_%1_%2x%3.raw")
+                          .arg(frame->video.pixel_format.toString())
+                          .arg(frame->video.size.width())
+                          .arg(frame->video.size.height())
+                          );
+
+            f.open(QFile::ReadWrite | QFile::Truncate);
+
+            f.write((char*)frame->video.data_ptr, frame->video.data_size);
+
+            f.close();
+        }
+        */
 
         //
 

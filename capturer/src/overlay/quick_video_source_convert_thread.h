@@ -66,6 +66,7 @@ private:
     bool skip_frame;
 
     AVFrame *conv_src;
+    AVFrame *conv_src_tmp;
     AVFrame *conv_dst;
 
     FFFormatConverter *format_converter_ff;

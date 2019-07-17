@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -34,6 +34,10 @@ struct Frame
     typedef std::shared_ptr<Frame> ptr;
 
     virtual ~Frame() {
+        if(video.av_packet) {
+            av_packet_unref(video.av_packet);
+            video.av_packet=nullptr;
+        }
     }
 
     static ptr make() {
@@ -87,10 +91,15 @@ struct Frame
         size_t data_size=0;
         QSize size;
 
+        AVPacket *av_packet=nullptr;
+
         AVRational time_base={};
         int64_t pts=AV_NOPTS_VALUE;
 
         PixelFormat pixel_format;
+        PixelFormat pixel_format_pkt;
+
+        AVMasteringDisplayMetadata mastering_display_metadata={};
 
         QByteArray dummy;
 

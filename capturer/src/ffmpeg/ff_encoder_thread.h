@@ -32,7 +32,7 @@ class FFEncoderThread : public QThread
     Q_OBJECT
 
 public:
-    FFEncoderThread(FFEncoder::Mode::T mode, FFEncoderBaseFilename *base_filename, QString store_dir, QString encoding_tool_name, QObject *parent=0);
+    FFEncoderThread(int enc_num, FFEncoderBaseFilename *base_filename, FFEncStartSync *start_sync, QString store_dir, QString encoding_tool_name, QObject *parent=0);
     ~FFEncoderThread();
 
     FrameBuffer <Frame::ptr>::ptr frameBuffer();
@@ -55,8 +55,9 @@ private:
 
     QString store_dir;
     FFEncoderBaseFilename *base_filename;
+    FFEncStartSync *start_sync;
     QString encoding_tool_name;
-    FFEncoder::Mode::T mode;
+    int enc_num;
 
 protected:
     void run();
