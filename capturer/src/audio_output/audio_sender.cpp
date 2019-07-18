@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <QDebug>
 #include <QUdpSocket>
-#include <QJsonDocument>
+#include <QCborValue>
 #include <QNetworkDatagram>
 #include <QDateTime>
 #include <qcoreapplication.h>
@@ -167,7 +167,7 @@ void AudioSender::run()
                 while(!ba_in.isEmpty()) {
                     packet.data=ba_in.left(max_size);
 
-                    ba_out=QJsonDocument::fromVariant(packet.toExt()).toBinaryData();
+                    ba_out=QCborValue::fromVariant(packet.toExt()).toCbor();
 
                     sendData(ba_out);
 
@@ -177,7 +177,7 @@ void AudioSender::run()
             } else {
                 packet.data=QByteArray((char*)ba_in.constData(), ba_in.size());
 
-                ba_out=QJsonDocument::fromVariant(packet.toExt()).toBinaryData();
+                ba_out=QCborValue::fromVariant(packet.toExt()).toCbor();
 
                 sendData(ba_out);
             }

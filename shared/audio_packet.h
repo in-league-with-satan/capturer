@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ struct AudioPacket
     QVariantMap toExt() {
         QVariantMap map;
 
-        map.insert(QStringLiteral("data"), QString(data.toBase64()));
+        map.insert(QStringLiteral("data"), data);
         map.insert(QStringLiteral("channels"), channels);
         map.insert(QStringLiteral("sample_size"), sample_size);
 
@@ -35,7 +35,7 @@ struct AudioPacket
     }
 
     void fromExt(const QVariantMap &map) {
-        data=QByteArray::fromBase64(map.value(QStringLiteral("data")).toByteArray());
+        data=map.value(QStringLiteral("data")).toByteArray();
         channels=map.value(QStringLiteral("channels")).toInt();
         sample_size=map.value(QStringLiteral("sample_size")).toInt();
     }

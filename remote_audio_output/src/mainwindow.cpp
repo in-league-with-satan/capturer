@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QPushButton>
 #include <QNetworkDatagram>
 #include <QJsonDocument>
+#include <QCborValue>
 #include <QFile>
 
 #include "audio_packet.h"
@@ -356,7 +357,7 @@ void MainWindow::socketRead()
         if(!audio_device)
             continue;
 
-        packet.fromExt(QJsonDocument::fromBinaryData(dg.data()).toVariant().toMap());
+        packet.fromExt(QCborValue::fromCbor(dg.data()).toVariant().toMap());
 
         if((int)audio_converter.inChannels()!=packet.channels || (int)audio_converter.outChannels()!=audio_format.channelCount()
                 || audio_converter.inSampleRate()!=48000 || audio_converter.outSampleRate()!=audio_format.sampleRate()
