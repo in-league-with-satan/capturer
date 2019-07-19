@@ -85,7 +85,7 @@ void AudioSender::run()
         }
     };
 
-    const int max_raw_size=24000;
+    const int max_raw_size=65000;
 
     int max_packets;
     int max_size;
