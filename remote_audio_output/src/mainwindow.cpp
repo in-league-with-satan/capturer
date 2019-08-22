@@ -37,9 +37,6 @@ MainWindow::MainWindow(QWidget *parent)
     , audio_output(nullptr)
     , audio_device(nullptr)
 {
-    av_register_all();
-
-
     timer_still_alive=new QTimer(this);
     timer_still_alive->setInterval(1000);
 
@@ -75,7 +72,8 @@ MainWindow::MainWindow(QWidget *parent)
     cb_manual_gain_factor=new QCheckBox(QStringLiteral("manual gain factor"));
     le_norm_update_time=new QLineEdit();
     le_norm_gain_change_step=new QLineEdit();
-    le_norm_maximum_level_percentage=new QLineEdit();
+    le_norm_level_percentage_maximum=new QLineEdit();
+    le_norm_gain_factor_maximum=new QLineEdit(QStringLiteral("20.00"));
     le_norm_gain_factor=new QLineEdit(QStringLiteral("1.00"));
 
     le_norm_gain_factor->setReadOnly(true);
@@ -85,7 +83,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(le_norm_update_time, SIGNAL(textChanged(QString)), SLOT(setupNormalizer()));
     connect(le_norm_gain_change_step, SIGNAL(textChanged(QString)), SLOT(setupNormalizer()));
-    connect(le_norm_maximum_level_percentage, SIGNAL(textChanged(QString)), SLOT(setupNormalizer()));
+    connect(le_norm_level_percentage_maximum, SIGNAL(textChanged(QString)), SLOT(setupNormalizer()));
+    connect(le_norm_gain_factor_maximum, SIGNAL(textChanged(QString)), SLOT(setupNormalizer()));
     connect(le_norm_gain_factor, SIGNAL(textChanged(QString)), SLOT(gainFactorChanged(QString)));
 
     connect(&normalizer, SIGNAL(gainFactorChanged(double)), SLOT(normalizerGainFactor(double)));
@@ -111,6 +110,7 @@ MainWindow::MainWindow(QWidget *parent)
     QLabel *l_norm_update_time=new QLabel(QStringLiteral("update time:"));
     QLabel *l_norm_gain_change_step=new QLabel(QStringLiteral("gain change step:"));
     QLabel *l_norm_maximum_level_percentage=new QLabel(QStringLiteral("maximum level percentage:"));
+    QLabel *l_norm_maximum_gain_factor=new QLabel(QStringLiteral("maximum gain factor:"));
     QLabel *l_gain_factor=new QLabel(QStringLiteral("gain factor:"));
 
     QLabel *l_host=new QLabel(QStringLiteral("host:"));
@@ -172,7 +172,10 @@ MainWindow::MainWindow(QWidget *parent)
     la_controls->addWidget(le_norm_gain_change_step, row++, 1);
 
     la_controls->addWidget(l_norm_maximum_level_percentage, row, 0);
-    la_controls->addWidget(le_norm_maximum_level_percentage, row++, 1);
+    la_controls->addWidget(le_norm_level_percentage_maximum, row++, 1);
+
+    la_controls->addWidget(l_norm_maximum_gain_factor, row, 0);
+    la_controls->addWidget(le_norm_gain_factor_maximum, row++, 1);
 
     la_controls->addWidget(l_gain_factor, row, 0);
     la_controls->addWidget(le_norm_gain_factor, row++, 1);
@@ -237,8 +240,8 @@ void MainWindow::load()
     cb_normalization->setChecked(map_root.value(QStringLiteral("normalization"), true).toBool());
     le_norm_update_time->setText(map_root.value(QStringLiteral("normalization_update_time"), "2000").toString());
     le_norm_gain_change_step->setText(map_root.value(QStringLiteral("normalization_gain_change_step"), "0.5").toString());
-    le_norm_maximum_level_percentage->setText(map_root.value(QStringLiteral("normalization_maximum_level_percentage"), "0.9").toString());
-
+    le_norm_level_percentage_maximum->setText(map_root.value(QStringLiteral("normalization_maximum_level_percentage"), "0.9").toString());
+    le_norm_gain_factor_maximum->setText(map_root.value(QStringLiteral("normalization_maximum_gain_factor"), "20.0").toString());
     manual_gain_factor_value=map_root.value(QStringLiteral("manual_gain_factor_value"), "1.0").toDouble();
     cb_manual_gain_factor->setChecked(map_root.value(QStringLiteral("manual_gain_factor"), true).toBool());
 
@@ -264,8 +267,8 @@ void MainWindow::save()
     map_root.insert(QStringLiteral("normalization"), cb_normalization->isChecked());
     map_root.insert(QStringLiteral("normalization_update_time"), le_norm_update_time->text().trimmed());
     map_root.insert(QStringLiteral("normalization_gain_change_step"), le_norm_gain_change_step->text().trimmed());
-    map_root.insert(QStringLiteral("normalization_maximum_level_percentage"), le_norm_maximum_level_percentage->text().trimmed());
-
+    map_root.insert(QStringLiteral("normalization_maximum_level_percentage"), le_norm_level_percentage_maximum->text().trimmed());
+    map_root.insert(QStringLiteral("normalization_maximum_gain_factor"), le_norm_gain_factor_maximum->text().trimmed());
     map_root.insert(QStringLiteral("manual_gain_factor_value"), QString::number(manual_gain_factor_value, 'f', 2));
     map_root.insert(QStringLiteral("manual_gain_factor"), cb_manual_gain_factor->isChecked());
 
@@ -416,9 +419,35 @@ void MainWindow::connectToHost()
 
 void MainWindow::setupNormalizer()
 {
-    normalizer.setUpdateTime(le_norm_update_time->text().trimmed().toUShort());
-    normalizer.setGainChangeStep(le_norm_gain_change_step->text().trimmed().toDouble());
-    normalizer.setMaximumLevelPercentage(le_norm_maximum_level_percentage->text().trimmed().toDouble());
+    const uint16_t norm_update_time=le_norm_update_time->text().trimmed().toUShort();
+    const double norm_gain_change_step=le_norm_gain_change_step->text().trimmed().toDouble();
+    const double norm_gain_factor_maximum=le_norm_gain_factor_maximum->text().trimmed().toDouble();
+    const double norm_level_percentage_maximum=le_norm_level_percentage_maximum->text().trimmed().toDouble();
+
+    if(le_norm_update_time->text()!=QString::number(norm_update_time)) {
+        le_norm_update_time->setText(QString::number(norm_update_time==0 ? 1000 : norm_update_time));
+        return;
+    }
+
+    if(norm_gain_change_step<.01) {
+        le_norm_gain_change_step->setText("0.5");
+        return;
+    }
+
+    if(norm_gain_factor_maximum<.01) {
+        le_norm_gain_factor_maximum->setText("20.0");
+        return;
+    }
+
+    if(norm_level_percentage_maximum<.01) {
+        le_norm_level_percentage_maximum->setText("0.9");
+        return;
+    }
+
+    normalizer.setUpdateTime(norm_update_time);
+    normalizer.setGainChangeStep(norm_gain_change_step);
+    normalizer.setGainFactorMaximum(norm_gain_factor_maximum);
+    normalizer.setLevelPercentageMaximum(norm_level_percentage_maximum);
 }
 
 void MainWindow::normalizerGainFactor(double value)
@@ -441,7 +470,8 @@ void MainWindow::normalizationModeChanged()
 
             le_norm_update_time->setEnabled(true);
             le_norm_gain_change_step->setEnabled(true);
-            le_norm_maximum_level_percentage->setEnabled(true);
+            le_norm_level_percentage_maximum->setEnabled(true);
+            le_norm_gain_factor_maximum->setEnabled(true);
             le_norm_gain_factor->setEnabled(true);
 
             le_norm_gain_factor->setReadOnly(true);
@@ -449,9 +479,9 @@ void MainWindow::normalizationModeChanged()
         } else {
             le_norm_update_time->setEnabled(false);
             le_norm_gain_change_step->setEnabled(false);
-            le_norm_maximum_level_percentage->setEnabled(false);
+            le_norm_level_percentage_maximum->setEnabled(false);
+            le_norm_gain_factor_maximum->setEnabled(false);
             le_norm_gain_factor->setEnabled(false);
-
         }
     }
 
@@ -464,7 +494,8 @@ void MainWindow::normalizationModeChanged()
 
             le_norm_update_time->setEnabled(false);
             le_norm_gain_change_step->setEnabled(false);
-            le_norm_maximum_level_percentage->setEnabled(false);
+            le_norm_level_percentage_maximum->setEnabled(false);
+            le_norm_gain_factor_maximum->setEnabled(false);
             le_norm_gain_factor->setEnabled(true);
 
             le_norm_gain_factor->setReadOnly(false);
@@ -472,9 +503,9 @@ void MainWindow::normalizationModeChanged()
         } else {
             le_norm_update_time->setEnabled(false);
             le_norm_gain_change_step->setEnabled(false);
-            le_norm_maximum_level_percentage->setEnabled(false);
+            le_norm_level_percentage_maximum->setEnabled(false);
+            le_norm_gain_factor_maximum->setEnabled(false);
             le_norm_gain_factor->setEnabled(false);
-
         }
     }
 

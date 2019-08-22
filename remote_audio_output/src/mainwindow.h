@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -58,7 +58,8 @@ private:
     QCheckBox *cb_manual_gain_factor;
     QLineEdit *le_norm_update_time;
     QLineEdit *le_norm_gain_change_step;
-    QLineEdit *le_norm_maximum_level_percentage;
+    QLineEdit *le_norm_level_percentage_maximum;
+    QLineEdit *le_norm_gain_factor_maximum;
     QLineEdit *le_norm_gain_factor;
 
     AudioLevelWidget *level_in;
