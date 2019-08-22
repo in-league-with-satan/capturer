@@ -213,7 +213,10 @@ void MagewellAudioThread::run()
 
         if(ret!=MW_SUCCEEDED) {
             qCritical() << "MWGetNotifyStatus err" << ret;
-            deviceStart();
+
+            if(d->event_capture!=0)
+                deviceStart();
+
             goto sleep;
         }
 

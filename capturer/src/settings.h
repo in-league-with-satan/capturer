@@ -117,6 +117,7 @@ public:
             int color_primaries;
             int color_space;
             int color_transfer_characteristic;
+            int color_range;
             int sws_color_space_src;
             int sws_color_space_dst;
             int sws_color_range_src;

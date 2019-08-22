@@ -929,6 +929,20 @@ void MainWindow::sourceDeviceAddModel(uint8_t index)
     set_model_data.values_data.clear();
 
     set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="color range";
+    set_model_data.value=&settings_device->rec.color_range;
+
+    for(int i=0; i<swsColorRange::size; ++i)
+        set_model_data.values << swsColorRange::toString(i);
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
     set_model_data.name="downscale";
     set_model_data.value=&settings_device->rec.downscale;
 
@@ -2136,6 +2150,7 @@ void MainWindow::startStopRecording()
         cfg.color_primaries=settings_model->valueData(&settings->source_device[i].rec.color_primaries).toInt();
         cfg.color_space=settings_model->valueData(&settings->source_device[i].rec.color_space).toInt();
         cfg.color_transfer_characteristic=settings_model->valueData(&settings->source_device[i].rec.color_transfer_characteristic).toInt();
+        cfg.color_range=swsColorRange::toff(settings->source_device[i].rec.color_range);
         cfg.sws_color_space_src=swsColorSpace::toff(settings->source_device[i].rec.sws_color_space_src);
         cfg.sws_color_space_dst=swsColorSpace::toff(settings->source_device[i].rec.sws_color_space_dst);
         cfg.sws_color_range_src=swsColorRange::toff(settings->source_device[i].rec.sws_color_range_src);

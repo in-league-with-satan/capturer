@@ -60,8 +60,8 @@ bool FFFormatConverter::setup(AVPixelFormat format_src, QSize resolution_src, AV
                                    format_src,
                                    resolution_dst.width(), resolution_dst.height(),
                                    format_dst,
-                                   filter, nullptr, nullptr, nullptr);
-
+                                   filter | SWS_FULL_CHR_H_INT | SWS_FULL_CHR_H_INP,
+                                   nullptr, nullptr, nullptr);
     sws_setColorspaceDetails(convert_context, sws_getCoefficients(color_space_src), color_range_src, sws_getCoefficients(color_space_dst), color_range_dst, 0, 1 << 16, 1 << 16);
 
     qDebug().noquote() << "convert_context ptr" << QString::number((quintptr)convert_context, 16);

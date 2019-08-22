@@ -305,6 +305,7 @@ QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &devi
     map_rec.insert(QStringLiteral("color_primaries"), device.rec.color_primaries);
     map_rec.insert(QStringLiteral("color_space"), device.rec.color_space);
     map_rec.insert(QStringLiteral("color_transfer_characteristic"), device.rec.color_transfer_characteristic);
+    map_rec.insert(QStringLiteral("color_range"), device.rec.color_range);
     map_rec.insert(QStringLiteral("sws_color_space_src"), device.rec.sws_color_space_src);
     map_rec.insert(QStringLiteral("sws_color_space_dst"), device.rec.sws_color_space_dst);
     map_rec.insert(QStringLiteral("sws_color_range_src"), device.rec.sws_color_range_src);
@@ -373,6 +374,7 @@ void Settings::setSourceDeviceSettings(Settings::SourceDevice *device, const QVa
     device->rec.color_primaries=map_rec.value(QStringLiteral("color_primaries"), 0).toInt();
     device->rec.color_space=map_rec.value(QStringLiteral("color_space"), 0).toInt();
     device->rec.color_transfer_characteristic=map_rec.value(QStringLiteral("color_transfer_characteristic"), 0).toInt();
+    device->rec.color_range=map_rec.value(QStringLiteral("color_range"), 0).toInt();
     device->rec.sws_color_space_src=map_rec.value(QStringLiteral("sws_color_space_src"), 0).toInt();
     device->rec.sws_color_space_dst=map_rec.value(QStringLiteral("sws_color_space_dst"), 0).toInt();
     device->rec.sws_color_range_src=map_rec.value(QStringLiteral("sws_color_range_src"), 0).toInt();

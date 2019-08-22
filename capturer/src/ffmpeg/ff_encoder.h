@@ -208,6 +208,7 @@ public:
         int color_primaries=-1;
         int color_space=-1;
         int color_transfer_characteristic=-1;
+        int color_range=-1;
 
         AVMasteringDisplayMetadata mastering_display_metadata={};
 

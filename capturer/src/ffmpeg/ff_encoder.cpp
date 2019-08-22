@@ -561,6 +561,9 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
     if(cfg.color_transfer_characteristic>-1)
         output_stream->av_codec_context->color_trc=(AVColorTransferCharacteristic)cfg.color_transfer_characteristic;
 
+    if(cfg.color_range>0)
+        output_stream->av_codec_context->color_range=(AVColorRange)cfg.color_range;
+
     if(cfg.mastering_display_metadata.has_luminance || cfg.mastering_display_metadata.has_luminance) {
         AVMasteringDisplayMetadata *mastering_display_metadata=(AVMasteringDisplayMetadata*)av_malloc(sizeof(AVMasteringDisplayMetadata));
         memcpy(mastering_display_metadata, &cfg.mastering_display_metadata, sizeof(cfg.mastering_display_metadata));
@@ -1406,7 +1409,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     checkCrfValue(&cfg);
 
     int ret;
-    int sws_flags=0;
+    // int sws_flags=0;
 
     cfg.direct_stream_copy=cfg.direct_stream_copy && cfg.pixel_format_src.isCompressed();
 
@@ -1421,7 +1424,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
         if(cfg.frame_resolution_dst.height()>DownScale::toWidth(cfg.downscale)) {
             cfg.frame_resolution_dst.setHeight(DownScale::toWidth(cfg.downscale));
             cfg.frame_resolution_dst.setWidth(cfg.frame_resolution_dst.height()*(16./9.));
-            sws_flags|=ScaleFilter::toSws(cfg.scale_filter);
+            // sws_flags|=ScaleFilter::toSws(cfg.scale_filter);
         }
     }
 
