@@ -107,6 +107,7 @@ public:
             int pixel_format_current;
             int preset_current;
             int crf;
+            int bitrate_audio;
             int encoder_audio;
             int encoder_video;
             int half_fps;

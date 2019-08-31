@@ -810,9 +810,29 @@ void MainWindow::sourceDeviceAddModel(uint8_t index)
     set_model_data.type=SettingsModel::Type::combobox;
     set_model_data.name="audio encoder";
 
-    set_model_data.values << "pcm" << "flac";
+    foreach(FFEncoder::AudioEncoder::T enc, FFEncoder::AudioEncoder::list()) {
+        set_model_data.values << FFEncoder::AudioEncoder::toString(enc);
+        set_model_data.values_data << enc;
+    }
 
     set_model_data.value=&settings_device->rec.encoder_audio;
+
+    list_set_model_data.append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="audio bitrate";
+    set_model_data.priority=SettingsModel::Priority::low;
+    set_model_data.value=&settings_device->rec.bitrate_audio;
+
+    for(int i=64; i<=720; i+=4) {
+        set_model_data.values << QString("%1k").arg(i);
+        set_model_data.values_data << i;
+    }
 
     list_set_model_data.append(set_model_data);
 
@@ -1344,6 +1364,10 @@ void MainWindow::sourceDeviceAdd()
     }
 
     connect(str->encoder, SIGNAL(stateChanged(bool)), SLOT(encoderStateChanged(bool)), Qt::QueuedConnection);
+
+    if(!settings->main.headless) {
+        connect(str->encoder, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
+    }
 
     if(stream.size()>1) {
         connect(stream.first().encoder, SIGNAL(restartOut()), str->encoder, SIGNAL(restartIn()), Qt::QueuedConnection);
@@ -2135,6 +2159,10 @@ void MainWindow::startStopRecording()
         if(cfg.framerate==FFEncoder::Framerate::unknown)
             cfg.framerate_force=framerate;
 
+        cfg.audio_encoder=(FFEncoder::AudioEncoder::T)settings_model->valueData(&settings->source_device[i].rec.encoder_audio).toInt();
+        cfg.audio_bitrate=settings_model->valueData(&settings->source_device[i].rec.bitrate_audio).toInt();
+        cfg.audio_sample_size=dev->currentAudioSampleSize();
+        cfg.audio_channels_size=dev->currentAudioChannels();
         cfg.frame_resolution_src=dev->currentFramesize();
         cfg.pixel_format_dst=settings_model->valueData(&settings->source_device[i].rec.pixel_format_current).toInt();
         cfg.preset=settings_model->valueData(&settings->source_device[i].rec.preset_current).toString();
@@ -2143,8 +2171,6 @@ void MainWindow::startStopRecording()
         cfg.pixel_format_src=dev->currentPixelFormat();
         cfg.direct_stream_copy=settings->source_device[i].rec.direct_stream_copy;
         cfg.fill_dropped_frames=settings->source_device[i].rec.fill_dropped_frames;
-        cfg.audio_sample_size=dev->currentAudioSampleSize();
-        cfg.audio_channels_size=dev->currentAudioChannels();
         cfg.downscale=settings->source_device[i].rec.downscale;
         cfg.scale_filter=settings->source_device[i].rec.scale_filter;
         cfg.color_primaries=settings_model->valueData(&settings->source_device[i].rec.color_primaries).toInt();
@@ -2156,7 +2182,6 @@ void MainWindow::startStopRecording()
         cfg.sws_color_range_src=swsColorRange::toff(settings->source_device[i].rec.sws_color_range_src);
         cfg.sws_color_range_dst=swsColorRange::toff(settings->source_device[i].rec.sws_color_range_dst);
         cfg.nvenc=settings->source_device[i].rec.nvenc;
-        cfg.audio_flac=settings->source_device[i].rec.encoder_audio==1;
         cfg.input_type_flags=dev->typeFlags();
 
         enc->setConfig(cfg);

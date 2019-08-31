@@ -297,6 +297,7 @@ QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &devi
     map_rec.insert(QStringLiteral("pixel_format"), device.rec.pixel_format);
     map_rec.insert(QStringLiteral("preset"), device.rec.preset);
     map_rec.insert(QStringLiteral("crf"), device.rec.crf);
+    map_rec.insert(QStringLiteral("bitrate_audio"), device.rec.bitrate_audio);
     map_rec.insert(QStringLiteral("half_fps"), device.rec.half_fps);
     map_rec.insert(QStringLiteral("direct_stream_copy"), device.rec.direct_stream_copy);
     map_rec.insert(QStringLiteral("fill_dropped_frames"), device.rec.fill_dropped_frames);
@@ -366,6 +367,7 @@ void Settings::setSourceDeviceSettings(Settings::SourceDevice *device, const QVa
     device->rec.pixel_format=map_rec.value(QStringLiteral("pixel_format")).toMap();
     device->rec.preset=map_rec.value(QStringLiteral("preset")).toMap();
     device->rec.crf=map_rec.value(QStringLiteral("crf"), 0).toInt();
+    device->rec.bitrate_audio=map_rec.value(QStringLiteral("bitrate_audio"), 48).toInt(); // 48=256kB
     device->rec.half_fps=map_rec.value(QStringLiteral("half_fps"), 0).toInt();
     device->rec.direct_stream_copy=map_rec.value(QStringLiteral("direct_stream_copy"), 0).toInt();
     device->rec.fill_dropped_frames=map_rec.value(QStringLiteral("fill_dropped_frames"), 0).toInt();
