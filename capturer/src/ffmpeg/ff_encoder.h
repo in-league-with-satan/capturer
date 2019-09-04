@@ -205,9 +205,11 @@ public:
         int audio_dalay=0;
         AudioEncoder::T audio_encoder;
         int audio_bitrate=256;
+        int audio_downmix_to_stereo=0;
         bool direct_stream_copy=false;
         bool fill_dropped_frames=false;
         uint8_t crf;
+        int video_bitrate=0;
         uint8_t downscale=DownScale::Disabled;
         int scale_filter=ScaleFilter::FastBilinear;
         PixelFormat pixel_format_src;
@@ -282,6 +284,10 @@ public:
     void setBaseFilename(FFEncoderBaseFilename *bf);
 
     QString lastErrorString() const;
+
+    enum {
+        StreamingMode=-1
+    };
 
 public slots:
     bool setConfig(FFEncoder::Config cfg);

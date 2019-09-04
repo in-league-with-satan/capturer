@@ -88,6 +88,7 @@ bool Settings::load()
     QVariantList lst_source_device=map_root.value(QStringLiteral("source_device")).toList();
     QVariantMap map_http_server=map_root.value(QStringLiteral("http_server")).toMap();
     QVariantMap map_keyboard_shortcuts=map_root.value(QStringLiteral("keyboard_shortcuts")).toMap();
+    QVariantMap map_streaming=map_root.value(QStringLiteral("streaming")).toMap();
 
     //
 
@@ -129,6 +130,16 @@ bool Settings::load()
                                        KeyCodeC::fromString(map_keyboard_shortcuts.keys()[i]));
     }
 
+    //
+
+    QVariantMap map_streaming_service_url_example;
+    map_streaming_service_url_example.insert("example", "rtmp://127.0.0.1:1935");
+
+    recLoad(&streaming.rec, map_streaming.value(QStringLiteral("rec")).toMap());
+    streaming.url=map_streaming.value(QStringLiteral("url"), QVariantList() << map_streaming_service_url_example).toList();
+    streaming.url_index=map_streaming.value(QStringLiteral("url_index")).toInt();
+
+    //
 
     if(main.supported_enc.isEmpty())
         checkEncoders();
@@ -144,6 +155,7 @@ bool Settings::save()
     QVariantList lst_source_device;
     QVariantMap map_http_server;
     QVariantMap map_keyboard_shortcuts;
+    QVariantMap map_streaming;
 
     map_main.insert(QStringLiteral("simplify_audio_for_send"), main.simplify_audio_for_send);
     map_main.insert(QStringLiteral("location_videos"), main.location_videos);
@@ -171,6 +183,13 @@ bool Settings::save()
     map_root.insert(QStringLiteral("main"), map_main);
     map_root.insert(QStringLiteral("source_device"), lst_source_device);
     map_root.insert(QStringLiteral("keyboard_shortcuts"), map_keyboard_shortcuts);
+
+    map_streaming.insert(QStringLiteral("rec"), recSave(streaming.rec));
+    map_streaming.insert(QStringLiteral("url"), streaming.url);
+    map_streaming.insert(QStringLiteral("url_index"), streaming.url_index);
+
+    map_root.insert(QStringLiteral("streaming"), map_streaming);
+
 
     QByteArray ba=QJsonDocument::fromVariant(map_root).toJson();
 
@@ -235,6 +254,108 @@ void Settings::renumSourceDevices()
     }
 }
 
+void Settings::recLoad(Settings::Rec *rec, QVariantMap map_rec)
+{
+    QVariantMap map_nvenc=map_rec.value(QStringLiteral("nvenc")).toMap();
+
+    rec->audio_encoder=map_rec.value(QStringLiteral("audio_encoder"), 0).toInt();
+    rec->audio_bitrate=map_rec.value(QStringLiteral("audio_bitrate"), 48).toInt(); // 256kb
+    rec->audio_downmix_to_stereo=map_rec.value(QStringLiteral("audio_downmix_to_stereo"), 0).toInt();
+    rec->video_encoder=map_rec.value(QStringLiteral("video_encoder"), 0).toInt();
+    rec->video_bitrate=map_rec.value(QStringLiteral("video_bitrate"), 0).toInt();
+    rec->crf=map_rec.value(QStringLiteral("crf"), 0).toInt();
+    rec->pixel_format=map_rec.value(QStringLiteral("pixel_format")).toMap();
+    rec->preset=map_rec.value(QStringLiteral("preset")).toMap();
+    rec->half_fps=map_rec.value(QStringLiteral("half_fps"), 0).toInt();
+    rec->direct_stream_copy=map_rec.value(QStringLiteral("direct_stream_copy"), 0).toInt();
+    rec->fill_dropped_frames=map_rec.value(QStringLiteral("fill_dropped_frames"), 0).toInt();
+    rec->downscale=map_rec.value(QStringLiteral("downscale"), FFEncoder::DownScale::Disabled).toInt();
+    rec->scale_filter=map_rec.value(QStringLiteral("scale_filter"), FFEncoder::ScaleFilter::FastBilinear).toInt();
+    rec->color_primaries=map_rec.value(QStringLiteral("color_primaries"), 0).toInt();
+    rec->color_space=map_rec.value(QStringLiteral("color_space"), 0).toInt();
+    rec->color_transfer_characteristic=map_rec.value(QStringLiteral("color_transfer_characteristic"), 0).toInt();
+    rec->color_range=map_rec.value(QStringLiteral("color_range"), 0).toInt();
+    rec->sws_color_space_src=map_rec.value(QStringLiteral("sws_color_space_src"), 0).toInt();
+    rec->sws_color_space_dst=map_rec.value(QStringLiteral("sws_color_space_dst"), 0).toInt();
+    rec->sws_color_range_src=map_rec.value(QStringLiteral("sws_color_range_src"), 0).toInt();
+    rec->sws_color_range_dst=map_rec.value(QStringLiteral("sws_color_range_dst"), 0).toInt();
+
+    rec->pixel_format_current=rec->pixel_format.value(QString::number(rec->video_encoder), 0).toInt();
+    rec->preset_current=rec->preset.value(QString::number(rec->video_encoder), 0).toInt();
+
+    rec->nvenc.enabled=map_nvenc.value(QStringLiteral("enabled"), 0).toInt();
+    rec->nvenc.device=map_nvenc.value(QStringLiteral("device"), 0).toInt();
+    rec->nvenc.b_frames=map_nvenc.value(QStringLiteral("b_frames"), 0).toInt();
+    rec->nvenc.ref_frames=map_nvenc.value(QStringLiteral("ref_frames"), 0).toInt();
+    rec->nvenc.b_ref_mode=map_nvenc.value(QStringLiteral("b_ref_mode"), 0).toInt();
+    rec->nvenc.gop_size=map_nvenc.value(QStringLiteral("gop_size"), 0).toInt();
+    rec->nvenc.qp_i=map_nvenc.value(QStringLiteral("qp_i"), 0).toInt();
+    rec->nvenc.qp_p=map_nvenc.value(QStringLiteral("qp_p"), 0).toInt();
+    rec->nvenc.qp_b=map_nvenc.value(QStringLiteral("qp_b"), 0).toInt();
+    rec->nvenc.aq_mode=map_nvenc.value(QStringLiteral("aq_mode"), 0).toInt();
+    rec->nvenc.aq_strength=map_nvenc.value(QStringLiteral("aq_strength"), 0).toInt();
+    rec->nvenc.rc_lookahead=map_nvenc.value(QStringLiteral("rc_lookahead"), 0).toInt();
+    rec->nvenc.surfaces=map_nvenc.value(QStringLiteral("surfaces"), 0).toInt();
+    rec->nvenc.no_scenecut=map_nvenc.value(QStringLiteral("no_scenecut"), 0).toInt();
+    rec->nvenc.forced_idr=map_nvenc.value(QStringLiteral("forced_idr"), 0).toInt();
+    rec->nvenc.b_adapt=map_nvenc.value(QStringLiteral("b_adapt"), 0).toInt();
+    rec->nvenc.nonref_p=map_nvenc.value(QStringLiteral("nonref_p"), 0).toInt();
+    rec->nvenc.strict_gop=map_nvenc.value(QStringLiteral("strict_gop"), 0).toInt();
+    rec->nvenc.weighted_pred=map_nvenc.value(QStringLiteral("weighted_pred"), 0).toInt();
+    rec->nvenc.bluray_compat=map_nvenc.value(QStringLiteral("bluray_compat"), 0).toInt();
+}
+
+QVariantMap Settings::recSave(const Settings::Rec &rec)
+{
+    QVariantMap map_nvenc, map_rec;
+
+    map_nvenc.insert(QStringLiteral("enabled"), rec.nvenc.enabled);
+    map_nvenc.insert(QStringLiteral("device"), rec.nvenc.device);
+    map_nvenc.insert(QStringLiteral("b_frames"), rec.nvenc.b_frames);
+    map_nvenc.insert(QStringLiteral("ref_frames"), rec.nvenc.ref_frames);
+    map_nvenc.insert(QStringLiteral("b_ref_mode"), rec.nvenc.b_ref_mode);
+    map_nvenc.insert(QStringLiteral("gop_size"), rec.nvenc.gop_size);
+    map_nvenc.insert(QStringLiteral("qp_i"), rec.nvenc.qp_i);
+    map_nvenc.insert(QStringLiteral("qp_p"), rec.nvenc.qp_p);
+    map_nvenc.insert(QStringLiteral("qp_b"), rec.nvenc.qp_b);
+    map_nvenc.insert(QStringLiteral("aq_mode"), rec.nvenc.aq_mode);
+    map_nvenc.insert(QStringLiteral("aq_strength"), rec.nvenc.aq_strength);
+    map_nvenc.insert(QStringLiteral("rc_lookahead"), rec.nvenc.rc_lookahead);
+    map_nvenc.insert(QStringLiteral("surfaces"), rec.nvenc.surfaces);
+    map_nvenc.insert(QStringLiteral("no_scenecut"), rec.nvenc.no_scenecut);
+    map_nvenc.insert(QStringLiteral("forced_idr"), rec.nvenc.forced_idr);
+    map_nvenc.insert(QStringLiteral("b_adapt"), rec.nvenc.b_adapt);
+    map_nvenc.insert(QStringLiteral("nonref_p"), rec.nvenc.nonref_p);
+    map_nvenc.insert(QStringLiteral("strict_gop"), rec.nvenc.strict_gop);
+    map_nvenc.insert(QStringLiteral("weighted_pred"), rec.nvenc.weighted_pred);
+    map_nvenc.insert(QStringLiteral("bluray_compat"), rec.nvenc.bluray_compat);
+
+    map_rec.insert(QStringLiteral("nvenc"), map_nvenc);
+    map_rec.insert(QStringLiteral("audio_encoder"), rec.audio_encoder);
+    map_rec.insert(QStringLiteral("audio_bitrate"), rec.audio_bitrate);
+    map_rec.insert(QStringLiteral("audio_downmix_to_stereo"), rec.audio_downmix_to_stereo);
+    map_rec.insert(QStringLiteral("video_encoder"), rec.video_encoder);
+    map_rec.insert(QStringLiteral("video_bitrate"), rec.video_bitrate);
+    map_rec.insert(QStringLiteral("crf"), rec.crf);
+    map_rec.insert(QStringLiteral("pixel_format"), rec.pixel_format);
+    map_rec.insert(QStringLiteral("preset"), rec.preset);
+    map_rec.insert(QStringLiteral("half_fps"), rec.half_fps);
+    map_rec.insert(QStringLiteral("direct_stream_copy"), rec.direct_stream_copy);
+    map_rec.insert(QStringLiteral("fill_dropped_frames"), rec.fill_dropped_frames);
+    map_rec.insert(QStringLiteral("downscale"), rec.downscale);
+    map_rec.insert(QStringLiteral("scale_filter"), rec.scale_filter);
+    map_rec.insert(QStringLiteral("color_primaries"), rec.color_primaries);
+    map_rec.insert(QStringLiteral("color_space"), rec.color_space);
+    map_rec.insert(QStringLiteral("color_transfer_characteristic"), rec.color_transfer_characteristic);
+    map_rec.insert(QStringLiteral("color_range"), rec.color_range);
+    map_rec.insert(QStringLiteral("sws_color_space_src"), rec.sws_color_space_src);
+    map_rec.insert(QStringLiteral("sws_color_space_dst"), rec.sws_color_space_dst);
+    map_rec.insert(QStringLiteral("sws_color_range_src"), rec.sws_color_range_src);
+    map_rec.insert(QStringLiteral("sws_color_range_dst"), rec.sws_color_range_dst);
+
+    return map_rec;
+}
+
 QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &device)
 {
     QVariantMap map_root;
@@ -242,7 +363,6 @@ QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &devi
     QVariantMap map_ff;
     QVariantMap map_magewell;
     QVariantMap map_decklink;
-    QVariantMap map_nvenc;
     QVariantMap map_rec;
 
     map_dummy.insert(QStringLiteral("framesize"), device.dummy_device.framesize);
@@ -270,47 +390,7 @@ QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &devi
     map_decklink.insert(QStringLiteral("audio_sample_size"), device.decklink.audio_sample_size);
     map_decklink.insert(QStringLiteral("index"), device.decklink.video_bitdepth);
 
-    map_nvenc.insert(QStringLiteral("enabled"), device.rec.nvenc.enabled);
-    map_nvenc.insert(QStringLiteral("device"), device.rec.nvenc.device);
-    map_nvenc.insert(QStringLiteral("b_frames"), device.rec.nvenc.b_frames);
-    map_nvenc.insert(QStringLiteral("ref_frames"), device.rec.nvenc.ref_frames);
-    map_nvenc.insert(QStringLiteral("b_ref_mode"), device.rec.nvenc.b_ref_mode);
-    map_nvenc.insert(QStringLiteral("gop_size"), device.rec.nvenc.gop_size);
-    map_nvenc.insert(QStringLiteral("qp_i"), device.rec.nvenc.qp_i);
-    map_nvenc.insert(QStringLiteral("qp_p"), device.rec.nvenc.qp_p);
-    map_nvenc.insert(QStringLiteral("qp_b"), device.rec.nvenc.qp_b);
-    map_nvenc.insert(QStringLiteral("aq_mode"), device.rec.nvenc.aq_mode);
-    map_nvenc.insert(QStringLiteral("aq_strength"), device.rec.nvenc.aq_strength);
-    map_nvenc.insert(QStringLiteral("rc_lookahead"), device.rec.nvenc.rc_lookahead);
-    map_nvenc.insert(QStringLiteral("surfaces"), device.rec.nvenc.surfaces);
-    map_nvenc.insert(QStringLiteral("no_scenecut"), device.rec.nvenc.no_scenecut);
-    map_nvenc.insert(QStringLiteral("forced_idr"), device.rec.nvenc.forced_idr);
-    map_nvenc.insert(QStringLiteral("b_adapt"), device.rec.nvenc.b_adapt);
-    map_nvenc.insert(QStringLiteral("nonref_p"), device.rec.nvenc.nonref_p);
-    map_nvenc.insert(QStringLiteral("strict_gop"), device.rec.nvenc.strict_gop);
-    map_nvenc.insert(QStringLiteral("weighted_pred"), device.rec.nvenc.weighted_pred);
-    map_nvenc.insert(QStringLiteral("bluray_compat"), device.rec.nvenc.bluray_compat);
-
-    map_rec.insert(QStringLiteral("nvenc"), map_nvenc);
-    map_rec.insert(QStringLiteral("encoder_audio"), device.rec.encoder_audio);
-    map_rec.insert(QStringLiteral("encoder_video"), device.rec.encoder_video);
-    map_rec.insert(QStringLiteral("pixel_format"), device.rec.pixel_format);
-    map_rec.insert(QStringLiteral("preset"), device.rec.preset);
-    map_rec.insert(QStringLiteral("crf"), device.rec.crf);
-    map_rec.insert(QStringLiteral("bitrate_audio"), device.rec.bitrate_audio);
-    map_rec.insert(QStringLiteral("half_fps"), device.rec.half_fps);
-    map_rec.insert(QStringLiteral("direct_stream_copy"), device.rec.direct_stream_copy);
-    map_rec.insert(QStringLiteral("fill_dropped_frames"), device.rec.fill_dropped_frames);
-    map_rec.insert(QStringLiteral("downscale"), device.rec.downscale);
-    map_rec.insert(QStringLiteral("scale_filter"), device.rec.scale_filter);
-    map_rec.insert(QStringLiteral("color_primaries"), device.rec.color_primaries);
-    map_rec.insert(QStringLiteral("color_space"), device.rec.color_space);
-    map_rec.insert(QStringLiteral("color_transfer_characteristic"), device.rec.color_transfer_characteristic);
-    map_rec.insert(QStringLiteral("color_range"), device.rec.color_range);
-    map_rec.insert(QStringLiteral("sws_color_space_src"), device.rec.sws_color_space_src);
-    map_rec.insert(QStringLiteral("sws_color_space_dst"), device.rec.sws_color_space_dst);
-    map_rec.insert(QStringLiteral("sws_color_range_src"), device.rec.sws_color_range_src);
-    map_rec.insert(QStringLiteral("sws_color_range_dst"), device.rec.sws_color_range_dst);
+    map_rec=recSave(device.rec);
 
     map_root.insert(QStringLiteral("index"), device.index);
     map_root.insert(QStringLiteral("dummy"), map_dummy);
@@ -321,7 +401,6 @@ QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &devi
 
     return map_root;
 }
-
 
 void Settings::setSourceDeviceSettings(Settings::SourceDevice *device, const QVariantMap &map_root)
 {
@@ -335,7 +414,6 @@ void Settings::setSourceDeviceSettings(Settings::SourceDevice *device, const QVa
     QVariantMap map_magewell=map_root.value(QStringLiteral("magewell")).toMap();
     QVariantMap map_decklink=map_root.value(QStringLiteral("decklink")).toMap();
     QVariantMap map_rec=map_root.value(QStringLiteral("rec")).toMap();
-    QVariantMap map_nvenc=map_rec.value(QStringLiteral("nvenc")).toMap();
 
     device->dummy_device.framesize=map_dummy.value(QStringLiteral("framesize"), 0).toUInt();
     device->dummy_device.show_frame_counter=map_dummy.value(QStringLiteral("show_frame_counter"), false).toBool();
@@ -362,49 +440,7 @@ void Settings::setSourceDeviceSettings(Settings::SourceDevice *device, const QVa
     device->decklink.audio_sample_size=map_decklink.value(QStringLiteral("audio_sample_size"), 0).toUInt();
     device->decklink.video_bitdepth=map_decklink.value(QStringLiteral("index"), 0).toUInt();
 
-    device->rec.encoder_audio=map_rec.value(QStringLiteral("encoder_audio"), 0).toInt();
-    device->rec.encoder_video=map_rec.value(QStringLiteral("encoder_video"), 0).toInt();
-    device->rec.pixel_format=map_rec.value(QStringLiteral("pixel_format")).toMap();
-    device->rec.preset=map_rec.value(QStringLiteral("preset")).toMap();
-    device->rec.crf=map_rec.value(QStringLiteral("crf"), 0).toInt();
-    device->rec.bitrate_audio=map_rec.value(QStringLiteral("bitrate_audio"), 48).toInt(); // 48=256kB
-    device->rec.half_fps=map_rec.value(QStringLiteral("half_fps"), 0).toInt();
-    device->rec.direct_stream_copy=map_rec.value(QStringLiteral("direct_stream_copy"), 0).toInt();
-    device->rec.fill_dropped_frames=map_rec.value(QStringLiteral("fill_dropped_frames"), 0).toInt();
-    device->rec.downscale=map_rec.value(QStringLiteral("downscale"), FFEncoder::DownScale::Disabled).toInt();
-    device->rec.scale_filter=map_rec.value(QStringLiteral("scale_filter"), FFEncoder::ScaleFilter::FastBilinear).toInt();
-    device->rec.color_primaries=map_rec.value(QStringLiteral("color_primaries"), 0).toInt();
-    device->rec.color_space=map_rec.value(QStringLiteral("color_space"), 0).toInt();
-    device->rec.color_transfer_characteristic=map_rec.value(QStringLiteral("color_transfer_characteristic"), 0).toInt();
-    device->rec.color_range=map_rec.value(QStringLiteral("color_range"), 0).toInt();
-    device->rec.sws_color_space_src=map_rec.value(QStringLiteral("sws_color_space_src"), 0).toInt();
-    device->rec.sws_color_space_dst=map_rec.value(QStringLiteral("sws_color_space_dst"), 0).toInt();
-    device->rec.sws_color_range_src=map_rec.value(QStringLiteral("sws_color_range_src"), 0).toInt();
-    device->rec.sws_color_range_dst=map_rec.value(QStringLiteral("sws_color_range_dst"), 0).toInt();
-
-    device->rec.pixel_format_current=device->rec.pixel_format.value(QString::number(device->rec.encoder_video), 0).toInt();
-    device->rec.preset_current=device->rec.preset.value(QString::number(device->rec.encoder_video), 0).toInt();
-
-    device->rec.nvenc.enabled=map_nvenc.value(QStringLiteral("enabled"), 0).toInt();
-    device->rec.nvenc.device=map_nvenc.value(QStringLiteral("device"), 0).toInt();
-    device->rec.nvenc.b_frames=map_nvenc.value(QStringLiteral("b_frames"), 0).toInt();
-    device->rec.nvenc.ref_frames=map_nvenc.value(QStringLiteral("ref_frames"), 0).toInt();
-    device->rec.nvenc.b_ref_mode=map_nvenc.value(QStringLiteral("b_ref_mode"), 0).toInt();
-    device->rec.nvenc.gop_size=map_nvenc.value(QStringLiteral("gop_size"), 0).toInt();
-    device->rec.nvenc.qp_i=map_nvenc.value(QStringLiteral("qp_i"), 0).toInt();
-    device->rec.nvenc.qp_p=map_nvenc.value(QStringLiteral("qp_p"), 0).toInt();
-    device->rec.nvenc.qp_b=map_nvenc.value(QStringLiteral("qp_b"), 0).toInt();
-    device->rec.nvenc.aq_mode=map_nvenc.value(QStringLiteral("aq_mode"), 0).toInt();
-    device->rec.nvenc.aq_strength=map_nvenc.value(QStringLiteral("aq_strength"), 0).toInt();
-    device->rec.nvenc.rc_lookahead=map_nvenc.value(QStringLiteral("rc_lookahead"), 0).toInt();
-    device->rec.nvenc.surfaces=map_nvenc.value(QStringLiteral("surfaces"), 0).toInt();
-    device->rec.nvenc.no_scenecut=map_nvenc.value(QStringLiteral("no_scenecut"), 0).toInt();
-    device->rec.nvenc.forced_idr=map_nvenc.value(QStringLiteral("forced_idr"), 0).toInt();
-    device->rec.nvenc.b_adapt=map_nvenc.value(QStringLiteral("b_adapt"), 0).toInt();
-    device->rec.nvenc.nonref_p=map_nvenc.value(QStringLiteral("nonref_p"), 0).toInt();
-    device->rec.nvenc.strict_gop=map_nvenc.value(QStringLiteral("strict_gop"), 0).toInt();
-    device->rec.nvenc.weighted_pred=map_nvenc.value(QStringLiteral("weighted_pred"), 0).toInt();
-    device->rec.nvenc.bluray_compat=map_nvenc.value(QStringLiteral("bluray_compat"), 0).toInt();
+    recLoad(&device->rec, map_rec);
 }
 
 void Settings::checkEncoders()

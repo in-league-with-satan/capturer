@@ -21,11 +21,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define DIALOG_SETUP_H
 
 #include <QDialog>
+#include <QGroupBox>
 
 class QLineEdit;
 class QCheckBox;
+class QTableWidget;
 
 class KeyboardShortcuts;
+class Streams;
 
 class DialogSetup : public QDialog
 {
@@ -46,12 +49,38 @@ private:
     QLineEdit *le_location_videos;
     QCheckBox *cb_simplify_audio_for_send;
 
+    Streams *streams;
+
 #ifdef LIB_QHTTP
 
     QCheckBox *cb_http_server_state;
     QLineEdit *le_http_server_port;
 
 #endif
+};
+
+class Streams : public QGroupBox
+{
+    Q_OBJECT
+
+public:
+    explicit Streams(QWidget *parent=0);
+
+    QVariantList getList() const;
+
+private slots:
+    void itemSelectionChanged();
+    void addRow();
+    void editRow();
+    void removeRow();
+
+private:
+    void addRow(const QString &title, const QString &url);
+
+    QTableWidget *table;
+    QPushButton *b_add;
+    QPushButton *b_remove;
+    QPushButton *b_edit;
 };
 
 #endif // DIALOG_SETUP_H

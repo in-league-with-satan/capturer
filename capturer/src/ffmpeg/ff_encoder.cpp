@@ -202,6 +202,7 @@ static QString add_stream_audio(OutputStream *output_stream, AVFormatContext *fo
 
 
     int source_sample_fmt;
+    int source_channel_layout;
 
     if(cfg.audio_sample_size==16)
         source_sample_fmt=output_stream->av_codec_context->sample_fmt=AV_SAMPLE_FMT_S16;
@@ -218,18 +219,24 @@ static QString add_stream_audio(OutputStream *output_stream, AVFormatContext *fo
 
     switch(cfg.audio_channels_size) {
     case 6:
-        output_stream->av_codec_context->channel_layout=AV_CH_LAYOUT_5POINT1;
+        source_channel_layout=AV_CH_LAYOUT_5POINT1;
         break;
 
     case 8:
-        output_stream->av_codec_context->channel_layout=AV_CH_LAYOUT_7POINT1; // AV_CH_LAYOUT_7POINT1_WIDE_BACK
+        source_channel_layout=AV_CH_LAYOUT_7POINT1; // AV_CH_LAYOUT_7POINT1_WIDE_BACK
         break;
 
     case 2:
     default:
-        output_stream->av_codec_context->channel_layout=AV_CH_LAYOUT_STEREO;
+        source_channel_layout=AV_CH_LAYOUT_STEREO;
         break;
     }
+
+    if(cfg.audio_downmix_to_stereo)
+        output_stream->av_codec_context->channel_layout=AV_CH_LAYOUT_STEREO;
+
+    else
+        output_stream->av_codec_context->channel_layout=source_channel_layout;
 
 
     output_stream->av_codec_context->channels=av_get_channel_layout_nb_channels(output_stream->av_codec_context->channel_layout);
@@ -242,14 +249,14 @@ static QString add_stream_audio(OutputStream *output_stream, AVFormatContext *fo
         output_stream->av_codec_context->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
 
 
-    if(!audio_converter->init(output_stream->av_codec_context->channel_layout, output_stream->av_codec_context->sample_rate, source_sample_fmt,
+    if(!audio_converter->init(source_channel_layout, output_stream->av_codec_context->sample_rate, source_sample_fmt,
                               output_stream->av_codec_context->channel_layout, output_stream->av_codec_context->sample_rate, output_stream->av_codec_context->sample_fmt)) {
         QString err("audio converter init error");
         qCritical().noquote() << err;
         return err;
     }
 
-    audio_buffer->init(source_sample_fmt, output_stream->av_codec_context->channels);
+    audio_buffer->init(source_sample_fmt, av_get_channel_layout_nb_channels(source_channel_layout));
 
     return QStringLiteral("");
 }
@@ -489,13 +496,15 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
 
             output_stream->av_codec_context->gop_size=cfg.nvenc.gop_size;
 
-            if(cfg.nvenc.qp_i==0) {
-                av_opt_set(output_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
+            if(cfg.video_bitrate==0) {
+                if(cfg.nvenc.qp_i==0) {
+                    av_opt_set(output_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
 
-            } else {
-                av_opt_set(output_stream->av_codec_context->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i - 1).toLatin1().constData(), 0);
-                av_opt_set(output_stream->av_codec_context->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p - 1).toLatin1().constData(), 0);
-                av_opt_set(output_stream->av_codec_context->priv_data, "init_qpB", QString::number(cfg.nvenc.qp_b - 1).toLatin1().constData(), 0);
+                } else {
+                    av_opt_set(output_stream->av_codec_context->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i - 1).toLatin1().constData(), 0);
+                    av_opt_set(output_stream->av_codec_context->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p - 1).toLatin1().constData(), 0);
+                    av_opt_set(output_stream->av_codec_context->priv_data, "init_qpB", QString::number(cfg.nvenc.qp_b - 1).toLatin1().constData(), 0);
+                }
             }
 
             switch(cfg.nvenc.aq_mode) {
@@ -542,8 +551,11 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
                 av_opt_set(output_stream->av_codec_context->priv_data, "bluray-compat", "1", 0);
 
         } else {
-            av_opt_set(output_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
-            av_opt_set(output_stream->av_codec_context->priv_data, "rc", "constqp", 0);
+            if(cfg.video_bitrate==0) {
+                av_opt_set(output_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
+                av_opt_set(output_stream->av_codec_context->priv_data, "rc", "constqp", 0);
+            }
+
             av_opt_set(output_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
         }
 
@@ -573,17 +585,19 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
             output_stream->av_codec_context->bit_rate=64*1024*1024;
 
 
-            if(cfg.nvenc.qp_i==0) {
-                av_opt_set(output_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
+            if(cfg.video_bitrate==0) {
+                if(cfg.nvenc.qp_i==0) {
+                    av_opt_set(output_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
 
-                // output_stream->av_codec_context->qmin=cfg.crf;
-                // output_stream->av_codec_context->qmax=cfg.crf;
-                // output_stream->av_codec_context->max_qdiff=out_stream->av_codec_context->qmax - out_stream->av_codec_context->qmin;
+                    // output_stream->av_codec_context->qmin=cfg.crf;
+                    // output_stream->av_codec_context->qmax=cfg.crf;
+                    // output_stream->av_codec_context->max_qdiff=out_stream->av_codec_context->qmax - out_stream->av_codec_context->qmin;
 
-            } else {
-                av_opt_set(output_stream->av_codec_context->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i - 1).toLatin1().constData(), 0);
-                av_opt_set(output_stream->av_codec_context->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p - 1).toLatin1().constData(), 0);
-                av_opt_set(output_stream->av_codec_context->priv_data, "init_qpB", QString::number(cfg.nvenc.qp_b - 1).toLatin1().constData(), 0);
+                } else {
+                    av_opt_set(output_stream->av_codec_context->priv_data, "init_qpI", QString::number(cfg.nvenc.qp_i - 1).toLatin1().constData(), 0);
+                    av_opt_set(output_stream->av_codec_context->priv_data, "init_qpP", QString::number(cfg.nvenc.qp_p - 1).toLatin1().constData(), 0);
+                    av_opt_set(output_stream->av_codec_context->priv_data, "init_qpB", QString::number(cfg.nvenc.qp_b - 1).toLatin1().constData(), 0);
+                }
             }
 
             switch(cfg.nvenc.aq_mode) {
@@ -623,39 +637,56 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
                 av_opt_set(output_stream->av_codec_context->priv_data, "bluray-compat", "1", 0);
 
         } else {
-            av_opt_set(output_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
-            av_opt_set(output_stream->av_codec_context->priv_data, "rc", "constqp", 0);
+            if(cfg.video_bitrate==0) {
+                av_opt_set(output_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
+                av_opt_set(output_stream->av_codec_context->priv_data, "rc", "constqp", 0);
+            }
+
             av_opt_set(output_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
         }
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::qsv_h264) {
-        output_stream->av_codec_context->flags|=AV_CODEC_FLAG_QSCALE;
-        output_stream->av_codec_context->global_quality=FF_QP2LAMBDA*cfg.crf;
+        if(cfg.video_bitrate==0) {
+            output_stream->av_codec_context->flags|=AV_CODEC_FLAG_QSCALE;
+            output_stream->av_codec_context->global_quality=FF_QP2LAMBDA*cfg.crf;
+        }
 
         av_opt_set(output_stream->av_codec_context->priv_data, "look_ahead", "0", 0);
         av_opt_set(output_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::qsv_hevc) {
-        output_stream->av_codec_context->flags|=AV_CODEC_FLAG_QSCALE;
-        output_stream->av_codec_context->global_quality=FF_QP2LAMBDA*cfg.crf;
+        if(cfg.video_bitrate==0) {
+            output_stream->av_codec_context->flags|=AV_CODEC_FLAG_QSCALE;
+            output_stream->av_codec_context->global_quality=FF_QP2LAMBDA*cfg.crf;
+        }
 
         av_opt_set(output_stream->av_codec_context->priv_data, "look_ahead", "1", 0);
         av_opt_set(output_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_h264 || cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_hevc) {
-        av_opt_set(output_stream->av_codec_context->priv_data, "rc_mode", "CQP", 0);
-        av_opt_set(output_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
-        // output_stream->av_codec_context->global_quality=cfg.crf;
+        if(cfg.video_bitrate==0) {
+            av_opt_set(output_stream->av_codec_context->priv_data, "rc_mode", "CQP", 0);
+            av_opt_set(output_stream->av_codec_context->priv_data, "qp", QString::number(cfg.crf).toLatin1().constData(), 0);
+            // output_stream->av_codec_context->global_quality=cfg.crf;
+        }
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_vp8 || cfg.video_encoder==FFEncoder::VideoEncoder::vaapi_vp9) {
-        av_opt_set(output_stream->av_codec_context->priv_data, "rc_mode", "CQP", 0);
-        output_stream->av_codec_context->global_quality=cfg.crf;
+        if(cfg.video_bitrate==0) {
+            av_opt_set(output_stream->av_codec_context->priv_data, "rc_mode", "CQP", 0);
+            output_stream->av_codec_context->global_quality=cfg.crf;
+        }
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::ffvhuff) {
         output_stream->av_codec_context->thread_count=QThread::idealThreadCount() - 1;
 
         if(output_stream->av_codec_context->thread_count<=0)
             output_stream->av_codec_context->thread_count=1;
+    }
+
+    if(cfg.video_bitrate!=0) {
+        output_stream->av_codec_context->bit_rate=cfg.video_bitrate*1000;
+        output_stream->av_codec_context->rc_max_rate=cfg.video_bitrate*1000;
+        output_stream->av_codec_context->rc_buffer_size=output_stream->av_codec_context->rc_max_rate*2;
     }
 
     if(cfg.color_primaries>-1)
@@ -1439,7 +1470,8 @@ void FFEncoder::restart(Frame::ptr frame)
 
     Config cfg=context->cfg;
 
-    start_sync->restart();
+    if(start_sync)
+        start_sync->restart();
 
     if(frame->video.data_ptr) {
         cfg.frame_resolution_src=frame->video.size;
@@ -1576,7 +1608,12 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
     format_converter_ff->resetQueues();
 
-    {
+    if(context->enc_num==StreamingMode) {
+        context->filename=(*context->base_filename);
+
+        avformat_alloc_output_context2(&context->av_format_context, nullptr, "flv", nullptr);
+
+    } else {
         QString name;
 
         if(!context->base_filename->isEmpty())
@@ -1592,12 +1629,9 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
         context->filename=QString(QLatin1String("%1/%2.mkv"))
                 .arg(context->store_dir).arg(name);
+
+        avformat_alloc_output_context2(&context->av_format_context, nullptr, "matroska", nullptr);
     }
-
-    // context->filename="/dev/null";
-
-
-    avformat_alloc_output_context2(&context->av_format_context, nullptr, "matroska", nullptr);
 
     if(!context->av_format_context) {
         emit errorString(last_error_string=QStringLiteral("could not deduce output format"));
@@ -1719,7 +1753,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             context->out_stream_audio.pts_next=cfg.audio_dalay/1000.*context->out_stream_audio.av_codec_context->sample_rate;
     }
 
-    start_sync->add(context->enc_num);
+    if(start_sync)
+        start_sync->add(context->enc_num);
 
     emit stateChanged(true);
 
@@ -1791,9 +1826,11 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
     if(!context->canAcceptFrame())
         return false;
 
-    if(!start_sync->isReady()) {
-        start_sync->setReady(context->enc_num);
-        return false;
+    if(start_sync) {
+        if(!start_sync->isReady()) {
+            start_sync->setReady(context->enc_num);
+            return false;
+        }
     }
 
 
