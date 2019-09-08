@@ -118,8 +118,9 @@ HRESULT DeckLinkCaptureDelegate::VideoInputFrameArrived(IDeckLinkVideoInputFrame
     return S_OK;
 }
 
-DeckLinkThread::DeckLinkThread(QObject *parent)
+DeckLinkThread::DeckLinkThread(int device_index, QObject *parent)
     : QThread(parent)
+    , SourceInterface(device_index)
 {
     type_flags=TypeFlag::audio | TypeFlag::video;
 
@@ -377,6 +378,7 @@ void DeckLinkThread::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fram
 
         frame->video.pts=frame->audio.pts=frame_time/frame_duration;
         frame->video.time_base=frame->audio.time_base={ (int)frame_duration, (int)frame_scale };
+        frame->device_index=device_index;
 
         //
 

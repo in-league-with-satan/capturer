@@ -69,8 +69,10 @@ public:
         };
     };
 
-    SourceInterface() {
+    SourceInterface(int device_index) {
         type_flags=0;
+
+        this->device_index=device_index;
 
         pixel_format=PixelFormat::undefined;
         framerate={ 60000, 1000 };
@@ -242,6 +244,8 @@ public:
 
 protected:
     QList <FrameBuffer<Frame::ptr>::ptr> subscription_list;
+
+    int device_index;
 
     std::atomic <bool> signal_lost;
 

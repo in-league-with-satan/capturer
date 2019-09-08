@@ -99,7 +99,7 @@ MainWindow::MainWindow(QObject *parent)
     connect(nv_tools, SIGNAL(stateChanged(NvState)), http_server, SLOT(setNvState(NvState)), Qt::QueuedConnection);
 
 
-    encoder_streaming=new FFEncoderThread(FFEncoder::StreamingMode, &enc_streaming_url, nullptr, QString(), QString("capturer %1").arg(VERSION_STRING), this);
+    encoder_streaming=new FFEncoderThread(FFEncoder::StreamingMode, &enc_streaming_url, &enc_start_sync, QString(), QString("capturer %1").arg(VERSION_STRING), this);
 
 
     if(!settings->main.headless) {
@@ -299,19 +299,19 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
         break;
 
     case SourceInterface::Type::dummy:
-        (*device)=new DummyDevice();
+        (*device)=new DummyDevice(index);
         break;
 
     case SourceInterface::Type::ffmpeg:
-        (*device)=new FFSource();
+        (*device)=new FFSource(index);
         break;
 
     case SourceInterface::Type::magewell:
-        (*device)=new MagewellDevice();
+        (*device)=new MagewellDevice(index);
         break;
 
     case SourceInterface::Type::decklink:
-        (*device)=new DeckLinkThread();
+        (*device)=new DeckLinkThread(index);
         break;
 
     default:
@@ -762,6 +762,7 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
     }
 
     (*device)->subscribe(encoder->frameBuffer());
+    (*device)->subscribe(encoder_streaming->frameBuffer());
     (*device)->subscribe(audio_sender->frameBuffer());
 
     if(index==0) {
@@ -2315,6 +2316,8 @@ void MainWindow::startStopRecording()
     FFEncoderThread *enc=nullptr;
     SourceInterface *dev=nullptr;
 
+    uint32_t active_src_devices=0;
+
     for(int i=0; i<stream.size(); ++i) {
         enc=stream[i].encoder;
         dev=stream[i].source_device;
@@ -2324,6 +2327,8 @@ void MainWindow::startStopRecording()
 
         if(!dev->gotSignal())
             continue;
+
+        active_src_devices|=1 << i;
 
         FFEncoder::Config cfg;
 
@@ -2365,6 +2370,12 @@ void MainWindow::startStopRecording()
         enc_start_sync.add(i);
     }
 
+    if(encoder_streaming->isWorking()) {
+        qInfo() << "encoder_streaming->stopCoder";
+        encoder_streaming->stopCoder();
+        return;
+    }
+
     if(!settings_model->valueData(&settings->streaming.url_index).toString().isEmpty()) {
         dev=stream[0].source_device;
 
@@ -2377,6 +2388,8 @@ void MainWindow::startStopRecording()
         FFEncoder::Config cfg;
 
         AVRational framerate=dev->currentFramerate();
+
+        cfg.active_src_devices=active_src_devices;
 
         cfg.framerate=FFEncoder::calcFps(framerate.num, framerate.den, settings->streaming.rec.half_fps);
 

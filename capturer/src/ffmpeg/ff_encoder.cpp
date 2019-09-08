@@ -26,6 +26,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <iostream>
 
+#include "audio_buffer.h"
+#include "audio_mixer.h"
 #include "ff_tools.h"
 #include "ff_format_converter_multithreaded.h"
 #include "ff_audio_converter.h"
@@ -34,42 +36,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "ff_encoder.h"
 
-class AudioBuffer
-{
-    QByteArray ba_data;
-    int channels=0;
-    int bytes_per_sample=0;
-
-public:
-    void init(int sample_fmt, int channels) {
-        ba_data.clear();
-        bytes_per_sample=av_get_bytes_per_sample((AVSampleFormat)sample_fmt);
-        this->channels=channels;
-    }
-
-    void put(uint8_t *data, int size) {
-        ba_data.append((char*)data, size);
-    }
-
-    QByteArray get(int size) {
-        const int size_available=std::min(ba_data.size(), size);
-        QByteArray ba_result=ba_data.left(size_available);
-        ba_data.remove(0, size_available);
-        return ba_result;
-    }
-
-    QByteArray getSamples(int samples_count) {
-        return get(samples_count*channels*bytes_per_sample);
-    }
-
-    int size() const {
-        return ba_data.size();
-    }
-
-    int sizeSamples() const {
-        return ba_data.size()/(channels*bytes_per_sample);
-    }
-};
 
 struct OutputStream
 {
@@ -112,6 +78,7 @@ struct FFMpegContext
 
     AudioConverter audio_converter;
     AudioBuffer audio_buffer;
+    AudioMixer audio_mixer;
 
     OutputStream out_stream_video;
     OutputStream out_stream_audio;
@@ -154,7 +121,7 @@ static int interleaved_write_frame(AVFormatContext *format_context, AVRational *
     return av_interleaved_write_frame(format_context, packet);
 }
 
-static QString add_stream_audio(OutputStream *output_stream, AVFormatContext *format_context, AVCodec **codec, AudioConverter *audio_converter, AudioBuffer *audio_buffer, const FFEncoder::Config &cfg)
+static QString add_stream_audio(OutputStream *output_stream, AVFormatContext *format_context, AVCodec **codec, AudioConverter *audio_converter, AudioBuffer *audio_buffer, AudioMixer *audio_mixer, const FFEncoder::Config &cfg)
 {
     if(cfg.audio_encoder==FFEncoder::AudioEncoder::pcm) {
         AVCodecID codec_id=AV_CODEC_ID_PCM_S16LE;
@@ -201,8 +168,8 @@ static QString add_stream_audio(OutputStream *output_stream, AVFormatContext *fo
         output_stream->av_codec_context->compression_level=12;
 
 
-    int source_sample_fmt;
-    int source_channel_layout;
+    int source_sample_fmt=-1;
+    int source_channel_layout=-1;
 
     if(cfg.audio_sample_size==16)
         source_sample_fmt=output_stream->av_codec_context->sample_fmt=AV_SAMPLE_FMT_S16;
@@ -216,6 +183,7 @@ static QString add_stream_audio(OutputStream *output_stream, AVFormatContext *fo
 
 
     output_stream->av_codec_context->sample_rate=48000;
+
 
     switch(cfg.audio_channels_size) {
     case 6:
@@ -257,6 +225,8 @@ static QString add_stream_audio(OutputStream *output_stream, AVFormatContext *fo
     }
 
     audio_buffer->init(source_sample_fmt, av_get_channel_layout_nb_channels(source_channel_layout));
+
+    audio_mixer->init(48000, AV_SAMPLE_FMT_S16, av_get_channel_layout_nb_channels(source_channel_layout), cfg.active_src_devices);
 
     return QStringLiteral("");
 }
@@ -1470,7 +1440,7 @@ void FFEncoder::restart(Frame::ptr frame)
 
     Config cfg=context->cfg;
 
-    if(start_sync)
+    if(start_sync && context->enc_num!=StreamingMode)
         start_sync->restart();
 
     if(frame->video.data_ptr) {
@@ -1673,7 +1643,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
 
 
     if(cfg.input_type_flags&SourceInterface::TypeFlag::audio && cfg.audio_sample_size!=0) {
-        last_error_string=add_stream_audio(&context->out_stream_audio, context->av_format_context, &context->av_codec_audio, &context->audio_converter, &context->audio_buffer, cfg);
+        last_error_string=add_stream_audio(&context->out_stream_audio, context->av_format_context, &context->av_codec_audio, &context->audio_converter, &context->audio_buffer, &context->audio_mixer, cfg);
 
         if(!last_error_string.isEmpty()) {
             emit errorString(last_error_string);
@@ -1753,7 +1723,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             context->out_stream_audio.pts_next=cfg.audio_dalay/1000.*context->out_stream_audio.av_codec_context->sample_rate;
     }
 
-    if(start_sync)
+    if(start_sync && context->enc_num!=StreamingMode)
         start_sync->add(context->enc_num);
 
     emit stateChanged(true);
@@ -1827,14 +1797,17 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
         return false;
 
     if(start_sync) {
-        if(!start_sync->isReady()) {
+        if(context->enc_num==StreamingMode && !start_sync->isReady()) {
+            return false;
+
+        } else if(!start_sync->isReady()) {
             start_sync->setReady(context->enc_num);
             return false;
         }
     }
 
 
-    if(!checkFrameParams(frame)) {
+    if(frame->device_index==context->enc_num && !checkFrameParams(frame)) {
         restart(frame);
         return false;
     }
@@ -1847,8 +1820,13 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
             processAudio(frame);
 
 
+    if(context->enc_num==StreamingMode && frame->device_index!=0)
+        return true;
+
+
     if((context->cfg.input_type_flags&SourceInterface::TypeFlag::video)==0)
         return true;
+
 
     if(context->cfg.direct_stream_copy) {
         if(!frame->video.av_packet) {
@@ -1949,7 +1927,17 @@ void FFEncoder::processAudio(Frame::ptr frame)
         return;
 
     if(frame->audio.data_size) {
-        context->audio_buffer.put(frame->audio.data_ptr, frame->audio.data_size);
+        if(context->enc_num==StreamingMode) {
+            context->audio_mixer.processFrame(frame);
+
+            QByteArray ba_mix=context->audio_mixer.get();
+
+            context->audio_buffer.put((uint8_t*)ba_mix.constData(), ba_mix.size());
+
+        } else {
+            context->audio_buffer.put(frame->audio.data_ptr, frame->audio.data_size);
+        }
+
 
         // frame->audio.pts=AV_NOPTS_VALUE;
 

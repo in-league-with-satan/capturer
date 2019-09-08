@@ -33,8 +33,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "magewell_device.h"
 
 
-MagewellDevice::MagewellDevice(QObject *parent)
+MagewellDevice::MagewellDevice(int device_index, QObject *parent)
     : QThread(parent)
+    , SourceInterface(device_index)
     , d(nullptr)
 {
     type_flags=TypeFlag::audio | TypeFlag::video;
@@ -281,7 +282,7 @@ bool MagewellDevice::isActive()
 
 void MagewellDevice::run()
 {
-    d=new MagewellDeviceWorker();
+    d=new MagewellDeviceWorker(&device_index);
 
     d->moveToThread(this);
 

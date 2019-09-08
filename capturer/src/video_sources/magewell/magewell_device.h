@@ -39,7 +39,7 @@ class MagewellDevice : public QThread, public SourceInterface
     Q_INTERFACES(SourceInterface)
 
 public:
-    explicit MagewellDevice(QObject *parent=0);
+    explicit MagewellDevice(int device_index, QObject *parent=0);
     ~MagewellDevice();
 
     Type::T type() const;

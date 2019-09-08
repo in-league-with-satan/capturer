@@ -219,6 +219,8 @@ public:
         AVRational framerate_force={ 0, 0 };
         uint32_t input_type_flags=0;
 
+        uint32_t active_src_devices=0;
+
         int sws_color_space_src=SWS_CS_DEFAULT;
         int sws_color_space_dst=SWS_CS_DEFAULT;
 
