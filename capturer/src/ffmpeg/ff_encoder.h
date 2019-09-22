@@ -29,10 +29,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "frame.h"
 #include "ff_encoder_base_filename.h"
 
-extern "C" {
-#include <libavformat/avformat.h>
-}
-
 struct FFMpegContext;
 class FFFormatConverter;
 class FFFormatConverterMt;
@@ -147,6 +143,27 @@ public:
         static QList <FFEncoder::VideoEncoder::T> list();
     };
 
+    struct AudioEncoder {
+        enum T {
+            pcm,
+            flac,
+            opus,
+            vorbis,
+            aac
+        };
+
+        static QString toString(uint32_t enc);
+        static QString toEncName(uint32_t enc);
+
+        static uint64_t fromString(QString value);
+
+        static QList <FFEncoder::AudioEncoder::T> list();
+
+        static AVSampleFormat sampleFmt(uint32_t enc);
+
+        static bool setBitrate(uint32_t enc);
+    };
+
     struct DownScale {
         enum T {
             Disabled,
@@ -186,10 +203,13 @@ public:
         uint8_t audio_channels_size=8;
         uint8_t audio_sample_size=16;
         int audio_dalay=0;
-        bool audio_flac=false;
+        AudioEncoder::T audio_encoder;
+        int audio_bitrate=256;
+        int audio_downmix_to_stereo=0;
         bool direct_stream_copy=false;
         bool fill_dropped_frames=false;
         uint8_t crf;
+        int video_bitrate=0;
         uint8_t downscale=DownScale::Disabled;
         int scale_filter=ScaleFilter::FastBilinear;
         PixelFormat pixel_format_src;
@@ -198,6 +218,8 @@ public:
         QString preset;
         AVRational framerate_force={ 0, 0 };
         uint32_t input_type_flags=0;
+
+        uint32_t active_src_devices=0;
 
         int sws_color_space_src=SWS_CS_DEFAULT;
         int sws_color_space_dst=SWS_CS_DEFAULT;
@@ -265,6 +287,10 @@ public:
 
     QString lastErrorString() const;
 
+    enum {
+        StreamingMode=-1
+    };
+
 public slots:
     bool setConfig(FFEncoder::Config cfg);
 
@@ -274,6 +300,7 @@ public slots:
 
 private slots:
     void processAudio(Frame::ptr frame);
+    void flushAudio();
     void restartExt();
 
 private:

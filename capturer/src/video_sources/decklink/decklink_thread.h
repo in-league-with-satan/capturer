@@ -17,8 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
-#ifndef CAPTURE_H
-#define CAPTURE_H
+#ifndef DECKLINK_THREAD_H
+#define DECKLINK_THREAD_H
 
 #include <QObject>
 #include <QThread>
@@ -52,7 +52,7 @@ class DeckLinkThread : public QThread, public SourceInterface
     friend class DeckLinkCaptureDelegate;
 
 public:
-    explicit DeckLinkThread(QObject *parent=0);
+    explicit DeckLinkThread(int device_index, QObject *parent=0);
     ~DeckLinkThread();
 
     Type::T type() const;
@@ -118,4 +118,4 @@ signals:
     void errorString(QString err_string);
 };
 
-#endif // CAPTURE_H
+#endif // DECKLINK_THREAD_H

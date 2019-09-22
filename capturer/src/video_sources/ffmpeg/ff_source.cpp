@@ -35,8 +35,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 QList <FFDevice::Dev> dev_list;
 
 
-FFSource::FFSource(QObject *parent)
+FFSource::FFSource(int device_index, QObject *parent)
     : QThread(parent)
+    , SourceInterface(device_index)
     , d(nullptr)
 {
     audio_channels=AudioChannels::ch_2;

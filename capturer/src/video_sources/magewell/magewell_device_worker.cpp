@@ -207,8 +207,9 @@ struct MagewellDeviceWorkerContext
 };
 
 
-MagewellDeviceWorker::MagewellDeviceWorker(QObject *parent)
+MagewellDeviceWorker::MagewellDeviceWorker(int *device_index, QObject *parent)
     : QObject(parent)
+    , device_index(device_index)
     , d(new MagewellDeviceWorkerContext())
     , a(new MagewellAudioThread())
 {
@@ -388,7 +389,7 @@ bool MagewellDeviceWorker::step()
         frame->video.data_ptr=(uint8_t*)frame->video.dummy.constData();
         frame->video.data_size=d->frame_buffer_size;
         frame->video.size=d->framesize;
-
+        frame->device_index=(*device_index);
 
         HDMI_INFOFRAME_PACKET hdmi_infoframe_packet;
 
@@ -591,6 +592,7 @@ bool MagewellDeviceWorker::step()
         */
 
         //
+
 
         foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
             buf->append(frame);

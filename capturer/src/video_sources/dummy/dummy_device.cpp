@@ -24,8 +24,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "dummy_device.h"
 
-DummyDevice::DummyDevice(QObject *parent)
+DummyDevice::DummyDevice(int device_index, QObject *parent)
     : QThread(parent)
+    , SourceInterface(device_index)
 {
     type_flags=TypeFlag::video;
 
@@ -119,6 +120,7 @@ void DummyDevice::run()
                 frame->video.dummy.resize(frame->video.data_size);
                 frame->video.data_ptr=(uint8_t*)frame->video.dummy.constData();
                 frame->video.pixel_format=PixelFormat::rgb24;
+                frame->device_index=device_index;
 
                 memcpy(frame->video.data_ptr, img.bits(), frame->video.data_size);
 

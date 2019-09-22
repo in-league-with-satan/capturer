@@ -459,6 +459,8 @@ bool FFSourceWorker::step()
 
             Frame::ptr frame=Frame::make();
 
+            frame->device_index=parent_interface->device_index;
+
             frame->setDataAudio(ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
 
             foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)

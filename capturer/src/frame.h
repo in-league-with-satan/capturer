@@ -119,6 +119,8 @@ struct Frame
 
     } audio;
 
+    int device_index=-1;
+
     uint16_t counter=0;
     bool reset_counter=false;
 };

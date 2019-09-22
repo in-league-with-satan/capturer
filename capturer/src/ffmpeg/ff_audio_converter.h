@@ -22,6 +22,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <QByteArray>
 
+#include "ff_tools.h"
+
 class SwrContext;
 
 class AudioConverter
@@ -41,6 +43,7 @@ public:
     bool convert(void *src, size_t size, QByteArray *dst);
     bool convert(QByteArray *src, QByteArray *dst);
     bool convert(QByteArray *data);
+    AVFrame *convert(void *src, size_t size);
 
     void free();
 
@@ -53,6 +56,9 @@ public:
     uint64_t outChannels() const;
     int64_t outSampleRate() const;
     int64_t outSampleFormat() const;
+
+    int countOutSamples(int in_samples);
+    int countOutputToInputSamples(int out_samples);
 
 private:
     SwrContext *context;

@@ -54,6 +54,8 @@ private:
         AudioSender *audio_sender=nullptr;
     };
 
+    FFEncoderThread *encoder_streaming=nullptr;
+
     QList <ObjGrp> stream;
 
     SettingsModel *settings_model;
@@ -71,6 +73,8 @@ private:
     HttpServer *http_server;
 
     NvTools *nv_tools;
+
+    FFEncoderBaseFilename enc_streaming_url;
 
     FFEncoderBaseFilename enc_base_filename;
     FFEncStartSync enc_start_sync;

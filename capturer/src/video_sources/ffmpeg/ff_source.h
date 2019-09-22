@@ -39,7 +39,7 @@ class FFSource : public QThread, public SourceInterface
     friend class FFSourceWorker;
 
 public:
-    FFSource(QObject *parent=0);
+    FFSource(int device_index, QObject *parent=0);
     ~FFSource();
 
     Type::T type() const;
