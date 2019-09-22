@@ -445,12 +445,20 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
     }
 
     if(cfg.video_encoder==FFEncoder::VideoEncoder::libx264 || cfg.video_encoder==FFEncoder::VideoEncoder::libx264rgb) {
-        av_opt_set(output_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
-        av_opt_set(output_stream->av_codec_context->priv_data, "crf", QString::number(cfg.crf).toLatin1().constData(), 0);
+        if(cfg.video_bitrate==0) {
+            av_opt_set(output_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
+            av_opt_set(output_stream->av_codec_context->priv_data, "crf", QString::number(cfg.crf).toLatin1().constData(), 0);
+        }
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::nvenc_h264) {
         if(cfg.nvenc.enabled) {
-            av_opt_set(output_stream->av_codec_context->priv_data, "rc", "constqp", 0);
+            if(cfg.video_bitrate==0)
+                av_opt_set(output_stream->av_codec_context->priv_data, "rc", "constqp", 0);
+
+            else
+                av_opt_set(output_stream->av_codec_context->priv_data, "rc", "vbr_hq", 0);
+
+
             av_opt_set(output_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
             if(cfg.nvenc.device!=0)
@@ -531,8 +539,12 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
 
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::nvenc_hevc) {
         if(cfg.nvenc.enabled) {
-            av_opt_set(output_stream->av_codec_context->priv_data, "rc", "constqp", 0);
-            // av_opt_set(output_stream->av_codec_context->priv_data, "rc", "vbr_hq", 0);
+            if(cfg.video_bitrate==0)
+                av_opt_set(output_stream->av_codec_context->priv_data, "rc", "constqp", 0);
+
+            else
+                av_opt_set(output_stream->av_codec_context->priv_data, "rc", "vbr_hq", 0);
+
 
             av_opt_set(output_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
@@ -654,6 +666,7 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
     }
 
     if(cfg.video_bitrate!=0) {
+        // output_stream->av_codec_context->bit_rate_tolerance=0;
         output_stream->av_codec_context->bit_rate=cfg.video_bitrate*1000;
         output_stream->av_codec_context->rc_max_rate=cfg.video_bitrate*1000;
         output_stream->av_codec_context->rc_buffer_size=output_stream->av_codec_context->rc_max_rate*2;
@@ -863,7 +876,7 @@ static QString write_video_packet(AVFormatContext *format_context, OutputStream 
     return QStringLiteral("");
 }
 
-static QString write_video_frame(AVFormatContext *format_context, OutputStream *output_stream, const int64_t &pts)
+QString FFEncoder::write_video_frame(AVFormatContext *format_context, OutputStream *output_stream, const int64_t &pts)
 {
     int ret;
     QString err_string;
@@ -890,6 +903,9 @@ static QString write_video_frame(AVFormatContext *format_context, OutputStream *
         ret=avcodec_receive_packet(output_stream->av_codec_context, output_stream->pkt);
 
         if(ret>=0) {
+            if((context->cfg.video_encoder==VideoEncoder::nvenc_h264 || context->cfg.video_encoder==VideoEncoder::nvenc_hevc) && context->cfg.nvenc.b_ref_mode>0)
+                output_stream->pkt->pts=output_stream->pkt->dts;
+
             err_string=write_video_packet(format_context, output_stream, output_stream->pkt, AV_NOPTS_VALUE);
 
             av_packet_unref(output_stream->pkt);
@@ -1313,7 +1329,7 @@ QString FFEncoder::configString(const FFEncoder::Config &cfg)
             map.insert("scale_filter", ScaleFilter::toString(cfg.scale_filter));
         }
 
-        if(cfg.crf!=0xff)
+        if(cfg.crf!=0xff && cfg.video_bitrate==0)
             map.insert("crf", cfg.crf);
 
         if(cfg.preset!="--")
@@ -1386,15 +1402,17 @@ QString FFEncoder::configString(const FFEncoder::Config &cfg)
                 map.insert("bluray_compat", QVariant());
 
 
-            if(cfg.nvenc.qp_i>0) {
-                map.insert("qp_i", cfg.nvenc.qp_i - 1);
-                map.insert("qp_p", cfg.nvenc.qp_p - 1);
+            if(cfg.video_bitrate==0) {
+                if(cfg.nvenc.qp_i>0) {
+                    map.insert("qp_i", cfg.nvenc.qp_i - 1);
+                    map.insert("qp_p", cfg.nvenc.qp_p - 1);
 
-                if(cfg.video_encoder==VideoEncoder::nvenc_h264 || cfg.video_encoder==VideoEncoder::nvenc_hevc)
-                    map.insert("qp_b", cfg.nvenc.qp_b - 1);
+                    if(cfg.video_encoder==VideoEncoder::nvenc_h264 || cfg.video_encoder==VideoEncoder::nvenc_hevc)
+                        map.insert("qp_b", cfg.nvenc.qp_b - 1);
 
-            } else {
-                map.insert("qp", cfg.crf);
+                } else {
+                    map.insert("qp", cfg.crf);
+                }
             }
         }
     }
@@ -1676,8 +1694,13 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     if(!encoding_tool.isEmpty())
         av_dict_set(&context->av_format_context->metadata, "encoding_tool", encoding_tool.toLatin1().constData(), 0);
 
-    av_dict_set(&context->av_format_context->metadata, "writing_date", QDateTime::fromString(*context->base_filename, "yyyy-MM-dd_hh-mm-ss")
-                .toUTC().toString("UTC yyyy-MM-dd hh:mm:ss").toLatin1().data(), 0);
+    if(context->enc_num==StreamingMode)
+        av_dict_set(&context->av_format_context->metadata, "writing_date", QDateTime::currentDateTimeUtc().toString("UTC yyyy-MM-dd hh:mm:ss").toLatin1().data(), 0);
+
+    else
+        av_dict_set(&context->av_format_context->metadata, "writing_date", QDateTime::fromString(*context->base_filename, "yyyy-MM-dd_hh-mm-ss")
+                    .toUTC().toString("UTC yyyy-MM-dd hh:mm:ss").toLatin1().data(), 0);
+
 
     ret=avformat_write_header(context->av_format_context, &context->opt);
 
@@ -2378,6 +2401,9 @@ int FFEncoder::DownScale::toWidth(uint32_t value)
     case to720:
         return 720;
 
+    case to900:
+        return 900;
+
     case to1080:
         return 1080;
 
@@ -2396,6 +2422,9 @@ QString FFEncoder::DownScale::toString(uint32_t value)
     switch(value) {
     case to720:
         return QLatin1String("720p");
+
+    case to900:
+        return QLatin1String("900p");
 
     case to1080:
         return QLatin1String("1080p");

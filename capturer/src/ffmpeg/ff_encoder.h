@@ -30,6 +30,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "ff_encoder_base_filename.h"
 
 struct FFMpegContext;
+struct OutputStream;
 class FFFormatConverter;
 class FFFormatConverterMt;
 class DecklinkFrameConverter;
@@ -168,6 +169,7 @@ public:
         enum T {
             Disabled,
             to720,
+            to900,
             to1080,
             to1440,
             to1800
@@ -313,6 +315,8 @@ private:
     void restart(Frame::ptr frame);
 
     void fillDroppedFrames(int size);
+
+    QString write_video_frame(AVFormatContext *format_context, OutputStream *output_stream, const int64_t &pts);
 
     FFMpegContext *context;
     FFFormatConverterMt *format_converter_ff;
