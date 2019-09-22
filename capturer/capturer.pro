@@ -31,11 +31,11 @@ CONFIG += c++14
 CONFIG -= qtquickcompiler
 
 
-DESTDIR = $$PWD/../bin
+!defined(DESTDIR, var): DESTDIR = $$PWD/../bin
 
 
 GIT_HASH = $$system(git --git-dir $$PWD/../.git log -1 --pretty=format:%h)
-GIT_LAST_TAG = $$system(git --git-dir $$PWD/../.git describe --abbrev=0 --tags)
+GIT_LAST_TAG = $$system(git --git-dir $$PWD/../.git describe --tags `git rev-list --tags --max-count=1`)
 GIT_CMT_COUNT = $$system(git --git-dir $$PWD/../.git rev-list '$$GIT_LAST_TAG'.. --count)
 
 VERSION_APP = $$GIT_LAST_TAG"."$$GIT_CMT_COUNT-$$GIT_HASH

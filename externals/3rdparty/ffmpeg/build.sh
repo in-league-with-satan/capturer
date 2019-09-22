@@ -168,7 +168,7 @@ build_ff() {
     ./configure --prefix="$PATH_BASE" --extra-libs="-lpthread -lstdc++" --extra-cflags="-I$PATH_BASE/include $str_opt" --extra-ldflags="-L$PATH_BASE/lib" --bindir="$PATH_BASE/bin" --pkg-config-flags="--static" \
       --enable-pic \
       --enable-gpl \
-      --enable-nonfree \
+      --disable-nonfree \
       --enable-nvenc \
       --enable-cuvid \
       --disable-libmfx \
