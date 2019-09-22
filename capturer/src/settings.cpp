@@ -279,6 +279,7 @@ void Settings::recLoad(Settings::Rec *rec, QVariantMap map_rec)
     rec->sws_color_space_dst=map_rec.value(QStringLiteral("sws_color_space_dst"), 0).toInt();
     rec->sws_color_range_src=map_rec.value(QStringLiteral("sws_color_range_src"), 0).toInt();
     rec->sws_color_range_dst=map_rec.value(QStringLiteral("sws_color_range_dst"), 0).toInt();
+    rec->aspect_ratio_4_3=map_rec.value(QStringLiteral("aspect_ratio_4_3"), 0).toInt();
 
     rec->pixel_format_current=rec->pixel_format.value(QString::number(rec->video_encoder), 0).toInt();
     rec->preset_current=rec->preset.value(QString::number(rec->video_encoder), 0).toInt();
@@ -352,6 +353,7 @@ QVariantMap Settings::recSave(const Settings::Rec &rec)
     map_rec.insert(QStringLiteral("sws_color_space_dst"), rec.sws_color_space_dst);
     map_rec.insert(QStringLiteral("sws_color_range_src"), rec.sws_color_range_src);
     map_rec.insert(QStringLiteral("sws_color_range_dst"), rec.sws_color_range_dst);
+    map_rec.insert(QStringLiteral("aspect_ratio_4_3"), rec.aspect_ratio_4_3);
 
     return map_rec;
 }

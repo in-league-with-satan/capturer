@@ -73,6 +73,7 @@ public:
         int sws_color_space_dst;
         int sws_color_range_src;
         int sws_color_range_dst;
+        int aspect_ratio_4_3;
         FFEncoder::Config::NVEnc nvenc;
         QVariantMap pixel_format;
         QVariantMap preset;

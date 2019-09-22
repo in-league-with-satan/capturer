@@ -1070,6 +1070,17 @@ void recAddModel(QList <SettingsModel::Data> *list_set_model_data, Settings::Rec
     set_model_data.values_data.clear();
 
     set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="4:3 display aspect ratio";
+    set_model_data.value=&rec->aspect_ratio_4_3;
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::checkbox;
     set_model_data.name="direct stream copy (for mjpeg or h264)";
     set_model_data.value=&rec->direct_stream_copy;
 
@@ -2364,6 +2375,7 @@ void MainWindow::startStopRecording()
         cfg.sws_color_range_src=swsColorRange::toff(settings->source_device[i].rec.sws_color_range_src);
         cfg.sws_color_range_dst=swsColorRange::toff(settings->source_device[i].rec.sws_color_range_dst);
         cfg.nvenc=settings->source_device[i].rec.nvenc;
+        cfg.aspect_ratio_4_3=settings->source_device[i].rec.aspect_ratio_4_3;
         cfg.input_type_flags=dev->typeFlags();
 
         enc->setConfig(cfg);
@@ -2421,6 +2433,7 @@ void MainWindow::startStopRecording()
         cfg.sws_color_range_src=swsColorRange::toff(settings->streaming.rec.sws_color_range_src);
         cfg.sws_color_range_dst=swsColorRange::toff(settings->streaming.rec.sws_color_range_dst);
         cfg.nvenc=settings->streaming.rec.nvenc;
+        cfg.aspect_ratio_4_3=settings->streaming.rec.aspect_ratio_4_3;
         cfg.input_type_flags=dev->typeFlags();
 
         enc_streaming_url=settings_model->valueData(&settings->streaming.url_index).toString();

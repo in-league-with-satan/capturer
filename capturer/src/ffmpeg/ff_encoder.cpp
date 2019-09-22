@@ -690,6 +690,11 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
         av_stream_add_side_data(output_stream->av_stream, AV_PKT_DATA_MASTERING_DISPLAY_METADATA, (uint8_t*)mastering_display_metadata, sizeof(AVMasteringDisplayMetadata));
     }
 
+    if(cfg.aspect_ratio_4_3) {
+        output_stream->av_codec_context->sample_aspect_ratio={ 3, 4 };
+        output_stream->av_stream->sample_aspect_ratio={ 3, 4 };
+    }
+
     if(format_context->oformat->flags & AVFMT_GLOBALHEADER)
         output_stream->av_codec_context->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
 

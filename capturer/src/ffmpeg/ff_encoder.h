@@ -236,6 +236,8 @@ public:
 
         AVMasteringDisplayMetadata mastering_display_metadata={};
 
+        int aspect_ratio_4_3=0;
+
         struct NVEnc {
             int enabled=false;
             int device=0;
