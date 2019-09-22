@@ -69,6 +69,84 @@ build_nasm() {
   fi
 }
 
+build_ogg() {
+  build_required=1
+
+  cd $PATH_BUILD
+
+  if [ ! -e ogg ]; then
+    git clone --depth 1 https://github.com/xiph/ogg.git
+    cd ogg
+
+  else
+    cd ogg
+    git reset --hard
+    git clean -dfx
+    git pull | grep "$git_up_to_date" && build_required=0
+  fi
+
+  if [ "$build_required" -eq "1" ]; then
+    build_counter=$((build_counter + 1))
+
+    ./autogen.sh
+    CFLAGS="$str_opt" ./configure --prefix="$PATH_BASE" --disable-shared CFLAGS="$str_opt"
+    make -j$cpu_count
+    make install
+  fi
+}
+
+build_vorbis() {
+  build_required=1
+
+  cd $PATH_BUILD
+
+  if [ ! -e vorbis ]; then
+    git clone --depth 1 https://github.com/xiph/vorbis.git
+    cd vorbis
+
+  else
+    cd vorbis
+    git reset --hard
+    git clean -dfx
+    git pull | grep "$git_up_to_date" && build_required=0
+  fi
+
+  if [ "$build_required" -eq "1" ]; then
+    build_counter=$((build_counter + 1))
+
+    ./autogen.sh
+    CFLAGS="$str_opt" LDFLAGS="-L$PATH_BASE/lib" CPPFLAGS="-I$PATH_BASE/include" ./configure --prefix="$PATH_BASE" --with-ogg="$PATH_BASE" --disable-shared CFLAGS="$str_opt"
+    make -j$cpu_count
+    make install
+  fi
+}
+
+build_opus() {
+  build_required=1
+
+  cd $PATH_BUILD
+
+  if [ ! -e opus ]; then
+    git clone --depth 1 https://github.com/xiph/opus.git
+    cd opus
+
+  else
+    cd opus
+    git reset --hard
+    git clean -dfx
+    git pull | grep "$git_up_to_date" && build_required=0
+  fi
+
+  if [ "$build_required" -eq "1" ]; then
+    build_counter=$((build_counter + 1))
+
+    autoreconf -fiv
+    CFLAGS="$str_opt" ./configure --prefix="$PATH_BASE" --disable-shared CFLAGS="$str_opt"
+    make -j$cpu_count
+    make install
+  fi
+}
+
 build_x264() {
   build_required=1
 
@@ -146,7 +224,6 @@ build_nv_headers() {
   fi
 }
 
-
 build_ff() {
   build_required=1
 
@@ -171,8 +248,10 @@ build_ff() {
       --disable-nonfree \
       --enable-nvenc \
       --enable-cuvid \
-      --disable-libmfx \
+      --enable-libopus \
+      --enable-libvorbis \
       --enable-libx264 \
+      --disable-libmfx \
       --disable-libfreetype \
       --disable-crystalhd \
       --enable-vaapi \
@@ -200,6 +279,9 @@ build_ff() {
 
 
 build_nasm
+build_ogg
+build_vorbis
+build_opus
 build_x264
 build_nv_headers
 #build_mfx_dispatch

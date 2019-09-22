@@ -5,7 +5,7 @@ linux {
     LIBS += -L$$PWD/lib
 
     LIBS += -lavdevice -lavfilter -lpostproc -lavformat -lavcodec -lavutil -lswscale -lswresample
-    LIBS += -ldl -lx264
+    LIBS += -ldl -lopus -lvorbis -lvorbisenc -logg -lx264
     LIBS += -lva -lva-drm
     # LIBS += -lmfx
 }
