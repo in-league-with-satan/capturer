@@ -35,7 +35,8 @@ CONFIG -= qtquickcompiler
 
 
 GIT_HASH = $$system(git --git-dir $$PWD/../.git log -1 --pretty=format:%h)
-GIT_LAST_TAG = $$system(git --git-dir $$PWD/../.git describe --tags `git rev-list --tags --max-count=1`)
+GIT_TAG_REV = $$system(git rev-list --tags --max-count=1)
+GIT_LAST_TAG = $$system(git --git-dir $$PWD/../.git describe --tags $$GIT_TAG_REV)
 GIT_CMT_COUNT = $$system(git --git-dir $$PWD/../.git rev-list '$$GIT_LAST_TAG'.. --count)
 
 VERSION_APP = $$GIT_LAST_TAG"."$$GIT_CMT_COUNT-$$GIT_HASH
