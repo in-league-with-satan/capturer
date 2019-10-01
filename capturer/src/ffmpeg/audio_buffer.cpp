@@ -17,42 +17,75 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
+#include <QDebug>
 #include "ff_tools.h"
 
 #include "audio_buffer.h"
 
 void AudioBuffer::init(int sample_fmt, int channels)
 {
-    ba_data.clear();
+    data.clear();
+    data_size=0;
     bytes_per_sample=av_get_bytes_per_sample((AVSampleFormat)sample_fmt);
     this->channels=channels;
 }
 
-void AudioBuffer::put(uint8_t *data, int size)
+void AudioBuffer::put(uint8_t *data, int size, int64_t pts, AVRational time_base)
 {
-    ba_data.append((char*)data, size);
+    this->data.append({ QByteArray((char*)data, size), pts, time_base });
+    data_size+=size;
 }
 
-QByteArray AudioBuffer::get(int size)
+AudioBuffer::AudioData AudioBuffer::get(int size)
 {
-    const int size_available=std::min(ba_data.size(), size);
-    QByteArray ba_result=ba_data.left(size_available);
-    ba_data.remove(0, size_available);
-    return ba_result;
+    AudioData dres;
+    AudioData dtmp;
+
+    int size_available=0;
+
+    while(!data.isEmpty()) {
+        dtmp=data.takeFirst();
+
+        if(dres.pts==AV_NOPTS_VALUE)
+            dres.pts=dtmp.pts;
+
+        size_available=std::min(dtmp.data.size(), size - dres.data.size());
+
+        dres.data.append(dtmp.data.left(size_available));
+
+        if(dtmp.data.size()>size_available) {
+            dtmp.data.remove(0, size_available);
+
+            if(dtmp.pts!=AV_NOPTS_VALUE)
+                dtmp.pts+=av_rescale_q(size_available/(channels*bytes_per_sample), { 1, 48000 }, dtmp.time_base);
+
+            data.prepend(dtmp);
+        }
+
+        if(dres.data.size()==size) {
+            data_size-=dres.data.size();
+
+            return dres;
+        }
+    }
+
+    data_size-=dres.data.size();
+
+    return dres;
 }
 
-QByteArray AudioBuffer::getSamples(int samples_count)
+AudioBuffer::AudioData AudioBuffer::getSamples(int samples_count)
 {
     return get(samples_count*channels*bytes_per_sample);
 }
 
 int AudioBuffer::size() const
 {
-    return ba_data.size();
+    return data_size;
 }
 
 int AudioBuffer::sizeSamples() const
 {
-    return ba_data.size()/(channels*bytes_per_sample);
+    return data_size/(channels*bytes_per_sample);
 }
 

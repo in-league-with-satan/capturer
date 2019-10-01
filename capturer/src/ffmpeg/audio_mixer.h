@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define AUDIO_MIXER_H
 
 #include "frame.h"
+#include "audio_buffer.h"
 
 struct AudioMixerContext;
 
@@ -36,7 +37,7 @@ public:
 
     void clear();
 
-    QByteArray get();
+    AudioBuffer::AudioData get();
 
 private:
     void mix();

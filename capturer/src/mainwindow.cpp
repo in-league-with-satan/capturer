@@ -2503,7 +2503,7 @@ void MainWindow::encoderBufferOverload()
 {
     // ff_enc_primary->stopCoder();
 
-    emit messenger->errorString("encoder buffer overload, recording stopped");
+    // emit messenger->errorString("encoder buffer overload, recording stopped");
 }
 
 void MainWindow::previewPrimaryOnOff()

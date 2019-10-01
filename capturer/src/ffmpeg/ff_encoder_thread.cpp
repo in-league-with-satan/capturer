@@ -129,9 +129,19 @@ void FFEncoderThread::run()
 
             frame.reset();
 
-            while(frame_buffer->size().first>=50) {
-                ffmpeg->appendFrame(frame_buffer->take()->copyFrameSoundOnly());
+            while(frame_buffer->size().first>=frame_buffer->size().second*.33) {
+                frame=frame_buffer->take();
+
+                if(frame) {
+                    if(frame->video.data_ptr && frame->audio.data_ptr)
+                        ffmpeg->appendFrame(frame->copyFrameSoundOnly());
+
+                    else if(frame->audio.data_ptr)
+                        ffmpeg->appendFrame(frame);
+                }
             }
+
+            QCoreApplication::processEvents();
         }
 
         QCoreApplication::processEvents();
