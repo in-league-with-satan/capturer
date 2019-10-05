@@ -351,3 +351,16 @@ void SettingsModel::removeGroup(QString group)
     }
 }
 
+int SettingsModel::countGroup(QString group)
+{
+    int size=0;
+
+    for(int i=0; i<d.size(); ++i) {
+        if(d[i].group==group) {
+            size++;
+        }
+    }
+
+    return size;
+}
+

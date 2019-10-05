@@ -71,7 +71,7 @@ MainWindow::MainWindow(QObject *parent)
 
     nv_tools=new NvTools(this);
 
-    const QStringList cuda_devices=nv_tools->availableDevices();
+    cuda_devices=nv_tools->availableDevices();
 
     if(!cuda_devices.isEmpty())
         nv_tools->monitoringStart(0);
@@ -168,7 +168,7 @@ MainWindow::MainWindow(QObject *parent)
     //
 
     if(!settings->streaming.url.isEmpty()) {
-        set_model_data.group="streaming";
+        set_model_data.group="streaming_hdr";
 
         set_model_data.type=SettingsModel::Type::title;
         set_model_data.name="streaming";
@@ -201,11 +201,13 @@ MainWindow::MainWindow(QObject *parent)
 
         //
 
-        QList <SettingsModel::Data> list_set_model_data;
+        if(settings->streaming.url_index>0) {
+            QList <SettingsModel::Data> list_set_model_data;
 
-        recAddModel(&list_set_model_data, &settings->streaming.rec, set_model_data.group, cuda_devices);
+            recAddModel(&list_set_model_data, &settings->streaming.rec, "streaming", cuda_devices);
 
-        settings_model->add(list_set_model_data);
+            settings_model->add(list_set_model_data);
+        }
 
         //
 
@@ -2167,6 +2169,24 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
                 settings_model->setData(i, SettingsModel::Role::value, settings->streaming.rec.preset.value(QString::number(settings->streaming.rec.video_encoder), 0), false, true);
 
                 break;
+            }
+        }
+    }
+
+
+    if(data->value==&settings->streaming.url_index) {
+        if(settings->streaming.url_index<1) {
+            settings_model->removeGroup("streaming");
+
+        } else {
+            if(settings_model->countGroup("streaming")<1) {
+                QList <SettingsModel::Data> list_set_model_data;
+
+                recAddModel(&list_set_model_data, &settings->streaming.rec, "streaming", cuda_devices);
+
+                settings_model->insert(&settings->streaming.url_index, list_set_model_data);
+
+                updateEncList();
             }
         }
     }
