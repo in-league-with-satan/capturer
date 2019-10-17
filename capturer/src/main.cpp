@@ -88,8 +88,15 @@ int main(int argc, char *argv[])
         // AttachConsole(ATTACH_PARENT_PROCESS);
         AllocConsole();
 
+        freopen("CONIN$", "r", stdin);
         freopen("CONOUT$", "w", stdout);
         freopen("CONOUT$", "w", stderr);
+
+        HANDLE h_stdin=CreateFileA("CONIN$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        HANDLE h_stdout=CreateFileA("CONOUT$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+        SetStdHandle(STD_INPUT_HANDLE, h_stdin);
+        SetStdHandle(STD_OUTPUT_HANDLE, h_stdout);
 
 #endif
 

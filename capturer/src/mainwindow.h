@@ -38,16 +38,21 @@ class Server;
 class HttpServer;
 class SettingsModel;
 class NvTools;
+class TermGui;
 
 class MainWindow : public QObject
 {
     Q_OBJECT
+
+    friend class TermGui;
 
 public:
     MainWindow(QObject *parent=0);
     ~MainWindow();
 
 private:
+    bool recInProgress();
+
     struct ObjGrp {
         SourceInterface *source_device=nullptr;
         FFEncoderThread *encoder=nullptr;
@@ -78,6 +83,8 @@ private:
 
     FFEncoderBaseFilename enc_base_filename;
     FFEncStartSync enc_start_sync;
+
+    TermGui *term=nullptr;
 
 protected:
     virtual bool eventFilter(QObject *object, QEvent *event);

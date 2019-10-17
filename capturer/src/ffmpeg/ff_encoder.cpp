@@ -2100,6 +2100,8 @@ void FFEncoder::calcStats()
 
     Stats s;
 
+    s.enc_num=context->enc_num;
+
     if(context->out_stream_audio.av_stream) {
         double cf_a=av_stream_get_end_pts(context->out_stream_audio.av_stream)*av_q2d(context->out_stream_audio.av_stream->time_base);
 

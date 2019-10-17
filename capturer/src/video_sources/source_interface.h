@@ -238,6 +238,16 @@ public:
 
     //
 
+    virtual QString currentFormat() {
+        return current_format;
+    }
+
+    virtual QString currentDeviceName() {
+        return current_dev_name;
+    }
+
+    //
+
     virtual void signalLost(bool value)=0;
     virtual void formatChanged(QString format)=0;
     virtual void errorString(QString err_string)=0;
@@ -256,6 +266,8 @@ protected:
     std::atomic <QSize> framesize;
     std::atomic <bool> half_fps;
     Protect <AVMasteringDisplayMetadata> mastering_display_metadata;
+    Protect <QString> current_format;
+    Protect <QString> current_dev_name;
 
     std::atomic <AudioSampleSize::T> audio_sample_size;
     std::atomic <AudioChannels::T> audio_channels;
