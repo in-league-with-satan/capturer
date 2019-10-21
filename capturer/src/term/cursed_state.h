@@ -24,6 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QTime>
 
 #include "cursed_widget.h"
+#include "data_types.h"
 
 class CursedState : public CursedWidget
 {
@@ -48,6 +49,8 @@ public:
     void setFreeSpace(qint64 size);
     void setRecDuration(QTime time);
 
+    void setNvState(const NvState &state);
+
     void update();
 
 private slots:
@@ -61,6 +64,8 @@ private:
 
     qint64 free_space=0;
     QTime rec_duration;
+
+    NvState nv_state;
 };
 
 #endif // CURSED_STATE_H

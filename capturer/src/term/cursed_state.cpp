@@ -68,6 +68,11 @@ void CursedState::setRecDuration(QTime time)
     rec_duration=time;
 }
 
+void CursedState::setNvState(const NvState &state)
+{
+    nv_state=state;
+}
+
 QVector <int> CursedState::colsWidth(const QVector <double> &col_spreading, const QVector <int> &col_width) const
 {
     QVector <int> result;
@@ -185,10 +190,40 @@ void CursedState::update()
 
     int row=0;
 
+    //
+
     fillRow(QStringList() << "free space:" << QString("%1 MB").arg(QLocale().toString(free_space/1024/1024)), row++);
     fillRow(QStringList() << "rec duration:" << rec_duration.toString("hh:mm:ss"), row++);
 
     row++;
+
+    //
+
+    if(!nv_state.dev_name.isEmpty()) {
+        row++;
+
+        val=QStringList()
+                << "dev" << "temp" << "gpu" << "mcu" << "vpu";
+
+        fillRow(val, row++);
+
+        val=QStringList()
+                << nv_state.dev_name
+                << QString("%1°C").arg(nv_state.temperature)
+                << QString("%1%").arg(nv_state.graphic_processing_unit)
+                << QString("%1%").arg(nv_state.memory_controller_unit)
+                << QString("%1%").arg(nv_state.video_processing_unit);
+
+        fillRow(val, row++);
+
+        row++;
+        row++;
+    }
+
+    //
+
+    val=QStringList()
+            << "src" << "format" << "buffer state" << "bitrate" << "size" << "frames dropped";
 
     fillRow(val, row++);
 

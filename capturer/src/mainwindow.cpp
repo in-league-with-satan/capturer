@@ -255,6 +255,7 @@ MainWindow::MainWindow(QObject *parent)
     if(settings->main.headless) {
         term=new TermGui(settings_model, this);
         connect(this, SIGNAL(freeSpace(qint64)), term, SLOT(setFreeSpace(qint64)), Qt::QueuedConnection);
+        connect(nv_tools, SIGNAL(stateChanged(NvState)), term, SLOT(setNvState(NvState)), Qt::QueuedConnection);
     }
 
     for(int i=0; i<settings->source_device.size(); ++i) {

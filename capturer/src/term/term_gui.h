@@ -21,6 +21,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define TERM_GUI_H
 
 #include <QObject>
+
+#include "data_types.h"
 #include "ff_encoder.h"
 
 class CursedTable;
@@ -45,6 +47,7 @@ public slots:
 
     void updateStats(FFEncoder::Stats s);
     void setFreeSpace(qint64 size);
+    void setNvState(const NvState &state);
 
     void reloadDevices();
 

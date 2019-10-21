@@ -408,6 +408,17 @@ void TermGui::setFreeSpace(qint64 size)
 #endif
 }
 
+void TermGui::setNvState(const NvState &state)
+{
+#ifdef LIB_CURSES
+
+    c_state->setNvState(state);
+    c_state->update();
+    c_label->update();
+
+#endif
+}
+
 void TermGui::reloadDevices()
 {
 #ifdef LIB_CURSES
