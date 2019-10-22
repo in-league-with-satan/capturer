@@ -21,25 +21,36 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define AUDIO_BUFFER_H
 
 #include <QByteArray>
+#include <QList>
+
+#include "ff_tools.h"
 
 class AudioBuffer
 {
-    QByteArray ba_data;
-    int channels=0;
-    int bytes_per_sample=0;
-
 public:
+    struct AudioData {
+        QByteArray data;
+        int64_t pts=AV_NOPTS_VALUE;
+        AVRational time_base={ 1, 48000 };
+    };
+
     void init(int sample_fmt, int channels);
 
-    void put(uint8_t *data, int size);
+    void put(uint8_t *data, int size, int64_t pts, AVRational time_base);
 
-    QByteArray get(int size);
+    AudioData get(int size);
 
-    QByteArray getSamples(int samples_count);
+    AudioData getSamples(int samples_count);
 
     int size() const;
 
     int sizeSamples() const;
+
+public:
+    QList <AudioData> data;
+    int channels=0;
+    int bytes_per_sample=0;
+    int64_t data_size=0;
 };
 
 #endif // AUDIO_BUFFER_H

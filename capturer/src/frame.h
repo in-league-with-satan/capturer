@@ -59,6 +59,8 @@ struct Frame
             p->audio.time_base=audio.time_base;
         }
 
+        p->device_index=device_index;
+
         return p;
     }
 

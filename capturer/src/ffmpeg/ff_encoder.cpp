@@ -48,7 +48,6 @@ struct OutputStream
     int64_t pts_next=0;
     int64_t pts_last=AV_NOPTS_VALUE;
     int64_t pts_stats=0;
-    int64_t pts_stab=-1;
 
     QByteArray ba_audio_prev_part;
 
@@ -455,9 +454,11 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
             if(cfg.video_bitrate==0)
                 av_opt_set(output_stream->av_codec_context->priv_data, "rc", "constqp", 0);
 
-            else
-                av_opt_set(output_stream->av_codec_context->priv_data, "rc", "vbr_hq", 0);
-
+            else {
+                // av_opt_set(output_stream->av_codec_context->priv_data, "rc", "vbr_hq", 0);
+                av_opt_set(output_stream->av_codec_context->priv_data, "rc", "cbr", 0);
+                av_opt_set(output_stream->av_codec_context->priv_data, "cbr", "1", 0);
+            }
 
             av_opt_set(output_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
 
@@ -1737,7 +1738,6 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     context->out_stream_video.pts_stats=0;
 
     context->out_stream_audio.pts_next=0;
-    context->out_stream_audio.pts_stab=-1;
     context->out_stream_audio.size_total=0;
 
     context->out_stream_audio.ba_audio_prev_part.clear();
@@ -1954,34 +1954,19 @@ void FFEncoder::processAudio(Frame::ptr frame)
     if(context->cfg.audio_sample_size==0)
         return;
 
+
     if(frame->audio.data_size) {
         if(context->enc_num==StreamingMode) {
             context->audio_mixer.processFrame(frame);
 
-            QByteArray ba_mix=context->audio_mixer.get();
+            AudioBuffer::AudioData dtmp=context->audio_mixer.get();
 
-            context->audio_buffer.put((uint8_t*)ba_mix.constData(), ba_mix.size());
+            context->audio_buffer.put((uint8_t*)dtmp.data.constData(), dtmp.data.size(), dtmp.pts, dtmp.time_base);
 
         } else {
-            context->audio_buffer.put(frame->audio.data_ptr, frame->audio.data_size);
+            context->audio_buffer.put(frame->audio.data_ptr, frame->audio.data_size, frame->audio.pts, frame->audio.time_base);
         }
 
-
-        // frame->audio.pts=AV_NOPTS_VALUE;
-
-        if(frame->audio.pts!=AV_NOPTS_VALUE) {
-            if(context->out_stream_audio.pts_start==AV_NOPTS_VALUE) {
-                context->out_stream_audio.pts_start=frame->audio.pts;
-
-                context->out_stream_audio.pts_last=av_rescale_q(frame->audio.pts - context->out_stream_audio.pts_start,
-                                                                frame->audio.time_base,
-                                                                context->out_stream_audio.av_codec_context->time_base);
-            }
-
-            context->out_stream_audio.pts_next=av_rescale_q(frame->audio.pts - context->out_stream_audio.pts_start,
-                                                            frame->audio.time_base,
-                                                            context->out_stream_audio.av_codec_context->time_base);
-        }
 
         int frame_size=context->out_stream_audio.av_codec_context->frame_size;
 
@@ -1989,23 +1974,34 @@ void FFEncoder::processAudio(Frame::ptr frame)
         //     frame_size=context->audio_buffer.sizeSamples();
 
         while(context->audio_buffer.sizeSamples()>=frame_size) {
-            const QByteArray ba_tmp=context->audio_buffer.getSamples(frame_size);
+            const AudioBuffer::AudioData dtmp=context->audio_buffer.getSamples(frame_size);
 
-            if(ba_tmp.isEmpty()) {
+            if(dtmp.data.isEmpty()) {
                 return;
             }
 
-            AVFrame *frame=context->audio_converter.convert((void*)ba_tmp.constData(), ba_tmp.size());
 
-            if(frame) {
-                if(context->out_stream_audio.pts_next>0 && context->out_stream_audio.pts_stab==-1) {
-                    context->out_stream_audio.pts_stab=context->out_stream_audio.pts_next;
 
-                } else if(context->out_stream_audio.pts_stab==-1) {
-                    context->out_stream_audio.pts_stab=0;
+            if(dtmp.pts!=AV_NOPTS_VALUE) {
+                if(context->out_stream_audio.pts_start==AV_NOPTS_VALUE) {
+                    context->out_stream_audio.pts_start=dtmp.pts;
+
+                    context->out_stream_audio.pts_last=av_rescale_q(dtmp.pts - context->out_stream_audio.pts_start,
+                                                                    dtmp.time_base,
+                                                                    context->out_stream_audio.av_codec_context->time_base);
                 }
 
-                context->out_stream_audio.pts_last=frame->pts=context->out_stream_audio.pts_next - context->out_stream_audio.pts_stab;
+                context->out_stream_audio.pts_next=av_rescale_q(dtmp.pts - context->out_stream_audio.pts_start,
+                                                                dtmp.time_base,
+                                                                context->out_stream_audio.av_codec_context->time_base);
+            }
+
+
+            AVFrame *frame=context->audio_converter.convert((void*)dtmp.data.constData(), dtmp.data.size());
+
+            if(frame) {
+                context->out_stream_audio.pts_last=frame->pts=context->out_stream_audio.pts_next;
+
                 context->out_stream_audio.pts_next+=frame->nb_samples;
 
                 const QString last_error_string=write_audio_frame(context->av_format_context, &context->out_stream_audio, frame);
@@ -2023,13 +2019,13 @@ void FFEncoder::processAudio(Frame::ptr frame)
 
 void FFEncoder::flushAudio()
 {
-    const QByteArray ba_tmp=context->audio_buffer.get(context->audio_buffer.size());
+    const AudioBuffer::AudioData dtmp=context->audio_buffer.get(context->audio_buffer.size());
 
-    if(!ba_tmp.isEmpty()) {
-        AVFrame *frame=context->audio_converter.convert((void*)ba_tmp.constData(), ba_tmp.size());
+    if(!dtmp.data.isEmpty()) {
+        AVFrame *frame=context->audio_converter.convert((void*)dtmp.data.constData(), dtmp.data.size());
 
         if(frame) {
-            context->out_stream_audio.pts_last=frame->pts=context->out_stream_audio.pts_next - context->out_stream_audio.pts_stab;
+            context->out_stream_audio.pts_last=frame->pts=context->out_stream_audio.pts_next;
 
             write_audio_frame(context->av_format_context, &context->out_stream_audio, frame);
 

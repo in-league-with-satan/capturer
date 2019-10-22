@@ -91,7 +91,8 @@ void AudioMixer::processFrame(Frame::ptr frame)
     QByteArray ba_dst;
 
     d->converter[frame->device_index].convert(frame->audio.data_ptr, frame->audio.data_size, &ba_dst);
-    d->buffer_input[frame->device_index].put((uint8_t*)ba_dst.constData(), ba_dst.size());
+    d->buffer_input[frame->device_index].put((uint8_t*)ba_dst.constData(), ba_dst.size(), frame->audio.pts, frame->audio.time_base);
+
 
     mix();
 }
@@ -102,7 +103,7 @@ void AudioMixer::clear()
     d->converter.clear();
 }
 
-QByteArray AudioMixer::get()
+AudioBuffer::AudioData AudioMixer::get()
 {
     return d->buffer_output.get(d->buffer_output.size());
 }
@@ -120,36 +121,26 @@ void AudioMixer::mix()
         if(d->active_src_devices&(1 << idx_input))
             samples=std::min(samples, d->buffer_input[idx_input].size()/sample_size);
 
-
-/*
-    QByteArray ba_dst=d->buffer_input[0].get(samples*sample_size);
-
-    int16_t *ptr_dst=(int16_t*)ba_dst.constData();
-
-    for(int idx_input=1; idx_input<(int)d->buffer_input.size(); ++idx_input) {
-        QByteArray ba_src=d->buffer_input[idx_input].get(samples*sample_size);
-
-        int16_t *ptr_src=(int16_t*)ba_src.constData();
-
-        for(int idx_sample=0; idx_sample<samples; ++idx_sample) {
-            ptr_dst[idx_sample]=int16_t(double(ptr_dst[idx_sample] + ptr_src[idx_sample])*.5);
-        }
-    }
-*/
-
+    if(!samples)
+        return;
 
     QByteArray ba_dst;
     ba_dst.resize(samples*sample_size);
 
-    QVector <QByteArray> ba_src_sig;
-
-    ba_src_sig.resize(d->src_amt);
+    QVector <AudioBuffer::AudioData> src_sig;
+    src_sig.resize(d->src_amt);
 
     double sig_sum;
 
+    int64_t pts=AV_NOPTS_VALUE;
+
     for(int idx_input=0; idx_input<d->src_amt; ++idx_input) {
-        if(d->active_src_devices&(1 << idx_input))
-            ba_src_sig[idx_input]=d->buffer_input[idx_input].get(samples*sample_size);
+        if(d->active_src_devices&(1 << idx_input)) {
+            src_sig[idx_input]=d->buffer_input[idx_input].get(samples*sample_size);
+        }
+
+        if(idx_input==0)
+            pts=src_sig[idx_input].pts;
     }
 
     for(int idx_sample=0; idx_sample<samples; ++idx_sample) {
@@ -157,14 +148,29 @@ void AudioMixer::mix()
 
         for(int idx_input=0; idx_input<d->src_amt; ++idx_input) {
             if(d->active_src_devices&(1 << idx_input)) {
-                sig_sum+=((int16_t*)ba_src_sig[idx_input].constData())[idx_sample];
+                sig_sum+=((int16_t*)src_sig[idx_input].data.constData())[idx_sample];
             }
         }
 
         ((int16_t*)ba_dst.constData())[idx_sample]=int16_t(sig_sum/(double)d->src_amt_fact);
     }
 
+    d->buffer_output.put((uint8_t*)ba_dst.constData(), ba_dst.size(), pts, { 1, 48000 });
 
-    d->buffer_output.put((uint8_t*)ba_dst.constData(), ba_dst.size());
+
+    if(d->active_src_devices&0x1) {
+        int size=d->buffer_input[0].size();
+
+        if(size==0) {
+            for(int idx_input=1; idx_input<d->src_amt; ++idx_input) {
+                if(d->active_src_devices&(1 << idx_input)) {
+                    if(d->buffer_input[idx_input].size()>ba_dst.size()*4) {
+                        qInfo() << "try sync" << ba_dst.size() << d->buffer_input[idx_input].size();
+                        d->buffer_input[idx_input].get(d->buffer_input[idx_input].size());
+                    }
+                }
+            }
+        }
+    }
 }
 

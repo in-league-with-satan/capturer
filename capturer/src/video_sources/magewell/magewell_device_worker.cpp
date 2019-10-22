@@ -543,9 +543,8 @@ bool MagewellDeviceWorker::step()
             if(!d->ba_audio.isEmpty()) {
                 frame->setDataAudio(d->ba_audio, a->channels(), a->sampleSize());
 
-                frame->audio.time_base={ 1, 10000000 };
-
-                frame->audio.pts=d->audio_timestamp;
+                frame->audio.time_base={ 1, 48000 };
+                frame->audio.pts=av_rescale_q(frame->video.pts, frame->video.time_base, frame->audio.time_base);
 
             } else {
                 // qDebug() << "no audio";
@@ -560,6 +559,9 @@ bool MagewellDeviceWorker::step()
             if(!d->ba_audio.isEmpty()) {
                 frame->setDataAudio(d->ba_audio, a->channels(), a->sampleSize());
                 frame->video.time_base=d->framerate;
+
+                frame->audio.time_base={ 1, 48000 };
+                frame->audio.pts=av_rescale_q(frame->video.pts, frame->video.time_base, frame->audio.time_base);
             }
 
             break;

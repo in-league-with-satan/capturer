@@ -77,6 +77,8 @@ public:
     void removeRow(int *ptr_value);
     void removeGroup(QString group);
 
+    int countGroup(QString group);
+
 
     struct Type {
         enum {

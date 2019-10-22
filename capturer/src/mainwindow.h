@@ -78,6 +78,7 @@ private:
     HttpServer *http_server;
 
     NvTools *nv_tools;
+    QStringList cuda_devices;
 
     FFEncoderBaseFilename enc_streaming_url;
 
