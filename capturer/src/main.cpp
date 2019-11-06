@@ -78,7 +78,8 @@ int main(int argc, char *argv[])
     bool headless=false;
 
     for(int i=1; i<argc; ++i) {
-        if(QString::compare(QString(argv[i]), QString("--headless"), Qt::CaseInsensitive)==0)
+        if(QString::compare(QString(argv[i]), QString("--headless"), Qt::CaseInsensitive)==0
+                || QString::compare(QString(argv[i]), QString("--headless-curse"), Qt::CaseInsensitive)==0)
             headless=true;
     }
 
@@ -97,6 +98,10 @@ int main(int argc, char *argv[])
 
         SetStdHandle(STD_INPUT_HANDLE, h_stdin);
         SetStdHandle(STD_OUTPUT_HANDLE, h_stdout);
+
+#else
+
+        // setlocale(LC_ALL, "");
 
 #endif
 
@@ -146,6 +151,13 @@ int main(int argc, char *argv[])
 
             endl(stream);
         });
+
+    } else if(application->arguments().contains("--headless-curse", Qt::CaseInsensitive)) {
+#ifdef LIB_CURSES
+
+        qInstallMessageHandler([](QtMsgType, const QMessageLogContext&, const QString&) {});
+
+#endif
     }
 
 

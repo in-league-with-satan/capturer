@@ -254,10 +254,13 @@ MainWindow::MainWindow(QObject *parent)
 
     //
 
-    if(settings->main.headless) {
+    if(settings->main.headless_curse) {
         term=new TermGui(settings_model, this);
         connect(this, SIGNAL(freeSpace(qint64)), term, SLOT(setFreeSpace(qint64)), Qt::QueuedConnection);
         connect(nv_tools, SIGNAL(stateChanged(NvState)), term, SLOT(setNvState(NvState)), Qt::QueuedConnection);
+
+    } else {
+        term=new TermGui(nullptr, this);
     }
 
     for(int i=0; i<settings->source_device.size(); ++i) {
@@ -265,7 +268,7 @@ MainWindow::MainWindow(QObject *parent)
         settingsModelDataChanged(settings_model->data_p_index(&settings->source_device[i].index), 0, 0);
     }
 
-    if(settings->main.headless) {
+    if(settings->main.headless_curse) {
         term->run();
     }
 }
@@ -2217,6 +2220,8 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
                 updateEncList();
             }
         }
+
+        QMetaObject::invokeMethod(dynamic_cast<QObject*>(term), "reloadDevices", Qt::QueuedConnection);
     }
 
     if(data->value==&settings->streaming.rec.pixel_format_current)
@@ -2536,7 +2541,7 @@ void MainWindow::updateEncList()
         settings_model->data_p(&settings->streaming.rec.video_encoder);
 
     if(!set_model_data) {
-        qCritical() << "set_model_data null pointer streamin ";
+        qCritical() << "set_model_data null pointer streaming";
         return;
     }
 
@@ -2552,6 +2557,8 @@ void MainWindow::updateEncList()
 
     QMetaObject::invokeMethod(dynamic_cast<QObject*>(this), "settingsModelDataChanged", Qt::QueuedConnection,
                               Q_ARG(int, settings_model->data_p_index(&settings->streaming.rec.video_encoder)), Q_ARG(int, 0), Q_ARG(bool, false));
+
+    QMetaObject::invokeMethod(dynamic_cast<QObject*>(term), "updateSettingsForm", Qt::QueuedConnection);
 }
 
 void MainWindow::encoderBufferOverload()
@@ -2582,8 +2589,11 @@ void MainWindow::encoderStateChanged(bool state)
 {
     http_server->setRecState(state);
 
-    if(settings->main.headless) {
+    if(settings->main.headless_curse) {
         term->update();
+    }
+
+    if(settings->main.headless) {
         return;
     }
 

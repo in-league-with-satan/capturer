@@ -35,15 +35,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "term_gui.h"
 
 #ifdef LIB_CURSES
+#  include <curses.h>
+#  include <panel.h>
 #  ifdef __linux__
-#    include <ncursesw/curses.h>
-#    include <ncursesw/panel.h>
 #    include <termios.h>
 #    include <unistd.h>
      termios term_attr;
-#  else
-#    include "curses.h"
-#    include "panel.h"
 #  endif
 
 WINDOW *window_glob=nullptr;
@@ -54,7 +51,11 @@ TermGui::TermGui(SettingsModel *settings_model, MainWindow *mw)
     : QObject(mw)
     , mw(mw)
     , mode(Mode::title)
+    , running(false)
 {
+    if(!settings_model)
+        return;
+
 #ifdef LIB_CURSES
 
 #  ifdef __linux__
@@ -138,6 +139,18 @@ void TermGui::update()
 #endif
 }
 
+void TermGui::updateSettingsForm()
+{
+#ifdef LIB_CURSES
+
+    if(!running)
+        return;
+
+    c_settings->update();
+
+#endif
+}
+
 void TermGui::buildForm()
 {
 #ifdef LIB_CURSES
@@ -205,6 +218,36 @@ void TermGui::onDownArrow()
 
     case Mode::setup:
         c_settings->cursorDown();
+        break;
+
+    default:
+        break;
+    }
+}
+
+void TermGui::onPageUpArrow()
+{
+    switch(mode) {
+    case Mode::title:
+        break;
+
+    case Mode::setup:
+        c_settings->cursorPageUp();
+        break;
+
+    default:
+        break;
+    }
+}
+
+void TermGui::onPageDownArrow()
+{
+    switch(mode) {
+    case Mode::title:
+        break;
+
+    case Mode::setup:
+        c_settings->cursorPageDown();
         break;
 
     default:
@@ -299,6 +342,14 @@ void TermGui::run()
                 onDownArrow();
                 break;
 
+            case KEY_PPAGE:
+                onPageUpArrow();
+                break;
+
+            case KEY_NPAGE:
+                onPageDownArrow();
+                break;
+
             case KEY_LEFT:
                 onLeftArrow();
                 break;
@@ -339,8 +390,9 @@ void TermGui::run()
             c_settings->update();
             c_label->update();
 
-            qApp->processEvents();
         }
+
+        qApp->processEvents();
     }
 
     delete mw;
@@ -367,6 +419,9 @@ void TermGui::stopCurses()
 void TermGui::updateStats(FFEncoder::Stats s)
 {
 #ifdef LIB_CURSES
+
+    if(!running)
+        return;
 
     CursedState::Dev d;
 
@@ -401,6 +456,9 @@ void TermGui::setFreeSpace(qint64 size)
 {
 #ifdef LIB_CURSES
 
+    if(!running)
+        return;
+
     c_state->setFreeSpace(size);
     c_state->update();
     c_label->update();
@@ -412,6 +470,9 @@ void TermGui::setNvState(const NvState &state)
 {
 #ifdef LIB_CURSES
 
+    if(!running)
+        return;
+
     c_state->setNvState(state);
     c_state->update();
     c_label->update();
@@ -422,6 +483,9 @@ void TermGui::setNvState(const NvState &state)
 void TermGui::reloadDevices()
 {
 #ifdef LIB_CURSES
+
+    if(!running)
+        return;
 
     c_state->clear();
 

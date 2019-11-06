@@ -20,13 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDebug>
 
 #ifdef LIB_CURSES
-#  ifdef __linux__
-#    include <ncursesw/curses.h>
-#    include <ncursesw/panel.h>
-#  else
-#    include "curses.h"
-#    include "panel.h"
-#  endif
+#include <curses.h>
+#include <panel.h>
 #endif
 
 #include "utf8_draw.h"
@@ -82,15 +77,66 @@ int CursedSettings::cursorDown()
     return index_selection;
 }
 
+int CursedSettings::cursorPageUp()
+{
+#ifdef LIB_CURSES
+
+    WINDOW *w=(WINDOW*)win();
+
+    int max_y, max_x;
+
+    getmaxyx(w, max_y, max_x);
+
+    max_y--;
+
+    index_selection-=max_y;
+
+    if(index_selection<0)
+        index_selection=settings_model->rowCount() - 1;
+
+    checkIndex(false);
+
+    update();
+
+#endif
+
+    return index_selection;
+}
+
+int CursedSettings::cursorPageDown()
+{
+#ifdef LIB_CURSES
+
+    WINDOW *w=(WINDOW*)win();
+
+    int max_y, max_x;
+
+    getmaxyx(w, max_y, max_x);
+
+    max_y--;
+
+    index_selection+=max_y;
+
+    checkIndex(true);
+
+    update();
+
+#endif
+
+    return index_selection;
+}
+
 void CursedSettings::changeValue(bool forward)
 {
-    if(index_selection<0 || index_selection>=settings_model->rowCount())
+    if(index_selection<0 || index_selection>=settings_model->rowCount()) {
         return;
+    }
 
     SettingsModel::Data *data=settings_model->data_p(index_selection);
 
-    if(!data)
+    if(!data) {
         return;
+    }
 
     if(data->type==SettingsModel::Type::combobox) {
         if(forward)
@@ -115,12 +161,12 @@ void CursedSettings::changeValue(bool forward)
     }
 }
 
-int CursedSettings::cursorLeft()
+void CursedSettings::cursorLeft()
 {
     changeValue(false);
 }
 
-int CursedSettings::cursorRight()
+void CursedSettings::cursorRight()
 {
     changeValue(true);
 }
@@ -357,11 +403,7 @@ void CursedSettings::update()
 
     WINDOW *w=(WINDOW*)win();
 
-#  ifndef __linux__
-
     wclear(w);
-
-#  endif
 
     int max_y, max_x;
 
@@ -453,8 +495,9 @@ void CursedSettings::checkIndex(bool forward)
     while(true) {
         type=settings_model->data(index_selection, SettingsModel::Role::type).toInt();
 
-        if(type!=SettingsModel::Type::title && type!=SettingsModel::Type::divider)
+        if(type!=SettingsModel::Type::title && type!=SettingsModel::Type::divider) {
             return;
+        }
 
         if(forward) {
             index_selection++;

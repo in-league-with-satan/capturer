@@ -58,8 +58,14 @@ QString filename()
 Settings::Settings(QObject *parent) :
     QObject(parent)
 {
-    if(qApp->arguments().contains("--headless"))
+    if(qApp->arguments().contains("--headless")) {
         main.headless=1;
+    }
+
+    if(qApp->arguments().contains("--headless-curse")) {
+        main.headless=1;
+        main.headless_curse=1;
+    }
 }
 
 bool Settings::load()

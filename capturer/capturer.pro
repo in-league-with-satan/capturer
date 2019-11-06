@@ -92,7 +92,7 @@ include($$PWD/../externals/3rdparty/ffmpeg/ffmpeg.pri)
 include($$PWD/../externals/3rdparty/http_server.pri)
 include($$PWD/../externals/3rdparty/magewell_capture_sdk/magewell.pri)
 include($$PWD/../externals/3rdparty/decklink.pri)
-include($$PWD/../externals/3rdparty/pdcurses.pri)
+include($$PWD/../externals/3rdparty/curses.pri)
 
 INCLUDEPATH += \
     $$PWD/../shared

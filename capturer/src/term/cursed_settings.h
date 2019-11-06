@@ -38,8 +38,12 @@ public:
 
     int cursorUp();
     int cursorDown();
-    int cursorLeft();
-    int cursorRight();
+
+    int cursorPageUp();
+    int cursorPageDown();
+
+    void cursorLeft();
+    void cursorRight();
 
     void update();
 

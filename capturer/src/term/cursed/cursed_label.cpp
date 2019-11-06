@@ -20,13 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDebug>
 
 #ifdef LIB_CURSES
-#  ifdef __linux__
-#    include <ncursesw/curses.h>
-#    include <ncursesw/panel.h>
-#  else
-#    include "curses.h"
-#    include "panel.h"
-#  endif
+#include <curses.h>
+#include <panel.h>
 #endif
 
 #include "utf8_draw.h"
@@ -70,11 +65,7 @@ void CursedLabel::update()
 
     WINDOW *w=(WINDOW*)win();
 
-#  ifndef __linux__
-
     wclear(w);
-
-#  endif
 
     int max_y, max_x;
 

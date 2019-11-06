@@ -10,7 +10,7 @@ bash http_server_update.sh
 
 
 cd ffmpeg
-./build.sh
+bash build.sh
 
 
 cd tmp/ffmpeg

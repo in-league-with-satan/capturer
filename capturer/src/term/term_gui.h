@@ -53,6 +53,8 @@ public slots:
 
     void update();
 
+    void updateSettingsForm();
+
 private slots:
     void buildForm();
 
@@ -60,6 +62,10 @@ private slots:
 
     void onUpArrow();
     void onDownArrow();
+
+    void onPageUpArrow();
+    void onPageDownArrow();
+
     void onLeftArrow();
     void onRightArrow();
 

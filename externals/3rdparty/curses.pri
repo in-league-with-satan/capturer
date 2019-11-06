@@ -1,9 +1,12 @@
 # ncurses-devel
 
-linux: exists(/usr/include/ncursesw/curses.h) {
+linux: exists(/usr/include/ncursesw/curses.h) | exists(/usr/include/curses.h) {
     DEFINES += LIB_CURSES
     LIBS += -lncursesw
     LIBS += -lpanel
+
+    INCLUDEPATH += \
+        /usr/include/ncursesw
 }
 
 windows: exists($$PWD/pdcurses/curses.h) {
