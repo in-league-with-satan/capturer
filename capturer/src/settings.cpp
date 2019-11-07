@@ -378,6 +378,7 @@ QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &devi
 
     map_ff.insert(QStringLiteral("name_audio"), device.ff_device.name_audio);
     map_ff.insert(QStringLiteral("name_video"), device.ff_device.name_video);
+    map_ff.insert(QStringLiteral("high_depth_audio"), device.ff_device.high_depth_audio);
     map_ff.insert(QStringLiteral("framesize"), device.ff_device.framesize);
     map_ff.insert(QStringLiteral("framerate"), device.ff_device.framerate);
     map_ff.insert(QStringLiteral("pixel_format"), device.ff_device.pixel_format);
@@ -428,6 +429,7 @@ void Settings::setSourceDeviceSettings(Settings::SourceDevice *device, const QVa
 
     device->ff_device.name_audio=map_ff.value(QStringLiteral("name_audio")).toString();
     device->ff_device.name_video=map_ff.value(QStringLiteral("name_video")).toString();
+    device->ff_device.high_depth_audio=map_ff.value(QStringLiteral("high_depth_audio"), 0).toUInt();
     device->ff_device.framesize=map_ff.value(QStringLiteral("framesize"), 0).toUInt();
     device->ff_device.framerate=map_ff.value(QStringLiteral("framerate"), 0).toUInt();
     device->ff_device.pixel_format=map_ff.value(QStringLiteral("pixel_format"), 0).toUInt();

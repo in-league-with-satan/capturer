@@ -48,6 +48,7 @@ public:
         QSize size;
         AVRational framerate;
         int pixel_format;
+        bool high_depth_audio;
     };
 
     static QStringList availableVideoInput();
@@ -91,7 +92,7 @@ private:
     QMutex mutex;
 
 signals:
-    void setConfig(QSize size, AVRational framerate, int64_t pixel_format);
+    void setConfig(QSize size, AVRational framerate, int64_t pixel_format, bool high_depth_audio);
     void deviceStart();
     void deviceStop();
 

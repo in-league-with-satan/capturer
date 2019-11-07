@@ -177,7 +177,7 @@ void FFSource::setDevice(void *ptr)
     QMutexLocker ml(&mutex);
 
     if(d)
-        d->setConfig(dev->size, dev->framerate, dev->pixel_format);
+        emit setConfig(dev->size, dev->framerate, dev->pixel_format, dev->high_depth_audio);
 
     delete dev;
 }
@@ -335,7 +335,7 @@ void FFSource::run()
     d=new FFSourceWorker(this);
     d->moveToThread(this);
 
-    connect(this, SIGNAL(setConfig(QSize,AVRational,int64_t)), d, SLOT(setConfig(QSize,AVRational,int64_t)), Qt::QueuedConnection);
+    connect(this, SIGNAL(setConfig(QSize,AVRational,int64_t,bool)), d, SLOT(setConfig(QSize,AVRational,int64_t,bool)), Qt::QueuedConnection);
     connect(this, SIGNAL(deviceStart()), d, SLOT(deviceStart()), Qt::QueuedConnection);
     connect(this, SIGNAL(deviceStop()), d, SLOT(deviceStop()), Qt::QueuedConnection);
 
@@ -347,6 +347,7 @@ void FFSource::run()
     connect(d, SIGNAL(signalLost(bool)), SIGNAL(signalLost(bool)), Qt::QueuedConnection);
 
     connect(d, &FFSourceWorker::formatChanged, [this](QString format) { current_format=format; });
+    connect(d, &FFSourceWorker::sampleSizeChanged, [this](int size) { audio_sample_size=(size==16 ? AudioSampleSize::bitdepth_16 : AudioSampleSize::bitdepth_32); });
 
 
     bool is_active;

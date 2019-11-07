@@ -104,6 +104,7 @@ public:
             int reload_devices=0;
             int index_audio=0;
             int index_video=0;
+            int high_depth_audio=0;
             int framesize=0;
             int framerate=0;
             int pixel_format=0;

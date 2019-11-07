@@ -536,6 +536,14 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
         set_model_data.value=&settings_device->ff_device.framerate;
 
         list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="high depth audio";
+        set_model_data.value=&settings_device->ff_device.high_depth_audio;
+
+        list_set_model_data.append(set_model_data);
     }
 
     if(type==SourceInterface::Type::magewell) {
@@ -2285,6 +2293,7 @@ void MainWindow::deviceStart(uint8_t index)
             FFSource::Device *dev=new FFSource::Device();
             FFSource *ff_device=static_cast<FFSource*>(*device);
 
+            dev->high_depth_audio=settings_device->ff_device.high_depth_audio;
             dev->framerate=settings_model->valueData(&settings_device->ff_device.framerate, QVariant::fromValue<AVRational>({ 30000, 1000 })).value<AVRational>();
             dev->pixel_format=settings_model->valueData(&settings_device->ff_device.pixel_format, 0).toInt();
             dev->size=settings_model->valueData(&settings_device->ff_device.framesize, QSize(640, 480)).toSize();
