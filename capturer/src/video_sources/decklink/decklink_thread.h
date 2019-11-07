@@ -97,8 +97,6 @@ private:
 
     BMDPixelFormat bm_pixel_format;
 
-    QString format;
-
     Decklink::Device device;
 
     int64_t frame_scale;
@@ -114,7 +112,7 @@ private:
 
 signals:
     void signalLost(bool value);
-    void formatChanged(QString format);
+    void formatChanged(QString current_format);
     void errorString(QString err_string);
 };
 

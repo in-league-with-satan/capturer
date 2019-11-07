@@ -147,11 +147,13 @@ bool FFSource::setVideoDevice(int index)
     if(index_device_video<0) {
         d->setVideoDevice(FFDevice::Dev());
         type_flags&=~TypeFlag::video;
+        current_dev_name="no video device";
         qDebug() << "no video";
 
     } else {
         d->setVideoDevice(dev_list[index_device_video]);
         type_flags|=TypeFlag::video;
+        current_dev_name=dev_list[index_device_video].name;
         qDebug() << index_device_video << dev_list[index_device_video].name;
     }
 
@@ -343,6 +345,8 @@ void FFSource::run()
     connect(d, SIGNAL(formatChanged(QString)), SIGNAL(formatChanged(QString)), Qt::QueuedConnection);
     connect(d, SIGNAL(errorString(QString)), SIGNAL(errorString(QString)), Qt::QueuedConnection);
     connect(d, SIGNAL(signalLost(bool)), SIGNAL(signalLost(bool)), Qt::QueuedConnection);
+
+    connect(d, &FFSourceWorker::formatChanged, [this](QString format) { current_format=format; });
 
 
     bool is_active;

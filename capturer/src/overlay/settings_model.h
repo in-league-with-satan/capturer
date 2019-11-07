@@ -50,6 +50,7 @@ public:
     virtual int rowCount(const QModelIndex &parent=QModelIndex()) const;
     virtual QVariant data(const QModelIndex &index, int role) const;
     Q_INVOKABLE QVariant data(const int &index, int role) const;
+    Q_INVOKABLE QVariant value(const int &index);
     Q_INVOKABLE void setData(const int &index, int role, QVariant data, bool qml=false, bool block_signal=false);
     Q_INVOKABLE void setData(int *ptr_value, int role, QVariant data, bool qml=false, bool block_signal=false);
 

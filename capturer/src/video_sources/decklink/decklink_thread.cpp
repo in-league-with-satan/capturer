@@ -276,7 +276,7 @@ void DeckLinkThread::deviceResume()
     on_hold=false;
 
     emit signalLost(signal_lost);
-    emit formatChanged(format);
+    emit formatChanged(current_format);
 }
 
 void DeckLinkThread::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayMode *mode, uint32_t format_flags)
@@ -332,15 +332,15 @@ void DeckLinkThread::videoInputFormatChanged(uint32_t events, IDeckLinkDisplayMo
 
     framesize=QSize(mode->GetWidth(), mode->GetHeight());
 
-    format=QString("%1%2@%3 %4")
+    current_format=QString("%1%2@%3 %4")
             .arg(mode->GetHeight())
             .arg(mode->GetFieldDominance()==bmdProgressiveFrame || mode->GetFieldDominance()==bmdProgressiveSegmentedFrame ? "p" : "i")
             .arg(frame_scale/frame_duration)
             .arg(Decklink::BMDPixelFormatToString(bm_pixel_format));
 
-    emit formatChanged(format);
+    emit formatChanged(current_format);
 
-    qDebug().noquote() << format;
+    qDebug().noquote() << current_format;
 
 #endif
 }
@@ -364,7 +364,7 @@ void DeckLinkThread::videoInputFrameArrived(IDeckLinkVideoInputFrame *video_fram
     } else {
         if(signal_lost) {
             emit signalLost(signal_lost=false);
-            emit formatChanged(format);
+            emit formatChanged(current_format);
         }
 
         BMDTimeValue frame_time;

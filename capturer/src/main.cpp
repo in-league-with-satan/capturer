@@ -78,7 +78,8 @@ int main(int argc, char *argv[])
     bool headless=false;
 
     for(int i=1; i<argc; ++i) {
-        if(QString::compare(QString(argv[i]), QString("--headless"), Qt::CaseInsensitive)==0)
+        if(QString::compare(QString(argv[i]), QString("--headless"), Qt::CaseInsensitive)==0
+                || QString::compare(QString(argv[i]), QString("--headless-curse"), Qt::CaseInsensitive)==0)
             headless=true;
     }
 
@@ -88,8 +89,19 @@ int main(int argc, char *argv[])
         // AttachConsole(ATTACH_PARENT_PROCESS);
         AllocConsole();
 
+        freopen("CONIN$", "r", stdin);
         freopen("CONOUT$", "w", stdout);
         freopen("CONOUT$", "w", stderr);
+
+        HANDLE h_stdin=CreateFileA("CONIN$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        HANDLE h_stdout=CreateFileA("CONOUT$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+        SetStdHandle(STD_INPUT_HANDLE, h_stdin);
+        SetStdHandle(STD_OUTPUT_HANDLE, h_stdout);
+
+#else
+
+        // setlocale(LC_ALL, "");
 
 #endif
 
@@ -139,6 +151,13 @@ int main(int argc, char *argv[])
 
             endl(stream);
         });
+
+    } else if(application->arguments().contains("--headless-curse", Qt::CaseInsensitive)) {
+#ifdef LIB_CURSES
+
+        qInstallMessageHandler([](QtMsgType, const QMessageLogContext&, const QString&) {});
+
+#endif
     }
 
 

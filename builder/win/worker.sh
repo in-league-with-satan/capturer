@@ -34,7 +34,7 @@ mv -f ffmpeg-$ffmpeg_version-win64-dev/* externals/3rdparty/ffmpeg
 
 cd externals/3rdparty
 bash http_server_update.sh
-
+bash curses_update.sh
 
 rm -rfd /temp/$dest_dir
 

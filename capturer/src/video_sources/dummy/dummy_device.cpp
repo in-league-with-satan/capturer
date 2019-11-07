@@ -30,6 +30,7 @@ DummyDevice::DummyDevice(int device_index, QObject *parent)
 {
     type_flags=TypeFlag::video;
 
+    current_dev_name="dummy";
     framesize=QSize(1920, 1080);
     framerate=Framerate::toRational(60.);
     pixel_format=PixelFormat::rgb24;
@@ -148,12 +149,16 @@ void DummyDevice::deviceStart()
 {
     running=true;
 
-    emit formatChanged(QString("%1p@60 8BitRGB").arg(framesize.load().height()));
+    current_format=QString("%1p@60 8BitRGB").arg(framesize.load().height());
+
+    emit formatChanged(current_format);
     emit signalLost(false);
 }
 
 void DummyDevice::deviceStop()
 {
+    emit signalLost(true);
+
     running=false;
 }
 
@@ -181,7 +186,9 @@ void DummyDevice::setDevice(void *ptr)
 
     mutex.unlock();
 
-    emit formatChanged(QString("%1p@60 8BitRGB").arg(framesize.load().height()));
+    current_format=QString("%1p@60 8BitRGB").arg(framesize.load().height());
+
+    emit formatChanged(current_format);
 
     delete dev;
 }

@@ -908,6 +908,11 @@ QString FFEncoder::write_video_frame(AVFormatContext *format_context, OutputStre
     while(ret>=0) {
         ret=avcodec_receive_packet(output_stream->av_codec_context, output_stream->pkt);
 
+        if(ret<0 && ret!=AVERROR(EAGAIN)) {
+            err_string=ffErrorString(ret);
+            return err_string;
+        }
+
         if(ret>=0) {
             if((context->cfg.video_encoder==VideoEncoder::nvenc_h264 || context->cfg.video_encoder==VideoEncoder::nvenc_hevc) && context->cfg.nvenc.b_ref_mode>0)
                 output_stream->pkt->pts=output_stream->pkt->dts;
@@ -1922,13 +1927,12 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
             context->out_stream_video.frame_converted=frame_orig;
 
             if(!last_error_string.isEmpty()) {
-                // stopCoder();
-
                 qCritical() << "write_video_frame error: " + last_error_string;
 
                 emit errorString("write_video_frame error: " + last_error_string);
 
-                restart(frame);
+                stopCoder();
+                // restart(frame);
 
                 return false;
             }
@@ -2095,6 +2099,8 @@ void FFEncoder::calcStats()
         return;
 
     Stats s;
+
+    s.enc_num=context->enc_num;
 
     if(context->out_stream_audio.av_stream) {
         double cf_a=av_stream_get_end_pts(context->out_stream_audio.av_stream)*av_q2d(context->out_stream_audio.av_stream->time_base);

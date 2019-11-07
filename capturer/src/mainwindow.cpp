@@ -43,6 +43,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "dummy_device.h"
 #include "nv_tools.h"
 #include "magewell_device.h"
+#include "term_gui.h"
 
 #include "mainwindow.h"
 
@@ -123,6 +124,7 @@ MainWindow::MainWindow(QObject *parent)
         //
 
         connect(encoder_streaming, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
+        connect(encoder_streaming, SIGNAL(stats(FFEncoder::Stats)), term, SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
 
         //
 
@@ -250,9 +252,24 @@ MainWindow::MainWindow(QObject *parent)
         emit signalLost(true);
     }
 
+    //
+
+    if(settings->main.headless_curse) {
+        term=new TermGui(settings_model, this);
+        connect(this, SIGNAL(freeSpace(qint64)), term, SLOT(setFreeSpace(qint64)), Qt::QueuedConnection);
+        connect(nv_tools, SIGNAL(stateChanged(NvState)), term, SLOT(setNvState(NvState)), Qt::QueuedConnection);
+
+    } else {
+        term=new TermGui(nullptr, this);
+    }
+
     for(int i=0; i<settings->source_device.size(); ++i) {
         sourceDeviceAdd();
         settingsModelDataChanged(settings_model->data_p_index(&settings->source_device[i].index), 0, 0);
+    }
+
+    if(settings->main.headless_curse) {
+        term->run();
     }
 }
 
@@ -763,6 +780,12 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
                 SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
     }
 
+    connect(dynamic_cast<QObject*>(*device),
+            SIGNAL(signalLost(bool)), term, SLOT(reloadDevices()), Qt::QueuedConnection);
+
+    connect(dynamic_cast<QObject*>(*device),
+            SIGNAL(formatChanged(QString)), term, SLOT(reloadDevices()), Qt::QueuedConnection);
+
     (*device)->subscribe(encoder->frameBuffer());
     (*device)->subscribe(encoder_streaming->frameBuffer());
     (*device)->subscribe(audio_sender->frameBuffer());
@@ -774,6 +797,8 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
 
         (*device)->subscribe(encoder_streaming->frameBuffer());
     }
+
+    term->reloadDevices();
 }
 
 void recAddModel(QList <SettingsModel::Data> *list_set_model_data, Settings::Rec *rec, const QString &group, const QStringList &cuda_devices)
@@ -1483,6 +1508,8 @@ void MainWindow::sourceDeviceAdd()
         connect(str->encoder, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
     }
 
+    connect(str->encoder, SIGNAL(stats(FFEncoder::Stats)), term, SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
+
     connect(str->encoder, SIGNAL(stateChanged(bool)), SLOT(encoderStateChanged(bool)), Qt::QueuedConnection);
 
     if(!settings->main.headless) {
@@ -1496,6 +1523,8 @@ void MainWindow::sourceDeviceAdd()
     sourceDeviceAddModel(stream.size() - 1);
 
     updateEncList();
+
+    term->reloadDevices();
 }
 
 void MainWindow::sourceDeviceRemove()
@@ -1517,6 +1546,8 @@ void MainWindow::sourceDeviceRemove()
     settings_model->removeGroup(settings->source_device.last().group_settings);
 
     settings->sourceDeviceRemove();
+
+    term->reloadDevices();
 }
 
 bool MainWindow::eventFilter(QObject *object, QEvent *event)
@@ -2189,6 +2220,8 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
                 updateEncList();
             }
         }
+
+        QMetaObject::invokeMethod(dynamic_cast<QObject*>(term), "reloadDevices", Qt::QueuedConnection);
     }
 
     if(data->value==&settings->streaming.rec.pixel_format_current)
@@ -2206,8 +2239,9 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
     if(data->value==&settings->main.source_device_remove)
         sourceDeviceRemove();
 
-    if(!qml)
+    if(!qml) {
         settings_model->updateQml();
+    }
 }
 
 void MainWindow::deviceStart(uint8_t index)
@@ -2320,16 +2354,22 @@ void MainWindow::deviceStop(uint8_t index)
     QMetaObject::invokeMethod(dynamic_cast<QObject*>(stream[index].source_device), "deviceStop", Qt::QueuedConnection);
 }
 
-void MainWindow::startStopRecording()
+bool MainWindow::recInProgress()
 {
-    bool enc_running=false;
+    if(encoder_streaming->isWorking())
+        return true;
 
     for(int i=0; i<stream.size(); ++i) {
         if(stream[i].encoder->isWorking())
-            enc_running=true;
+            return true;
     }
 
-    if(enc_running) {
+    return false;
+}
+
+void MainWindow::startStopRecording()
+{
+    if(recInProgress()) {
         for(int i=0; i<stream.size(); ++i)
             stream[i].encoder->stopCoder();
 
@@ -2501,7 +2541,7 @@ void MainWindow::updateEncList()
         settings_model->data_p(&settings->streaming.rec.video_encoder);
 
     if(!set_model_data) {
-        qCritical() << "set_model_data null pointer streamin ";
+        qCritical() << "set_model_data null pointer streaming";
         return;
     }
 
@@ -2517,6 +2557,8 @@ void MainWindow::updateEncList()
 
     QMetaObject::invokeMethod(dynamic_cast<QObject*>(this), "settingsModelDataChanged", Qt::QueuedConnection,
                               Q_ARG(int, settings_model->data_p_index(&settings->streaming.rec.video_encoder)), Q_ARG(int, 0), Q_ARG(bool, false));
+
+    QMetaObject::invokeMethod(dynamic_cast<QObject*>(term), "updateSettingsForm", Qt::QueuedConnection);
 }
 
 void MainWindow::encoderBufferOverload()
@@ -2547,8 +2589,13 @@ void MainWindow::encoderStateChanged(bool state)
 {
     http_server->setRecState(state);
 
-    if(settings->main.headless)
+    if(settings->main.headless_curse) {
+        term->update();
+    }
+
+    if(settings->main.headless) {
         return;
+    }
 
     messenger->setRecStarted(state);
 

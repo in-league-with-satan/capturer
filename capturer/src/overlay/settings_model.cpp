@@ -101,6 +101,18 @@ QVariant SettingsModel::data(const int &index, int role) const
     return QVariant();
 }
 
+QVariant SettingsModel::value(const int &index)
+{
+    QVariantList value=data(index, Role::values).toList();
+
+    int index_value=data(index, Role::value).toInt();
+
+    if(index_value<0 || value.size()<=index_value)
+        return QVariant();
+
+    return value[index_value];
+}
+
 void SettingsModel::setData(const int &index, int role, QVariant data, bool qml, bool block_signal)
 {
     if(index<0 || index>=d.size())
