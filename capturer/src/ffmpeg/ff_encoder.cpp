@@ -307,6 +307,9 @@ static QString add_stream_video_dsc(OutputStream *output_stream, AVFormatContext
     if(cfg.color_transfer_characteristic>-1)
         output_stream->av_codec_context->color_trc=(AVColorTransferCharacteristic)cfg.color_transfer_characteristic;
 
+    if(cfg.color_range>0)
+        output_stream->av_codec_context->color_range=(AVColorRange)cfg.color_range;
+
     if(format_context->oformat->flags & AVFMT_GLOBALHEADER)
         output_stream->av_codec_context->flags|=AV_CODEC_FLAG_GLOBAL_HEADER;
 
