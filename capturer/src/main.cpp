@@ -92,7 +92,7 @@ void printHelp()
 #endif
     std::cout << "\t" << "--log-file" << std::endl << "\t\t" << "redirect std-err/out to file \"capturer_STARTAPPDATETIME.log\"" << std::endl << std::endl;
     std::cout << "\t" << "--portable-mode" << std::endl << "\t\t" << "store config file in application dir" << std::endl << std::endl;
-    std::cout << "\t" << "--portable-mode=path_to_config_file.json" << std::endl << "\t\t" << "set custom location for config file" << std::endl << std::endl;
+    std::cout << "\t" << "--portable-mode=path_to_dir" << std::endl << "\t\t" << "set custom location for config file" << std::endl << std::endl;
     std::cout << "\t" << "--setup" << std::endl << "\t\t" << "show setup dialog. only in gui mode" << std::endl << std::endl;
     std::cout << "\t" << "--windowed" << std::endl << "\t\t" << "start application windowed. only in gui mode" << std::endl << std::endl;
 }
