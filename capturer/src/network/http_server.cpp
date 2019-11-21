@@ -354,6 +354,7 @@ QString nameToMarker(QString name)
                     .replace(QLatin1Char('-'), QLatin1Char('_'))
                     .replace(QLatin1Char('('), QLatin1Char('_'))
                     .replace(QLatin1Char(')'), QLatin1Char('_'))
+                    .replace(QLatin1Char(':'), QLatin1Char('_'))
                     .toLower();
     }
 

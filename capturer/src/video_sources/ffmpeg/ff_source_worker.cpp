@@ -153,13 +153,14 @@ void FFSourceWorker::setAudioDevice(int index)
     index_device_audio=index;
 }
 
-void FFSourceWorker::setConfig(QSize size, AVRational framerate, int64_t pixel_format)
+void FFSourceWorker::setConfig(QSize size, AVRational framerate, int64_t pixel_format, bool high_depth_audio)
 {
     assert(framerate.num>0);
 
     cfg.size=size;
     cfg.framerate=framerate;
     cfg.pixel_format=pixel_format;
+    cfg.high_depth_audio=high_depth_audio;
 
     // qDebug() << size << framerate.den/framerate.num << pixel_format;
 }
@@ -188,12 +189,27 @@ void FFSourceWorker::deviceStart()
 
             // qInfo() << "supportedSampleSizes" << dev_list[index_device_audio].supportedSampleSizes();
 
+            if(cfg.high_depth_audio) {
+                if(dev_list[index_device_audio].supportedSampleSizes().contains(32))
+                    format.setSampleSize(32);
+            }
+
             if(!dev_list[index_device_audio].isFormatSupported(format)) {
                 qWarning() << "Default format not supported, trying to use the nearest.";
                 qWarning().noquote() << formatString(format);
                 format=dev_list[index_device_audio].nearestFormat(format);
                 qWarning().noquote() << formatString(format);
+            }
 
+            emit sampleSizeChanged(format.sampleSize());
+
+            if(format.sampleSize()==32) {
+                d->audio_converter.init(av_get_default_channel_layout(format.channelCount()),
+                                        format.sampleRate(), qAudioFormatToAV(format.sampleSize(), format.sampleType()),
+                                        av_get_default_channel_layout(default_format.channelCount()),
+                                        default_format.sampleRate(), AV_SAMPLE_FMT_S32);
+
+            } else {
                 d->audio_converter.init(av_get_default_channel_layout(format.channelCount()),
                                         format.sampleRate(), qAudioFormatToAV(format.sampleSize(), format.sampleType()),
                                         av_get_default_channel_layout(default_format.channelCount()),
@@ -459,7 +475,9 @@ bool FFSourceWorker::step()
 
             Frame::ptr frame=Frame::make();
 
-            frame->setDataAudio(ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
+            frame->device_index=parent_interface->device_index;
+
+            frame->setDataAudio(ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize()==16 ? 16 : 32);
 
             foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
                 buf->append(frame);
@@ -531,7 +549,7 @@ bool FFSourceWorker::step()
                                 ba_audio=ba_audio_conv;
                             }
 
-                            frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
+                            frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize()==16 ? 16 : 32);
 
                         } else {
                             frame->setData(ba_frame, QSize(d->frame->width, d->frame->height), QByteArray(), 0, 0);

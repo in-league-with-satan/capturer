@@ -28,14 +28,16 @@ TEMPLATE = app
 
 CONFIG += c++14
 #windows:CONFIG += console
+#CONFIG += console
 CONFIG -= qtquickcompiler
 
 
-DESTDIR = $$PWD/../bin
+!defined(DESTDIR, var): DESTDIR = $$PWD/../bin
 
 
 GIT_HASH = $$system(git --git-dir $$PWD/../.git log -1 --pretty=format:%h)
-GIT_LAST_TAG = $$system(git --git-dir $$PWD/../.git describe --abbrev=0 --tags)
+GIT_TAG_REV = $$system(git rev-list --tags --max-count=1)
+GIT_LAST_TAG = $$system(git --git-dir $$PWD/../.git describe --tags $$GIT_TAG_REV)
 GIT_CMT_COUNT = $$system(git --git-dir $$PWD/../.git rev-list '$$GIT_LAST_TAG'.. --count)
 
 VERSION_APP = $$GIT_LAST_TAG"."$$GIT_CMT_COUNT-$$GIT_HASH
@@ -90,7 +92,7 @@ include($$PWD/../externals/3rdparty/ffmpeg/ffmpeg.pri)
 include($$PWD/../externals/3rdparty/http_server.pri)
 include($$PWD/../externals/3rdparty/magewell_capture_sdk/magewell.pri)
 include($$PWD/../externals/3rdparty/decklink.pri)
-
+include($$PWD/../externals/3rdparty/curses.pri)
 
 INCLUDEPATH += \
     $$PWD/../shared
@@ -109,6 +111,8 @@ INCLUDEPATH += \
     $$PWD/src/overlay \
     $$PWD/src/network \
     $$PWD/src/nv \
+    $$PWD/src/term \
+    $$PWD/src/term/cursed \
     $$PWD/src/video_sources \
     $$PWD/src/video_sources/dummy \
     $$PWD/src/video_sources/ffmpeg \
@@ -122,6 +126,8 @@ SOURCES += \
     $$PWD/src/overlay/*.cpp \
     $$PWD/src/network/*.cpp \
     $$PWD/src/nv/*.cpp \
+    $$PWD/src/term/*.cpp \
+    $$PWD/src/term/cursed/*.cpp \
     $$PWD/src/video_sources/dummy/*.cpp \
     $$PWD/src/video_sources/ffmpeg/*.cpp \
     $$PWD/src/video_sources/magewell/*.cpp \
@@ -134,6 +140,8 @@ HEADERS += \
     $$PWD/src/overlay/*.h \
     $$PWD/src/network/*.h \
     $$PWD/src/nv/*.h \
+    $$PWD/src/term/*.h \
+    $$PWD/src/term/cursed/*.h \
     $$PWD/src/video_sources/*.h \
     $$PWD/src/video_sources/dummy/*.h \
     $$PWD/src/video_sources/ffmpeg/*.h \

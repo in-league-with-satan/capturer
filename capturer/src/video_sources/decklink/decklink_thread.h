@@ -17,8 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
-#ifndef CAPTURE_H
-#define CAPTURE_H
+#ifndef DECKLINK_THREAD_H
+#define DECKLINK_THREAD_H
 
 #include <QObject>
 #include <QThread>
@@ -52,7 +52,7 @@ class DeckLinkThread : public QThread, public SourceInterface
     friend class DeckLinkCaptureDelegate;
 
 public:
-    explicit DeckLinkThread(QObject *parent=0);
+    explicit DeckLinkThread(int device_index, QObject *parent=0);
     ~DeckLinkThread();
 
     Type::T type() const;
@@ -97,8 +97,6 @@ private:
 
     BMDPixelFormat bm_pixel_format;
 
-    QString format;
-
     Decklink::Device device;
 
     int64_t frame_scale;
@@ -114,8 +112,8 @@ private:
 
 signals:
     void signalLost(bool value);
-    void formatChanged(QString format);
+    void formatChanged(QString current_format);
     void errorString(QString err_string);
 };
 
-#endif // CAPTURE_H
+#endif // DECKLINK_THREAD_H

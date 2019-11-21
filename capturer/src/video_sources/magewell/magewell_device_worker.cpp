@@ -207,8 +207,9 @@ struct MagewellDeviceWorkerContext
 };
 
 
-MagewellDeviceWorker::MagewellDeviceWorker(QObject *parent)
+MagewellDeviceWorker::MagewellDeviceWorker(int *device_index, QObject *parent)
     : QObject(parent)
+    , device_index(device_index)
     , d(new MagewellDeviceWorkerContext())
     , a(new MagewellAudioThread())
 {
@@ -388,7 +389,7 @@ bool MagewellDeviceWorker::step()
         frame->video.data_ptr=(uint8_t*)frame->video.dummy.constData();
         frame->video.data_size=d->frame_buffer_size;
         frame->video.size=d->framesize;
-
+        frame->device_index=(*device_index);
 
         HDMI_INFOFRAME_PACKET hdmi_infoframe_packet;
 
@@ -542,9 +543,8 @@ bool MagewellDeviceWorker::step()
             if(!d->ba_audio.isEmpty()) {
                 frame->setDataAudio(d->ba_audio, a->channels(), a->sampleSize());
 
-                frame->audio.time_base={ 1, 10000000 };
-
-                frame->audio.pts=d->audio_timestamp;
+                frame->audio.time_base={ 1, 48000 };
+                frame->audio.pts=av_rescale_q(frame->video.pts, frame->video.time_base, frame->audio.time_base);
 
             } else {
                 // qDebug() << "no audio";
@@ -559,6 +559,9 @@ bool MagewellDeviceWorker::step()
             if(!d->ba_audio.isEmpty()) {
                 frame->setDataAudio(d->ba_audio, a->channels(), a->sampleSize());
                 frame->video.time_base=d->framerate;
+
+                frame->audio.time_base={ 1, 48000 };
+                frame->audio.pts=av_rescale_q(frame->video.pts, frame->video.time_base, frame->audio.time_base);
             }
 
             break;
@@ -591,6 +594,7 @@ bool MagewellDeviceWorker::step()
         */
 
         //
+
 
         foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
             buf->append(frame);

@@ -69,8 +69,10 @@ public:
         };
     };
 
-    SourceInterface() {
+    SourceInterface(int device_index) {
         type_flags=0;
+
+        this->device_index=device_index;
 
         pixel_format=PixelFormat::undefined;
         framerate={ 60000, 1000 };
@@ -236,12 +238,24 @@ public:
 
     //
 
+    virtual QString currentFormat() {
+        return current_format;
+    }
+
+    virtual QString currentDeviceName() {
+        return current_dev_name;
+    }
+
+    //
+
     virtual void signalLost(bool value)=0;
     virtual void formatChanged(QString format)=0;
     virtual void errorString(QString err_string)=0;
 
 protected:
     QList <FrameBuffer<Frame::ptr>::ptr> subscription_list;
+
+    int device_index;
 
     std::atomic <bool> signal_lost;
 
@@ -252,6 +266,8 @@ protected:
     std::atomic <QSize> framesize;
     std::atomic <bool> half_fps;
     Protect <AVMasteringDisplayMetadata> mastering_display_metadata;
+    Protect <QString> current_format;
+    Protect <QString> current_dev_name;
 
     std::atomic <AudioSampleSize::T> audio_sample_size;
     std::atomic <AudioChannels::T> audio_channels;

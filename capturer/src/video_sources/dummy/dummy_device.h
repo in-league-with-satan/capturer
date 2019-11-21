@@ -33,7 +33,7 @@ class DummyDevice : public QThread, public SourceInterface
     Q_INTERFACES(SourceInterface)
 
 public:
-    explicit DummyDevice(QObject *parent=0);
+    explicit DummyDevice(int device_index, QObject *parent=0);
     ~DummyDevice();
 
     Type::T type() const;

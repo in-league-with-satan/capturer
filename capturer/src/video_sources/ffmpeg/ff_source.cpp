@@ -35,8 +35,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 QList <FFDevice::Dev> dev_list;
 
 
-FFSource::FFSource(QObject *parent)
+FFSource::FFSource(int device_index, QObject *parent)
     : QThread(parent)
+    , SourceInterface(device_index)
     , d(nullptr)
 {
     audio_channels=AudioChannels::ch_2;
@@ -146,11 +147,13 @@ bool FFSource::setVideoDevice(int index)
     if(index_device_video<0) {
         d->setVideoDevice(FFDevice::Dev());
         type_flags&=~TypeFlag::video;
+        current_dev_name="no video device";
         qDebug() << "no video";
 
     } else {
         d->setVideoDevice(dev_list[index_device_video]);
         type_flags|=TypeFlag::video;
+        current_dev_name=dev_list[index_device_video].name;
         qDebug() << index_device_video << dev_list[index_device_video].name;
     }
 
@@ -174,7 +177,7 @@ void FFSource::setDevice(void *ptr)
     QMutexLocker ml(&mutex);
 
     if(d)
-        d->setConfig(dev->size, dev->framerate, dev->pixel_format);
+        emit setConfig(dev->size, dev->framerate, dev->pixel_format, dev->high_depth_audio);
 
     delete dev;
 }
@@ -332,7 +335,7 @@ void FFSource::run()
     d=new FFSourceWorker(this);
     d->moveToThread(this);
 
-    connect(this, SIGNAL(setConfig(QSize,AVRational,int64_t)), d, SLOT(setConfig(QSize,AVRational,int64_t)), Qt::QueuedConnection);
+    connect(this, SIGNAL(setConfig(QSize,AVRational,int64_t,bool)), d, SLOT(setConfig(QSize,AVRational,int64_t,bool)), Qt::QueuedConnection);
     connect(this, SIGNAL(deviceStart()), d, SLOT(deviceStart()), Qt::QueuedConnection);
     connect(this, SIGNAL(deviceStop()), d, SLOT(deviceStop()), Qt::QueuedConnection);
 
@@ -342,6 +345,9 @@ void FFSource::run()
     connect(d, SIGNAL(formatChanged(QString)), SIGNAL(formatChanged(QString)), Qt::QueuedConnection);
     connect(d, SIGNAL(errorString(QString)), SIGNAL(errorString(QString)), Qt::QueuedConnection);
     connect(d, SIGNAL(signalLost(bool)), SIGNAL(signalLost(bool)), Qt::QueuedConnection);
+
+    connect(d, &FFSourceWorker::formatChanged, [this](QString format) { current_format=format; });
+    connect(d, &FFSourceWorker::sampleSizeChanged, [this](int size) { audio_sample_size=(size==16 ? AudioSampleSize::bitdepth_16 : AudioSampleSize::bitdepth_32); });
 
 
     bool is_active;

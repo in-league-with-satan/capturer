@@ -56,7 +56,7 @@ public:
     bool step();
 
 public slots:
-    void setConfig(QSize size, AVRational framerate, int64_t pixel_format);
+    void setConfig(QSize size, AVRational framerate, int64_t pixel_format, bool high_depth_audio);
     void deviceStart();
     void deviceStop();
 
@@ -68,6 +68,7 @@ private:
         QSize size;
         AVRational framerate;
         PixelFormat pixel_format;
+        bool high_depth_audio;
 
     } cfg;
 
@@ -88,6 +89,7 @@ signals:
     void signalLost(bool value);
     void formatChanged(QString format);
     void errorString(QString err_string);
+    void sampleSizeChanged(int value);
 };
 
 #endif // FF_SOURCE_WORKER_H

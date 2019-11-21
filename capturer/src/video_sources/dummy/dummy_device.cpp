@@ -24,11 +24,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "dummy_device.h"
 
-DummyDevice::DummyDevice(QObject *parent)
+DummyDevice::DummyDevice(int device_index, QObject *parent)
     : QThread(parent)
+    , SourceInterface(device_index)
 {
     type_flags=TypeFlag::video;
 
+    current_dev_name="dummy";
     framesize=QSize(1920, 1080);
     framerate=Framerate::toRational(60.);
     pixel_format=PixelFormat::rgb24;
@@ -119,6 +121,7 @@ void DummyDevice::run()
                 frame->video.dummy.resize(frame->video.data_size);
                 frame->video.data_ptr=(uint8_t*)frame->video.dummy.constData();
                 frame->video.pixel_format=PixelFormat::rgb24;
+                frame->device_index=device_index;
 
                 memcpy(frame->video.data_ptr, img.bits(), frame->video.data_size);
 
@@ -146,12 +149,16 @@ void DummyDevice::deviceStart()
 {
     running=true;
 
-    emit formatChanged(QString("%1p@60 8BitRGB").arg(framesize.load().height()));
+    current_format=QString("%1p@60 8BitRGB").arg(framesize.load().height());
+
+    emit formatChanged(current_format);
     emit signalLost(false);
 }
 
 void DummyDevice::deviceStop()
 {
+    emit signalLost(true);
+
     running=false;
 }
 
@@ -179,7 +186,9 @@ void DummyDevice::setDevice(void *ptr)
 
     mutex.unlock();
 
-    emit formatChanged(QString("%1p@60 8BitRGB").arg(framesize.load().height()));
+    current_format=QString("%1p@60 8BitRGB").arg(framesize.load().height());
+
+    emit formatChanged(current_format);
 
     delete dev;
 }

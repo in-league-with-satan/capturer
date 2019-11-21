@@ -8,7 +8,7 @@ QT += \
 
 TARGET = remote_audio_output
 
-DEFINES += STATIC_WIN_FF
+#DEFINES += STATIC_WIN_FF
 
 
 TEMPLATE = app

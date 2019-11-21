@@ -60,7 +60,7 @@ StoreLocation::StoreLocation()
     QString portable_path;
 
     foreach(QString arg, qApp->arguments()) {
-        if(arg.startsWith("--portable_mode")) {
+        if(arg.startsWith("--portable-mode")) {
             portable_mode=true;
 
             if(arg.contains("=")) {

@@ -59,6 +59,8 @@ struct Frame
             p->audio.time_base=audio.time_base;
         }
 
+        p->device_index=device_index;
+
         return p;
     }
 
@@ -118,6 +120,8 @@ struct Frame
         QByteArray dummy;
 
     } audio;
+
+    int device_index=-1;
 
     uint16_t counter=0;
     bool reset_counter=false;

@@ -42,6 +42,7 @@ public:
         int preview=1;
         int dummy;
         int headless=0;
+        int headless_curse=0;
         int simplify_audio_for_send=0;
         int source_device_add=0;
         int source_device_remove=0;
@@ -49,6 +50,35 @@ public:
         QVariantMap supported_enc;
 
     } main;
+
+    struct Rec {
+        int check_encoders;
+        int pixel_format_current;
+        int preset_current;
+        int crf;
+        int audio_encoder;
+        int audio_bitrate;
+        int audio_downmix_to_stereo;
+        int video_encoder;
+        int video_bitrate;
+        int half_fps;
+        int direct_stream_copy;
+        int fill_dropped_frames;
+        int downscale;
+        int scale_filter;
+        int color_primaries;
+        int color_space;
+        int color_transfer_characteristic;
+        int color_range;
+        int sws_color_space_src;
+        int sws_color_space_dst;
+        int sws_color_range_src;
+        int sws_color_range_dst;
+        int aspect_ratio_4_3;
+        FFEncoder::Config::NVEnc nvenc;
+        QVariantMap pixel_format;
+        QVariantMap preset;
+    };
 
     struct SourceDevice {
         enum {
@@ -74,6 +104,7 @@ public:
             int reload_devices=0;
             int index_audio=0;
             int index_video=0;
+            int high_depth_audio=0;
             int framesize=0;
             int framerate=0;
             int pixel_format=0;
@@ -102,31 +133,15 @@ public:
 
         } decklink;
 
-        struct Rec {
-            int check_encoders;
-            int pixel_format_current;
-            int preset_current;
-            int crf;
-            int encoder_audio;
-            int encoder_video;
-            int half_fps;
-            int direct_stream_copy;
-            int fill_dropped_frames;
-            int downscale;
-            int scale_filter;
-            int color_primaries;
-            int color_space;
-            int color_transfer_characteristic;
-            int sws_color_space_src;
-            int sws_color_space_dst;
-            int sws_color_range_src;
-            int sws_color_range_dst;
-            FFEncoder::Config::NVEnc nvenc;
-            QVariantMap pixel_format;
-            QVariantMap preset;
-
-        } rec;
+        Rec rec;
     };
+
+    struct Streaming {
+        QVariantList url;
+        int url_index;
+        Rec rec;
+
+    } streaming;
 
     SourceDevice *sourceDevice(uint8_t index);
     SourceDevice *sourceDeviceAdd();
@@ -153,6 +168,9 @@ public:
     void checkEncoders();
 
 private:
+    void recLoad(Settings::Rec *rec, QVariantMap map_rec);
+    QVariantMap recSave(const Settings::Rec &rec);
+
     Settings(QObject *parent=0);
 
     static Settings *_instance;

@@ -213,7 +213,10 @@ void MagewellAudioThread::run()
 
         if(ret!=MW_SUCCEEDED) {
             qCritical() << "MWGetNotifyStatus err" << ret;
-            deviceStart();
+
+            if(d->event_capture!=0)
+                deviceStart();
+
             goto sleep;
         }
 
@@ -414,32 +417,44 @@ void MagewellAudioThread::updateAudioSignalInfo()
     if(MWGetAudioSignalStatus((HCHANNEL)current_channel.load(), &signal_status)!=MW_SUCCEEDED)
         return;
 
-    d->channels=0;
+    int channels=0;
 
     for(int i=0; i<4; ++i) {
         if(signal_status.wChannelValid&(0x01 << i))
-            d->channels+=2;
+            channels+=2;
     }
 
-    if(d->channels<2)
+    if(channels<2)
         return;
 
-    d->sample_size=signal_status.cBitsPerSample;
-    d->sample_size_bytes=(d->sample_size==16 ? 2 : 4);
-
-    d->ba_buffer.resize(MWCAP_AUDIO_SAMPLES_PER_FRAME*d->channels*d->sample_size_bytes);
+    int sample_size=signal_status.cBitsPerSample;
 
     //
 
-    d->readed=0;
-    d->prev_pts=0;
+    if(channels!=d->channels || sample_size!=d->sample_size) {
+        d->channels=channels;
 
-    //
+        d->sample_size=sample_size;
+        d->sample_size_bytes=(d->sample_size==16 ? 2 : 4);
 
-    emit audioSampleSizeChanged(d->sample_size==16 ? SourceInterface::AudioSampleSize::bitdepth_16 : SourceInterface::AudioSampleSize::bitdepth_32);
-    emit audioChannelsChanged((SourceInterface::AudioChannels::T)channels());
+        d->ba_buffer.resize(MWCAP_AUDIO_SAMPLES_PER_FRAME*d->channels*d->sample_size_bytes);
 
-    qInfo().noquote() << signal_status.dwSampleRate << d->sample_size << QString("%1 (%2)").arg(d->channels).arg(channels());
+        //
+
+        d->readed=0;
+        d->prev_pts=0;
+
+        //
+
+        emit audioSampleSizeChanged(d->sample_size==16 ? SourceInterface::AudioSampleSize::bitdepth_16 : SourceInterface::AudioSampleSize::bitdepth_32);
+        emit audioChannelsChanged((SourceInterface::AudioChannels::T)this->channels());
+
+        qInfo().noquote() << signal_status.dwSampleRate << d->sample_size << QString("%1 (%2)").arg(d->channels).arg(this->channels());
+
+    } else {
+        qInfo() << "same audio signal";
+    }
 
 #endif
 }
+

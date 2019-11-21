@@ -43,9 +43,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "dummy_device.h"
 #include "nv_tools.h"
 #include "magewell_device.h"
+#include "term_gui.h"
 
 #include "mainwindow.h"
 
+void recAddModel(QList <SettingsModel::Data> *list_set_model_data, Settings::Rec *rec, const QString &group, const QStringList &cuda_devices);
 
 MainWindow::MainWindow(QObject *parent)
     : QObject(parent)
@@ -70,7 +72,7 @@ MainWindow::MainWindow(QObject *parent)
 
     nv_tools=new NvTools(this);
 
-    const QStringList cuda_devices=nv_tools->availableDevices();
+    cuda_devices=nv_tools->availableDevices();
 
     if(!cuda_devices.isEmpty())
         nv_tools->monitoringStart(0);
@@ -98,6 +100,9 @@ MainWindow::MainWindow(QObject *parent)
     connect(nv_tools, SIGNAL(stateChanged(NvState)), http_server, SLOT(setNvState(NvState)), Qt::QueuedConnection);
 
 
+    encoder_streaming=new FFEncoderThread(FFEncoder::StreamingMode, &enc_streaming_url, &enc_start_sync, QString(), QString("capturer %1").arg(VERSION_STRING), this);
+
+
     if(!settings->main.headless) {
         messenger=new QmlMessenger(settings_model);
 
@@ -115,6 +120,11 @@ MainWindow::MainWindow(QObject *parent)
         //
 
         audio_output=newAudioOutput(this);
+
+        //
+
+        connect(encoder_streaming, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
+        connect(encoder_streaming, SIGNAL(stats(FFEncoder::Stats)), term, SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
 
         //
 
@@ -157,6 +167,61 @@ MainWindow::MainWindow(QObject *parent)
 
     SettingsModel::Data set_model_data;
 
+    //
+
+    if(!settings->streaming.url.isEmpty()) {
+        set_model_data.group="streaming_hdr";
+
+        set_model_data.type=SettingsModel::Type::title;
+        set_model_data.name="streaming";
+        set_model_data.value=&settings->main.dummy;
+
+        settings_model->add(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="service";
+
+        set_model_data.values << "disabled";
+        set_model_data.values_data << "";
+
+        for(int i=0; i<settings->streaming.url.size(); ++i) {
+            QString title=settings->streaming.url[i].toMap().keys().value(0).simplified();
+            QString url=settings->streaming.url[i].toMap().values().value(0).toString().simplified();
+
+            set_model_data.values << title;
+            set_model_data.values_data << url;
+        }
+
+        set_model_data.value=&settings->streaming.url_index;
+
+        settings_model->add(set_model_data);
+
+        //
+
+        if(settings->streaming.url_index>0) {
+            QList <SettingsModel::Data> list_set_model_data;
+
+            recAddModel(&list_set_model_data, &settings->streaming.rec, "streaming", cuda_devices);
+
+            settings_model->add(list_set_model_data);
+        }
+
+        //
+
+        set_model_data.type=SettingsModel::Type::divider;
+        set_model_data.name="";
+        set_model_data.value=&settings->main.dummy;
+
+        settings_model->add(set_model_data);
+    }
+
+    //
+
     set_model_data.group="global";
 
     set_model_data.type=SettingsModel::Type::button;
@@ -187,9 +252,24 @@ MainWindow::MainWindow(QObject *parent)
         emit signalLost(true);
     }
 
+    //
+
+    if(settings->main.headless_curse) {
+        term=new TermGui(settings_model, this);
+        connect(this, SIGNAL(freeSpace(qint64)), term, SLOT(setFreeSpace(qint64)), Qt::QueuedConnection);
+        connect(nv_tools, SIGNAL(stateChanged(NvState)), term, SLOT(setNvState(NvState)), Qt::QueuedConnection);
+
+    } else {
+        term=new TermGui(nullptr, this);
+    }
+
     for(int i=0; i<settings->source_device.size(); ++i) {
         sourceDeviceAdd();
         settingsModelDataChanged(settings_model->data_p_index(&settings->source_device[i].index), 0, 0);
+    }
+
+    if(settings->main.headless_curse) {
+        term->run();
     }
 }
 
@@ -238,19 +318,19 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
         break;
 
     case SourceInterface::Type::dummy:
-        (*device)=new DummyDevice();
+        (*device)=new DummyDevice(index);
         break;
 
     case SourceInterface::Type::ffmpeg:
-        (*device)=new FFSource();
+        (*device)=new FFSource(index);
         break;
 
     case SourceInterface::Type::magewell:
-        (*device)=new MagewellDevice();
+        (*device)=new MagewellDevice(index);
         break;
 
     case SourceInterface::Type::decklink:
-        (*device)=new DeckLinkThread();
+        (*device)=new DeckLinkThread(index);
         break;
 
     default:
@@ -454,6 +534,14 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
 
 
         set_model_data.value=&settings_device->ff_device.framerate;
+
+        list_set_model_data.append(set_model_data);
+
+        //
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="high depth audio";
+        set_model_data.value=&settings_device->ff_device.high_depth_audio;
 
         list_set_model_data.append(set_model_data);
     }
@@ -700,20 +788,628 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
                 SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
     }
 
+    connect(dynamic_cast<QObject*>(*device),
+            SIGNAL(signalLost(bool)), term, SLOT(reloadDevices()), Qt::QueuedConnection);
+
+    connect(dynamic_cast<QObject*>(*device),
+            SIGNAL(formatChanged(QString)), term, SLOT(reloadDevices()), Qt::QueuedConnection);
+
     (*device)->subscribe(encoder->frameBuffer());
+    (*device)->subscribe(encoder_streaming->frameBuffer());
     (*device)->subscribe(audio_sender->frameBuffer());
 
     if(index==0) {
         connect(dynamic_cast<QObject*>(*device),
                 SIGNAL(formatChanged(QString)),
                 http_server, SLOT(formatChanged(QString)), Qt::QueuedConnection);
+
+        (*device)->subscribe(encoder_streaming->frameBuffer());
     }
+
+    term->reloadDevices();
+}
+
+void recAddModel(QList <SettingsModel::Data> *list_set_model_data, Settings::Rec *rec, const QString &group, const QStringList &cuda_devices)
+{
+    SettingsModel::Data set_model_data;
+
+    set_model_data.group=group;
+
+    // { rec
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::button;
+    set_model_data.name="check encoders";
+
+    set_model_data.value=&rec->check_encoders;
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="audio encoder";
+
+    foreach(FFEncoder::AudioEncoder::T enc, FFEncoder::AudioEncoder::list()) {
+        set_model_data.values << FFEncoder::AudioEncoder::toString(enc);
+        set_model_data.values_data << enc;
+    }
+
+    set_model_data.value=&rec->audio_encoder;
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="audio bitrate";
+    set_model_data.priority=SettingsModel::Priority::low;
+    set_model_data.value=&rec->audio_bitrate;
+
+    for(int i=64; i<=720; i+=4) {
+        set_model_data.values << QString("%1k").arg(i);
+        set_model_data.values_data << i;
+    }
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="downmix to stereo";
+    set_model_data.priority=SettingsModel::Priority::low;
+    set_model_data.value=&rec->audio_downmix_to_stereo;
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="video encoder";
+    set_model_data.priority=SettingsModel::Priority::high;
+    set_model_data.value=&rec->video_encoder;
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="preset";
+    set_model_data.priority=SettingsModel::Priority::low;
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.value=&rec->preset_current;
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="pixel format";
+    set_model_data.value=&rec->pixel_format_current;
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="constant rate factor / quality";
+    set_model_data.value=&rec->crf;
+
+    for(int i=0; i<=80; ++i)
+        set_model_data.values.append(QString::number(i));
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="video bitrate";
+    set_model_data.value=&rec->video_bitrate;
+
+    for(int i=0; i<=240000; i+=100) {
+        if(i==0)
+            set_model_data.values << "disabled";
+
+        else
+            set_model_data.values << QString("%1k").arg(i);
+
+        set_model_data.values_data << i;
+    }
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="color primaries";
+    set_model_data.value=&rec->color_primaries;
+
+    set_model_data.values << "disabled";
+    set_model_data.values_data << -1;
+
+    foreach(int value, FFEncoder::availableColorPrimaries()) {
+        set_model_data.values << FFEncoder::colorPrimariesToString(value);
+        set_model_data.values_data << value;
+    }
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="color space";
+    set_model_data.value=&rec->color_space;
+
+    set_model_data.values << "disabled";
+    set_model_data.values_data << -1;
+
+    foreach(int value, FFEncoder::availableColorSpaces()) {
+        set_model_data.values << FFEncoder::colorSpaceToString(value);
+        set_model_data.values_data << value;
+    }
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="color transfer characteristic";
+    set_model_data.value=&rec->color_transfer_characteristic;
+
+    set_model_data.values << "disabled";
+    set_model_data.values_data << -1;
+
+    foreach(int value, FFEncoder::availableColorTransferCharacteristics()) {
+        set_model_data.values << FFEncoder::colorTransferCharacteristicToString(value);
+        set_model_data.values_data << value;
+    }
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="color range";
+    set_model_data.value=&rec->color_range;
+
+    for(int i=0; i<swsColorRange::size; ++i)
+        set_model_data.values << swsColorRange::toString(i);
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="downscale";
+    set_model_data.value=&rec->downscale;
+
+    for(int i=0; i<=FFEncoder::DownScale::to1800; i++)
+        set_model_data.values << FFEncoder::DownScale::toString(i);
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="sws scale filter";
+    set_model_data.value=&rec->scale_filter;
+
+    for(int i=0; i<=FFEncoder::ScaleFilter::Spline; i++)
+        set_model_data.values << FFEncoder::ScaleFilter::toString(i);
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="sws color space src";
+    set_model_data.value=&rec->sws_color_space_src;
+
+    for(int i=0; i<swsColorSpace::size; ++i)
+        set_model_data.values << swsColorSpace::toString(i);
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="sws color space dst";
+    set_model_data.value=&rec->sws_color_space_dst;
+
+    for(int i=0; i<swsColorSpace::size; ++i)
+        set_model_data.values << swsColorSpace::toString(i);
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="sws color range src";
+    set_model_data.value=&rec->sws_color_range_src;
+
+    for(int i=0; i<swsColorRange::size; ++i)
+        set_model_data.values << swsColorRange::toString(i);
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::combobox;
+    set_model_data.name="sws color range dst";
+    set_model_data.value=&rec->sws_color_range_dst;
+
+    for(int i=0; i<swsColorRange::size; ++i)
+        set_model_data.values << swsColorRange::toString(i);
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="4:3 display aspect ratio";
+    set_model_data.value=&rec->aspect_ratio_4_3;
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="direct stream copy (for mjpeg or h264)";
+    set_model_data.value=&rec->direct_stream_copy;
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="fill dropped frames";
+    set_model_data.value=&rec->fill_dropped_frames;
+
+    list_set_model_data->append(set_model_data);
+
+    //
+
+    set_model_data.values.clear();
+    set_model_data.values_data.clear();
+
+    set_model_data.type=SettingsModel::Type::checkbox;
+    set_model_data.name="half-fps";
+    set_model_data.value=&rec->half_fps;
+
+    list_set_model_data->append(set_model_data);
+
+    // } rec
+
+    // { nvenc
+    if(!cuda_devices.isEmpty()) {
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::title;
+        set_model_data.value=&settings->main.dummy;
+        set_model_data.name="nvenc";
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="enabled";
+        set_model_data.value=&rec->nvenc.enabled;
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="device";
+        set_model_data.value=&rec->nvenc.device;
+
+        set_model_data.values << "any";
+
+        foreach(QString val, cuda_devices)
+            set_model_data.values << val;
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="b frames";
+        set_model_data.value=&rec->nvenc.b_frames;
+
+        for(int i=0; i<6; i++)
+            set_model_data.values << QString::number(i);
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="ref frames";
+        set_model_data.value=&rec->nvenc.ref_frames;
+
+        for(int i=0; i<16; i++) {
+            if(i>5)
+                set_model_data.values << QString("%1 hevc only").arg(i);
+
+            else
+                set_model_data.values << QString::number(i);
+        }
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="use b frames as references";
+        set_model_data.value=&rec->nvenc.b_ref_mode;
+
+        set_model_data.values << "disabled" << "each" << "middle";
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="gop size";
+        set_model_data.value=&rec->nvenc.gop_size;
+
+        for(int i=0; i<601; i++)
+            set_model_data.values << QString::number(i);
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        for(int i=-1; i<52; i++)
+            set_model_data.values << QString::number(i);
+
+        //
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="qpI";
+        set_model_data.value=&rec->nvenc.qp_i;
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.name="qpP";
+        set_model_data.value=&rec->nvenc.qp_p;
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.name="qpB";
+        set_model_data.value=&rec->nvenc.qp_b;
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="aq mode";
+        set_model_data.value=&rec->nvenc.aq_mode;
+        set_model_data.values << "disabled" << "spatial" << "temporal. not working with constqp?";
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="aq strength";
+        set_model_data.value=&rec->nvenc.aq_strength;
+
+        for(int i=0; i<16; i++)
+            set_model_data.values << QString::number(i);
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="rc lookahead";
+        set_model_data.value=&rec->nvenc.rc_lookahead;
+
+        for(int i=-1; i<33; i++)
+            set_model_data.values << QString::number(i);
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="surfaces";
+        set_model_data.value=&rec->nvenc.surfaces;
+
+        for(int i=-1; i<65; i++)
+            set_model_data.values << QString::number(i);
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="no scenecut";
+        set_model_data.value=&rec->nvenc.no_scenecut;
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="forced idr";
+        set_model_data.value=&rec->nvenc.forced_idr;
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="b adapt";
+        set_model_data.value=&rec->nvenc.b_adapt;
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="nonref p";
+        set_model_data.value=&rec->nvenc.nonref_p;
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="strict gop";
+        set_model_data.value=&rec->nvenc.strict_gop;
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="weighted pred (disables bframes)";
+        set_model_data.value=&rec->nvenc.weighted_pred;
+
+        list_set_model_data->append(set_model_data);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::checkbox;
+        set_model_data.name="bluray compatibility workarounds";
+        set_model_data.value=&rec->nvenc.bluray_compat;
+
+        list_set_model_data->append(set_model_data);
+    }
+
+    // } nvenc
 }
 
 void MainWindow::sourceDeviceAddModel(uint8_t index)
 {
-    const QStringList cuda_devices=nv_tools->availableDevices();
-
     Settings::SourceDevice *settings_device=settings->sourceDevice(index);
 
     QList <SettingsModel::Data> list_set_model_data;
@@ -779,7 +1475,7 @@ void MainWindow::sourceDeviceAddModel(uint8_t index)
 
     list_set_model_data.append(set_model_data);
 
-    // { rec
+    //
 
     set_model_data.values.clear();
     set_model_data.values_data.clear();
@@ -790,519 +1486,10 @@ void MainWindow::sourceDeviceAddModel(uint8_t index)
 
     list_set_model_data.append(set_model_data);
 
-    //
 
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::button;
-    set_model_data.name="check encoders";
-
-    set_model_data.value=&settings_device->rec.check_encoders;
-
-    list_set_model_data.append(set_model_data);
+    recAddModel(&list_set_model_data, &settings_device->rec, settings_device->group, nv_tools->availableDevices());
 
     //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="audio encoder";
-
-    set_model_data.values << "pcm" << "flac";
-
-    set_model_data.value=&settings_device->rec.encoder_audio;
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="video encoder";
-    set_model_data.priority=SettingsModel::Priority::high;
-    set_model_data.value=&settings_device->rec.encoder_video;
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="preset";
-    set_model_data.priority=SettingsModel::Priority::low;
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.value=&settings_device->rec.preset_current;
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="pixel format";
-    set_model_data.value=&settings_device->rec.pixel_format_current;
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="constant rate factor / quality";
-    set_model_data.value=&settings_device->rec.crf;
-
-    for(int i=0; i<=80; ++i)
-        set_model_data.values.append(QString::number(i));
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="color primaries";
-    set_model_data.value=&settings_device->rec.color_primaries;
-
-    set_model_data.values << "disabled";
-    set_model_data.values_data << -1;
-
-    foreach(int value, FFEncoder::availableColorPrimaries()) {
-        set_model_data.values << FFEncoder::colorPrimariesToString(value);
-        set_model_data.values_data << value;
-    }
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="color space";
-    set_model_data.value=&settings_device->rec.color_space;
-
-    set_model_data.values << "disabled";
-    set_model_data.values_data << -1;
-
-    foreach(int value, FFEncoder::availableColorSpaces()) {
-        set_model_data.values << FFEncoder::colorSpaceToString(value);
-        set_model_data.values_data << value;
-    }
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="color transfer characteristic";
-    set_model_data.value=&settings_device->rec.color_transfer_characteristic;
-
-    set_model_data.values << "disabled";
-    set_model_data.values_data << -1;
-
-    foreach(int value, FFEncoder::availableColorTransferCharacteristics()) {
-        set_model_data.values << FFEncoder::colorTransferCharacteristicToString(value);
-        set_model_data.values_data << value;
-    }
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="downscale";
-    set_model_data.value=&settings_device->rec.downscale;
-
-    for(int i=0; i<=FFEncoder::DownScale::to1800; i++)
-        set_model_data.values << FFEncoder::DownScale::toString(i);
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="sws scale filter";
-    set_model_data.value=&settings_device->rec.scale_filter;
-
-    for(int i=0; i<=FFEncoder::ScaleFilter::Spline; i++)
-        set_model_data.values << FFEncoder::ScaleFilter::toString(i);
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="sws color space src";
-    set_model_data.value=&settings_device->rec.sws_color_space_src;
-
-    for(int i=0; i<swsColorSpace::size; ++i)
-        set_model_data.values << swsColorSpace::toString(i);
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="sws color space dst";
-    set_model_data.value=&settings_device->rec.sws_color_space_dst;
-
-    for(int i=0; i<swsColorSpace::size; ++i)
-        set_model_data.values << swsColorSpace::toString(i);
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="sws color range src";
-    set_model_data.value=&settings_device->rec.sws_color_range_src;
-
-    for(int i=0; i<swsColorRange::size; ++i)
-        set_model_data.values << swsColorRange::toString(i);
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::combobox;
-    set_model_data.name="sws color range dst";
-    set_model_data.value=&settings_device->rec.sws_color_range_dst;
-
-    for(int i=0; i<swsColorRange::size; ++i)
-        set_model_data.values << swsColorRange::toString(i);
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::checkbox;
-    set_model_data.name="direct stream copy (for mjpeg or h264)";
-    set_model_data.value=&settings_device->rec.direct_stream_copy;
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::checkbox;
-    set_model_data.name="fill dropped frames";
-    set_model_data.value=&settings_device->rec.fill_dropped_frames;
-
-    list_set_model_data.append(set_model_data);
-
-    //
-
-    set_model_data.values.clear();
-    set_model_data.values_data.clear();
-
-    set_model_data.type=SettingsModel::Type::checkbox;
-    set_model_data.name="half-fps";
-    set_model_data.value=&settings_device->rec.half_fps;
-
-    list_set_model_data.append(set_model_data);
-
-    // } rec
-
-    // { nvenc
-    if(!cuda_devices.isEmpty()) {
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::title;
-        set_model_data.value=&settings->main.dummy;
-        set_model_data.name="nvenc";
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="enabled";
-        set_model_data.value=&settings_device->rec.nvenc.enabled;
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="device";
-        set_model_data.value=&settings_device->rec.nvenc.device;
-
-        set_model_data.values << "any";
-
-        foreach(QString val, cuda_devices)
-            set_model_data.values << val;
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="b frames";
-        set_model_data.value=&settings_device->rec.nvenc.b_frames;
-
-        for(int i=0; i<6; i++)
-            set_model_data.values << QString::number(i);
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="ref frames";
-        set_model_data.value=&settings_device->rec.nvenc.ref_frames;
-
-        for(int i=0; i<16; i++) {
-            if(i>5)
-                set_model_data.values << QString("%1 hevc only").arg(i);
-
-            else
-                set_model_data.values << QString::number(i);
-        }
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="use b frames as references";
-        set_model_data.value=&settings_device->rec.nvenc.b_ref_mode;
-
-        set_model_data.values << "disabled" << "each" << "middle";
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="gop size";
-        set_model_data.value=&settings_device->rec.nvenc.gop_size;
-
-        for(int i=0; i<601; i++)
-            set_model_data.values << QString::number(i);
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        for(int i=-1; i<52; i++)
-            set_model_data.values << QString::number(i);
-
-        //
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="qpI";
-        set_model_data.value=&settings_device->rec.nvenc.qp_i;
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.name="qpP";
-        set_model_data.value=&settings_device->rec.nvenc.qp_p;
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.name="qpB";
-        set_model_data.value=&settings_device->rec.nvenc.qp_b;
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="aq mode";
-        set_model_data.value=&settings_device->rec.nvenc.aq_mode;
-        set_model_data.values << "disabled" << "spatial" << "temporal. not working with constqp?";
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="aq strength";
-        set_model_data.value=&settings_device->rec.nvenc.aq_strength;
-
-        for(int i=0; i<16; i++)
-            set_model_data.values << QString::number(i);
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="rc lookahead";
-        set_model_data.value=&settings_device->rec.nvenc.rc_lookahead;
-
-        for(int i=-1; i<33; i++)
-            set_model_data.values << QString::number(i);
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::combobox;
-        set_model_data.name="surfaces";
-        set_model_data.value=&settings_device->rec.nvenc.surfaces;
-
-        for(int i=-1; i<65; i++)
-            set_model_data.values << QString::number(i);
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="no scenecut";
-        set_model_data.value=&settings_device->rec.nvenc.no_scenecut;
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="forced idr";
-        set_model_data.value=&settings_device->rec.nvenc.forced_idr;
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="b adapt";
-        set_model_data.value=&settings_device->rec.nvenc.b_adapt;
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="nonref p";
-        set_model_data.value=&settings_device->rec.nvenc.nonref_p;
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="strict gop";
-        set_model_data.value=&settings_device->rec.nvenc.strict_gop;
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="weighted pred (disables bframes)";
-        set_model_data.value=&settings_device->rec.nvenc.weighted_pred;
-
-        list_set_model_data.append(set_model_data);
-
-        //
-
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
-
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="bluray compatibility workarounds";
-        set_model_data.value=&settings_device->rec.nvenc.bluray_compat;
-
-        list_set_model_data.append(set_model_data);
-    }
-
-    // } nvenc
 
     settings_model->add(list_set_model_data);
 }
@@ -1329,7 +1516,13 @@ void MainWindow::sourceDeviceAdd()
         connect(str->encoder, SIGNAL(stats(FFEncoder::Stats)), SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
     }
 
+    connect(str->encoder, SIGNAL(stats(FFEncoder::Stats)), term, SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
+
     connect(str->encoder, SIGNAL(stateChanged(bool)), SLOT(encoderStateChanged(bool)), Qt::QueuedConnection);
+
+    if(!settings->main.headless) {
+        connect(str->encoder, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
+    }
 
     if(stream.size()>1) {
         connect(stream.first().encoder, SIGNAL(restartOut()), str->encoder, SIGNAL(restartIn()), Qt::QueuedConnection);
@@ -1338,6 +1531,8 @@ void MainWindow::sourceDeviceAdd()
     sourceDeviceAddModel(stream.size() - 1);
 
     updateEncList();
+
+    term->reloadDevices();
 }
 
 void MainWindow::sourceDeviceRemove()
@@ -1359,6 +1554,8 @@ void MainWindow::sourceDeviceRemove()
     settings_model->removeGroup(settings->source_device.last().group_settings);
 
     settings->sourceDeviceRemove();
+
+    term->reloadDevices();
 }
 
 bool MainWindow::eventFilter(QObject *object, QEvent *event)
@@ -1878,16 +2075,16 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             }
         }
 
-        if(data->value==&settings_device->rec.encoder_video) {
+        if(data->value==&settings_device->rec.video_encoder) {
             qml=false;
 
             // pix_fmt
 
-            if(settings_device->rec.encoder_video>=data->values_data.size())
-                settings_device->rec.encoder_video=data->values_data.size() - 1;
+            if(settings_device->rec.video_encoder>=data->values_data.size())
+                settings_device->rec.video_encoder=data->values_data.size() - 1;
 
             const int index_encoder=
-                data->values_data[settings_device->rec.encoder_video].toInt();
+                data->values_data[settings_device->rec.video_encoder].toInt();
 
             QList <PixelFormat> fmts;
             PixelFormat pf;
@@ -1909,7 +2106,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
                 if(settings_model->data_p(i)->value==&settings_device->rec.pixel_format_current) {
                     settings_model->setData(i, SettingsModel::Role::values_data, list_values_data, false, true);
                     settings_model->setData(i, SettingsModel::Role::values, list_values, false, true);
-                    settings_model->setData(i, SettingsModel::Role::value, settings_device->rec.pixel_format.value(QString::number(settings_device->rec.encoder_video), 0), false, true);
+                    settings_model->setData(i, SettingsModel::Role::value, settings_device->rec.pixel_format.value(QString::number(settings_device->rec.video_encoder), 0), false, true);
 
                     break;
                 }
@@ -1919,7 +2116,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             list_values.clear();
             list_values_data.clear();
 
-            const QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)data->values_data.value(settings_device->rec.encoder_video, 0).toInt());
+            const QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)data->values_data.value(settings_device->rec.video_encoder, 0).toInt());
 
             foreach(const QString &preset, presets) {
                 list_values << preset;
@@ -1930,7 +2127,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
                 if(settings_model->data_p(i)->value==&settings_device->rec.preset_current) {
                     settings_model->setData(i, SettingsModel::Role::values_data, list_values_data, false, true);
                     settings_model->setData(i, SettingsModel::Role::values, list_values, false, true);
-                    settings_model->setData(i, SettingsModel::Role::value, settings_device->rec.preset.value(QString::number(settings_device->rec.encoder_video), 0), false, true);
+                    settings_model->setData(i, SettingsModel::Role::value, settings_device->rec.preset.value(QString::number(settings_device->rec.video_encoder), 0), false, true);
 
                     break;
                 }
@@ -1940,11 +2137,11 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
         if(data->value==&settings_device->rec.pixel_format_current)
             if(role==SettingsModel::Role::value)
-                settings_device->rec.pixel_format[QString::number(settings_device->rec.encoder_video)]=settings_device->rec.pixel_format_current;
+                settings_device->rec.pixel_format[QString::number(settings_device->rec.video_encoder)]=settings_device->rec.pixel_format_current;
 
         if(data->value==&settings_device->rec.preset_current)
             if(role==SettingsModel::Role::value)
-                settings_device->rec.preset[QString::number(settings_device->rec.encoder_video)]=settings_device->rec.preset_current;
+                settings_device->rec.preset[QString::number(settings_device->rec.video_encoder)]=settings_device->rec.preset_current;
 
         if(data->value==&settings_device->start)
             deviceStart(i_dev);
@@ -1956,6 +2153,93 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             checkEncoders();
     }
 
+    if(data->value==&settings->streaming.rec.video_encoder) {
+        qml=false;
+
+        // pix_fmt
+
+        if(settings->streaming.rec.video_encoder>=data->values_data.size())
+            settings->streaming.rec.video_encoder=data->values_data.size() - 1;
+
+        const int index_encoder=
+            data->values_data[settings->streaming.rec.video_encoder].toInt();
+
+        QList <PixelFormat> fmts;
+        PixelFormat pf;
+
+        foreach(const QString &fmt_str, settings->main.supported_enc[FFEncoder::VideoEncoder::toString(index_encoder)].toStringList()) {
+            if(pf.fromString(fmt_str))
+                fmts << pf;
+        }
+
+        QStringList list_values;
+        QVariantList list_values_data;
+
+        for(int i=0; i<fmts.size(); ++i) {
+            list_values << fmts[i].toStringView();
+            list_values_data << (int)fmts[i];
+        }
+
+        for(int i=0; i<settings_model->rowCount(); ++i) {
+            if(settings_model->data_p(i)->value==&settings->streaming.rec.pixel_format_current) {
+                settings_model->setData(i, SettingsModel::Role::values_data, list_values_data, false, true);
+                settings_model->setData(i, SettingsModel::Role::values, list_values, false, true);
+                settings_model->setData(i, SettingsModel::Role::value, settings->streaming.rec.pixel_format.value(QString::number(settings->streaming.rec.video_encoder), 0), false, true);
+
+                break;
+            }
+        }
+
+        // preset
+        list_values.clear();
+        list_values_data.clear();
+
+        const QStringList presets=FFEncoder::compatiblePresets((FFEncoder::VideoEncoder::T)data->values_data.value(settings->streaming.rec.video_encoder, 0).toInt());
+
+        foreach(const QString &preset, presets) {
+            list_values << preset;
+            list_values_data << FFEncoder::presetVisualNameToParamName(preset);
+        }
+
+        for(int i=0; i<settings_model->rowCount(); ++i) {
+            if(settings_model->data_p(i)->value==&settings->streaming.rec.preset_current) {
+                settings_model->setData(i, SettingsModel::Role::values_data, list_values_data, false, true);
+                settings_model->setData(i, SettingsModel::Role::values, list_values, false, true);
+                settings_model->setData(i, SettingsModel::Role::value, settings->streaming.rec.preset.value(QString::number(settings->streaming.rec.video_encoder), 0), false, true);
+
+                break;
+            }
+        }
+    }
+
+
+    if(data->value==&settings->streaming.url_index) {
+        if(settings->streaming.url_index<1) {
+            settings_model->removeGroup("streaming");
+
+        } else {
+            if(settings_model->countGroup("streaming")<1) {
+                QList <SettingsModel::Data> list_set_model_data;
+
+                recAddModel(&list_set_model_data, &settings->streaming.rec, "streaming", cuda_devices);
+
+                settings_model->insert(&settings->streaming.url_index, list_set_model_data);
+
+                updateEncList();
+            }
+        }
+
+        QMetaObject::invokeMethod(dynamic_cast<QObject*>(term), "reloadDevices", Qt::QueuedConnection);
+    }
+
+    if(data->value==&settings->streaming.rec.pixel_format_current)
+        if(role==SettingsModel::Role::value)
+            settings->streaming.rec.pixel_format[QString::number(settings->streaming.rec.video_encoder)]=settings->streaming.rec.pixel_format_current;
+
+    if(data->value==&settings->streaming.rec.preset_current)
+        if(role==SettingsModel::Role::value)
+            settings->streaming.rec.preset[QString::number(settings->streaming.rec.video_encoder)]=settings->streaming.rec.preset_current;
+
 
     if(data->value==&settings->main.source_device_add)
         sourceDeviceAdd();
@@ -1963,8 +2247,9 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
     if(data->value==&settings->main.source_device_remove)
         sourceDeviceRemove();
 
-    if(!qml)
+    if(!qml) {
         settings_model->updateQml();
+    }
 }
 
 void MainWindow::deviceStart(uint8_t index)
@@ -2008,6 +2293,7 @@ void MainWindow::deviceStart(uint8_t index)
             FFSource::Device *dev=new FFSource::Device();
             FFSource *ff_device=static_cast<FFSource*>(*device);
 
+            dev->high_depth_audio=settings_device->ff_device.high_depth_audio;
             dev->framerate=settings_model->valueData(&settings_device->ff_device.framerate, QVariant::fromValue<AVRational>({ 30000, 1000 })).value<AVRational>();
             dev->pixel_format=settings_model->valueData(&settings_device->ff_device.pixel_format, 0).toInt();
             dev->size=settings_model->valueData(&settings_device->ff_device.framesize, QSize(640, 480)).toSize();
@@ -2077,18 +2363,26 @@ void MainWindow::deviceStop(uint8_t index)
     QMetaObject::invokeMethod(dynamic_cast<QObject*>(stream[index].source_device), "deviceStop", Qt::QueuedConnection);
 }
 
-void MainWindow::startStopRecording()
+bool MainWindow::recInProgress()
 {
-    bool enc_running=false;
+    if(encoder_streaming->isWorking())
+        return true;
 
     for(int i=0; i<stream.size(); ++i) {
         if(stream[i].encoder->isWorking())
-            enc_running=true;
+            return true;
     }
 
-    if(enc_running) {
+    return false;
+}
+
+void MainWindow::startStopRecording()
+{
+    if(recInProgress()) {
         for(int i=0; i<stream.size(); ++i)
             stream[i].encoder->stopCoder();
+
+        encoder_streaming->stopCoder();
 
         return;
     }
@@ -2102,6 +2396,8 @@ void MainWindow::startStopRecording()
     FFEncoderThread *enc=nullptr;
     SourceInterface *dev=nullptr;
 
+    uint32_t active_src_devices=0;
+
     for(int i=0; i<stream.size(); ++i) {
         enc=stream[i].encoder;
         dev=stream[i].source_device;
@@ -2112,6 +2408,8 @@ void MainWindow::startStopRecording()
         if(!dev->gotSignal())
             continue;
 
+        active_src_devices|=1 << i;
+
         FFEncoder::Config cfg;
 
         AVRational framerate=dev->currentFramerate();
@@ -2121,31 +2419,95 @@ void MainWindow::startStopRecording()
         if(cfg.framerate==FFEncoder::Framerate::unknown)
             cfg.framerate_force=framerate;
 
+        cfg.audio_encoder=(FFEncoder::AudioEncoder::T)settings_model->valueData(&settings->source_device[i].rec.audio_encoder).toInt();
+        cfg.audio_bitrate=settings_model->valueData(&settings->source_device[i].rec.audio_bitrate).toInt();
+        cfg.audio_downmix_to_stereo=settings->source_device[i].rec.audio_downmix_to_stereo;
+        cfg.audio_sample_size=dev->currentAudioSampleSize();
+        cfg.audio_channels_size=dev->currentAudioChannels();
         cfg.frame_resolution_src=dev->currentFramesize();
         cfg.pixel_format_dst=settings_model->valueData(&settings->source_device[i].rec.pixel_format_current).toInt();
         cfg.preset=settings_model->valueData(&settings->source_device[i].rec.preset_current).toString();
-        cfg.video_encoder=(FFEncoder::VideoEncoder::T)settings_model->valueData(&settings->source_device[i].rec.encoder_video).toInt();
+        cfg.video_encoder=(FFEncoder::VideoEncoder::T)settings_model->valueData(&settings->source_device[i].rec.video_encoder).toInt();
+        cfg.video_bitrate=settings_model->valueData(&settings->source_device[i].rec.video_bitrate).toInt();
         cfg.crf=settings->source_device[i].rec.crf;
         cfg.pixel_format_src=dev->currentPixelFormat();
         cfg.direct_stream_copy=settings->source_device[i].rec.direct_stream_copy;
         cfg.fill_dropped_frames=settings->source_device[i].rec.fill_dropped_frames;
-        cfg.audio_sample_size=dev->currentAudioSampleSize();
-        cfg.audio_channels_size=dev->currentAudioChannels();
         cfg.downscale=settings->source_device[i].rec.downscale;
         cfg.scale_filter=settings->source_device[i].rec.scale_filter;
         cfg.color_primaries=settings_model->valueData(&settings->source_device[i].rec.color_primaries).toInt();
         cfg.color_space=settings_model->valueData(&settings->source_device[i].rec.color_space).toInt();
         cfg.color_transfer_characteristic=settings_model->valueData(&settings->source_device[i].rec.color_transfer_characteristic).toInt();
+        cfg.color_range=swsColorRange::toff(settings->source_device[i].rec.color_range);
         cfg.sws_color_space_src=swsColorSpace::toff(settings->source_device[i].rec.sws_color_space_src);
         cfg.sws_color_space_dst=swsColorSpace::toff(settings->source_device[i].rec.sws_color_space_dst);
         cfg.sws_color_range_src=swsColorRange::toff(settings->source_device[i].rec.sws_color_range_src);
         cfg.sws_color_range_dst=swsColorRange::toff(settings->source_device[i].rec.sws_color_range_dst);
         cfg.nvenc=settings->source_device[i].rec.nvenc;
-        cfg.audio_flac=settings->source_device[i].rec.encoder_audio==1;
+        cfg.aspect_ratio_4_3=settings->source_device[i].rec.aspect_ratio_4_3;
         cfg.input_type_flags=dev->typeFlags();
 
         enc->setConfig(cfg);
         enc_start_sync.add(i);
+    }
+
+    if(encoder_streaming->isWorking()) {
+        qInfo() << "encoder_streaming->stopCoder";
+        encoder_streaming->stopCoder();
+        return;
+    }
+
+    if(!settings_model->valueData(&settings->streaming.url_index).toString().isEmpty()) {
+        dev=stream[0].source_device;
+
+        if(!dev)
+            return;
+
+        if(!dev->gotSignal())
+            return;
+
+        FFEncoder::Config cfg;
+
+        AVRational framerate=dev->currentFramerate();
+
+        cfg.active_src_devices=active_src_devices;
+
+        cfg.framerate=FFEncoder::calcFps(framerate.num, framerate.den, settings->streaming.rec.half_fps);
+
+        if(cfg.framerate==FFEncoder::Framerate::unknown)
+            cfg.framerate_force=framerate;
+
+        cfg.audio_encoder=(FFEncoder::AudioEncoder::T)settings_model->valueData(&settings->streaming.rec.audio_encoder).toInt();
+        cfg.audio_bitrate=settings_model->valueData(&settings->streaming.rec.audio_bitrate).toInt();
+        cfg.audio_downmix_to_stereo=settings->streaming.rec.audio_downmix_to_stereo;
+        cfg.audio_sample_size=dev->currentAudioSampleSize();
+        cfg.audio_channels_size=dev->currentAudioChannels();
+        cfg.frame_resolution_src=dev->currentFramesize();
+        cfg.pixel_format_dst=settings_model->valueData(&settings->streaming.rec.pixel_format_current).toInt();
+        cfg.preset=settings_model->valueData(&settings->streaming.rec.preset_current).toString();
+        cfg.video_encoder=(FFEncoder::VideoEncoder::T)settings_model->valueData(&settings->streaming.rec.video_encoder).toInt();
+        cfg.video_bitrate=settings_model->valueData(&settings->streaming.rec.video_bitrate).toInt();
+        cfg.crf=settings->streaming.rec.crf;
+        cfg.pixel_format_src=dev->currentPixelFormat();
+        cfg.direct_stream_copy=settings->streaming.rec.direct_stream_copy;
+        cfg.fill_dropped_frames=settings->streaming.rec.fill_dropped_frames;
+        cfg.downscale=settings->streaming.rec.downscale;
+        cfg.scale_filter=settings->streaming.rec.scale_filter;
+        cfg.color_primaries=settings_model->valueData(&settings->streaming.rec.color_primaries).toInt();
+        cfg.color_space=settings_model->valueData(&settings->streaming.rec.color_space).toInt();
+        cfg.color_transfer_characteristic=settings_model->valueData(&settings->streaming.rec.color_transfer_characteristic).toInt();
+        cfg.color_range=swsColorRange::toff(settings->streaming.rec.color_range);
+        cfg.sws_color_space_src=swsColorSpace::toff(settings->streaming.rec.sws_color_space_src);
+        cfg.sws_color_space_dst=swsColorSpace::toff(settings->streaming.rec.sws_color_space_dst);
+        cfg.sws_color_range_src=swsColorRange::toff(settings->streaming.rec.sws_color_range_src);
+        cfg.sws_color_range_dst=swsColorRange::toff(settings->streaming.rec.sws_color_range_dst);
+        cfg.nvenc=settings->streaming.rec.nvenc;
+        cfg.aspect_ratio_4_3=settings->streaming.rec.aspect_ratio_4_3;
+        cfg.input_type_flags=dev->typeFlags();
+
+        enc_streaming_url=settings_model->valueData(&settings->streaming.url_index).toString();
+
+        encoder_streaming->setConfig(cfg);
     }
 }
 
@@ -2161,7 +2523,7 @@ void MainWindow::updateEncList()
 
     for(int i_dev=0; i_dev<settings->source_device.size(); ++i_dev) {
         set_model_data=
-            settings_model->data_p(&settings->source_device[i_dev].rec.encoder_video);
+            settings_model->data_p(&settings->source_device[i_dev].rec.video_encoder);
 
         if(!set_model_data) {
             qCritical() << "set_model_data null pointer" << i_dev;
@@ -2176,18 +2538,43 @@ void MainWindow::updateEncList()
             set_model_data->values_data << (quint64)FFEncoder::VideoEncoder::fromString(settings->main.supported_enc.keys()[i_enc]);
         }
 
-        settingsModelDataChanged(settings_model->data_p_index(&settings->source_device[i_dev].rec.encoder_video), 0, false);
+        settingsModelDataChanged(settings_model->data_p_index(&settings->source_device[i_dev].rec.video_encoder), 0, false);
 
         QMetaObject::invokeMethod(dynamic_cast<QObject*>(this), "settingsModelDataChanged", Qt::QueuedConnection,
-                                  Q_ARG(int, settings_model->data_p_index(&settings->source_device[i_dev].rec.encoder_video)), Q_ARG(int, 0), Q_ARG(bool, false));
+                                  Q_ARG(int, settings_model->data_p_index(&settings->source_device[i_dev].rec.video_encoder)), Q_ARG(int, 0), Q_ARG(bool, false));
     }
+
+    //
+
+    set_model_data=
+        settings_model->data_p(&settings->streaming.rec.video_encoder);
+
+    if(!set_model_data) {
+        qCritical() << "set_model_data null pointer streaming";
+        return;
+    }
+
+    set_model_data->values.clear();
+    set_model_data->values_data.clear();
+
+    for(int i_enc=0; i_enc<settings->main.supported_enc.size(); ++i_enc) {
+        set_model_data->values << settings->main.supported_enc.keys()[i_enc];
+        set_model_data->values_data << (quint64)FFEncoder::VideoEncoder::fromString(settings->main.supported_enc.keys()[i_enc]);
+    }
+
+    settingsModelDataChanged(settings_model->data_p_index(&settings->streaming.rec.video_encoder), 0, false);
+
+    QMetaObject::invokeMethod(dynamic_cast<QObject*>(this), "settingsModelDataChanged", Qt::QueuedConnection,
+                              Q_ARG(int, settings_model->data_p_index(&settings->streaming.rec.video_encoder)), Q_ARG(int, 0), Q_ARG(bool, false));
+
+    QMetaObject::invokeMethod(dynamic_cast<QObject*>(term), "updateSettingsForm", Qt::QueuedConnection);
 }
 
 void MainWindow::encoderBufferOverload()
 {
     // ff_enc_primary->stopCoder();
 
-    emit messenger->errorString("encoder buffer overload, recording stopped");
+    // emit messenger->errorString("encoder buffer overload, recording stopped");
 }
 
 void MainWindow::previewPrimaryOnOff()
@@ -2211,8 +2598,13 @@ void MainWindow::encoderStateChanged(bool state)
 {
     http_server->setRecState(state);
 
-    if(settings->main.headless)
+    if(settings->main.headless_curse) {
+        term->update();
+    }
+
+    if(settings->main.headless) {
         return;
+    }
 
     messenger->setRecStarted(state);
 

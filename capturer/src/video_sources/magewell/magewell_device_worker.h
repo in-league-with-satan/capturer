@@ -38,7 +38,7 @@ class MagewellDeviceWorker : public QObject
     Q_OBJECT
 
 public:
-    explicit MagewellDeviceWorker(QObject *parent=0);
+    explicit MagewellDeviceWorker(int *device_index, QObject *parent=0);
     virtual ~MagewellDeviceWorker();
 
     void subscribe(FrameBuffer<Frame::ptr>::ptr obj);
@@ -66,10 +66,12 @@ private:
     bool updateVideoSignalInfo();
     void setState(int value);
 
+    int *device_index=nullptr;
+
     MGHCHANNEL current_channel=0;
 
-    MagewellDeviceWorkerContext *d;
-    MagewellAudioThread *a;
+    MagewellDeviceWorkerContext *d=nullptr;
+    MagewellAudioThread *a=nullptr;
 
     struct State {
         enum T {
