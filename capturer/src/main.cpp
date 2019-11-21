@@ -25,6 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDateTime>
 
 #include <signal.h>
+#include <iostream>
 
 #include "magewell_device.h"
 #include "decklink_tools.h"
@@ -62,8 +63,61 @@ void signal_handler(int signum)
     qApp->exit(signum);
 }
 
+void allocConsole()
+{
+#ifdef __WIN32__
+
+    AttachConsole(ATTACH_PARENT_PROCESS);
+    freopen("CONOUT$", "w", stdout);
+    HANDLE h_stdout=CreateFileA("CONOUT$", GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+    SetStdHandle(STD_OUTPUT_HANDLE, h_stdout);
+
+#endif
+}
+
+void printVersion()
+{
+    std::cout << VERSION_STRING << std::endl;
+}
+
+void printHelp()
+{
+    std::cout << QString("capturer v%1").arg(VERSION_STRING).toStdString() << std::endl;
+    std::cout << std::endl;
+    std::cout << "options:" << std::endl;
+    std::cout << "\t" << "--version" << std::endl << "\t\t" << "show application version" << std::endl << std::endl;
+    std::cout << "\t" << "--headless" << std::endl << "\t\t" << "start application without gui" << std::endl << std::endl;
+#ifdef LIB_CURSES
+    std::cout << "\t" << "--headless-curse" << std::endl << "\t\t" << "start application with ncurses interface" << std::endl << std::endl;
+#endif
+    std::cout << "\t" << "--log-file" << std::endl << "\t\t" << "redirect std-err/out to file \"capturer_STARTAPPDATETIME.log\"" << std::endl << std::endl;
+    std::cout << "\t" << "--portable-mode" << std::endl << "\t\t" << "store config file in application dir" << std::endl << std::endl;
+    std::cout << "\t" << "--portable-mode=path_to_config_file.json" << std::endl << "\t\t" << "set custom location for config file" << std::endl << std::endl;
+    std::cout << "\t" << "--setup" << std::endl << "\t\t" << "show setup dialog. only in gui mode" << std::endl << std::endl;
+    std::cout << "\t" << "--windowed" << std::endl << "\t\t" << "start application windowed. only in gui mode" << std::endl << std::endl;
+}
+
+void printHelp(int argc, char *argv[])
+{
+    for(int i=1; i<argc; ++i) {
+        if(QString::compare(QString(argv[i]), QString("--version"), Qt::CaseInsensitive)==0) {
+            allocConsole();
+            printVersion();
+            exit(0);
+        }
+
+        if(QString::compare(QString(argv[i]), QString("--help"), Qt::CaseInsensitive)==0) {
+            allocConsole();
+            printHelp();
+            exit(0);
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
+    printHelp(argc, argv);
+
     signal(SIGINT, signal_handler);
 
     qSetMessagePattern("%{time hh:mm:ss.zzz}:%{qthreadptr}: %{file}(%{line}) %{function}: %{message}");
