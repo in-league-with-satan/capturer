@@ -124,7 +124,9 @@ MainWindow::MainWindow(QObject *parent)
         //
 
         connect(encoder_streaming, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
-        connect(encoder_streaming, SIGNAL(stats(FFEncoder::Stats)), term, SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
+
+        if(term)
+            connect(encoder_streaming, SIGNAL(stats(FFEncoder::Stats)), term, SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
 
         //
 
@@ -2249,7 +2251,9 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
     if(!qml) {
         settings_model->updateQml();
-        messenger->focusReset();
+
+        if(messenger)
+            messenger->focusReset();
     }
 }
 
