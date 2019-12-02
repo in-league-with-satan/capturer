@@ -2249,6 +2249,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
     if(!qml) {
         settings_model->updateQml();
+        messenger->focusReset();
     }
 }
 
