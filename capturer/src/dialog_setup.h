@@ -47,7 +47,6 @@ private:
     KeyboardShortcuts *keyboard_shortcuts;
 
     QLineEdit *le_location_videos;
-    QCheckBox *cb_simplify_audio_for_send;
 
     Streams *streams;
 

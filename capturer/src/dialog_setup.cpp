@@ -67,10 +67,6 @@ DialogSetup::DialogSetup(QWidget *parent)
     le_location_videos->setAlignment(Qt::AlignRight);
     le_location_videos->setText(settings->main.location_videos);
 
-    cb_simplify_audio_for_send=new QCheckBox("Simplify audio for send to remote player");
-    cb_simplify_audio_for_send->setToolTip("convert to 16bit stereo");
-    cb_simplify_audio_for_send->setChecked(settings->main.simplify_audio_for_send);
-
     QPushButton *b_location_videos_select_dir=new QPushButton("Select");
     connect(b_location_videos_select_dir, SIGNAL(clicked(bool)), SLOT(selectVideosDir()));
 
@@ -82,7 +78,6 @@ DialogSetup::DialogSetup(QWidget *parent)
 
     QVBoxLayout *la_main_settings=new QVBoxLayout();
     la_main_settings->addLayout(la_main_settings_videos_dir);
-    la_main_settings->addWidget(cb_simplify_audio_for_send);
 
     QGroupBox *gb_main_settings=new QGroupBox("Main");
     gb_main_settings->setLayout(la_main_settings);
@@ -190,7 +185,6 @@ void DialogSetup::selectVideosDir()
 void DialogSetup::onAccepted()
 {
     settings->main.location_videos=le_location_videos->text();
-    settings->main.simplify_audio_for_send=cb_simplify_audio_for_send->isChecked();
 
 
 #ifdef LIB_QHTTP

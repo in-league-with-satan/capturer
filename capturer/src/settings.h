@@ -43,7 +43,6 @@ public:
         int dummy;
         int headless=0;
         int headless_curse=0;
-        int simplify_audio_for_send=0;
         int source_device_add=0;
         int source_device_remove=0;
         QString location_videos;

@@ -1509,7 +1509,6 @@ void MainWindow::sourceDeviceAdd()
     ObjGrp *str=&stream.last();
 
     str->audio_sender=new AudioSender(stream.size() - 1);
-    str->audio_sender->setSimplify(settings->main.simplify_audio_for_send);
 
     str->encoder=new FFEncoderThread(stream.size() - 1, &enc_base_filename, &enc_start_sync, settings->main.location_videos, QString("capturer %1").arg(VERSION_STRING), this);
 
