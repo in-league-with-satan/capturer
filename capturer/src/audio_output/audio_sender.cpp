@@ -180,7 +180,7 @@ void AudioSender::run()
             ba_direct=QByteArray((char*)frame->audio.data_ptr, frame->audio.data_size);
 
 
-            sendData(ba_direct, ba_direct, frame->audio.sample_size, frame->audio.channels);
+            sendData(ba_direct, ba_simple, frame->audio.sample_size, frame->audio.channels);
 
             frame.reset();
         }
