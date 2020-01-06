@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QDateTime>
 #include <qcoreapplication.h>
 
 #ifdef LIB_MWCAPTURE
@@ -189,6 +190,11 @@ struct MagewellDeviceWorkerContext
 
     //
 
+    unsigned int temperature;
+    int64_t temperature_timestamp=0;
+
+    //
+
     int64_t audio_timestamp;
     QByteArray ba_audio;
 
@@ -332,7 +338,7 @@ bool MagewellDeviceWorker::step()
 
     if(ret!=MW_SUCCEEDED) {
         qCritical() << "MWGetNotifyStatus err";
-        return true;
+        return false;
     }
 
 
@@ -393,7 +399,7 @@ bool MagewellDeviceWorker::step()
 
         HDMI_INFOFRAME_PACKET hdmi_infoframe_packet;
 
-        int ret=MWGetHDMIInfoFramePacket((HCHANNEL)current_channel, MWCAP_HDMI_INFOFRAME_ID_HDR, &hdmi_infoframe_packet);
+        ret=MWGetHDMIInfoFramePacket((HCHANNEL)current_channel, MWCAP_HDMI_INFOFRAME_ID_HDR, &hdmi_infoframe_packet);
 
         if(ret==MW_SUCCEEDED) {
             static const int den=1000;
@@ -606,6 +612,16 @@ bool MagewellDeviceWorker::step()
         updateVideoSignalInfo();
         qDebug() << "!MWCAP_NOTIFY_VIDEO_FRAME_BUFFERED(ING)";
     }
+
+
+    if((QDateTime::currentSecsSinceEpoch() - d->temperature_timestamp)>=1) {
+        d->temperature_timestamp=QDateTime::currentSecsSinceEpoch();
+
+        if(MWGetTemperature((HCHANNEL)current_channel, &d->temperature)==MW_SUCCEEDED) {
+            emit temperatureChanged(d->temperature/10.);
+        }
+    }
+
 
     return true;
 

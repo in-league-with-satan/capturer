@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -113,6 +113,7 @@ private:
 signals:
     void signalLost(bool value);
     void formatChanged(QString current_format);
+    void temperatureChanged(double temperature);
     void errorString(QString err_string);
 };
 

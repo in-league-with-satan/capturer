@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -154,6 +154,7 @@ struct NvState {
 
 struct Status {
     QString input_format;
+    double temperature=-1.;
     NRecStats rec_stats;
     PlayerState player_state;
     NvState nv_state;

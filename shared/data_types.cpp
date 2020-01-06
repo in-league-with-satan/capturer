@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -190,6 +190,7 @@ QVariantMap Status::toExt()
     QVariantMap map_root;
 
     map_root.insert(QStringLiteral("input_format"), input_format);
+    map_root.insert(QStringLiteral("temperature"), temperature);
     map_root.insert(QStringLiteral("rec_stats"), rec_stats.toExt());
     map_root.insert(QStringLiteral("player_state"), player_state.toExt());
     map_root.insert(QStringLiteral("nv_state"), nv_state.toExt());
@@ -201,6 +202,7 @@ QVariantMap Status::toExt()
 Status &Status::fromExt(const QVariantMap &map_root)
 {
     input_format=map_root.value(QStringLiteral("input_format")).toString();
+    temperature=map_root.value(QStringLiteral("temperature")).toDouble();
     rec_stats.fromExt(map_root.value(QStringLiteral("rec_stats")).toMap());
     player_state.fromExt(map_root.value(QStringLiteral("player_state")).toMap());
     nv_state.fromExt(map_root.value(QStringLiteral("nv_state")).toMap());

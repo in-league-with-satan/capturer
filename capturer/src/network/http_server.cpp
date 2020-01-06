@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -214,6 +214,11 @@ void HttpServer::setSettingsModel(SettingsModel *mdl)
 void HttpServer::formatChanged(QString format)
 {
     status.input_format=format;
+}
+
+void HttpServer::temperatureChanged(double temperature)
+{
+    status.temperature=temperature;
 }
 
 void HttpServer::setRecState(const bool &value)

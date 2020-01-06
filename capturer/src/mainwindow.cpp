@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -292,8 +292,12 @@ MainWindow::~MainWindow()
 
 void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
 {
-    if(!settings->main.headless)
+    if(!settings->main.headless) {
         messenger->formatChanged("no signal");
+        messenger->temperatureChanged(-1.);
+    }
+
+    http_server->temperatureChanged(-1.);
 
     while(stream.size()<index + 1) {
         sourceDeviceAdd();
@@ -775,6 +779,10 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
                     messenger, SIGNAL(formatChanged(QString)), Qt::QueuedConnection);
 
             connect(dynamic_cast<QObject*>(*device),
+                    SIGNAL(temperatureChanged(double)),
+                    messenger, SIGNAL(temperatureChanged(double)), Qt::QueuedConnection);
+
+            connect(dynamic_cast<QObject*>(*device),
                     SIGNAL(signalLost(bool)), messenger, SIGNAL(signalLost(bool)), Qt::QueuedConnection);
 
             (*device)->subscribe(messenger->videoSourcePrimary()->frameBuffer());
@@ -804,6 +812,10 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
         connect(dynamic_cast<QObject*>(*device),
                 SIGNAL(formatChanged(QString)),
                 http_server, SLOT(formatChanged(QString)), Qt::QueuedConnection);
+
+        connect(dynamic_cast<QObject*>(*device),
+                SIGNAL(temperatureChanged(double)),
+                http_server, SLOT(temperatureChanged(double)), Qt::QueuedConnection);
 
         (*device)->subscribe(encoder_streaming->frameBuffer());
     }

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -99,6 +99,7 @@ signals:
     void formatChanged(QString format);
     void channelChanged(MGHCHANNEL channel);
     void errorString(QString err_string);
+    void temperatureChanged(double temperature);
 };
 
 #endif // MAGEWELL_DEVICE_WORKER_H

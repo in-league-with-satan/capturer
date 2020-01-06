@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -79,6 +79,7 @@ public:
         framesize=QSize(640, 480);
         half_fps=false;
         signal_lost=true;
+        temperature=-1.;
 
         audio_sample_size=AudioSampleSize::bitdepth_null;
         audio_channels=AudioChannels::ch_8;
@@ -172,6 +173,12 @@ public:
 
     //
 
+    virtual double currentTemperature() {
+        return temperature;
+    }
+
+    //
+
     virtual void deviceStart()=0;
     virtual void deviceStop()=0;
 
@@ -250,6 +257,7 @@ public:
 
     virtual void signalLost(bool value)=0;
     virtual void formatChanged(QString format)=0;
+    virtual void temperatureChanged(double temperature)=0;
     virtual void errorString(QString err_string)=0;
 
 protected:
@@ -265,6 +273,8 @@ protected:
     std::atomic <AVRational> framerate;
     std::atomic <QSize> framesize;
     std::atomic <bool> half_fps;
+    std::atomic <double> temperature;
+
     Protect <AVMasteringDisplayMetadata> mastering_display_metadata;
     Protect <QString> current_format;
     Protect <QString> current_dev_name;
