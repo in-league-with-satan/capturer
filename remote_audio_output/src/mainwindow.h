@@ -53,6 +53,7 @@ private:
 
     QLineEdit *le_host;
     QLineEdit *le_port;
+    QCheckBox *cb_simplify_audio;
 
     QCheckBox *cb_normalization;
     QCheckBox *cb_manual_gain_factor;

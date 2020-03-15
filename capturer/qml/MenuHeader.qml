@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018, 2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -50,7 +50,9 @@ ShowHideRect {
 
         style: Text.Outline
 
-        text: "Input format:"
+        text: "input format:"
+        property var format;
+        property var temperature;
     }
 
     Text {
@@ -96,7 +98,19 @@ ShowHideRect {
     Connections {
         target: messenger
 
-        onFormatChanged: input_format.text="input format: " + format
+        onFormatChanged: {
+            input_format.format=format
+            input_format.text="input format: " + input_format.format + "  " + input_format.temperature
+        }
+        onTemperatureChanged: {
+            if(temperature<0)
+                input_format.temperature=""
+
+            else
+                input_format.temperature=temperature.toFixed(1) + "℃";
+
+            input_format.text="input format: " + input_format.format + "  " + input_format.temperature
+        }
         onFreeSpaceStr: free_space.text="free space: " + size
         onAudioLevelPrimary: audio_level_primary.setLevel(l, r, c, lfe, rl, rr, sl, sr)
         onAudioLevelSecondary: audio_level_secondary.setLevel(l, r, c, lfe, rl, rr, sl, sr)

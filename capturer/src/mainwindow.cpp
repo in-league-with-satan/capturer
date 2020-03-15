@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -124,7 +124,9 @@ MainWindow::MainWindow(QObject *parent)
         //
 
         connect(encoder_streaming, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
-        connect(encoder_streaming, SIGNAL(stats(FFEncoder::Stats)), term, SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
+
+        if(term)
+            connect(encoder_streaming, SIGNAL(stats(FFEncoder::Stats)), term, SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
 
         //
 
@@ -290,8 +292,12 @@ MainWindow::~MainWindow()
 
 void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
 {
-    if(!settings->main.headless)
+    if(!settings->main.headless) {
         messenger->formatChanged("no signal");
+        messenger->temperatureChanged(-1.);
+    }
+
+    http_server->temperatureChanged(-1.);
 
     while(stream.size()<index + 1) {
         sourceDeviceAdd();
@@ -773,6 +779,10 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
                     messenger, SIGNAL(formatChanged(QString)), Qt::QueuedConnection);
 
             connect(dynamic_cast<QObject*>(*device),
+                    SIGNAL(temperatureChanged(double)),
+                    messenger, SIGNAL(temperatureChanged(double)), Qt::QueuedConnection);
+
+            connect(dynamic_cast<QObject*>(*device),
                     SIGNAL(signalLost(bool)), messenger, SIGNAL(signalLost(bool)), Qt::QueuedConnection);
 
             (*device)->subscribe(messenger->videoSourcePrimary()->frameBuffer());
@@ -802,6 +812,10 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
         connect(dynamic_cast<QObject*>(*device),
                 SIGNAL(formatChanged(QString)),
                 http_server, SLOT(formatChanged(QString)), Qt::QueuedConnection);
+
+        connect(dynamic_cast<QObject*>(*device),
+                SIGNAL(temperatureChanged(double)),
+                http_server, SLOT(temperatureChanged(double)), Qt::QueuedConnection);
 
         (*device)->subscribe(encoder_streaming->frameBuffer());
     }
@@ -1507,7 +1521,6 @@ void MainWindow::sourceDeviceAdd()
     ObjGrp *str=&stream.last();
 
     str->audio_sender=new AudioSender(stream.size() - 1);
-    str->audio_sender->setSimplify(settings->main.simplify_audio_for_send);
 
     str->encoder=new FFEncoderThread(stream.size() - 1, &enc_base_filename, &enc_start_sync, settings->main.location_videos, QString("capturer %1").arg(VERSION_STRING), this);
 
@@ -2249,6 +2262,9 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
 
     if(!qml) {
         settings_model->updateQml();
+
+        if(messenger)
+            messenger->focusReset();
     }
 }
 

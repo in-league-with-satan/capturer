@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDebug>
 #include <QUdpSocket>
 #include <QCborValue>
+#include <QJsonDocument>
 #include <QNetworkDatagram>
 #include <QDateTime>
 #include <qcoreapplication.h>
@@ -59,11 +60,6 @@ FrameBuffer<Frame::ptr>::ptr AudioSender::frameBuffer()
     return frame_buffer;
 }
 
-void AudioSender::setSimplify(bool value)
-{
-    simplify=value;
-}
-
 void AudioSender::run()
 {
     QUdpSocket socket;
@@ -79,6 +75,7 @@ void AudioSender::run()
         QHostAddress host;
         int port;
         qint64 timestamp;
+        bool simplify_audio;
 
         bool operator==(const Listener &other) {
             return host==other.host && port==other.port;
@@ -87,22 +84,51 @@ void AudioSender::run()
 
     const int max_raw_size=65000;
 
-    int max_packets;
-    int max_size;
-
     QList <Listener> listener;
-
-    AudioPacket packet;
 
     Frame::ptr frame;
 
-    QByteArray ba_in;
-    QByteArray ba_out;
+    QByteArray ba_direct;
+    QByteArray ba_simple;
 
+    auto sendData=[&socket, &listener](QByteArray ba_direct, QByteArray &ba_simple, int &sample_size, int &channels) {
+        QList <QByteArray> ba_cbor_direct;
+        QByteArray ba_cbor_simple;
 
-    auto sendData=[&socket, &listener](QByteArray &ba) {
         foreach(const Listener &l, listener) {
-            socket.writeDatagram(ba, l.host, l.port);
+            if(l.simplify_audio && !ba_simple.isEmpty()) {
+                if(ba_cbor_simple.isEmpty()) {
+                    AudioPacket packet;
+                    packet.data=ba_simple;
+                    packet.channels=2;
+                    packet.sample_size=16;
+                    ba_cbor_simple=QCborValue::fromVariant(packet.toExt()).toCbor();
+                }
+
+                socket.writeDatagram(ba_cbor_simple, l.host, l.port);
+
+            } else {
+                if(ba_cbor_direct.isEmpty()) {
+                    AudioPacket packet;
+                    packet.sample_size=sample_size;
+                    packet.channels=channels;
+
+                    const int max_packets=(max_raw_size - (max_raw_size%(packet.channels*packet.sample_size)))/(packet.channels*packet.sample_size);
+                    const int max_size=max_packets*packet.channels*packet.sample_size;
+
+                    while(!ba_direct.isEmpty()) {
+                        packet.data=ba_direct.left(max_size);
+                        ba_direct.remove(0, max_size);
+
+                        ba_cbor_direct.append(QCborValue::fromVariant(packet.toExt()).toCbor());
+                    }
+                }
+
+                foreach(QByteArray ba, ba_cbor_direct) {
+                    socket.writeDatagram(ba, l.host, l.port);
+                }
+            }
+
 
             if(QDateTime::currentMSecsSinceEpoch() - l.timestamp>2000)
                 listener.removeAll(l);
@@ -120,7 +146,9 @@ void AudioSender::run()
             if(!dg.isValid())
                 continue;
 
-            Listener l={ dg.senderAddress(), dg.senderPort(), QDateTime::currentMSecsSinceEpoch() };
+            const bool simplify_audio=QJsonDocument::fromJson(dg.data()).toVariant().toMap().value("simplify_audio", false).toBool();
+
+            Listener l={ dg.senderAddress(), dg.senderPort(), QDateTime::currentMSecsSinceEpoch(), simplify_audio };
 
             listener.removeAll(l);
             listener.append(l);
@@ -140,47 +168,19 @@ void AudioSender::run()
                 continue;
 
 
-            if(simplify) {
-                if(!audio_converter->compareParams(frame->audio.channels, frame->audio.sample_size==16 ? 2 : 4, 48000, 2, 2, 48000)) {
-                    audio_converter->init(av_get_default_channel_layout(frame->audio.channels), 48000, frame->audio.sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32,
-                                          AV_CH_LAYOUT_STEREO, 48000, AV_SAMPLE_FMT_S16);
-                }
-
-                if(audio_converter->isReady()) {
-                    audio_converter->convert(frame->audio.data_ptr, frame->audio.data_size, &ba_in);
-                    packet.sample_size=16;
-                    packet.channels=2;
-                }
-
-            } else {
-                ba_in=QByteArray((char*)frame->audio.data_ptr, frame->audio.data_size);
-
-                packet.sample_size=frame->audio.sample_size;
-                packet.channels=frame->audio.channels;
+            if(!audio_converter->compareParams(frame->audio.channels, frame->audio.sample_size==16 ? 2 : 4, 48000, 2, 2, 48000)) {
+                audio_converter->init(av_get_default_channel_layout(frame->audio.channels), 48000, frame->audio.sample_size==16 ? AV_SAMPLE_FMT_S16 : AV_SAMPLE_FMT_S32,
+                                      AV_CH_LAYOUT_STEREO, 48000, AV_SAMPLE_FMT_S16);
             }
 
-
-            if(ba_in.size()>max_raw_size) {
-                max_packets=(max_raw_size - (max_raw_size%(packet.channels*packet.sample_size)))/(packet.channels*packet.sample_size);
-                max_size=max_packets*packet.channels*packet.sample_size;
-
-                while(!ba_in.isEmpty()) {
-                    packet.data=ba_in.left(max_size);
-
-                    ba_out=QCborValue::fromVariant(packet.toExt()).toCbor();
-
-                    sendData(ba_out);
-
-                    ba_in.remove(0, max_size);
-                }
-
-            } else {
-                packet.data=QByteArray((char*)ba_in.constData(), ba_in.size());
-
-                ba_out=QCborValue::fromVariant(packet.toExt()).toCbor();
-
-                sendData(ba_out);
+            if(audio_converter->isReady()) {
+                audio_converter->convert(frame->audio.data_ptr, frame->audio.data_size, &ba_simple);
             }
+
+            ba_direct=QByteArray((char*)frame->audio.data_ptr, frame->audio.data_size);
+
+
+            sendData(ba_direct, ba_simple, frame->audio.sample_size, frame->audio.channels);
 
             frame.reset();
         }

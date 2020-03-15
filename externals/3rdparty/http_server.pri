@@ -12,8 +12,8 @@ contains(DEFINES, LIB_QHTTP) {
         $$PWD/qhttp/src/private
 
     HEADERS += \
-        $$PWD/qhttp/src/private/*.hpp \
-        $$PWD/qhttp/src/private/*.hxx
+        $$files($$PWD/qhttp/src/private/*.hpp) \
+        $$files($$PWD/qhttp/src/private/*.hxx)
 
     SOURCES += \
         $$PWD/qhttp/src/qhttpabstracts.cpp \

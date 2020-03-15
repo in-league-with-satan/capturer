@@ -111,7 +111,6 @@ bool Settings::load()
 
     //
 
-    main.simplify_audio_for_send=map_main.value(QStringLiteral("simplify_audio_for_send"), 0).toInt();
     main.location_videos=map_main.value(QStringLiteral("location_videos"), store_location->videos()).toString();
     main.supported_enc=map_main.value(QStringLiteral("supported_enc")).toMap();
 
@@ -163,7 +162,6 @@ bool Settings::save()
     QVariantMap map_keyboard_shortcuts;
     QVariantMap map_streaming;
 
-    map_main.insert(QStringLiteral("simplify_audio_for_send"), main.simplify_audio_for_send);
     map_main.insert(QStringLiteral("location_videos"), main.location_videos);
     map_main.insert(QStringLiteral("supported_enc"), main.supported_enc);
 

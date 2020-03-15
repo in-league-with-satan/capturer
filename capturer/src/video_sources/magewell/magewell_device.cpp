@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -294,6 +294,7 @@ void MagewellDevice::run()
     connect(d, SIGNAL(signalLost(bool)), SIGNAL(signalLost(bool)), Qt::QueuedConnection);
     connect(d, SIGNAL(errorString(QString)), SIGNAL(errorString(QString)), Qt::QueuedConnection);
     connect(d, SIGNAL(formatChanged(QString)), SIGNAL(formatChanged(QString)), Qt::QueuedConnection);
+    connect(d, SIGNAL(temperatureChanged(double)), SIGNAL(temperatureChanged(double)), Qt::QueuedConnection);
 
     connect(d, &MagewellDeviceWorker::setMasteringDisplayMetadata, [this](AVMasteringDisplayMetadata value) { mastering_display_metadata=value; });
 
@@ -301,7 +302,7 @@ void MagewellDevice::run()
     connect(d, &MagewellDeviceWorker::audioSampleSizeChanged, [this](AudioSampleSize::T value) { audio_sample_size=value; });
     connect(d, &MagewellDeviceWorker::audioChannelsChanged, [this](AudioChannels::T value) { audio_channels=value; });
     connect(d, &MagewellDeviceWorker::formatChanged, [this](QString format) { current_format=format; });
-
+    connect(d, &MagewellDeviceWorker::temperatureChanged, [this](double t) { temperature=t; });
 
     connect(d, SIGNAL(framerateChanged(AVRational)), SLOT(setFramerate(AVRational)), Qt::QueuedConnection);
     connect(d, SIGNAL(framesizeChanged(QSize)), SLOT(setFramesize(QSize)), Qt::QueuedConnection);

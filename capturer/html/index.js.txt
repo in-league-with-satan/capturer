@@ -26,7 +26,12 @@ function loadData()
     request.onload=function() {
         var data=JSON.parse(request.responseText);
 
-        document.getElementById('input_format').innerHTML=' ' + data.input_format;
+        if(data.temperature<0)
+            document.getElementById('input_format').innerHTML=' ' + data.input_format;
+
+        else
+            document.getElementById('input_format').innerHTML=' ' + data.input_format + '  ' + data.temperature.toFixed(1) + '℃';
+
 
         if(data.nv_state.dev_name.length) {
             if(document.getElementById('nv_stats')!=null) {

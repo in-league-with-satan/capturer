@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -363,6 +363,20 @@ ShowHideRect {
                 default:
                     break
                 }
+            }
+
+            onFocusReset: {
+                var prev_duration=list.highlightMoveDuration
+                var prev_velocity=list.highlightMoveVelocity
+
+                list.highlightMoveDuration=0xffffffff
+                list.highlightMoveVelocity=-1
+
+                list.currentIndex++
+                list.currentIndex--
+
+                list.highlightMoveDuration=prev_duration
+                list.highlightMoveVelocity=prev_velocity
             }
         }
     }

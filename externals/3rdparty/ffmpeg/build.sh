@@ -153,7 +153,7 @@ build_x264() {
   cd $PATH_BUILD
 
   if [ ! -e x264 ]; then
-    git clone --depth 1 git://git.videolan.org/x264.git
+    git clone --depth 1 https://code.videolan.org/videolan/x264.git
     cd x264
 
   else

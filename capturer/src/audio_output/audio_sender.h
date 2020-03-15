@@ -38,9 +38,6 @@ public:
 
     FrameBuffer<Frame::ptr>::ptr frameBuffer();
 
-public slots:
-    void setSimplify(bool value);
-
 protected:
     void run();
 
@@ -50,8 +47,6 @@ private:
     AudioConverter *audio_converter;
 
     std::atomic <bool> running;
-
-    std::atomic <bool> simplify;
 
     int dev_num;
 };

@@ -94,6 +94,8 @@ MainWindow::MainWindow(QWidget *parent)
     le_host=new QLineEdit();
     le_port=new QLineEdit();
 
+    cb_simplify_audio=new QCheckBox("simplify audio");
+
     QPushButton *b_reload_devices=new QPushButton(QStringLiteral("reload devices"));
     QPushButton *b_start_device=new QPushButton(QStringLiteral("start device"));
     QPushButton *b_connect=new QPushButton(QStringLiteral("connect"));
@@ -148,6 +150,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     la_controls->addWidget(l_port, row, 0);
     la_controls->addWidget(le_port, row++, 1);
+
+    la_controls->addWidget(cb_simplify_audio, row++, 1);
 
     la_controls->addWidget(b_connect, row++, 1);
 
@@ -237,6 +241,8 @@ void MainWindow::load()
     le_host->setText(map_root.value(QStringLiteral("host"), QStringLiteral("127.0.0.1")).toString());
     le_port->setText(map_root.value(QStringLiteral("port"), QStringLiteral("4142")).toString());
 
+    cb_simplify_audio->setChecked(map_root.value(QStringLiteral("simplify_audio"), false).toBool());
+
     cb_normalization->setChecked(map_root.value(QStringLiteral("normalization"), true).toBool());
     le_norm_update_time->setText(map_root.value(QStringLiteral("normalization_update_time"), "2000").toString());
     le_norm_gain_change_step->setText(map_root.value(QStringLiteral("normalization_gain_change_step"), "0.5").toString());
@@ -264,6 +270,7 @@ void MainWindow::save()
 
     map_root.insert(QStringLiteral("host"), le_host->text().trimmed());
     map_root.insert(QStringLiteral("port"), le_port->text().trimmed());
+    map_root.insert(QStringLiteral("simplify_audio"), cb_simplify_audio->isChecked());
     map_root.insert(QStringLiteral("normalization"), cb_normalization->isChecked());
     map_root.insert(QStringLiteral("normalization_update_time"), le_norm_update_time->text().trimmed());
     map_root.insert(QStringLiteral("normalization_gain_change_step"), le_norm_gain_change_step->text().trimmed());
@@ -411,7 +418,11 @@ void MainWindow::startAudioDevice()
 
 void MainWindow::connectToHost()
 {
-    socket->writeDatagram(QByteArray("alive!"), QHostAddress(le_host->text()), le_port->text().toInt());
+    QVariantMap map_root;
+    map_root.insert(QStringLiteral("simplify_audio"), cb_simplify_audio->isChecked());
+
+    socket->writeDatagram(QJsonDocument::fromVariant(map_root).toJson(QJsonDocument::Compact),
+                          QHostAddress(le_host->text()), le_port->text().toInt());
 
     if(!timer_still_alive->isActive())
         timer_still_alive->start();

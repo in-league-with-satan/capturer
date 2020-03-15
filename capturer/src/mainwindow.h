@@ -63,21 +63,21 @@ private:
 
     QList <ObjGrp> stream;
 
-    SettingsModel *settings_model;
+    SettingsModel *settings_model=nullptr;
 
-    FFDecoderThread *ff_dec;
+    FFDecoderThread *ff_dec=nullptr;
 
-    QmlMessenger *messenger;
-    OverlayView *overlay_view;
+    QmlMessenger *messenger=nullptr;
+    OverlayView *overlay_view=nullptr;
 
-    AudioLevel *audio_level_primary;
-    AudioLevel *audio_level_secondary;
+    AudioLevel *audio_level_primary=nullptr;
+    AudioLevel *audio_level_secondary=nullptr;
 
-    AudioOutputInterface *audio_output;
+    AudioOutputInterface *audio_output=nullptr;
 
-    HttpServer *http_server;
+    HttpServer *http_server=nullptr;
 
-    NvTools *nv_tools;
+    NvTools *nv_tools=nullptr;
     QStringList cuda_devices;
 
     FFEncoderBaseFilename enc_streaming_url;
