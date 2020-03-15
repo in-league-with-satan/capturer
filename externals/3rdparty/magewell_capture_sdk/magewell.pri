@@ -2,10 +2,10 @@ INCLUDEPATH += \
     $$PWD
 
 HEADERS += \
-    $$PWD/*.h
+    $$files($$PWD/*.h)
 
 SOURCES += \
-    $$PWD/*.cpp
+    $$files($$PWD/*.cpp)
 
 linux {
     DEFINES += LIB_MWCAPTURE
@@ -15,17 +15,17 @@ linux {
         $$PWD/linux/Include/LibMWCapture
 
     HEADERS += \
-        $$PWD/linux/Include/*.h \
-        $$PWD/linux/Include/LibMWCapture/*.h
+        $$files($$PWD/linux/Include/*.h) \
+        $$files($$PWD/linux/Include/LibMWCapture/*.h)
 
     INCLUDEPATH += \
         $$PWD/linux/Lib
 
     HEADERS += \
-        $$PWD/linux/Lib/*.h
+        $$files($$PWD/linux/Lib/*.h)
 
     SOURCES += \
-        $$PWD/linux/Lib/*.c
+        $$files($$PWD/linux/Lib/*.c)
 
 #    LIBS += $$PWD/linux/Lib/x64/libMWCapture.a
 #    LIBS += -ludev -lasound -lv4l2
@@ -40,8 +40,8 @@ windows {
             $$PWD/win/Include/LibMWCapture
 
         HEADERS += \
-            $$PWD/win/Include/*.h \
-            $$PWD/win/Include/LibMWCapture/*.h
+            $$files($$PWD/win/Include/*.h) \
+            $$files($$PWD/win/Include/LibMWCapture/*.h)
 
 
 #        LIBS += $$PWD/win/Lib/Win32/LibMWCapture.lib

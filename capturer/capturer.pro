@@ -98,10 +98,10 @@ INCLUDEPATH += \
     $$PWD/../shared
 
 HEADERS += \
-    $$PWD/../shared/*.h
+    $$files($$PWD/../shared/*.h)
 
 SOURCES += \
-    $$PWD/../shared/*.cpp
+    $$files($$PWD/../shared/*.cpp)
 
 
 INCLUDEPATH += \
@@ -120,33 +120,33 @@ INCLUDEPATH += \
     $$PWD/src/video_sources/decklink
 
 SOURCES += \
-    $$PWD/src/*.cpp \
-    $$PWD/src/ffmpeg/*.cpp \
-    $$PWD/src/audio_output/*.cpp \
-    $$PWD/src/overlay/*.cpp \
-    $$PWD/src/network/*.cpp \
-    $$PWD/src/nv/*.cpp \
-    $$PWD/src/term/*.cpp \
-    $$PWD/src/term/cursed/*.cpp \
-    $$PWD/src/video_sources/dummy/*.cpp \
-    $$PWD/src/video_sources/ffmpeg/*.cpp \
-    $$PWD/src/video_sources/magewell/*.cpp \
-    $$PWD/src/video_sources/decklink/*.cpp
+    $$files($$PWD/src/*.cpp) \
+    $$files($$PWD/src/ffmpeg/*.cpp) \
+    $$files($$PWD/src/audio_output/*.cpp) \
+    $$files($$PWD/src/overlay/*.cpp) \
+    $$files($$PWD/src/network/*.cpp) \
+    $$files($$PWD/src/nv/*.cpp) \
+    $$files($$PWD/src/term/*.cpp) \
+    $$files($$PWD/src/term/cursed/*.cpp) \
+    $$files($$PWD/src/video_sources/dummy/*.cpp) \
+    $$files($$PWD/src/video_sources/ffmpeg/*.cpp) \
+    $$files($$PWD/src/video_sources/magewell/*.cpp) \
+    $$files($$PWD/src/video_sources/decklink/*.cpp)
 
 HEADERS += \
-    $$PWD/src/*.h \
-    $$PWD/src/ffmpeg/*.h \
-    $$PWD/src/audio_output/*.h \
-    $$PWD/src/overlay/*.h \
-    $$PWD/src/network/*.h \
-    $$PWD/src/nv/*.h \
-    $$PWD/src/term/*.h \
-    $$PWD/src/term/cursed/*.h \
-    $$PWD/src/video_sources/*.h \
-    $$PWD/src/video_sources/dummy/*.h \
-    $$PWD/src/video_sources/ffmpeg/*.h \
-    $$PWD/src/video_sources/magewell/*.h \
-    $$PWD/src/video_sources/decklink/*.h
+    $$files($$PWD/src/*.h) \
+    $$files($$PWD/src/ffmpeg/*.h) \
+    $$files($$PWD/src/audio_output/*.h) \
+    $$files($$PWD/src/overlay/*.h) \
+    $$files($$PWD/src/network/*.h) \
+    $$files($$PWD/src/nv/*.h) \
+    $$files($$PWD/src/term/*.h) \
+    $$files($$PWD/src/term/cursed/*.h) \
+    $$files($$PWD/src/video_sources/*.h) \
+    $$files($$PWD/src/video_sources/dummy/*.h) \
+    $$files($$PWD/src/video_sources/ffmpeg/*.h) \
+    $$files($$PWD/src/video_sources/magewell/*.h) \
+    $$files($$PWD/src/video_sources/decklink/*.h)
 
 RESOURCES += \
     $$PWD/qml.qrc \
@@ -154,5 +154,5 @@ RESOURCES += \
     $$PWD/html.qrc
 
 OTHER_FILES += \
-    $$PWD/qml/*.qml
-    $$PWD/html/*
+    $$files($$PWD/qml/*.qml) \
+    $$files($$PWD/html/*)

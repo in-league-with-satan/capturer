@@ -63,12 +63,12 @@ INCLUDEPATH += \
     $$PWD/../capturer/src/ffmpeg
 
 SOURCES += \
-    $$PWD/src/*.cpp \
+    $$files($$PWD/src/*.cpp) \
     $$PWD/../capturer/src/ffmpeg/ff_audio_converter.cpp \
     $$PWD/../capturer/src/ffmpeg/ff_tools.cpp
 
 HEADERS += \
-    $$PWD/src/*.h \
+    $$files($$PWD/src/*.h) \
     $$PWD/../capturer/src/ffmpeg/ff_audio_converter.h \
     $$PWD/../capturer/src/ffmpeg/ff_tools.h
 

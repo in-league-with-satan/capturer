@@ -62,10 +62,10 @@ INCLUDEPATH += \
     $$PWD/../shared
 
 HEADERS += \
-    $$PWD/../shared/*.h
+    $$files($$PWD/../shared/*.h)
 
 SOURCES += \
-    $$PWD/../shared/*.cpp
+    $$files($$PWD/../shared/*.cpp)
 
 
 INCLUDEPATH += \
@@ -73,16 +73,16 @@ INCLUDEPATH += \
     $$PWD/src/network
 
 SOURCES += \
-    $$PWD/src/*.cpp \
-    $$PWD/src/network/*.cpp
+    $$files($$PWD/src/*.cpp) \
+    $$files($$PWD/src/network/*.cpp)
 
 HEADERS += \
-    $$PWD/src/*.h \
-    $$PWD/src/network/*.h
+    $$files($$PWD/src/*.h) \
+    $$files($$PWD/src/network/*.h)
 
 
 RESOURCES += \
     $$PWD/qml.qrc
 
 OTHER_FILES += \
-    $$PWD/qml/*.qml
+    $$files($$PWD/qml/*.qml)

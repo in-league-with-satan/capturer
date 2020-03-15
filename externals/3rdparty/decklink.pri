@@ -17,10 +17,10 @@ windows {
         $$PWD/blackmagic_decklink_sdk-mingw
 
     HEADERS += \
-        $$PWD/blackmagic_decklink_sdk-mingw/*.h
+        $$files($$PWD/blackmagic_decklink_sdk-mingw/*.h)
 
     SOURCES += \
-        $$PWD/blackmagic_decklink_sdk-mingw/*.c
+        $$files($$PWD/blackmagic_decklink_sdk-mingw/*.c)
 
     LIBS += -lole32 -lstrmiids -loleaut32
 }
