@@ -47,7 +47,7 @@ AudioBuffer::AudioData AudioBuffer::get(int size)
         dtmp=data.takeFirst();
 
         if(dres.pts==AV_NOPTS_VALUE)
-            dres.pts=dtmp.pts;
+            dres.pts=av_rescale_q(dtmp.pts, dtmp.time_base, { 1, 48000 });
 
         size_available=std::min(dtmp.data.size(), size - dres.data.size());
 
