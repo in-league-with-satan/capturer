@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2019-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

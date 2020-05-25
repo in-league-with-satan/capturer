@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018, 2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -130,12 +130,27 @@ void map8channelsTo6(QByteArray *ba_src, QByteArray *ba_dst, bool drop_side)
     }
 
     for(int pos_src=0, pos_dst=0, size=ba_src->size()/sample_size_bytes; pos_src<size; pos_src+=8, pos_dst+=6) {
-         ptr_data_dst[pos_dst + 0]=ptr_data_src[pos_src + 0];                       // front left;
-         ptr_data_dst[pos_dst + 1]=ptr_data_src[pos_src + 1];                       // front right;
-         ptr_data_dst[pos_dst + 2]=ptr_data_src[pos_src + 2];                       // front center;
-         ptr_data_dst[pos_dst + 3]=ptr_data_src[pos_src + 3];                       // lfe;
-         ptr_data_dst[pos_dst + 4]=ptr_data_src[pos_src + index_src_rear_left];     // rear left;
-         ptr_data_dst[pos_dst + 5]=ptr_data_src[pos_src + index_src_rear_right];    // rear right;
+        ptr_data_dst[pos_dst + 0]=ptr_data_src[pos_src + 0];                        // front left;
+        ptr_data_dst[pos_dst + 1]=ptr_data_src[pos_src + 1];                        // front right;
+        ptr_data_dst[pos_dst + 2]=ptr_data_src[pos_src + 2];                        // front center;
+        ptr_data_dst[pos_dst + 3]=ptr_data_src[pos_src + 3];                        // lfe;
+        ptr_data_dst[pos_dst + 4]=ptr_data_src[pos_src + index_src_rear_left];      // rear left;
+        ptr_data_dst[pos_dst + 5]=ptr_data_src[pos_src + index_src_rear_right];     // rear right;
+    }
+}
+
+template <typename T>
+void lfeCenterSwap(QByteArray *ba, int channels_count)
+{
+    if(channels_count<6)
+        return;
+
+    T *ptr_data=(T*)ba->data();
+
+    const int sample_size_bytes=sizeof(T);
+
+    for(int pos=0, size=ba->size()/sample_size_bytes; pos<size; pos+=channels_count) {
+        std::swap(ptr_data[pos + 2], ptr_data[pos + 3]);
     }
 }
 

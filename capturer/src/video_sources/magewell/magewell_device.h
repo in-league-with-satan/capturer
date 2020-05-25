@@ -93,6 +93,7 @@ public:
                 disabled,
                 sides_drop,
                 sides_to_rear,
+                lfe_center_swap,
                 size
             };
 
@@ -101,6 +102,7 @@ public:
                 case disabled: return QStringLiteral("disabled");
                 case sides_drop: return QStringLiteral("sides drop");
                 case sides_to_rear: return QStringLiteral("sides to rear");
+                case lfe_center_swap: return QStringLiteral("lfe-center swap");
                 }
                 return QStringLiteral("unknown");
             }

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -254,7 +254,8 @@ void MagewellAudioThread::run()
 
             QByteArray ba_ready=QByteArray(d->ba_buffer);
 
-            if(d->audio_remap_mode!=MagewellDevice::Device::AudioRemapMode::disabled) {
+            if(d->audio_remap_mode!=MagewellDevice::Device::AudioRemapMode::disabled
+                    && d->audio_remap_mode!=MagewellDevice::Device::AudioRemapMode::lfe_center_swap) {
                 if(d->channels==8) {
                     if(d->sample_size_bytes==2)
                         map8channelsTo6<uint16_t>(&d->ba_buffer, &ba_ready, d->audio_remap_mode==MagewellDevice::Device::AudioRemapMode::sides_drop);
@@ -262,6 +263,13 @@ void MagewellAudioThread::run()
                     else
                         map8channelsTo6<uint32_t>(&d->ba_buffer, &ba_ready, d->audio_remap_mode==MagewellDevice::Device::AudioRemapMode::sides_drop);
                 }
+
+            } else if(d->audio_remap_mode==MagewellDevice::Device::AudioRemapMode::lfe_center_swap && d->channels>=6) {
+                if(d->sample_size_bytes==2)
+                    lfeCenterSwap<uint16_t>(&ba_ready, d->channels);
+
+                else
+                    lfeCenterSwap<uint32_t>(&ba_ready, d->channels);
             }
 
             d->lltimestamp=audio_frame.llTimestamp;
