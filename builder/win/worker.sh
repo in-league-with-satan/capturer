@@ -3,8 +3,8 @@
 
 dest_dir=bin_win
 
-
-ffmpeg_version=`curl -vs "https://ffmpeg.zeranoe.com/builds/win64/shared/?C=M&O=D" 2>&1 | grep -m 1 shared.zip | grep -Po '(?<=(ffmpeg-)).*(?=-win64-shared.zip)' | cut -c -16`
+ffmpeg_date=`curl -vs "https://ffmpeg.zeranoe.com/builds/win64/shared/" 2>&1 | grep -E 'ffmpeg-[0-9]{8}' | grep -oE '[0-9]{8}' | sort -r | head -1`
+ffmpeg_version=`curl -vs "https://ffmpeg.zeranoe.com/builds/win64/shared/" 2>&1 | grep $ffmpeg_date | grep -Po '(?<=(ffmpeg-)).*(?=-win64-shared.zip)' | cut -c -16`
 
 
 app_last_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
