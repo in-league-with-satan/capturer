@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -31,6 +31,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "ff_tools.h"
 #include "ff_format_converter_multithreaded.h"
 #include "ff_audio_converter.h"
+#include "ff_encoder_base_filename.h"
 #include "decklink_frame_converter.h"
 #include "source_interface.h"
 

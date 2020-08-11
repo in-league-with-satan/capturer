@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -95,6 +95,7 @@ bool Settings::load()
     QVariantMap map_http_server=map_root.value(QStringLiteral("http_server")).toMap();
     QVariantMap map_keyboard_shortcuts=map_root.value(QStringLiteral("keyboard_shortcuts")).toMap();
     QVariantMap map_streaming=map_root.value(QStringLiteral("streaming")).toMap();
+    QVariantMap map_irc_subtitles=map_root.value(QStringLiteral("irc_subtitles")).toMap();
 
     //
 
@@ -146,6 +147,15 @@ bool Settings::load()
 
     //
 
+    irc_subtitles.enabled=map_irc_subtitles.value(QStringLiteral("enabled"), false).toBool();
+    irc_subtitles.host=map_irc_subtitles.value(QStringLiteral("host"), QStringLiteral("irc.chat.twitch.tv")).toString().simplified();
+    irc_subtitles.port=map_irc_subtitles.value(QStringLiteral("port"), 6667).toUInt();
+    irc_subtitles.nickname=map_irc_subtitles.value(QStringLiteral("nickname")).toString().simplified();
+    irc_subtitles.token=map_irc_subtitles.value(QStringLiteral("token"), "oauth:blah-blah-blah").toString().simplified();
+    irc_subtitles.channel=map_irc_subtitles.value(QStringLiteral("channel")).toString().simplified();
+
+    //
+
     if(main.supported_enc.isEmpty())
         checkEncoders();
 
@@ -161,6 +171,7 @@ bool Settings::save()
     QVariantMap map_http_server;
     QVariantMap map_keyboard_shortcuts;
     QVariantMap map_streaming;
+    QVariantMap map_irc_subtitles;
 
     map_main.insert(QStringLiteral("location_videos"), main.location_videos);
     map_main.insert(QStringLiteral("supported_enc"), main.supported_enc);
@@ -184,16 +195,30 @@ bool Settings::save()
                     QKeySequence(keyboard_shortcuts.code.key(i, KeyboardShortcuts::defaultQtKey(i))).toString()
                     );
 
-    map_root.insert(QStringLiteral("main"), map_main);
-    map_root.insert(QStringLiteral("source_device"), lst_source_device);
-    map_root.insert(QStringLiteral("keyboard_shortcuts"), map_keyboard_shortcuts);
+    //
 
     map_streaming.insert(QStringLiteral("rec"), recSave(streaming.rec));
     map_streaming.insert(QStringLiteral("url"), streaming.url);
     map_streaming.insert(QStringLiteral("url_index"), streaming.url_index);
 
-    map_root.insert(QStringLiteral("streaming"), map_streaming);
+    //
 
+    map_irc_subtitles.insert(QStringLiteral("enabled"), irc_subtitles.enabled);
+    map_irc_subtitles.insert(QStringLiteral("host"), irc_subtitles.host);
+    map_irc_subtitles.insert(QStringLiteral("port"), irc_subtitles.port);
+    map_irc_subtitles.insert(QStringLiteral("nickname"), irc_subtitles.nickname);
+    map_irc_subtitles.insert(QStringLiteral("token"), irc_subtitles.token);
+    map_irc_subtitles.insert(QStringLiteral("channel"), irc_subtitles.channel);
+
+    //
+
+    map_root.insert(QStringLiteral("main"), map_main);
+    map_root.insert(QStringLiteral("source_device"), lst_source_device);
+    map_root.insert(QStringLiteral("keyboard_shortcuts"), map_keyboard_shortcuts);
+    map_root.insert(QStringLiteral("streaming"), map_streaming);
+    map_root.insert(QStringLiteral("irc_subtitles"), map_irc_subtitles);
+
+    //
 
     QByteArray ba=QJsonDocument::fromVariant(map_root).toJson();
 

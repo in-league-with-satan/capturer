@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -27,7 +27,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QMutexLocker>
 
 #include "frame.h"
-#include "ff_encoder_base_filename.h"
 
 struct FFMpegContext;
 struct OutputStream;
@@ -35,6 +34,7 @@ class FFFormatConverter;
 class FFFormatConverterMt;
 class DecklinkFrameConverter;
 class DecodeFrom210;
+class FFEncoderBaseFilename;
 
 class FFEncStartSync
 {

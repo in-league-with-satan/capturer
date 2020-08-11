@@ -44,6 +44,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "nv_tools.h"
 #include "magewell_device.h"
 #include "term_gui.h"
+#include "irc_subtitles.h"
 
 #include "mainwindow.h"
 
@@ -99,9 +100,26 @@ MainWindow::MainWindow(QObject *parent)
     connect(this, SIGNAL(recStats(NRecStats)), http_server, SLOT(setRecStats(NRecStats)));
     connect(nv_tools, SIGNAL(stateChanged(NvState)), http_server, SLOT(setNvState(NvState)), Qt::QueuedConnection);
 
+    //
 
     encoder_streaming=new FFEncoderThread(FFEncoder::StreamingMode, &enc_streaming_url, &enc_start_sync, QString(), QString("capturer %1").arg(VERSION_STRING), this);
 
+    //
+
+    irc_subtitles=new IrcSubtitles();
+    irc_subtitles->setStoreDir(settings->main.location_videos);
+    irc_subtitles->setBaseFilename(&enc_base_filename);
+
+    if(settings->irc_subtitles.enabled
+            && !settings->irc_subtitles.channel.isEmpty()
+            && !settings->irc_subtitles.host.isEmpty()
+            && !settings->irc_subtitles.nickname.isEmpty()
+            && !settings->irc_subtitles.token.isEmpty()
+            && settings->irc_subtitles.port>0 && settings->irc_subtitles.port<0xffff) {
+        irc_subtitles->connectToHost(settings->irc_subtitles.host, settings->irc_subtitles.port, settings->irc_subtitles.nickname, settings->irc_subtitles.token, settings->irc_subtitles.channel);
+    }
+
+    //
 
     if(!settings->main.headless) {
         messenger=new QmlMessenger(settings_model);
@@ -2400,6 +2418,8 @@ void MainWindow::startStopRecording()
 
         encoder_streaming->stopCoder();
 
+        irc_subtitles->stop();
+
         return;
     }
 
@@ -2525,6 +2545,8 @@ void MainWindow::startStopRecording()
 
         encoder_streaming->setConfig(cfg);
     }
+
+    irc_subtitles->start();
 }
 
 void MainWindow::updateEncList()
