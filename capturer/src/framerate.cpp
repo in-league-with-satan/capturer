@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018, 2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -93,6 +93,9 @@ AVRational Framerate::toRational(const double &fr)
 
     if(std::abs(fr - 120.)<eps)
         return { 1000, 120000 };
+
+    if(std::abs(fr - 144.)<eps)
+        return { 1000, 144000 };
 
     if(std::abs(fr - 240.)<eps)
         return { 1000, 240000 };

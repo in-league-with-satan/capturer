@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -369,6 +369,7 @@ QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &devi
     QVariantMap map_ff;
     QVariantMap map_magewell;
     QVariantMap map_decklink;
+    QVariantMap map_screen_capture;
     QVariantMap map_rec;
 
     map_dummy.insert(QStringLiteral("framesize"), device.dummy_device.framesize);
@@ -397,6 +398,9 @@ QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &devi
     map_decklink.insert(QStringLiteral("audio_sample_size"), device.decklink.audio_sample_size);
     map_decklink.insert(QStringLiteral("index"), device.decklink.video_bitdepth);
 
+    map_screen_capture.insert(QStringLiteral("name_audio"), device.screen_capture.name_audio);
+    map_screen_capture.insert(QStringLiteral("upper_framerate_limit"), device.screen_capture.upper_framerate_limit);
+
     map_rec=recSave(device.rec);
 
     map_root.insert(QStringLiteral("index"), device.index);
@@ -404,6 +408,7 @@ QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &devi
     map_root.insert(QStringLiteral("ff"), map_ff);
     map_root.insert(QStringLiteral("magewell"), map_magewell);
     map_root.insert(QStringLiteral("decklink"), map_decklink);
+    map_root.insert(QStringLiteral("screen_capture"), map_screen_capture);
     map_root.insert(QStringLiteral("rec"), map_rec);
 
     return map_root;
@@ -420,6 +425,7 @@ void Settings::setSourceDeviceSettings(Settings::SourceDevice *device, const QVa
     QVariantMap map_ff=map_root.value(QStringLiteral("ff")).toMap();
     QVariantMap map_magewell=map_root.value(QStringLiteral("magewell")).toMap();
     QVariantMap map_decklink=map_root.value(QStringLiteral("decklink")).toMap();
+    QVariantMap map_screen_capture=map_root.value(QStringLiteral("screen_capture")).toMap();
     QVariantMap map_rec=map_root.value(QStringLiteral("rec")).toMap();
 
     device->dummy_device.framesize=map_dummy.value(QStringLiteral("framesize"), 0).toUInt();
@@ -447,6 +453,9 @@ void Settings::setSourceDeviceSettings(Settings::SourceDevice *device, const QVa
     device->decklink.index=map_decklink.value(QStringLiteral("index"), 0).toUInt();
     device->decklink.audio_sample_size=map_decklink.value(QStringLiteral("audio_sample_size"), 0).toUInt();
     device->decklink.video_bitdepth=map_decklink.value(QStringLiteral("index"), 0).toUInt();
+
+    device->screen_capture.name_audio=map_screen_capture.value(QStringLiteral("name_audio")).toString();
+    device->screen_capture.upper_framerate_limit=map_screen_capture.value(QStringLiteral("upper_framerate_limit"), 0).toUInt();
 
     recLoad(&device->rec, map_rec);
 }

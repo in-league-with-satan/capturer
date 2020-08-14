@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -113,6 +113,8 @@ struct Frame
 
         int channels=0;
         int sample_size=0;
+
+        bool loopback=false;
 
         AVRational time_base={};
         int64_t pts=AV_NOPTS_VALUE;

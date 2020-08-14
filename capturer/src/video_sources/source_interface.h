@@ -34,6 +34,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 class SourceInterface
 {
 public:
+    friend class SourceInterfacePublis;
+
     struct Type {
         enum T {
             disabled,
@@ -41,6 +43,7 @@ public:
             ffmpeg,
             magewell,
             decklink,
+            screen_capture,
 
             size
         };
@@ -120,6 +123,9 @@ public:
             return false;
 #endif
 
+        case Type::screen_capture:
+            return true;
+
         default:
             break;
         }
@@ -148,6 +154,9 @@ public:
 
         case Type::decklink:
             return QStringLiteral("decklink");
+
+        case Type::screen_capture:
+            return QStringLiteral("screen_capture");
 
         default:
             break;
@@ -185,7 +194,7 @@ public:
     virtual void deviceHold()=0;
     virtual void deviceResume()=0;
 
-    virtual void setDevice(void *dev)=0;
+    virtual void setDevice(void *ptr)=0;
 
     virtual void setFramerate(AVRational fr) {
         framerate=fr;
@@ -261,6 +270,7 @@ public:
     virtual void errorString(QString err_string)=0;
 
 protected:
+public:
     QList <FrameBuffer<Frame::ptr>::ptr> subscription_list;
 
     int device_index;

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -131,6 +131,13 @@ public:
             int video_bitdepth=0;
 
         } decklink;
+
+        struct ScreenCapture {
+            QString name_audio;
+            int index_audio=0;
+            int upper_framerate_limit=0;
+
+        } screen_capture;
 
         Rec rec;
     };
