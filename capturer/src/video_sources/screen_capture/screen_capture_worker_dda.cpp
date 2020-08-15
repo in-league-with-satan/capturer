@@ -54,13 +54,15 @@ step_start:
     IDXGIResource *desktop_resource=nullptr;
     DXGI_OUTDUPL_FRAME_INFO frame_info;
 
-    res=output_duplication->AcquireNextFrame(500, &frame_info, &desktop_resource);
+    res=output_duplication->AcquireNextFrame(0, &frame_info, &desktop_resource);
+
+    bool frame_ready=true;
 
     if(FAILED(res)) {
         // emit errorString(errorString(res));
 
-        if(res==DXGI_ERROR_WAIT_TIMEOUT) {
-            goto step_start;
+        if(res!=DXGI_ERROR_WAIT_TIMEOUT) {
+            qDebug() << errorString(res);
         }
 
         if(res==DXGI_ERROR_INVALID_CALL || res==DXGI_ERROR_ACCESS_LOST) {
@@ -69,113 +71,106 @@ step_start:
             goto step_start;
         }
 
-        qDebug() << errorString(res);
-
-        return false;
+        frame_ready=false;
     }
-
-    res=desktop_resource->QueryInterface(__uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&acquired_desktop_image));
-
-    if(FAILED(res)) {
-        qCritical() << errorString(res);
-        // emit errorString(errorString(res));
-        return false;
-    }
-
-    ID3D11Texture2D *texture=nullptr;
-    D3D11_TEXTURE2D_DESC description;
-
-    acquired_desktop_image->GetDesc(&description);
-
-    description.BindFlags=0;
-    description.CPUAccessFlags=D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
-    description.Usage=D3D11_USAGE_STAGING;
-    description.MiscFlags=0;
-
-    res=device->CreateTexture2D(&description, NULL, &texture);
-
-    if(FAILED(res)) {
-        qCritical() << errorString(res);
-        return false;
-    }
-
-    ID3D11DeviceContext *immediate_context=nullptr;
-
-    device->GetImmediateContext(&immediate_context);
-
-    immediate_context->CopyResource(texture, acquired_desktop_image);
-
-
-    D3D11_MAPPED_SUBRESOURCE resource;
-    UINT subresource=D3D11CalcSubresource(0, 0, 0);
-
-    immediate_context->Map(texture, subresource, D3D11_MAP_READ_WRITE, 0, &resource);
-
-
-    if(description.Format!=DXGI_FORMAT_B8G8R8A8_UNORM || resource.DepthPitch!=description.Width*description.Height*4) {
-        qCritical() << "unknown format" << description.Format;
-        immediate_context->Release();
-        return false;
-    }
-
 
     Frame::ptr frame=Frame::make();
 
     frame->device_index=si->device_index;
-
-    frame->video.size=QSize(description.Width, description.Height);
-    frame->video.data_size=resource.DepthPitch;
-    frame->video.dummy.resize(frame->video.data_size);
-    frame->video.data_ptr=(uint8_t*)frame->video.dummy.data();
-
-
     frame->video.time_base={ 1, 1000000000 };
     frame->video.pts=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
+    if(frame_ready) {
+        res=desktop_resource->QueryInterface(__uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&acquired_desktop_image));
 
-    memcpy(frame->video.data_ptr, resource.pData, frame->video.data_size);
+        if(FAILED(res)) {
+            qCritical() << errorString(res);
+            // emit errorString(errorString(res));
+            return false;
+        }
+
+        ID3D11Texture2D *texture=nullptr;
+        D3D11_TEXTURE2D_DESC description;
+
+        acquired_desktop_image->GetDesc(&description);
+
+        description.BindFlags=0;
+        description.CPUAccessFlags=D3D11_CPU_ACCESS_READ | D3D11_CPU_ACCESS_WRITE;
+        description.Usage=D3D11_USAGE_STAGING;
+        description.MiscFlags=0;
+
+        res=device->CreateTexture2D(&description, NULL, &texture);
+
+        if(FAILED(res)) {
+            qCritical() << errorString(res);
+            return false;
+        }
+
+        ID3D11DeviceContext *immediate_context=nullptr;
+
+        device->GetImmediateContext(&immediate_context);
+
+        immediate_context->CopyResource(texture, acquired_desktop_image);
 
 
-    frame->video.pixel_format=PixelFormat::bgr0;
+        D3D11_MAPPED_SUBRESOURCE resource;
+        UINT subresource=D3D11CalcSubresource(0, 0, 0);
 
-    //
+        immediate_context->Map(texture, subresource, D3D11_MAP_READ_WRITE, 0, &resource);
+
+        if(description.Format!=DXGI_FORMAT_B8G8R8A8_UNORM || resource.DepthPitch!=description.Width*description.Height*4) {
+            qCritical() << "unknown format" << description.Format;
+            immediate_context->Release();
+            return false;
+        }
+
+        //
+
+        frame->video.size=QSize(description.Width, description.Height);
+        frame->video.data_size=resource.DepthPitch;
+        frame->video.dummy.resize(resource.DepthPitch);
+        frame->video.data_ptr=(uint8_t*)frame->video.dummy.data();
+        frame->video.pixel_format=PixelFormat::bgr0;
+
+        memcpy(frame->video.data_ptr, resource.pData, resource.DepthPitch);
+
+        //
+
+        output_duplication->ReleaseFrame();
+
+        texture->Release();
+        immediate_context->Release();
+        acquired_desktop_image->Release();
+        desktop_resource->Release();
+
+        //
+
+        if(si->framesize!=frame->video.size) {
+            si->framesize=frame->video.size;
+            emit formatChanged(QString("%1-bgr0").arg(si->framesize.load().width()));
+        }
+    }
+
 
     frame->setDataAudio(audio_wasapi->getData(), audio_wasapi->channels(), audio_wasapi->sampleSize());
     frame->audio.time_base={ 1, 48000 };
     frame->audio.pts=av_rescale_q(frame->video.pts, frame->video.time_base, frame->audio.time_base);
     frame->audio.loopback=true;
 
-    //
+    if(frame->video.data_ptr || frame->audio.data_ptr) {
+        foreach(FrameBuffer<Frame::ptr>::ptr buf, si->subscription_list)
+            buf->append(frame);
 
-    foreach(FrameBuffer<Frame::ptr>::ptr buf, si->subscription_list)
-        buf->append(frame);
-
-    //
-
-    if(si->framesize!=frame->video.size) {
-        si->framesize=frame->video.size;
-        emit formatChanged(QString("%1-bgr0").arg(si->framesize.load().width()));
+    } else {
+        frame.reset();
     }
-
-    //
-
-    texture->Release();
-
-    immediate_context->Release();
-
-    res=output_duplication->ReleaseFrame();
-
-    acquired_desktop_image->Release();
-
-    desktop_resource->Release();
-    desktop_resource=nullptr;
 
     //
 
     const uint64_t elapsed=std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - frame_time_point).count();
 
     if(elapsed<frame_duration)
-        std::this_thread::sleep_for(std::chrono::nanoseconds(frame_duration - elapsed));
+        std::this_thread::sleep_for(std::chrono::nanoseconds(int64_t((frame_duration - elapsed)*.98)));
 
     frame_time_point=std::chrono::high_resolution_clock::now();
 
@@ -336,9 +331,7 @@ void ScreenCaptureWorkerDda::deviceStart()
     dxgi_device->Release();
     dxgi_device=nullptr;
 
-
     //
-
 
     res=dxgi_adapter->EnumOutputs(0, &dxgi_output);
 
