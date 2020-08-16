@@ -116,9 +116,13 @@ TermGui::TermGui(SettingsModel *settings_model, MainWindow *mw)
 
 TermGui::~TermGui()
 {
+#ifdef LIB_CURSES
+
     delete c_label;
     delete c_settings;
     stopCurses();
+
+#endif
 }
 
 void TermGui::update()

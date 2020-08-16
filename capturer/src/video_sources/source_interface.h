@@ -43,7 +43,8 @@ public:
             ffmpeg,
             magewell,
             decklink,
-            screen_capture,
+            screen_capture_bitblt,
+            screen_capture_dda,
 
             size
         };
@@ -123,7 +124,10 @@ public:
             return false;
 #endif
 
-        case Type::screen_capture:
+        case Type::screen_capture_bitblt:
+            return true;
+
+        case Type::screen_capture_dda:
             return true;
 
         default:
@@ -155,8 +159,11 @@ public:
         case Type::decklink:
             return QStringLiteral("decklink");
 
-        case Type::screen_capture:
-            return QStringLiteral("screen_capture");
+        case Type::screen_capture_bitblt:
+            return QStringLiteral("screen_capture_bitblt");
+
+        case Type::screen_capture_dda:
+            return QStringLiteral("screen_capture_dda");
 
         default:
             break;

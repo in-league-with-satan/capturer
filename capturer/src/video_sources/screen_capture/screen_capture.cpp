@@ -25,12 +25,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "framerate.h"
 #include "screen_capture_worker_dda.h"
+#include "screen_capture_worker_bitblt.h"
 
 #include "screen_capture.h"
 
-ScreenCapture::ScreenCapture(int device_index, QObject *parent)
+ScreenCapture::ScreenCapture(int device_index, Mode::T capture_mode, QObject *parent)
     : QThread(parent)
     , SourceInterface(device_index)
+    , capture_mode(capture_mode)
     , d(nullptr)
 {
     framerate=Framerate::toRational(60.);
@@ -75,7 +77,7 @@ int ScreenCapture::indexAudioInput(const QString &name)
 
 SourceInterface::Type::T ScreenCapture::type() const
 {
-    return SourceInterface::Type::screen_capture;
+    return capture_mode==Mode::bitblt ? SourceInterface::Type::screen_capture_bitblt : SourceInterface::Type::screen_capture_dda;
 }
 
 bool ScreenCapture::isImplemented() const
@@ -129,16 +131,30 @@ void ScreenCapture::setUpperFramerateLimit(ScreenCapture::FramerateLimit::T lim)
 
 void ScreenCapture::run()
 {
-    d=new ScreenCaptureWorkerDda(this);
+    if(capture_mode==Mode::bitblt) {
+        ScreenCaptureWorkerBitBlt *dd=new ScreenCaptureWorkerBitBlt(this);
+        dd->moveToThread(this);
+        d=dd;
 
-    d->moveToThread(this);
+        connect(this, SIGNAL(deviceStart()), dd, SLOT(deviceStart()), Qt::QueuedConnection);
+        connect(this, SIGNAL(deviceStop()), dd, SLOT(deviceStop()), Qt::QueuedConnection);
 
-    connect(this, SIGNAL(deviceStart()), d, SLOT(deviceStart()), Qt::QueuedConnection);
-    connect(this, SIGNAL(deviceStop()), d, SLOT(deviceStop()), Qt::QueuedConnection);
+        connect(dd, SIGNAL(signalLost(bool)), SIGNAL(signalLost(bool)), Qt::QueuedConnection);
+        connect(dd, SIGNAL(errorString(QString)), SIGNAL(errorString(QString)), Qt::QueuedConnection);
+        connect(dd, SIGNAL(formatChanged(QString)), SIGNAL(formatChanged(QString)), Qt::QueuedConnection);
 
-    connect(d, SIGNAL(signalLost(bool)), SIGNAL(signalLost(bool)), Qt::QueuedConnection);
-    connect(d, SIGNAL(errorString(QString)), SIGNAL(errorString(QString)), Qt::QueuedConnection);
-    connect(d, SIGNAL(formatChanged(QString)), SIGNAL(formatChanged(QString)), Qt::QueuedConnection);
+    } else {
+        ScreenCaptureWorkerDda *dd=new ScreenCaptureWorkerDda(this);
+        dd->moveToThread(this);
+        d=dd;
+
+        connect(this, SIGNAL(deviceStart()), dd, SLOT(deviceStart()), Qt::QueuedConnection);
+        connect(this, SIGNAL(deviceStop()), dd, SLOT(deviceStop()), Qt::QueuedConnection);
+
+        connect(dd, SIGNAL(signalLost(bool)), SIGNAL(signalLost(bool)), Qt::QueuedConnection);
+        connect(dd, SIGNAL(errorString(QString)), SIGNAL(errorString(QString)), Qt::QueuedConnection);
+        connect(dd, SIGNAL(formatChanged(QString)), SIGNAL(formatChanged(QString)), Qt::QueuedConnection);
+    }
 
     bool is_active;
 
@@ -177,5 +193,11 @@ void ScreenCapture::run()
             msleep(50);
     }
 
-    delete d;
+
+    if(capture_mode==Mode::bitblt) {
+        delete (ScreenCaptureWorkerBitBlt*)d;
+
+    } else {
+        delete (ScreenCaptureWorkerDda*)d;
+    }
 }

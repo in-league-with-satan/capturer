@@ -84,8 +84,10 @@ step_start:
         res=desktop_resource->QueryInterface(__uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&acquired_desktop_image));
 
         if(FAILED(res)) {
-            qCritical() << errorString(res);
-            // emit errorString(errorString(res));
+            QString err=QString("desktop_resource->QueryInterface err: %1").arg(errorString(res));
+            qCritical().noquote() << err;
+            deviceStop();
+            emit errorString(err);
             return false;
         }
 
@@ -119,8 +121,12 @@ step_start:
         immediate_context->Map(texture, subresource, D3D11_MAP_READ_WRITE, 0, &resource);
 
         if(description.Format!=DXGI_FORMAT_B8G8R8A8_UNORM || resource.DepthPitch!=description.Width*description.Height*4) {
-            qCritical() << "unknown format" << description.Format;
             immediate_context->Release();
+            texture->Release();
+            QString err=QString("unknown format: %1").arg(description.Format);
+            qCritical().noquote() << err;
+            deviceStop();
+            emit errorString(err);
             return false;
         }
 
@@ -377,6 +383,8 @@ void ScreenCaptureWorkerDda::deviceStart()
 
 
     output_duplication->GetDesc(&output_duplication_description);
+
+    //
 
     si->type_flags=SourceInterface::TypeFlag::video;
 

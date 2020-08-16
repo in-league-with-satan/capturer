@@ -17,40 +17,30 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
-#ifndef SCREEN_CAPTURE_WORKER_DDA_H
-#define SCREEN_CAPTURE_WORKER_DDA_H
+#ifndef SCREEN_CAPTURE_WORKER_BITBLT_H
+#define SCREEN_CAPTURE_WORKER_BITBLT_H
 
 #include <QObject>
 
 #include <atomic>
 #include <chrono>
 
-#include <wincodec.h>
 #include <windows.h>
-
-#include <d3d9.h>
-#include <d3d11.h>
-#include <dxgi1_2.h>
-#include <comdef.h>
-#include <shlobj.h>
-#include <shellapi.h>
 
 #include "source_interface.h"
 #include "screen_capture.h"
 
 class AudioWasapi;
 
-class ScreenCaptureWorkerDda : public QObject, public ScreenCaptureWorkerInterface
+class ScreenCaptureWorkerBitBlt : public QObject, public ScreenCaptureWorkerInterface
 {
     Q_OBJECT
 
 public:
-    explicit ScreenCaptureWorkerDda(SourceInterface *si, QObject *parent=0);
-    ~ScreenCaptureWorkerDda();
+    explicit ScreenCaptureWorkerBitBlt(SourceInterface *si, QObject *parent=0);
+    ~ScreenCaptureWorkerBitBlt();
 
     bool step();
-
-    static QString errorString(HRESULT error_code);
 
     QStringList availableAudioInput();
 
@@ -61,12 +51,14 @@ public slots:
     void deviceStop();
 
 private:
-    class SourceInterfacePublic : public SourceInterface { friend class ScreenCaptureWorkerDda; } *si=nullptr;
+    class SourceInterfacePublic : public SourceInterface { friend class ScreenCaptureWorkerBitBlt; } *si=nullptr;
 
-    ID3D11Device *device=nullptr;
-    ID3D11DeviceContext *device_context=nullptr;
-    IDXGIOutputDuplication *output_duplication=nullptr;
-    DXGI_OUTDUPL_DESC output_duplication_description;
+    int screen_width=0;
+    int screen_height=0;
+
+    HDC dc_desktop=0;
+    HDC dc_capture=0;
+    HBITMAP compatible_bitmap=0;
 
     AudioWasapi *audio_wasapi=nullptr;
     Protect <QString> audio_device_name;
@@ -80,4 +72,4 @@ signals:
     void errorString(QString err_string);
 };
 
-#endif // SCREEN_CAPTURE_WORKER_DDA_H
+#endif // SCREEN_CAPTURE_WORKER_BITBLT_H

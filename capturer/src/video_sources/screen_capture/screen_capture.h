@@ -17,7 +17,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
 
-
 #ifndef SCREEN_CAPTURE_DDA_H
 #define SCREEN_CAPTURE_DDA_H
 
@@ -31,7 +30,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "source_interface.h"
 #include "frame_buffer.h"
 
-class ScreenCaptureWorkerDda;
+class ScreenCaptureWorkerInterface
+{
+public:
+    virtual bool step()=0;
+    virtual QStringList availableAudioInput()=0;
+    virtual void setAudioDevice(QString device_name)=0;
+    virtual void deviceStart()=0;
+    virtual void deviceStop()=0;
+    virtual void signalLost(bool value)=0;
+    virtual void formatChanged(QString format)=0;
+    virtual void errorString(QString err_string)=0;
+};
 
 class ScreenCapture : public QThread, public SourceInterface
 {
@@ -39,6 +49,13 @@ class ScreenCapture : public QThread, public SourceInterface
     Q_INTERFACES(SourceInterface)
 
 public:
+    struct Mode {
+        enum T {
+            dda,
+            bitblt
+        };
+    };
+
     struct FramerateLimit {
         enum T {
             l_15,
@@ -76,7 +93,7 @@ public:
         FramerateLimit::T framerate_limit;
     };
 
-    explicit ScreenCapture(int device_index, QObject *parent=0);
+    explicit ScreenCapture(int device_index, Mode::T capture_mode, QObject *parent=0);
     ~ScreenCapture();
 
     QStringList availableAudioInput() const;
@@ -104,7 +121,9 @@ private:
     QMutex mutex;
     std::atomic <bool> running;
     std::atomic <bool> on_hold;
-    ScreenCaptureWorkerDda *d;
+
+    ScreenCaptureWorkerInterface *d;
+    Mode::T capture_mode=Mode::bitblt;
 
 signals:
     void deviceStart();

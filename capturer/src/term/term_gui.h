@@ -70,9 +70,9 @@ private slots:
     void onRightArrow();
 
 private:
-    CursedState *c_state;
-    CursedSettings *c_settings;
-    CursedLabel *c_label;
+    CursedState *c_state=nullptr;
+    CursedSettings *c_settings=nullptr;
+    CursedLabel *c_label=nullptr;
 
     int max_width=0;
     int max_height=0;

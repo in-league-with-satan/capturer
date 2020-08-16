@@ -349,8 +349,12 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
         (*device)=new DeckLinkThread(index);
         break;
 
-    case SourceInterface::Type::screen_capture:
-        (*device)=new ScreenCapture(index);
+    case SourceInterface::Type::screen_capture_bitblt:
+        (*device)=new ScreenCapture(index, ScreenCapture::Mode::bitblt);
+        break;
+
+    case SourceInterface::Type::screen_capture_dda:
+        (*device)=new ScreenCapture(index, ScreenCapture::Mode::dda);
         break;
 
     default:
@@ -785,7 +789,7 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
     }
 
 
-    if(type==SourceInterface::Type::screen_capture) {
+    if(type==SourceInterface::Type::screen_capture_bitblt || type==SourceInterface::Type::screen_capture_dda) {
         ScreenCapture *sc_device=static_cast<ScreenCapture*>(*device);
 
         //
@@ -2166,7 +2170,7 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
         }
 
 
-        if((*device) && (*device)->type()==SourceInterface::Type::screen_capture) {
+        if((*device) && ((*device)->type()==SourceInterface::Type::screen_capture_bitblt || (*device)->type()==SourceInterface::Type::screen_capture_dda)) {
             ScreenCapture *sc_device=static_cast<ScreenCapture*>(*device);
 
             if(data->value==&settings_device->screen_capture.index_audio) {
@@ -2393,7 +2397,7 @@ void MainWindow::deviceStart(uint8_t index)
         (*device)->setDevice(dev);
     }
 
-    if((*device)->type()==SourceInterface::Type::screen_capture) {
+    if((*device)->type()==SourceInterface::Type::screen_capture_bitblt || (*device)->type()==SourceInterface::Type::screen_capture_dda) {
         ScreenCapture::Device *dev=new ScreenCapture::Device();
 
         dev->audio_device_name=settings_device->screen_capture.name_audio;

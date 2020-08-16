@@ -525,6 +525,25 @@ bool PixelFormat::fromQPixelFormat(QVideoFrame::PixelFormat value)
     return false;
 }
 
+bool PixelFormat::fromQImageFormat(QImage::Format value)
+{
+    switch((uint32_t)value) {
+    case QImage::Format_RGB888:
+        d=rgb24;
+        return true;
+
+    case QImage::Format_BGR888:
+        d=bgr24;
+        return true;
+
+    case QImage::Format_RGB32:
+        d=bgr0;
+        return true;
+    }
+
+    return false;
+}
+
 QString PixelFormat::toString(int value)
 {
     switch(value) {
