@@ -10,10 +10,11 @@ TARGET = remote_audio_output
 
 #DEFINES += STATIC_WIN_FF
 
+DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000
 
 TEMPLATE = app
 
-CONFIG += c++14
+CONFIG += c++17
 
 DESTDIR = $$PWD/../bin
 

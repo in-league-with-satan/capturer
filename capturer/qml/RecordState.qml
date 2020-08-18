@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -100,19 +100,21 @@ ShowHideRect {
     Connections {
         target: messenger
 
-        onUpdateRecStats: {
+        function onUpdateRecStats(duration, bitrate, size, buffer_state, dropped_frames_counter) {
             text_output.text=duration + "    " + size + "    " + bitrate + "    " + buffer_state + "    " + dropped_frames_counter
         }
 
-        onShowHideDetailedRecState: {
+        function onShowHideDetailedRecState() {
             rect_text_output.state_visible=!rect_text_output.state_visible
         }
 
-        onRecStarted: {
+        function onRecStarted() {
             root.state_visible=true
             rect_text_output.state_visible=true
         }
 
-        onRecStopped: root.state_visible=false
+        function onRecStopped() {
+            root.state_visible=false
+        }
     }
 }

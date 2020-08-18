@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -339,7 +339,7 @@ ShowHideRect {
         Connections {
             target: messenger
 
-            onKeyPressed: {
+            function onKeyPressed(key) {
                 if(!root.state_visible)
                     return
 
@@ -365,7 +365,7 @@ ShowHideRect {
                 }
             }
 
-            onFocusReset: {
+            function onFocusReset() {
                 var prev_duration=list.highlightMoveDuration
                 var prev_velocity=list.highlightMoveVelocity
 

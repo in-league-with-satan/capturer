@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -39,7 +39,7 @@ void av_log_callback(void*, int level, const char *fmt, va_list vl)
     if(!fmt)
         return;
 
-    qInfo().noquote() << "#" << QString().vsprintf(fmt, vl).remove("\n");
+    qInfo().noquote() << "#" << QString().vasprintf(fmt, vl).remove("\n");
 }
 
 void initLibAV()

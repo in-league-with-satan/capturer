@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -42,14 +42,14 @@ ShowHideRect {
     Connections {
         target: messenger
 
-        onShowMenu: root.state_visible=false
-        onShowFileBrowser: root.state_visible=false
-        onShowHideAbout: root.state_visible=false
-        onShowHideInfo: root.state_visible=false
-        onRecStarted: root.state_visible=false
-        onBack: root.state_visible=false
+        function onShowMenu() { root.state_visible=false }
+        function onShowFileBrowser() { root.state_visible=false }
+        function onShowHideAbout() { root.state_visible=false }
+        function onShowHideInfo() { root.state_visible=false }
+        function onRecStarted() { root.state_visible=false }
+        function onBack() { root.state_visible=false }
 
-        onErrorString: {
+        function onErrorString(error_string) {
             message.text=error_string
             root.state_visible=true
         }

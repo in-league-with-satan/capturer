@@ -377,14 +377,16 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
 
         //
 
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
+        if(!settings->main.headless) {
+            set_model_data.values.clear();
+            set_model_data.values_data.clear();
 
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="show frame counter";
-        set_model_data.value=&settings_device->dummy_device.show_frame_counter;
+            set_model_data.type=SettingsModel::Type::checkbox;
+            set_model_data.name="show frame counter";
+            set_model_data.value=&settings_device->dummy_device.show_frame_counter;
 
-        list_set_model_data.append(set_model_data);
+            list_set_model_data.append(set_model_data);
+        }
     }
 
     if(type==SourceInterface::Type::ffmpeg) {
@@ -2294,7 +2296,9 @@ void MainWindow::deviceStart(uint8_t index)
         DummyDevice::Device *dev=new DummyDevice::Device();
 
         dev->frame_size=settings_model->valueData(&settings_device->dummy_device.framesize, QSize(1920, 1080)).toSize();
-        dev->show_frame_counter=settings_device->dummy_device.show_frame_counter;
+
+        if(!settings->main.headless)
+            dev->show_frame_counter=settings_device->dummy_device.show_frame_counter;
 
         (*device)->setDevice(dev);
     }

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -178,7 +178,7 @@ void NvTools::onTimer()
                 QString(d->proc->readAllStandardOutput())
                 .simplified()
                 .remove(QStringLiteral("\n"))
-                .split(QStringLiteral(" "), QString::SkipEmptyParts);
+                .split(QStringLiteral(" "), Qt::SkipEmptyParts);
 
         if(lst.empty())
             break;
@@ -228,7 +228,7 @@ void NvTools::run()
 
     d->proc=new QProcess();
     d->proc->moveToThread(this);
-    d->proc->start("nvidia-smi dmon");
+    d->proc->start("nvidia-smi dmon", QStringList());
     d->proc->waitForStarted();
 
 #endif

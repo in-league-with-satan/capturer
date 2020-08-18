@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2019-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -70,18 +70,17 @@ private slots:
     void onRightArrow();
 
 private:
-    CursedState *c_state;
-    CursedSettings *c_settings;
-    CursedLabel *c_label;
+    CursedState *c_state=nullptr;
+    CursedSettings *c_settings=nullptr;
+    CursedLabel *c_label=nullptr;
+    MainWindow *mw=nullptr;
 
     int max_width=0;
     int max_height=0;
 
-    bool running=true;
-
-    MainWindow *mw=nullptr;
-
     int mode;
+
+    bool running=true;
 
     struct Mode {
         enum {

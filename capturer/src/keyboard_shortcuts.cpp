@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -41,7 +41,7 @@ KeyboardShortcuts::KeyboardShortcuts(QWidget *parent)
     for(int i=0; i<KeyCodeC::enm_size; ++i) {
         row[i]=new Row();
 
-        la_lines->addWidget(row[i]->label=new QLabel(KeyCodeC::toString(i) + QLatin1Literal(":")), i, 0);
+        la_lines->addWidget(row[i]->label=new QLabel(KeyCodeC::toString(i) + QStringLiteral(":")), i, 0);
         la_lines->addWidget(row[i]->line_edit=new QLineEdit(QKeySequence(defaultQtKey(i)).toString()), i, 1);
 
         row[i]->line_edit->installEventFilter(this);

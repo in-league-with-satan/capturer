@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018, 2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -21,7 +21,6 @@ import QtQuick 2.7
 import QtQuick.Controls 2.0
 import QtQuick.Controls 1.5
 import QtQuick.Layouts 1.3
-//import QtQuick.Particles 2.0
 import QtGraphicalEffects 1.0
 
 import FuckTheSystem 0.0
@@ -106,7 +105,7 @@ ApplicationWindow {
     Connections {
         target: setup_form
 
-        onBack: {
+        function onBack() {
             setup_form.visible=false
             swipe_view.visible=true
             swipe_pos_indicator.visible=true
@@ -116,11 +115,11 @@ ApplicationWindow {
     Connections {
         target: messenger
 
-        onUpdateRecStats: {
+        function onUpdateRecStats(duration, size, free_space, bitrate, frames_dropped, frame_buffer_state) {
             button_rec.setText("duration: " + duration + "\n" + "size: " + size + "\n" + "free space: " + free_space + "\n" + "bitrate: " + bitrate + "\n" + "buffer state: " + frame_buffer_state + "\n" + "frames dropped: " + frames_dropped)
         }
 
-        onRecStateChanged: {
+        function onRecStateChanged(state) {
             if(state)
                 button_rec.recStarted()
 

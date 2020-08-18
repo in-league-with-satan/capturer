@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018, 2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -98,7 +98,7 @@ Rectangle {
     Connections {
         target: messenger
 
-        onPlayerDurationChanged: root.duration=value
-        onPlayerPositionChanged: root.position=value
+        function onPlayerDurationChanged(value) { root.duration=value }
+        function onPlayerPositionChanged(value) { root.position=value }
     }
 }

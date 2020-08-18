@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -44,7 +44,7 @@ void checkRoot()
     return;
 
     if(getuid()!=0) {
-        if(!QProcess::startDetached(QString("gksu %1").arg(QApplication::applicationFilePath())))
+        if(!QProcess::startDetached(QString("gksu %1").arg(QApplication::applicationFilePath()), QStringList()))
             QProcess::startDetached(QApplication::applicationFilePath(), QStringList() << "--dont-check-root");
 
         exit(0);
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
 
 #endif
 
-            endl(stream);
+            Qt::endl(stream);
         });
 
     } else if(application->arguments().contains("--headless-curse", Qt::CaseInsensitive)) {
