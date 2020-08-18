@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018, 2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -33,6 +33,7 @@ public slots:
     void write(const QByteArray &data, int channels, int sample_size);
 
 protected:
+    void mouseDoubleClickEvent(QMouseEvent*);
     void paintEvent(QPaintEvent *event);
 
 private slots:
@@ -41,6 +42,8 @@ private:
     int32_t level[8];
 
     bool sample_size_16;
+
+    bool disabled=false;
 };
 
 
