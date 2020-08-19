@@ -18,7 +18,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ******************************************************************************/
 
 #include <QPixmap>
+
+#ifdef __WIN32__
 #include <QtWin>
+#endif
 
 #include <ctime>
 #include <thread>
@@ -43,8 +46,19 @@ ScreenCaptureWorkerBitBlt::~ScreenCaptureWorkerBitBlt()
 {
 }
 
+bool ScreenCaptureWorkerBitBlt::isImplemented()
+{
+#ifdef __WIN32__
+    return true;
+#else
+    return false;
+#endif
+}
+
 bool ScreenCaptureWorkerBitBlt::step()
 {
+#ifdef __WIN32__
+
     if(!dc_desktop || !dc_capture)
         return false;
 
@@ -112,6 +126,10 @@ bool ScreenCaptureWorkerBitBlt::step()
     frame_time_point=std::chrono::high_resolution_clock::now();
 
     return true;
+
+#endif
+
+    return false;
 }
 
 QStringList ScreenCaptureWorkerBitBlt::availableAudioInput()
@@ -126,6 +144,8 @@ void ScreenCaptureWorkerBitBlt::setAudioDevice(QString device_name)
 
 void ScreenCaptureWorkerBitBlt::deviceStart()
 {
+#ifdef __WIN32__
+
     screen_width=GetSystemMetrics(SM_CXSCREEN);
     screen_height=GetSystemMetrics(SM_CYSCREEN);
 
@@ -207,10 +227,14 @@ void ScreenCaptureWorkerBitBlt::deviceStart()
 
 init_fail:
     deviceStop();
+
+#endif
 }
 
 void ScreenCaptureWorkerBitBlt::deviceStop()
 {
+#ifdef __WIN32__
+
     if(dc_desktop) {
         ReleaseDC(0, dc_desktop);
         dc_desktop=0;
@@ -233,5 +257,6 @@ void ScreenCaptureWorkerBitBlt::deviceStop()
     si->signal_lost=true;
 
     emit signalLost(true);
-}
 
+#endif
+}

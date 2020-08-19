@@ -25,7 +25,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <atomic>
 #include <chrono>
 
+#ifdef __WIN32__
 #include <windows.h>
+#endif
 
 #include "source_interface.h"
 #include "screen_capture.h"
@@ -39,6 +41,8 @@ class ScreenCaptureWorkerBitBlt : public QObject, public ScreenCaptureWorkerInte
 public:
     explicit ScreenCaptureWorkerBitBlt(SourceInterface *si, QObject *parent=0);
     ~ScreenCaptureWorkerBitBlt();
+
+    static bool isImplemented();
 
     bool step();
 
@@ -56,9 +60,13 @@ private:
     int screen_width=0;
     int screen_height=0;
 
+#ifdef __WIN32__
+
     HDC dc_desktop=0;
     HDC dc_capture=0;
     HBITMAP compatible_bitmap=0;
+
+#endif
 
     AudioWasapi *audio_wasapi=nullptr;
     Protect <QString> audio_device_name;

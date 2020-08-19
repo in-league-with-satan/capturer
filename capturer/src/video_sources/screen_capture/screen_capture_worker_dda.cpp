@@ -40,8 +40,19 @@ ScreenCaptureWorkerDda::~ScreenCaptureWorkerDda()
 {
 }
 
+bool ScreenCaptureWorkerDda::isImplemented()
+{
+#ifdef __WIN32__
+    return true;
+#else
+    return false;
+#endif
+}
+
 bool ScreenCaptureWorkerDda::step()
 {
+#ifdef __WIN32__
+
 step_start:
 
     if(!output_duplication)
@@ -184,7 +195,13 @@ step_start:
     //
 
     return true;
+
+#endif
+
+    return false;
 }
+
+#ifdef __WIN32__
 
 QString ScreenCaptureWorkerDda::errorString(HRESULT error_code)
 {
@@ -265,6 +282,8 @@ QString ScreenCaptureWorkerDda::errorString(HRESULT error_code)
     return QString("error: %1").arg(error_code, 0, 16);
 }
 
+#endif
+
 QStringList ScreenCaptureWorkerDda::availableAudioInput()
 {
     return audio_wasapi->availableAudioInputStr();
@@ -277,6 +296,8 @@ void ScreenCaptureWorkerDda::setAudioDevice(QString device_name)
 
 void ScreenCaptureWorkerDda::deviceStart()
 {
+#ifdef __WIN32__
+
     deviceStop();
 
     HRESULT res;
@@ -448,10 +469,14 @@ init_fail:
         dxgi_device->Release();
 
     deviceStop();
+
+#endif
 }
 
 void ScreenCaptureWorkerDda::deviceStop()
 {
+#ifdef __WIN32__
+
     if(output_duplication) {
         output_duplication->Release();
         output_duplication=nullptr;
@@ -474,5 +499,6 @@ void ScreenCaptureWorkerDda::deviceStop()
     si->signal_lost=true;
 
     emit signalLost(true);
-}
 
+#endif
+}

@@ -20,16 +20,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QDebug>
 #include <QElapsedTimer>
 
+#ifdef __WIN32__
 #define INITGUID
 #include <wtypes.h>
 #include <functiondiscoverykeys_devpkey.h>
 #include <audioclient.h>
 #include <mmdeviceapi.h>
-
+#endif
 
 #include "ff_audio_converter.h"
 
 #include "audio_wasapi.h"
+
+
+#ifdef __WIN32__
 
 struct DeviceData
 {
@@ -70,12 +74,19 @@ struct AudioWasapiPrivate
     }
 };
 
+#endif
+
 AudioWasapi::AudioWasapi(QObject *parent)
     : QObject(parent)
+#ifdef __WIN32__
     , d(new AudioWasapiPrivate())
     , audio_converter(new AudioConverter())
+#endif
 {
+#ifdef __WIN32__
     CoInitialize(0);
+#endif
+
     updateDevList();
 }
 
@@ -83,10 +94,14 @@ AudioWasapi::~AudioWasapi()
 {
     deviceStop();
 
+#ifdef __WIN32__
+
     delete d;
     delete audio_converter;
 
     CoUninitialize();
+
+#endif
 }
 
 QList <AudioWasapi::Device> AudioWasapi::availableAudioInput() const
@@ -101,6 +116,8 @@ QStringList AudioWasapi::availableAudioInputStr()
 
 bool AudioWasapi::deviceStart(const AudioWasapi::Device &device)
 {
+#ifdef __WIN32__
+
     DeviceData *dd=(DeviceData*)device.d;
 
     HRESULT hr=dd->device->Activate(IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&d->pAudioClient);
@@ -165,23 +182,35 @@ bool AudioWasapi::deviceStart(const AudioWasapi::Device &device)
 Exit:
     deviceStop();
 
+#endif
+
     return false;
 }
 
 void AudioWasapi::deviceStop()
 {
+#ifdef __WIN32__
+
     if(d->pAudioClient)
         d->pAudioClient->Stop();
 
     d->release();
+
+#endif
 }
 
 int AudioWasapi::channels() const
 {
+#ifdef __WIN32__
+
     if(!d->pwfx)
         return 0;
 
     return d->pwfx->nChannels;
+
+#endif
+
+    return 2;
 }
 
 int AudioWasapi::sampleSize() const
@@ -191,10 +220,12 @@ int AudioWasapi::sampleSize() const
 
 QByteArray AudioWasapi::getData()
 {
-    if(!d->pCaptureClient)
-        return QByteArray();
-
     QByteArray data;
+
+#ifdef __WIN32__
+
+    if(!d->pCaptureClient)
+        return data;
 
     UINT32 packetLength=0;
     BYTE *pData;
@@ -245,11 +276,15 @@ QByteArray AudioWasapi::getData()
 
     audio_converter->convert(&data);
 
+#endif
+
     return data;
 }
 
 void AudioWasapi::updateDevList()
 {
+#ifdef __WIN32__
+
     while(!list_devices.isEmpty())
         delete (DeviceData*)list_devices.takeLast().d;
 
@@ -335,4 +370,6 @@ void AudioWasapi::updateDevList()
 
     device_collection->Release();
     device_enumerator->Release();
+
+#endif
 }

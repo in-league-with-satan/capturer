@@ -125,10 +125,18 @@ public:
 #endif
 
         case Type::screen_capture_bitblt:
+#ifdef __WIN32__
             return true;
+#else
+            return false;
+#endif
 
         case Type::screen_capture_dda:
+#ifdef __WIN32__
             return true;
+#else
+            return false;
+#endif
 
         default:
             break;

@@ -82,7 +82,11 @@ SourceInterface::Type::T ScreenCapture::type() const
 
 bool ScreenCapture::isImplemented() const
 {
-    return true; //?
+#ifdef __WIN32__
+    return true;
+#else
+    return false;
+#endif
 }
 
 bool ScreenCapture::isActive()

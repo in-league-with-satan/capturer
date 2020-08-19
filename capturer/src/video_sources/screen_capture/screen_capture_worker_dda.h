@@ -25,6 +25,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <atomic>
 #include <chrono>
 
+#ifdef __WIN32__
+
 #include <wincodec.h>
 #include <windows.h>
 
@@ -34,6 +36,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <comdef.h>
 #include <shlobj.h>
 #include <shellapi.h>
+
+#endif
 
 #include "source_interface.h"
 #include "screen_capture.h"
@@ -48,9 +52,13 @@ public:
     explicit ScreenCaptureWorkerDda(SourceInterface *si, QObject *parent=0);
     ~ScreenCaptureWorkerDda();
 
+    static bool isImplemented();
+
     bool step();
 
+#ifdef __WIN32__
     static QString errorString(HRESULT error_code);
+#endif
 
     QStringList availableAudioInput();
 
@@ -63,10 +71,14 @@ public slots:
 private:
     class SourceInterfacePublic : public SourceInterface { friend class ScreenCaptureWorkerDda; } *si=nullptr;
 
+#ifdef __WIN32__
+
     ID3D11Device *device=nullptr;
     ID3D11DeviceContext *device_context=nullptr;
     IDXGIOutputDuplication *output_duplication=nullptr;
     DXGI_OUTDUPL_DESC output_duplication_description;
+
+#endif
 
     AudioWasapi *audio_wasapi=nullptr;
     Protect <QString> audio_device_name;
