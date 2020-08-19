@@ -118,9 +118,16 @@ TermGui::~TermGui()
 {
 #ifdef LIB_CURSES
 
-    delete c_label;
-    delete c_settings;
     stopCurses();
+
+    if(c_label)
+        delete c_label;
+
+    if(c_settings)
+        delete c_settings;
+
+    if(c_state)
+        delete c_state;
 
 #endif
 }

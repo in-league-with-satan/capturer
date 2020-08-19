@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2019-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -64,7 +64,7 @@ StoreLocation::StoreLocation()
             portable_mode=true;
 
             if(arg.contains("=")) {
-                portable_path=arg.split("=", QString::SkipEmptyParts).last();
+                portable_path=arg.split("=", Qt::SkipEmptyParts).last();
             }
         }
     }

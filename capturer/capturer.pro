@@ -16,7 +16,8 @@ QT += \
 
 TARGET = capturer
 
-DEFINES += QT_DEPRECATED_WARNINGS
+#DEFINES += QT_DEPRECATED_WARNINGS
+DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000
 DEFINES += QT_MESSAGELOGCONTEXT
 
 DEFINES += USE_PULSE_AUDIO
@@ -26,7 +27,7 @@ DEFINES += USE_PULSE_AUDIO
 
 TEMPLATE = app
 
-CONFIG += c++14
+CONFIG += c++17
 #windows:CONFIG += console
 #CONFIG += console
 CONFIG -= qtquickcompiler
@@ -60,11 +61,6 @@ CONFIG(debug, debug|release):{
 } else {
     DEFINES += QT_NO_DEBUG_OUTPUT
     DEFINES += NDEBUG
-
-    linux {
-        QMAKE_CFLAGS_RELEASE = "-march=native -O3 -fomit-frame-pointer -pipe"
-        QMAKE_CXXFLAGS_RELEASE = "-march=native -O3 -fomit-frame-pointer -pipe"
-    }
 }
 
 

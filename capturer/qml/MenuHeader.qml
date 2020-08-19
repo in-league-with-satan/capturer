@@ -98,11 +98,12 @@ ShowHideRect {
     Connections {
         target: messenger
 
-        onFormatChanged: {
+        function onFormatChanged(format) {
             input_format.format=format
             input_format.text="input format: " + input_format.format + "  " + input_format.temperature
         }
-        onTemperatureChanged: {
+
+        function onTemperatureChanged(temperature) {
             if(temperature<0)
                 input_format.temperature=""
 
@@ -111,8 +112,17 @@ ShowHideRect {
 
             input_format.text="input format: " + input_format.format + "  " + input_format.temperature
         }
-        onFreeSpaceStr: free_space.text="free space: " + size
-        onAudioLevelPrimary: audio_level_primary.setLevel(l, r, c, lfe, rl, rr, sl, sr)
-        onAudioLevelSecondary: audio_level_secondary.setLevel(l, r, c, lfe, rl, rr, sl, sr)
+
+        function onFreeSpaceStr(size) {
+            free_space.text="free space: " + size
+        }
+
+        function onAudioLevelPrimary(l, r, c, lfe, rl, rr, sl, sr) {
+            audio_level_primary.setLevel(l, r, c, lfe, rl, rr, sl, sr)
+        }
+
+        function onAudioLevelSecondary(l, r, c, lfe, rl, rr, sl, sr) {
+            audio_level_secondary.setLevel(l, r, c, lfe, rl, rr, sl, sr)
+        }
     }
 }
