@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 ******************************************************************************/
 
 #include <QPixmap>
+#include <QtWin>
 
 #include <ctime>
 #include <thread>
@@ -26,8 +27,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "audio_wasapi.h"
 
 #include "screen_capture_worker_bitblt.h"
-
-Q_GUI_EXPORT QPixmap qt_pixmapFromWinHBITMAP(HBITMAP bitmap, int bitmap_format=0);
 
 ScreenCaptureWorkerBitBlt::ScreenCaptureWorkerBitBlt(SourceInterface *si, QObject *parent)
     : QObject(parent)
@@ -51,7 +50,7 @@ bool ScreenCaptureWorkerBitBlt::step()
 
     BitBlt(dc_capture, 0, 0, screen_width, screen_height, dc_desktop, 0, 0, SRCCOPY);
 
-    QImage img=qt_pixmapFromWinHBITMAP(compatible_bitmap).toImage();
+    QImage img=QtWin::imageFromHBITMAP(compatible_bitmap);
 
     Frame::ptr frame=Frame::make();
 
@@ -85,7 +84,8 @@ bool ScreenCaptureWorkerBitBlt::step()
 
         if(si->framesize!=frame->video.size) {
             si->framesize=frame->video.size;
-            emit formatChanged(QString("%1-%2").arg(si->framesize.load().width()).arg(frame->video.pixel_format.toString()));
+            si->current_format=QString("%1/%2").arg(si->framesize.load().height()).arg(frame->video.pixel_format.toString());
+            emit formatChanged(si->current_format);
         }
     }
 
@@ -229,7 +229,7 @@ void ScreenCaptureWorkerBitBlt::deviceStop()
     audio_wasapi->deviceStop();
 
     si->framesize=QSize();
-
+    si->current_format=QString();
     si->signal_lost=true;
 
     emit signalLost(true);

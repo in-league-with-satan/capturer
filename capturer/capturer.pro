@@ -13,6 +13,8 @@ QT += \
     sql \
     svg
 
+windows:QT += winextras
+
 
 TARGET = capturer
 

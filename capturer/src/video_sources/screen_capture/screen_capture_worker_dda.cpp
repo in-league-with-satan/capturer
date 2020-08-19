@@ -153,7 +153,8 @@ step_start:
 
         if(si->framesize!=frame->video.size) {
             si->framesize=frame->video.size;
-            emit formatChanged(QString("%1-bgr0").arg(si->framesize.load().width()));
+            si->current_format=QString("%1/bgr0").arg(si->framesize.load().height());
+            emit formatChanged(si->current_format);
         }
     }
 
@@ -469,7 +470,7 @@ void ScreenCaptureWorkerDda::deviceStop()
     audio_wasapi->deviceStop();
 
     si->framesize=QSize();
-
+    si->current_format=QString();
     si->signal_lost=true;
 
     emit signalLost(true);
