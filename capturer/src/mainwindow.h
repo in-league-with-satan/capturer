@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -26,6 +26,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "data_types.h"
 #include "ff_encoder_thread.h"
 #include "ff_decoder_thread.h"
+#include "ff_encoder_base_filename.h"
 #include "source_interface.h"
 
 class SourceInterface;
@@ -39,6 +40,7 @@ class HttpServer;
 class SettingsModel;
 class NvTools;
 class TermGui;
+class IrcSubtitles;
 
 class MainWindow : public QObject
 {
@@ -86,6 +88,8 @@ private:
     FFEncStartSync enc_start_sync;
 
     TermGui *term=nullptr;
+
+    IrcSubtitles *irc_subtitles=nullptr;
 
 protected:
     virtual bool eventFilter(QObject *object, QEvent *event);

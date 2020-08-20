@@ -142,12 +142,34 @@ public:
         Rec rec;
     };
 
+    struct Keys {
+        QMap <int, int> code; // Qt::Key : KeyCodeC
+        bool need_setup;
+
+    } keyboard_shortcuts;
+
+    struct HttpServer {
+        quint16 port;
+        bool enabled;
+
+    } http_server;
+
     struct Streaming {
         QVariantList url;
         int url_index;
         Rec rec;
 
     } streaming;
+
+    struct IrcSubtitles {
+        bool enabled=false;
+        QString host;
+        quint16 port;
+        QString nickname;
+        QString token;
+        QString channel;
+
+    } irc_subtitles;
 
     SourceDevice *sourceDevice(uint8_t index);
     SourceDevice *sourceDeviceAdd();
@@ -158,18 +180,6 @@ public:
     QList <SourceDevice> source_device;
     QVariantMap getSourceDeviceSettings(const SourceDevice &device);
     void setSourceDeviceSettings(SourceDevice *device, const QVariantMap &map_root);
-
-    struct HttpServer {
-        quint16 port;
-        bool enabled;
-
-    } http_server;
-
-    struct Keys {
-        QMap <int, int> code; // Qt::Key : KeyCodeC
-        bool need_setup;
-
-    } keyboard_shortcuts;
 
     void checkEncoders();
 
