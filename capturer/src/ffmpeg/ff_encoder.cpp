@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -1958,6 +1958,9 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
 void FFEncoder::processAudio(Frame::ptr frame)
 {
+    if(!context->out_stream_audio.av_stream)
+        return;
+
     if(context->cfg.audio_sample_size==0)
         return;
 
@@ -2026,6 +2029,9 @@ void FFEncoder::processAudio(Frame::ptr frame)
 
 void FFEncoder::flushAudio()
 {
+    if(context->cfg.audio_sample_size==0)
+        return;
+
     const AudioBuffer::AudioData dtmp=context->audio_buffer.get(context->audio_buffer.size());
 
     if(!dtmp.data.isEmpty()) {

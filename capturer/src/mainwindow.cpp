@@ -28,8 +28,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QTimer>
 
 #include "settings.h"
+#include "dummy_device.h"
+#include "screen_capture.h"
 #include "decklink_device_list.h"
 #include "decklink_thread.h"
+#include "magewell_device.h"
 #include "audio_output.h"
 #include "audio_level.h"
 #include "qml_messenger.h"
@@ -40,9 +43,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "tools_ff_source.h"
 #include "ff_source.h"
 #include "framerate.h"
-#include "dummy_device.h"
 #include "nv_tools.h"
-#include "magewell_device.h"
 #include "term_gui.h"
 
 #include "mainwindow.h"
@@ -281,8 +282,17 @@ MainWindow::~MainWindow()
         deviceStop(i);
         qApp->processEvents();
 
-        while(stream[i].source_device && stream[i].source_device->isActive())
+        ObjGrp str=stream.at(i);
+
+        while(str.source_device && str.source_device->isActive())
             QThread::msleep(10);
+
+        if(str.source_device) {
+            delete str.source_device;
+        }
+
+        delete str.audio_sender;
+        delete str.encoder;
     }
 
     settings->save();
@@ -337,6 +347,14 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
 
     case SourceInterface::Type::decklink:
         (*device)=new DeckLinkThread(index);
+        break;
+
+    case SourceInterface::Type::screen_capture_bitblt:
+        (*device)=new ScreenCapture(index, ScreenCapture::Mode::bitblt);
+        break;
+
+    case SourceInterface::Type::screen_capture_dda:
+        (*device)=new ScreenCapture(index, ScreenCapture::Mode::dda);
         break;
 
     default:
@@ -771,6 +789,69 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
 
         list_set_model_data.append(set_model_data);
     }
+
+
+    if(type==SourceInterface::Type::screen_capture_bitblt || type==SourceInterface::Type::screen_capture_dda) {
+        ScreenCapture *sc_device=static_cast<ScreenCapture*>(*device);
+
+        //
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="audio device";
+
+        QStringList audio_devices=sc_device->availableAudioInput();
+
+        set_model_data.values << "disabled";
+        set_model_data.values_data << -1;
+
+        for(int i=0; i<audio_devices.size(); ++i) {
+            set_model_data.values << audio_devices[i];
+            set_model_data.values_data << i;
+        }
+
+        set_model_data.value=&settings_device->screen_capture.index_audio;
+
+        settings_device->screen_capture.index_audio=sc_device->indexAudioInput(settings_device->screen_capture.name_audio);
+
+        if(settings_device->screen_capture.index_audio<0)
+            settings_device->screen_capture.index_audio=0;
+
+        else
+            settings_device->screen_capture.index_audio++;
+
+        list_set_model_data.append(set_model_data);
+
+
+        sc_device->setAudioDevice(settings_device->screen_capture.name_audio);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="upper framerate limit";
+
+        for(int i=0; i<ScreenCapture::FramerateLimit::size; ++i) {
+            set_model_data.values << QString::number(ScreenCapture::FramerateLimit::value(i));
+            set_model_data.values_data << i;
+        }
+
+        set_model_data.value=&settings_device->screen_capture.upper_framerate_limit;
+
+
+        if(settings_device->screen_capture.upper_framerate_limit<0)
+            settings_device->screen_capture.upper_framerate_limit=0;
+
+        else if(settings_device->screen_capture.upper_framerate_limit>=ScreenCapture::FramerateLimit::size)
+            settings_device->screen_capture.upper_framerate_limit=ScreenCapture::FramerateLimit::size - 1;
+
+
+        list_set_model_data.append(set_model_data);
+
+        sc_device->setUpperFramerateLimit((ScreenCapture::FramerateLimit::T)settings_device->screen_capture.upper_framerate_limit);
+    }
+
 
     settings_model->insert(&settings_device->stop, list_set_model_data);
 
@@ -2090,6 +2171,23 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             }
         }
 
+
+        if((*device) && ((*device)->type()==SourceInterface::Type::screen_capture_bitblt || (*device)->type()==SourceInterface::Type::screen_capture_dda)) {
+            ScreenCapture *sc_device=static_cast<ScreenCapture*>(*device);
+
+            if(data->value==&settings_device->screen_capture.index_audio) {
+                settings_device->screen_capture.name_audio=
+                        data->values.value(*data->value);
+
+                sc_device->setAudioDevice(settings_model->valueData(&settings_device->screen_capture.index_audio).toString());
+            }
+
+            if(data->value==&settings_device->screen_capture.upper_framerate_limit) {
+                sc_device->setUpperFramerateLimit((ScreenCapture::FramerateLimit::T)settings_device->screen_capture.upper_framerate_limit);
+            }
+        }
+
+
         if(data->value==&settings_device->rec.video_encoder) {
             qml=false;
 
@@ -2303,8 +2401,13 @@ void MainWindow::deviceStart(uint8_t index)
         (*device)->setDevice(dev);
     }
 
-    if((*device)->type()==SourceInterface::Type::dummy) {
-        ;
+    if((*device)->type()==SourceInterface::Type::screen_capture_bitblt || (*device)->type()==SourceInterface::Type::screen_capture_dda) {
+        ScreenCapture::Device *dev=new ScreenCapture::Device();
+
+        dev->audio_device_name=settings_device->screen_capture.name_audio;
+        dev->framerate_limit=(ScreenCapture::FramerateLimit::T)settings_model->valueData(&settings_device->screen_capture.upper_framerate_limit, ScreenCapture::FramerateLimit::l_60).toInt();
+
+        (*device)->setDevice(dev);
     }
 
     if((*device)->type()==SourceInterface::Type::ffmpeg) {

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -75,6 +75,8 @@ struct PixelFormat {
 
     QVideoFrame::PixelFormat toQPixelFormat() const;
     bool fromQPixelFormat(QVideoFrame::PixelFormat value);
+
+    bool fromQImageFormat(QImage::Format value);
 
     static QString toString(int value);
     static QString toStringView(int value);

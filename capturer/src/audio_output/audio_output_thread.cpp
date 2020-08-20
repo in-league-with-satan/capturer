@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018, 2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -90,7 +90,7 @@ void AudioOutputThread::run()
                 dev_audio_output.clear();
             }
 
-            if(frame->audio.data_size) {
+            if(frame->audio.data_size && !frame->audio.loopback) {
                 // buf_trig_size=frame->audio.raw.size()*.5;
 
                 dev_audio_output.write(convert(frame->audio.data_ptr, frame->audio.data_size, frame->audio.channels, frame->audio.sample_size, audio_format.channelCount()));

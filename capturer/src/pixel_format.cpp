@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -417,10 +417,10 @@ QVideoFrame::PixelFormat PixelFormat::toQPixelFormat() const
         return QVideoFrame::Format_BGR24;
 
     case rgb0:
-        return QVideoFrame::Format_RGB32;
+        return QVideoFrame::Format_BGR32; // wtf? o_O
 
     case bgr0:
-        return QVideoFrame::Format_BGR32;
+        return QVideoFrame::Format_RGB32; // !!!
 
     case bgra:
         return QVideoFrame::Format_ARGB32;
@@ -484,12 +484,12 @@ bool PixelFormat::fromQPixelFormat(QVideoFrame::PixelFormat value)
         d=bgr24;
         return true;
 
-    case QVideoFrame::Format_RGB32:
-        d=rgb0;
+    case QVideoFrame::Format_RGB32:     // !
+        d=bgr0;
         return true;
 
-    case QVideoFrame::Format_BGR32:
-        d=bgr0;
+    case QVideoFrame::Format_BGR32:     // !
+        d=rgb0;
         return true;
 
     case QVideoFrame::Format_ARGB32:
@@ -519,6 +519,25 @@ bool PixelFormat::fromQPixelFormat(QVideoFrame::PixelFormat value)
 
     case QVideoFrame::Format_Jpeg:
         d=mjpeg;
+        return true;
+    }
+
+    return false;
+}
+
+bool PixelFormat::fromQImageFormat(QImage::Format value)
+{
+    switch((uint32_t)value) {
+    case QImage::Format_RGB888:
+        d=rgb24;
+        return true;
+
+    case QImage::Format_BGR888:
+        d=bgr24;
+        return true;
+
+    case QImage::Format_RGB32:
+        d=bgr0;
         return true;
     }
 

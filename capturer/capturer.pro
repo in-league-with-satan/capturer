@@ -13,6 +13,8 @@ QT += \
     sql \
     svg
 
+windows:QT += winextras
+
 
 TARGET = capturer
 
@@ -78,6 +80,8 @@ linux {
 windows {
     DEFINES -= USE_PULSE_AUDIO
 
+    LIBS += -lgdi32 -ld3d11 -lksuser
+
     RC_ICONS += $$PWD/../icon/capturer.ico
     QMAKE_TARGET = "capturer v$$VERSION"
     QMAKE_TARGET_DESCRIPTION = "capturer"
@@ -113,7 +117,8 @@ INCLUDEPATH += \
     $$PWD/src/video_sources/dummy \
     $$PWD/src/video_sources/ffmpeg \
     $$PWD/src/video_sources/magewell \
-    $$PWD/src/video_sources/decklink
+    $$PWD/src/video_sources/decklink \
+    $$PWD/src/video_sources/screen_capture
 
 SOURCES += \
     $$files($$PWD/src/*.cpp) \
@@ -127,7 +132,8 @@ SOURCES += \
     $$files($$PWD/src/video_sources/dummy/*.cpp) \
     $$files($$PWD/src/video_sources/ffmpeg/*.cpp) \
     $$files($$PWD/src/video_sources/magewell/*.cpp) \
-    $$files($$PWD/src/video_sources/decklink/*.cpp)
+    $$files($$PWD/src/video_sources/decklink/*.cpp) \
+    $$files($$PWD/src/video_sources/screen_capture/*.cpp)
 
 HEADERS += \
     $$files($$PWD/src/*.h) \
@@ -142,7 +148,8 @@ HEADERS += \
     $$files($$PWD/src/video_sources/dummy/*.h) \
     $$files($$PWD/src/video_sources/ffmpeg/*.h) \
     $$files($$PWD/src/video_sources/magewell/*.h) \
-    $$files($$PWD/src/video_sources/decklink/*.h)
+    $$files($$PWD/src/video_sources/decklink/*.h) \
+    $$files($$PWD/src/video_sources/screen_capture/*.h)
 
 RESOURCES += \
     $$PWD/qml.qrc \
