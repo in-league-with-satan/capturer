@@ -168,10 +168,10 @@ public:
             return QStringLiteral("decklink");
 
         case Type::screen_capture_bitblt:
-            return QStringLiteral("screen_capture_bitblt");
+            return QStringLiteral("screen capture bitblt");
 
         case Type::screen_capture_dda:
-            return QStringLiteral("screen_capture_dda");
+            return QStringLiteral("screen capture dda");
 
         default:
             break;
