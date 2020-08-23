@@ -13,10 +13,13 @@ QT += \
     sql \
     svg
 
+windows:QT += winextras
+
 
 TARGET = capturer
 
-DEFINES += QT_DEPRECATED_WARNINGS
+#DEFINES += QT_DEPRECATED_WARNINGS
+DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000
 DEFINES += QT_MESSAGELOGCONTEXT
 
 DEFINES += USE_PULSE_AUDIO
@@ -26,7 +29,7 @@ DEFINES += USE_PULSE_AUDIO
 
 TEMPLATE = app
 
-CONFIG += c++14
+CONFIG += c++17
 #windows:CONFIG += console
 #CONFIG += console
 CONFIG -= qtquickcompiler
@@ -60,11 +63,6 @@ CONFIG(debug, debug|release):{
 } else {
     DEFINES += QT_NO_DEBUG_OUTPUT
     DEFINES += NDEBUG
-
-    linux {
-        QMAKE_CFLAGS_RELEASE = "-march=native -O3 -fomit-frame-pointer -pipe"
-        QMAKE_CXXFLAGS_RELEASE = "-march=native -O3 -fomit-frame-pointer -pipe"
-    }
 }
 
 
@@ -81,6 +79,8 @@ linux {
 
 windows {
     DEFINES -= USE_PULSE_AUDIO
+
+    LIBS += -lgdi32 -ld3d11 -lksuser
 
     RC_ICONS += $$PWD/../icon/capturer.ico
     QMAKE_TARGET = "capturer v$$VERSION"
@@ -117,7 +117,8 @@ INCLUDEPATH += \
     $$PWD/src/video_sources/dummy \
     $$PWD/src/video_sources/ffmpeg \
     $$PWD/src/video_sources/magewell \
-    $$PWD/src/video_sources/decklink
+    $$PWD/src/video_sources/decklink \
+    $$PWD/src/video_sources/screen_capture
 
 SOURCES += \
     $$files($$PWD/src/*.cpp) \
@@ -131,7 +132,8 @@ SOURCES += \
     $$files($$PWD/src/video_sources/dummy/*.cpp) \
     $$files($$PWD/src/video_sources/ffmpeg/*.cpp) \
     $$files($$PWD/src/video_sources/magewell/*.cpp) \
-    $$files($$PWD/src/video_sources/decklink/*.cpp)
+    $$files($$PWD/src/video_sources/decklink/*.cpp) \
+    $$files($$PWD/src/video_sources/screen_capture/*.cpp)
 
 HEADERS += \
     $$files($$PWD/src/*.h) \
@@ -146,7 +148,8 @@ HEADERS += \
     $$files($$PWD/src/video_sources/dummy/*.h) \
     $$files($$PWD/src/video_sources/ffmpeg/*.h) \
     $$files($$PWD/src/video_sources/magewell/*.h) \
-    $$files($$PWD/src/video_sources/decklink/*.h)
+    $$files($$PWD/src/video_sources/decklink/*.h) \
+    $$files($$PWD/src/video_sources/screen_capture/*.h)
 
 RESOURCES += \
     $$PWD/qml.qrc \

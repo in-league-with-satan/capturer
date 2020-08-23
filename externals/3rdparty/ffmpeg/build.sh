@@ -270,7 +270,8 @@ build_ff() {
       --disable-htmlpages \
       --disable-manpages \
       --disable-podpages \
-      --disable-txtpages
+      --disable-txtpages \
+      --disable-sdl2
 
     make -j$cpu_count
     make install

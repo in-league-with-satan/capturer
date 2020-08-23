@@ -3,16 +3,16 @@
 Copyright © 2018, 2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU General Public License
+You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
@@ -98,11 +98,12 @@ ShowHideRect {
     Connections {
         target: messenger
 
-        onFormatChanged: {
+        function onFormatChanged(format) {
             input_format.format=format
             input_format.text="input format: " + input_format.format + "  " + input_format.temperature
         }
-        onTemperatureChanged: {
+
+        function onTemperatureChanged(temperature) {
             if(temperature<0)
                 input_format.temperature=""
 
@@ -111,8 +112,17 @@ ShowHideRect {
 
             input_format.text="input format: " + input_format.format + "  " + input_format.temperature
         }
-        onFreeSpaceStr: free_space.text="free space: " + size
-        onAudioLevelPrimary: audio_level_primary.setLevel(l, r, c, lfe, rl, rr, sl, sr)
-        onAudioLevelSecondary: audio_level_secondary.setLevel(l, r, c, lfe, rl, rr, sl, sr)
+
+        function onFreeSpaceStr(size) {
+            free_space.text="free space: " + size
+        }
+
+        function onAudioLevelPrimary(l, r, c, lfe, rl, rr, sl, sr) {
+            audio_level_primary.setLevel(l, r, c, lfe, rl, rr, sl, sr)
+        }
+
+        function onAudioLevelSecondary(l, r, c, lfe, rl, rr, sl, sr) {
+            audio_level_secondary.setLevel(l, r, c, lfe, rl, rr, sl, sr)
+        }
     }
 }

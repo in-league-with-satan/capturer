@@ -1,18 +1,18 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU General Public License
+You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
@@ -132,8 +132,27 @@ public:
 
         } decklink;
 
+        struct ScreenCapture {
+            QString name_audio;
+            int index_audio=0;
+            int upper_framerate_limit=0;
+
+        } screen_capture;
+
         Rec rec;
     };
+
+    struct Keys {
+        QMap <int, int> code; // Qt::Key : KeyCodeC
+        bool need_setup;
+
+    } keyboard_shortcuts;
+
+    struct HttpServer {
+        quint16 port;
+        bool enabled;
+
+    } http_server;
 
     struct Streaming {
         QVariantList url;
@@ -141,6 +160,16 @@ public:
         Rec rec;
 
     } streaming;
+
+    struct IrcSubtitles {
+        bool enabled=false;
+        QString host;
+        quint16 port;
+        QString nickname;
+        QString token;
+        QString channel;
+
+    } irc_subtitles;
 
     SourceDevice *sourceDevice(uint8_t index);
     SourceDevice *sourceDeviceAdd();
@@ -151,18 +180,6 @@ public:
     QList <SourceDevice> source_device;
     QVariantMap getSourceDeviceSettings(const SourceDevice &device);
     void setSourceDeviceSettings(SourceDevice *device, const QVariantMap &map_root);
-
-    struct HttpServer {
-        quint16 port;
-        bool enabled;
-
-    } http_server;
-
-    struct Keys {
-        QMap <int, int> code; // Qt::Key : KeyCodeC
-        bool need_setup;
-
-    } keyboard_shortcuts;
 
     void checkEncoders();
 

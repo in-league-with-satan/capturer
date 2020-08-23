@@ -1,18 +1,18 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU General Public License
+You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
@@ -95,6 +95,7 @@ bool Settings::load()
     QVariantMap map_http_server=map_root.value(QStringLiteral("http_server")).toMap();
     QVariantMap map_keyboard_shortcuts=map_root.value(QStringLiteral("keyboard_shortcuts")).toMap();
     QVariantMap map_streaming=map_root.value(QStringLiteral("streaming")).toMap();
+    QVariantMap map_irc_subtitles=map_root.value(QStringLiteral("irc_subtitles")).toMap();
 
     //
 
@@ -146,6 +147,15 @@ bool Settings::load()
 
     //
 
+    irc_subtitles.enabled=map_irc_subtitles.value(QStringLiteral("enabled"), false).toBool();
+    irc_subtitles.host=map_irc_subtitles.value(QStringLiteral("host"), QStringLiteral("irc.chat.twitch.tv")).toString().simplified();
+    irc_subtitles.port=map_irc_subtitles.value(QStringLiteral("port"), 6667).toUInt();
+    irc_subtitles.nickname=map_irc_subtitles.value(QStringLiteral("nickname")).toString().simplified();
+    irc_subtitles.token=map_irc_subtitles.value(QStringLiteral("token"), "oauth:blah-blah-blah").toString().simplified();
+    irc_subtitles.channel=map_irc_subtitles.value(QStringLiteral("channel")).toString().simplified();
+
+    //
+
     if(main.supported_enc.isEmpty())
         checkEncoders();
 
@@ -161,6 +171,7 @@ bool Settings::save()
     QVariantMap map_http_server;
     QVariantMap map_keyboard_shortcuts;
     QVariantMap map_streaming;
+    QVariantMap map_irc_subtitles;
 
     map_main.insert(QStringLiteral("location_videos"), main.location_videos);
     map_main.insert(QStringLiteral("supported_enc"), main.supported_enc);
@@ -184,16 +195,30 @@ bool Settings::save()
                     QKeySequence(keyboard_shortcuts.code.key(i, KeyboardShortcuts::defaultQtKey(i))).toString()
                     );
 
-    map_root.insert(QStringLiteral("main"), map_main);
-    map_root.insert(QStringLiteral("source_device"), lst_source_device);
-    map_root.insert(QStringLiteral("keyboard_shortcuts"), map_keyboard_shortcuts);
+    //
 
     map_streaming.insert(QStringLiteral("rec"), recSave(streaming.rec));
     map_streaming.insert(QStringLiteral("url"), streaming.url);
     map_streaming.insert(QStringLiteral("url_index"), streaming.url_index);
 
-    map_root.insert(QStringLiteral("streaming"), map_streaming);
+    //
 
+    map_irc_subtitles.insert(QStringLiteral("enabled"), irc_subtitles.enabled);
+    map_irc_subtitles.insert(QStringLiteral("host"), irc_subtitles.host);
+    map_irc_subtitles.insert(QStringLiteral("port"), irc_subtitles.port);
+    map_irc_subtitles.insert(QStringLiteral("nickname"), irc_subtitles.nickname);
+    map_irc_subtitles.insert(QStringLiteral("token"), irc_subtitles.token);
+    map_irc_subtitles.insert(QStringLiteral("channel"), irc_subtitles.channel);
+
+    //
+
+    map_root.insert(QStringLiteral("main"), map_main);
+    map_root.insert(QStringLiteral("source_device"), lst_source_device);
+    map_root.insert(QStringLiteral("keyboard_shortcuts"), map_keyboard_shortcuts);
+    map_root.insert(QStringLiteral("streaming"), map_streaming);
+    map_root.insert(QStringLiteral("irc_subtitles"), map_irc_subtitles);
+
+    //
 
     QByteArray ba=QJsonDocument::fromVariant(map_root).toJson();
 
@@ -369,6 +394,7 @@ QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &devi
     QVariantMap map_ff;
     QVariantMap map_magewell;
     QVariantMap map_decklink;
+    QVariantMap map_screen_capture;
     QVariantMap map_rec;
 
     map_dummy.insert(QStringLiteral("framesize"), device.dummy_device.framesize);
@@ -397,6 +423,9 @@ QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &devi
     map_decklink.insert(QStringLiteral("audio_sample_size"), device.decklink.audio_sample_size);
     map_decklink.insert(QStringLiteral("index"), device.decklink.video_bitdepth);
 
+    map_screen_capture.insert(QStringLiteral("name_audio"), device.screen_capture.name_audio);
+    map_screen_capture.insert(QStringLiteral("upper_framerate_limit"), device.screen_capture.upper_framerate_limit);
+
     map_rec=recSave(device.rec);
 
     map_root.insert(QStringLiteral("index"), device.index);
@@ -404,6 +433,7 @@ QVariantMap Settings::getSourceDeviceSettings(const Settings::SourceDevice &devi
     map_root.insert(QStringLiteral("ff"), map_ff);
     map_root.insert(QStringLiteral("magewell"), map_magewell);
     map_root.insert(QStringLiteral("decklink"), map_decklink);
+    map_root.insert(QStringLiteral("screen_capture"), map_screen_capture);
     map_root.insert(QStringLiteral("rec"), map_rec);
 
     return map_root;
@@ -420,6 +450,7 @@ void Settings::setSourceDeviceSettings(Settings::SourceDevice *device, const QVa
     QVariantMap map_ff=map_root.value(QStringLiteral("ff")).toMap();
     QVariantMap map_magewell=map_root.value(QStringLiteral("magewell")).toMap();
     QVariantMap map_decklink=map_root.value(QStringLiteral("decklink")).toMap();
+    QVariantMap map_screen_capture=map_root.value(QStringLiteral("screen_capture")).toMap();
     QVariantMap map_rec=map_root.value(QStringLiteral("rec")).toMap();
 
     device->dummy_device.framesize=map_dummy.value(QStringLiteral("framesize"), 0).toUInt();
@@ -447,6 +478,9 @@ void Settings::setSourceDeviceSettings(Settings::SourceDevice *device, const QVa
     device->decklink.index=map_decklink.value(QStringLiteral("index"), 0).toUInt();
     device->decklink.audio_sample_size=map_decklink.value(QStringLiteral("audio_sample_size"), 0).toUInt();
     device->decklink.video_bitdepth=map_decklink.value(QStringLiteral("index"), 0).toUInt();
+
+    device->screen_capture.name_audio=map_screen_capture.value(QStringLiteral("name_audio")).toString();
+    device->screen_capture.upper_framerate_limit=map_screen_capture.value(QStringLiteral("upper_framerate_limit"), 0).toUInt();
 
     recLoad(&device->rec, map_rec);
 }

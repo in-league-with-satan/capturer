@@ -1,18 +1,18 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018, 2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU General Public License
+You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
@@ -21,7 +21,6 @@ import QtQuick 2.7
 import QtQuick.Controls 2.0
 import QtQuick.Controls 1.5
 import QtQuick.Layouts 1.3
-//import QtQuick.Particles 2.0
 import QtGraphicalEffects 1.0
 
 import FuckTheSystem 0.0
@@ -106,7 +105,7 @@ ApplicationWindow {
     Connections {
         target: setup_form
 
-        onBack: {
+        function onBack() {
             setup_form.visible=false
             swipe_view.visible=true
             swipe_pos_indicator.visible=true
@@ -116,11 +115,11 @@ ApplicationWindow {
     Connections {
         target: messenger
 
-        onUpdateRecStats: {
+        function onUpdateRecStats(duration, size, free_space, bitrate, frames_dropped, frame_buffer_state) {
             button_rec.setText("duration: " + duration + "\n" + "size: " + size + "\n" + "free space: " + free_space + "\n" + "bitrate: " + bitrate + "\n" + "buffer state: " + frame_buffer_state + "\n" + "frames dropped: " + frames_dropped)
         }
 
-        onRecStateChanged: {
+        function onRecStateChanged(state) {
             if(state)
                 button_rec.recStarted()
 

@@ -1,18 +1,18 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU General Public License
+You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
@@ -44,7 +44,7 @@ void checkRoot()
     return;
 
     if(getuid()!=0) {
-        if(!QProcess::startDetached(QString("gksu %1").arg(QApplication::applicationFilePath())))
+        if(!QProcess::startDetached(QString("gksu %1").arg(QApplication::applicationFilePath()), QStringList()))
             QProcess::startDetached(QApplication::applicationFilePath(), QStringList() << "--dont-check-root");
 
         exit(0);
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
 
 #endif
 
-            endl(stream);
+            Qt::endl(stream);
         });
 
     } else if(application->arguments().contains("--headless-curse", Qt::CaseInsensitive)) {

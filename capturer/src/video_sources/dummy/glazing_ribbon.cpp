@@ -1,18 +1,18 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018, 2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU General Public License
+You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
@@ -137,7 +137,7 @@ QImage GlazingRibbon::next()
         painter.setPen(pen);
 
 
-        QFont font;
+        QFont font(painter.font());
 
         font.setPixelSize(max_distance*.1);
 
@@ -148,7 +148,7 @@ QImage GlazingRibbon::next()
 
         const QString text=QString::number(frame_counter++).rightJustified(5, '0');
 
-        const QRect rect=QRect(width*.1, height*.16, fm.width(text), fm.height());
+        const QRect rect=QRect(width*.1, height*.16, fm.horizontalAdvance(QStringLiteral("WTF??")), fm.height());
 
         painter.fillRect(rect, background_color);
 

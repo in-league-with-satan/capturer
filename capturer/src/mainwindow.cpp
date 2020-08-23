@@ -3,16 +3,16 @@
 Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU General Public License
+You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
@@ -28,8 +28,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QTimer>
 
 #include "settings.h"
+#include "dummy_device.h"
+#include "screen_capture.h"
 #include "decklink_device_list.h"
 #include "decklink_thread.h"
+#include "magewell_device.h"
 #include "audio_output.h"
 #include "audio_level.h"
 #include "qml_messenger.h"
@@ -40,10 +43,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "tools_ff_source.h"
 #include "ff_source.h"
 #include "framerate.h"
-#include "dummy_device.h"
 #include "nv_tools.h"
-#include "magewell_device.h"
 #include "term_gui.h"
+#include "irc_subtitles.h"
 
 #include "mainwindow.h"
 
@@ -99,9 +101,26 @@ MainWindow::MainWindow(QObject *parent)
     connect(this, SIGNAL(recStats(NRecStats)), http_server, SLOT(setRecStats(NRecStats)));
     connect(nv_tools, SIGNAL(stateChanged(NvState)), http_server, SLOT(setNvState(NvState)), Qt::QueuedConnection);
 
+    //
 
     encoder_streaming=new FFEncoderThread(FFEncoder::StreamingMode, &enc_streaming_url, &enc_start_sync, QString(), QString("capturer %1").arg(VERSION_STRING), this);
 
+    //
+
+    irc_subtitles=new IrcSubtitles();
+    irc_subtitles->setStoreDir(settings->main.location_videos);
+    irc_subtitles->setBaseFilename(&enc_base_filename);
+
+    if(settings->irc_subtitles.enabled
+            && !settings->irc_subtitles.channel.isEmpty()
+            && !settings->irc_subtitles.host.isEmpty()
+            && !settings->irc_subtitles.nickname.isEmpty()
+            && !settings->irc_subtitles.token.isEmpty()
+            && settings->irc_subtitles.port>0 && settings->irc_subtitles.port<0xffff) {
+        irc_subtitles->connectToHost(settings->irc_subtitles.host, settings->irc_subtitles.port, settings->irc_subtitles.nickname, settings->irc_subtitles.token, settings->irc_subtitles.channel);
+    }
+
+    //
 
     if(!settings->main.headless) {
         messenger=new QmlMessenger(settings_model);
@@ -281,8 +300,17 @@ MainWindow::~MainWindow()
         deviceStop(i);
         qApp->processEvents();
 
-        while(stream[i].source_device && stream[i].source_device->isActive())
+        ObjGrp str=stream.at(i);
+
+        while(str.source_device && str.source_device->isActive())
             QThread::msleep(10);
+
+        if(str.source_device) {
+            delete str.source_device;
+        }
+
+        delete str.audio_sender;
+        delete str.encoder;
     }
 
     settings->save();
@@ -339,6 +367,14 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
         (*device)=new DeckLinkThread(index);
         break;
 
+    case SourceInterface::Type::screen_capture_bitblt:
+        (*device)=new ScreenCapture(index, ScreenCapture::Mode::bitblt);
+        break;
+
+    case SourceInterface::Type::screen_capture_dda:
+        (*device)=new ScreenCapture(index, ScreenCapture::Mode::dda);
+        break;
+
     default:
         break;
     }
@@ -377,14 +413,16 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
 
         //
 
-        set_model_data.values.clear();
-        set_model_data.values_data.clear();
+        if(!settings->main.headless) {
+            set_model_data.values.clear();
+            set_model_data.values_data.clear();
 
-        set_model_data.type=SettingsModel::Type::checkbox;
-        set_model_data.name="show frame counter";
-        set_model_data.value=&settings_device->dummy_device.show_frame_counter;
+            set_model_data.type=SettingsModel::Type::checkbox;
+            set_model_data.name="show frame counter";
+            set_model_data.value=&settings_device->dummy_device.show_frame_counter;
 
-        list_set_model_data.append(set_model_data);
+            list_set_model_data.append(set_model_data);
+        }
     }
 
     if(type==SourceInterface::Type::ffmpeg) {
@@ -769,6 +807,69 @@ void MainWindow::setDevice(uint8_t index, SourceInterface::Type::T type)
 
         list_set_model_data.append(set_model_data);
     }
+
+
+    if(type==SourceInterface::Type::screen_capture_bitblt || type==SourceInterface::Type::screen_capture_dda) {
+        ScreenCapture *sc_device=static_cast<ScreenCapture*>(*device);
+
+        //
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="audio device";
+
+        QStringList audio_devices=sc_device->availableAudioInput();
+
+        set_model_data.values << "disabled";
+        set_model_data.values_data << -1;
+
+        for(int i=0; i<audio_devices.size(); ++i) {
+            set_model_data.values << audio_devices[i];
+            set_model_data.values_data << i;
+        }
+
+        set_model_data.value=&settings_device->screen_capture.index_audio;
+
+        settings_device->screen_capture.index_audio=sc_device->indexAudioInput(settings_device->screen_capture.name_audio);
+
+        if(settings_device->screen_capture.index_audio<0)
+            settings_device->screen_capture.index_audio=0;
+
+        else
+            settings_device->screen_capture.index_audio++;
+
+        list_set_model_data.append(set_model_data);
+
+
+        sc_device->setAudioDevice(settings_device->screen_capture.name_audio);
+
+        //
+
+        set_model_data.values.clear();
+        set_model_data.values_data.clear();
+
+        set_model_data.type=SettingsModel::Type::combobox;
+        set_model_data.name="upper framerate limit";
+
+        for(int i=0; i<ScreenCapture::FramerateLimit::size; ++i) {
+            set_model_data.values << QString::number(ScreenCapture::FramerateLimit::value(i));
+            set_model_data.values_data << i;
+        }
+
+        set_model_data.value=&settings_device->screen_capture.upper_framerate_limit;
+
+
+        if(settings_device->screen_capture.upper_framerate_limit<0)
+            settings_device->screen_capture.upper_framerate_limit=0;
+
+        else if(settings_device->screen_capture.upper_framerate_limit>=ScreenCapture::FramerateLimit::size)
+            settings_device->screen_capture.upper_framerate_limit=ScreenCapture::FramerateLimit::size - 1;
+
+
+        list_set_model_data.append(set_model_data);
+
+        sc_device->setUpperFramerateLimit((ScreenCapture::FramerateLimit::T)settings_device->screen_capture.upper_framerate_limit);
+    }
+
 
     settings_model->insert(&settings_device->stop, list_set_model_data);
 
@@ -2088,6 +2189,23 @@ void MainWindow::settingsModelDataChanged(int index, int role, bool qml)
             }
         }
 
+
+        if((*device) && ((*device)->type()==SourceInterface::Type::screen_capture_bitblt || (*device)->type()==SourceInterface::Type::screen_capture_dda)) {
+            ScreenCapture *sc_device=static_cast<ScreenCapture*>(*device);
+
+            if(data->value==&settings_device->screen_capture.index_audio) {
+                settings_device->screen_capture.name_audio=
+                        data->values.value(*data->value);
+
+                sc_device->setAudioDevice(settings_model->valueData(&settings_device->screen_capture.index_audio).toString());
+            }
+
+            if(data->value==&settings_device->screen_capture.upper_framerate_limit) {
+                sc_device->setUpperFramerateLimit((ScreenCapture::FramerateLimit::T)settings_device->screen_capture.upper_framerate_limit);
+            }
+        }
+
+
         if(data->value==&settings_device->rec.video_encoder) {
             qml=false;
 
@@ -2294,13 +2412,20 @@ void MainWindow::deviceStart(uint8_t index)
         DummyDevice::Device *dev=new DummyDevice::Device();
 
         dev->frame_size=settings_model->valueData(&settings_device->dummy_device.framesize, QSize(1920, 1080)).toSize();
-        dev->show_frame_counter=settings_device->dummy_device.show_frame_counter;
+
+        if(!settings->main.headless)
+            dev->show_frame_counter=settings_device->dummy_device.show_frame_counter;
 
         (*device)->setDevice(dev);
     }
 
-    if((*device)->type()==SourceInterface::Type::dummy) {
-        ;
+    if((*device)->type()==SourceInterface::Type::screen_capture_bitblt || (*device)->type()==SourceInterface::Type::screen_capture_dda) {
+        ScreenCapture::Device *dev=new ScreenCapture::Device();
+
+        dev->audio_device_name=settings_device->screen_capture.name_audio;
+        dev->framerate_limit=(ScreenCapture::FramerateLimit::T)settings_model->valueData(&settings_device->screen_capture.upper_framerate_limit, ScreenCapture::FramerateLimit::l_60).toInt();
+
+        (*device)->setDevice(dev);
     }
 
     if((*device)->type()==SourceInterface::Type::ffmpeg) {
@@ -2399,6 +2524,8 @@ void MainWindow::startStopRecording()
             stream[i].encoder->stopCoder();
 
         encoder_streaming->stopCoder();
+
+        irc_subtitles->stop();
 
         return;
     }
@@ -2525,6 +2652,8 @@ void MainWindow::startStopRecording()
 
         encoder_streaming->setConfig(cfg);
     }
+
+    irc_subtitles->start();
 }
 
 void MainWindow::updateEncList()

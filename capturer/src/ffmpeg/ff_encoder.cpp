@@ -1,18 +1,18 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+GNU Affero General Public License for more details.
 
-You should have received a copy of the GNU General Public License
+You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ******************************************************************************/
@@ -31,6 +31,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "ff_tools.h"
 #include "ff_format_converter_multithreaded.h"
 #include "ff_audio_converter.h"
+#include "ff_encoder_base_filename.h"
 #include "decklink_frame_converter.h"
 #include "source_interface.h"
 
@@ -1958,6 +1959,9 @@ bool FFEncoder::appendFrame(Frame::ptr frame)
 
 void FFEncoder::processAudio(Frame::ptr frame)
 {
+    if(!context->out_stream_audio.av_stream)
+        return;
+
     if(context->cfg.audio_sample_size==0)
         return;
 
@@ -2026,6 +2030,9 @@ void FFEncoder::processAudio(Frame::ptr frame)
 
 void FFEncoder::flushAudio()
 {
+    if(context->cfg.audio_sample_size==0)
+        return;
+
     const AudioBuffer::AudioData dtmp=context->audio_buffer.get(context->audio_buffer.size());
 
     if(!dtmp.data.isEmpty()) {
