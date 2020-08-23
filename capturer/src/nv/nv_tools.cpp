@@ -228,8 +228,12 @@ void NvTools::run()
 
     d->proc=new QProcess();
     d->proc->moveToThread(this);
-    d->proc->start("nvidia-smi dmon", QStringList());
-    d->proc->waitForStarted();
+    d->proc->start("nvidia-smi", QStringList() << "dmon");
+
+    if(!d->proc->waitForStarted()) {
+        qCritical() << d->proc->errorString();
+        return;
+    }
 
 #endif
 
