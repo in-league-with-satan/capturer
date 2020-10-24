@@ -26,8 +26,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #endif
 
-#include "magewell_lib.h"
+#include "debug_helpers.h"
 
+#include "magewell_lib.h"
 #include "magewell_device_worker.h"
 
 #include "magewell_device.h"
@@ -282,6 +283,8 @@ bool MagewellDevice::isActive()
 
 void MagewellDevice::run()
 {
+    printProcessId("MagewellDevice");
+
     d=new MagewellDeviceWorker(&device_index);
 
     d->moveToThread(this);

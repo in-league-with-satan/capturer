@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -29,9 +29,10 @@ class FFFormatConverterMt : public QObject
     Q_OBJECT
 
 public:
-    FFFormatConverterMt(uint8_t thread_count, QObject *parent=0);
+    FFFormatConverterMt(QObject *parent=0);
 
-    void useMultithreading(bool value);
+    void useMultithreading(int thread_count);
+    void stop();
 
     void resetQueues();
 

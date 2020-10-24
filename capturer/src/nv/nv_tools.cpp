@@ -26,8 +26,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <iostream>
 
+#include "debug_helpers.h"
 #include "nv_lib.h"
-
 
 #include "nv_tools.h"
 
@@ -225,6 +225,8 @@ void NvTools::onTimer()
 void NvTools::run()
 {
 #ifdef __linux__
+
+    printProcessId("NvTools");
 
     d->proc=new QProcess();
     d->proc->moveToThread(this);

@@ -45,6 +45,7 @@ public:
         int headless_curse=0;
         int source_device_add=0;
         int source_device_remove=0;
+        int format_converter_thread_size=0;
         QString location_videos;
         QVariantMap supported_enc;
 

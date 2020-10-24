@@ -27,6 +27,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <signal.h>
 #include <iostream>
 
+#include "debug_helpers.h"
 #include "magewell_device.h"
 #include "decklink_tools.h"
 #include "data_types.h"
@@ -128,6 +129,11 @@ int main(int argc, char *argv[])
     QGuiApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
 
     QCoreApplication *application=nullptr;
+
+
+    // dbgHlpSetEnabled(true);
+    printProcessId("main");
+
 
     bool headless=false;
 

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <QDebug>
 
+#include "debug_helpers.h"
 #include "ff_tools.h"
 #include "ff_format_converter.h"
 #include "decklink_frame_converter.h"
@@ -97,6 +98,8 @@ void QuickVideoSourceConvertThread::switchHalfFps()
 
 void QuickVideoSourceConvertThread::run()
 {
+    printProcessId("QuickVideoSourceConvertThread");
+
     Frame::ptr frame_src;
     Frame::ptr frame_dst;
 

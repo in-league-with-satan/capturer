@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <qcoreapplication.h>
 
 #include "decklink_thread.h"
+#include "debug_helpers.h"
 
 #include "ff_encoder_thread.h"
 
@@ -41,8 +42,8 @@ FFEncoderThread::FFEncoderThread(int enc_num, FFEncoderBaseFilename *base_filena
     is_working=false;
 
     // start(QThread::LowestPriority);
-    // start(QThread::NormalPriority);
-    start(QThread::HighPriority);
+    start(QThread::NormalPriority);
+    // start(QThread::HighPriority);
     // start(QThread::HighestPriority);
     // start(QThread::TimeCriticalPriority);
 }
@@ -98,6 +99,8 @@ void FFEncoderThread::onStateChanged(bool state)
 
 void FFEncoderThread::run()
 {
+    printProcessId("FFEncoderThread");
+
     FFEncoder *ffmpeg=new FFEncoder(enc_num, start_sync);
 
     ffmpeg->moveToThread(this);
