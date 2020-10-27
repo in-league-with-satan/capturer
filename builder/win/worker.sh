@@ -1,67 +1,70 @@
 #!/bin/bash
 
-
 dest_dir=bin_win
 
-ffmpeg_date=`curl -vs "https://ffmpeg.zeranoe.com/builds/win64/shared/" 2>&1 | grep -E 'ffmpeg-[0-9]{8}' | grep -oE '[0-9]{8}' | sort -r | head -1`
-ffmpeg_version=`curl -vs "https://ffmpeg.zeranoe.com/builds/win64/shared/" 2>&1 | grep $ffmpeg_date | grep -Po '(?<=(ffmpeg-)).*(?=-win64-shared.zip)' | cut -c -16`
+#
 
+staticff=0
+
+if [[ "$1" == "staticff" ]] ; then
+  staticff=1
+fi
+
+
+cd /temp
+
+
+cd externals/3rdparty
+bash http_server_update.sh || { echo 'http_server_update err'; exit 1; }
+bash curses_update.sh || { echo 'curses_update err'; exit 1; }
+
+cd ffmpeg
+bash build_win.sh $1 || { echo 'ffmpeg build err'; exit 1; }
+
+
+cd win/tmp/ffmpeg
+ffmpeg_version=`git log -1 --format=%cd-%h --date=format:'%Y%m%d'`
+
+
+rm -rfd /temp/$dest_dir
+
+
+cd /temp/capturer
 
 app_last_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
 app_version=$app_last_tag.`git rev-list $app_last_tag.. --count`-`git log -1 --pretty=format:%h`
 
-
 qt_version=`qmake --version | awk '{if ($1=="Using") print $4;}'`
 
 
-cd /temp
+if [ $staticff -eq 1 ]; then
+  qmake "DEFINES+=STATIC_WIN_FF" "DESTDIR=../$dest_dir" capturer.pro || exit 1
 
+else
+  qmake "DESTDIR=../$dest_dir" capturer.pro || exit 1
+fi
 
-mv externals/3rdparty/ffmpeg externals/3rdparty/ffmpeg_orig
-mkdir externals/3rdparty/ffmpeg
-cp externals/3rdparty/ffmpeg_orig/ffmpeg.pri externals/3rdparty/ffmpeg/ffmpeg.pri
-
-curl -s "https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-$ffmpeg_version-win64-shared.zip" --output ffmpeg_bin.zip
-curl -s "https://ffmpeg.zeranoe.com/builds/win64/dev/ffmpeg-$ffmpeg_version-win64-dev.zip" --output ffmpeg_dev.zip
-
-
-7z x ffmpeg_bin.zip
-7z x ffmpeg_dev.zip
-
-
-mv -f ffmpeg-$ffmpeg_version-win64-dev/* externals/3rdparty/ffmpeg
-
-
-cd externals/3rdparty
-bash http_server_update.sh
-bash curses_update.sh
-
-rm -rfd /temp/$dest_dir
-
-cd /temp/capturer
-
-qmake "DESTDIR=../$dest_dir" capturer.pro
 make clean
-make -j`nproc`
+make -j`nproc` || exit 1
 
 
 cd /temp
 
 
-rm -rfd externals/3rdparty/ffmpeg
-mv externals/3rdparty/ffmpeg_orig externals/3rdparty/ffmpeg
-mv -f ffmpeg-$ffmpeg_version-win64-shared/bin/*.dll $dest_dir
-rm ffmpeg_bin.zip
-rm ffmpeg_dev.zip
-rm -rfd ffmpeg-$ffmpeg_version-win64-shared
-rm -rfd ffmpeg-$ffmpeg_version-win64-dev
+if [ $staticff -eq 0 ]; then
+  cp -f externals/3rdparty/ffmpeg/win/bin/*.dll $dest_dir
+fi
 
+echo -e 'start capturer --setup\r\n\c' > $dest_dir/capturer.setup.cmd
+echo -e 'start capturer --portable-mode\r\n\c' > $dest_dir/capturer.portable.cmd
+echo -e 'start capturer --portable-mode --setup\r\n\c' > $dest_dir/capturer.portable.setup.cmd
+echo -e 'start capturer --portable-mode --headless\r\n\c' > $dest_dir/capturer.portable.headless.cmd
+echo -e 'start capturer --portable-mode --headless-curse\r\n\c' > $dest_dir/capturer.portable.headless-curse.cmd
 
 cp license $dest_dir/license
 
 
 cd $dest_dir
-
 
 arcfilename="../builder/capturer-$app_version""_x86_64-win_qt-""$qt_version""_ffmpeg-$ffmpeg_version"
 
@@ -70,4 +73,3 @@ if [ -e $arcfilename.7z ]; then
 fi
 
 7z a -mx9 $arcfilename.7z *
-

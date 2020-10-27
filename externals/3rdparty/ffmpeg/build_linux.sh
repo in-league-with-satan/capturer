@@ -26,30 +26,28 @@ fi
 
 
 str_opt="-march=native -O3"
+str_opt="-O2"
+
 
 git_up_to_date="Already up to date."
 
 build_counter=0
 
-PATH_ROOT=`pwd`
-
+PATH_ROOT=$(dirname $(readlink -f $0))/linux
 PATH_BASE=$PATH_ROOT
-
 PATH_BUILD=$PATH_ROOT/tmp
 
 PATH_ORIG=$PATH
-PATH=$PATH_ROOT/lib:$PATH_ROOT/include:$PATH_ROOT/bin:$PATH_ORIG
+PATH=$PATH_ROOT:$PATH_ROOT/lib:$PATH_ROOT/include:$PATH_ROOT/bin:$PATH_ORIG
 
 
 cpu_count=`nproc`
 
-export PKG_CONFIG_PATH="$PATH_BASE/lib/pkgconfig"
-
-HIGH_BIT_DEPTH=false
+export PKG_CONFIG_PATH=$PATH_BASE/lib/pkgconfig
 
 
 if [ ! -e $PATH_BUILD ]; then
-  mkdir $PATH_BUILD
+  mkdir -p $PATH_BUILD
 fi
 
 
@@ -59,13 +57,19 @@ build_nasm() {
   if [ ! -e nasm ]; then
     build_counter=$((build_counter + 1))
 
-    git clone git://repo.or.cz/nasm.git --branch nasm-2.14.02 --single-branch --depth 1
+    git clone git://repo.or.cz/nasm.git --branch nasm-2.14.02 --single-branch --depth 1 || exit 1
     cd nasm
 
     autoreconf -fiv
-    CFLAGS="$str_opt" ./configure --prefix="$PATH_BASE" --bindir="$PATH_BASE/bin"
+    CFLAGS="$str_opt" ./configure --prefix="$PATH_BASE" --bindir="$PATH_BASE/bin" || exit 1
+
     make everything -j$cpu_count
     make install
+
+    if [ ! -e $PATH_BASE/bin/nasm ]; then
+      echo 'nasm err'
+      exit 1
+    fi
   fi
 }
 
@@ -75,23 +79,30 @@ build_ogg() {
   cd $PATH_BUILD
 
   if [ ! -e ogg ]; then
-    git clone --depth 1 https://github.com/xiph/ogg.git
+    git clone --depth 1 https://github.com/xiph/ogg.git || exit 1
     cd ogg
 
   else
     cd ogg
     git reset --hard
     git clean -dfx
-    git pull | grep "$git_up_to_date" && build_required=0
+    git pull --ff-only | grep "$git_up_to_date" && build_required=0
+  fi
+
+  if [ ! -e $PATH_BASE/lib/libogg.a ]; then
+    build_required=1
   fi
 
   if [ "$build_required" -eq "1" ]; then
     build_counter=$((build_counter + 1))
 
     ./autogen.sh
-    CFLAGS="$str_opt" ./configure --prefix="$PATH_BASE" --disable-shared CFLAGS="$str_opt"
-    make -j$cpu_count
-    make install
+    CFLAGS="$str_opt" ./configure --prefix="$PATH_BASE" --disable-shared CFLAGS="$str_opt" || exit 1
+    make -j$cpu_count || exit 1
+    make install || exit 1
+
+    rm -f $PATH_BASE/lib/libvorbis.a
+    rm -f $PATH_BASE/lib/libopus.a
   fi
 }
 
@@ -101,23 +112,27 @@ build_vorbis() {
   cd $PATH_BUILD
 
   if [ ! -e vorbis ]; then
-    git clone --depth 1 https://github.com/xiph/vorbis.git
+    git clone --depth 1 https://github.com/xiph/vorbis.git || exit 1
     cd vorbis
 
   else
     cd vorbis
     git reset --hard
     git clean -dfx
-    git pull | grep "$git_up_to_date" && build_required=0
+    git pull --ff-only | grep "$git_up_to_date" && build_required=0
+  fi
+
+  if [ ! -e $PATH_BASE/lib/libvorbis.a ]; then
+    build_required=1
   fi
 
   if [ "$build_required" -eq "1" ]; then
     build_counter=$((build_counter + 1))
 
     ./autogen.sh
-    CFLAGS="$str_opt" LDFLAGS="-L$PATH_BASE/lib" CPPFLAGS="-I$PATH_BASE/include" ./configure --prefix="$PATH_BASE" --with-ogg="$PATH_BASE" --disable-shared CFLAGS="$str_opt"
-    make -j$cpu_count
-    make install
+    CFLAGS="$str_opt" LDFLAGS="-L$PATH_BASE/lib" CPPFLAGS="-I$PATH_BASE/include" ./configure --prefix="$PATH_BASE" --with-ogg="$PATH_BASE" --disable-shared CFLAGS="$str_opt" || exit 1
+    make -j$cpu_count || exit 1
+    make install || exit 1
   fi
 }
 
@@ -127,23 +142,28 @@ build_opus() {
   cd $PATH_BUILD
 
   if [ ! -e opus ]; then
-    git clone --depth 1 https://github.com/xiph/opus.git
+    git clone --depth 1 https://github.com/xiph/opus.git || exit 1
     cd opus
 
   else
     cd opus
     git reset --hard
     git clean -dfx
-    git pull | grep "$git_up_to_date" && build_required=0
+    git pull --ff-only | grep "$git_up_to_date" && build_required=0
+  fi
+
+  if [ ! -e $PATH_BASE/lib/libopus.a ]; then
+    build_required=1
   fi
 
   if [ "$build_required" -eq "1" ]; then
     build_counter=$((build_counter + 1))
 
     autoreconf -fiv
-    CFLAGS="$str_opt" ./configure --prefix="$PATH_BASE" --disable-shared CFLAGS="$str_opt"
-    make -j$cpu_count
-    make install
+    CFLAGS="$str_opt" ./configure --prefix="$PATH_BASE" --disable-shared CFLAGS="$str_opt" || exit 1
+
+    make -j$cpu_count || exit 1
+    make install || exit 1
   fi
 }
 
@@ -153,52 +173,27 @@ build_x264() {
   cd $PATH_BUILD
 
   if [ ! -e x264 ]; then
-    git clone --depth 1 https://code.videolan.org/videolan/x264.git
+    git clone --depth 1 https://code.videolan.org/videolan/x264.git || exit 1
     cd x264
 
   else
     cd x264
     git reset --hard
     git clean -dfx
-    git pull | grep "$git_up_to_date" && build_required=0
+    git pull --ff-only | grep "$git_up_to_date" && build_required=0
+  fi
+
+  if [ ! -e $PATH_BASE/lib/libx264.a ]; then
+    build_required=1
   fi
 
   if [ "$build_required" -eq "1" ]; then
     build_counter=$((build_counter + 1))
 
-    ./configure --prefix="$PATH_BASE" --bindir="$PATH_BASE/bin" --enable-pic --enable-static --extra-cflags="$str_opt"
+    ./configure --prefix="$PATH_BASE" --bindir="$PATH_BASE/bin" --enable-pic --enable-static --extra-cflags="$str_opt" || exit 1
 
-    make -j$cpu_count
-    make install
-  fi
-}
-
-build_mfx_dispatch() {
-  build_required=1
-
-  cd $PATH_BUILD
-
-  if [ ! -e mfx_dispatch ]; then
-    git clone --depth 1 https://github.com/lu-zero/mfx_dispatch.git
-    cd mfx_dispatch
-
-  else
-    cd mfx_dispatch
-    git reset --hard
-    git clean -dfx
-    git pull | grep "$git_up_to_date" && build_required=0
-  fi
-
-  if [ "$build_required" -eq "1" ]; then
-    build_counter=$((build_counter + 1))
-
-    autoreconf -fiv
-    automake --add-missing
-    ./configure --prefix="$PATH_BASE" --disable-shared --enable-static --with-libva_x11 --with-libva_drm
-    make -j$cpu_count
-    make install
-
-    pkg-config --exists --print-errors libmfx
+    make -j$cpu_count || exit 1
+    make install || exit 1
   fi
 }
 
@@ -208,12 +203,16 @@ build_nv_headers() {
   cd $PATH_BUILD
 
   if [ ! -e nv-codec-headers ]; then
-    git clone --depth 1 https://github.com/FFmpeg/nv-codec-headers.git
+    git clone --depth 1 https://github.com/FFmpeg/nv-codec-headers.git || exit 1
     cd nv-codec-headers
 
   else
     cd nv-codec-headers
-    git pull | grep "$git_up_to_date" && build_required=0
+    git pull --ff-only | grep "$git_up_to_date" && build_required=0
+  fi
+
+  if [ ! -e $PATH_BASE/include/ffnvcodec/nvEncodeAPI.h ]; then
+    build_required=1
   fi
 
   if [ "$build_required" -eq "1" ]; then
@@ -221,6 +220,8 @@ build_nv_headers() {
 
     cp -rf include/ffnvcodec "$PATH_BASE/include"
     cp -f ffnvcodec.pc.in "$PATH_BASE/lib/pkgconfig/ffnvcodec.pc"
+    sed -i -e "s/#define NVENCAPI_MAJOR_VERSION \([0-9]\{1,\}\)/#define NVENCAPI_MAJOR_VERSION 9/g" "$PATH_BASE/include/ffnvcodec/nvEncodeAPI.h"
+    sed -i -e "s/#define NVENCAPI_MINOR_VERSION \([0-9]\{1,\}\)/#define NVENCAPI_MINOR_VERSION 1/g" "$PATH_BASE/include/ffnvcodec/nvEncodeAPI.h"
   fi
 }
 
@@ -230,18 +231,21 @@ build_ff() {
   cd $PATH_BUILD
 
   if [ ! -e ffmpeg ]; then
-    git clone --depth 1 git://source.ffmpeg.org/ffmpeg
+    git clone --depth 1 git://source.ffmpeg.org/ffmpeg || exit 1
     cd ffmpeg
 
   else
     cd ffmpeg
     git reset --hard
     git clean -dfx
-    git pull | grep "$git_up_to_date" && build_required=0
+    git pull --ff-only | grep "$git_up_to_date" && build_required=0
+  fi
+
+  if [ ! -e $PATH_BASE/lib/libavcodec.a ]; then
+    build_required=1
   fi
 
   if [ "$build_required" -eq "1" ] || [ "$build_counter" -gt "0" ]; then
-    make distclean
     ./configure --prefix="$PATH_BASE" --extra-libs="-lpthread -lstdc++" --extra-cflags="-I$PATH_BASE/include $str_opt" --extra-ldflags="-L$PATH_BASE/lib" --bindir="$PATH_BASE/bin" --pkg-config-flags="--static" \
       --enable-pic \
       --enable-gpl \
@@ -273,8 +277,12 @@ build_ff() {
       --disable-txtpages \
       --disable-sdl2
 
-    make -j$cpu_count
-    make install
+    if [[ $? -ne 0 ]]; then
+      exit 1
+    fi
+
+    make -j$cpu_count || exit 1
+    make install || exit 1
   fi
 }
 
@@ -285,5 +293,6 @@ build_vorbis
 build_opus
 build_x264
 build_nv_headers
-#build_mfx_dispatch
 build_ff
+
+exit 0
