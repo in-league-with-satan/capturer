@@ -2555,6 +2555,8 @@ void MainWindow::startStopRecording()
 
         FFEncoder::Config cfg;
 
+        cfg.format_converter_thread_size=settings->main.format_converter_thread_size;
+
         AVRational framerate=dev->currentFramerate();
 
         cfg.framerate=FFEncoder::calcFps(framerate.num, framerate.den, settings->source_device[i].rec.half_fps);
@@ -2610,6 +2612,8 @@ void MainWindow::startStopRecording()
             return;
 
         FFEncoder::Config cfg;
+
+        cfg.format_converter_thread_size=settings->main.format_converter_thread_size;
 
         AVRational framerate=dev->currentFramerate();
 

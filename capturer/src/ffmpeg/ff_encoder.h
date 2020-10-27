@@ -238,6 +238,8 @@ public:
 
         int aspect_ratio_4_3=0;
 
+        int format_converter_thread_size=0;
+
         struct NVEnc {
             int enabled=false;
             int device=0;

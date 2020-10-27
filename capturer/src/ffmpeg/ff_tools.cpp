@@ -44,7 +44,6 @@ void av_log_callback(void*, int level, const char *fmt, va_list vl)
 
 void initLibAV()
 {
-    av_register_all();
     avdevice_register_all();
 
     // av_lockmgr_register(&ff_lock_callback);

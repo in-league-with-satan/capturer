@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <QJsonDocument>
 #include <QCryptographicHash>
 #include <QKeySequence>
+#include <QThread>
 #include <qcoreapplication.h>
 
 #include "data_types.h"
@@ -112,8 +113,15 @@ bool Settings::load()
 
     //
 
+    main.format_converter_thread_size=map_main.value(QStringLiteral("format_converter_thread_size"), -1).toInt();
     main.location_videos=map_main.value(QStringLiteral("location_videos"), store_location->videos()).toString();
     main.supported_enc=map_main.value(QStringLiteral("supported_enc")).toMap();
+
+    if(main.format_converter_thread_size<0) {
+        main.format_converter_thread_size=QThread::idealThreadCount()/2;
+        if(main.format_converter_thread_size<1) main.format_converter_thread_size=2;
+        else if(main.format_converter_thread_size>4) main.format_converter_thread_size=4;
+    }
 
 #ifdef LIB_QHTTP
     http_server.enabled=map_http_server.value(QStringLiteral("enabled"), true).toBool();
@@ -173,6 +181,7 @@ bool Settings::save()
     QVariantMap map_streaming;
     QVariantMap map_irc_subtitles;
 
+    map_main.insert(QStringLiteral("format_converter_thread_size"), main.format_converter_thread_size);
     map_main.insert(QStringLiteral("location_videos"), main.location_videos);
     map_main.insert(QStringLiteral("supported_enc"), main.supported_enc);
 

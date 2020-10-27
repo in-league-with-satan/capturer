@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -21,35 +21,44 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "ff_format_converter_multithreaded.h"
 
-FFFormatConverterMt::FFFormatConverterMt(uint8_t thread_count, QObject *parent)
+FFFormatConverterMt::FFFormatConverterMt(QObject *parent)
     : QObject(parent)
 {
-    // qDebug() << "thread_count" << thread_count;
+}
 
-    thread.resize(thread_count);
+void FFFormatConverterMt::useMultithreading(int thread_count)
+{
+    use_multithreading=thread_count>0;
 
     if(thread_count<1)
         thread_count=1;
+
+    thread.resize(thread_count);
 
     for(int i=0; i<thread_count; ++i) {
         thread[i]=std::shared_ptr<FFFormatConverterThread>(new FFFormatConverterThread(i, this));
 
         connect(&thread[i]->frameBufferIn()->signaler, SIGNAL(frameSkipped()), SIGNAL(frameSkipped()), Qt::QueuedConnection);
         connect(&thread[i]->frameBufferOut()->signaler, SIGNAL(frameSkipped()), SIGNAL(frameSkipped()), Qt::QueuedConnection);
+
+        if(use_multithreading)
+            thread[i]->startThread();
     }
 }
 
-void FFFormatConverterMt::useMultithreading(bool value)
+void FFFormatConverterMt::stop()
 {
-    use_multithreading=value;
-
     for(int i=0; i<thread.size(); ++i) {
-        if(use_multithreading)
-            thread[i]->startThread();
-
-        else
-            thread[i]->stopThread();
+        thread[i]->stopThread();
+        thread[i]->deleteLater();
     }
+
+    thread.clear();
+
+    format_src=AV_PIX_FMT_NONE;
+    format_dst=AV_PIX_FMT_NONE;
+    resolution_src=QSize();
+    resolution_dst=QSize();
 }
 
 void FFFormatConverterMt::resetQueues()

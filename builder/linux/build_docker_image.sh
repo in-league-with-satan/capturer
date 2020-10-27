@@ -1,4 +1,4 @@
 #!/bin/bash
 
 docker rmi capturer-builder-linux -f
-docker build --no-cache -t capturer-builder-linux .
+docker build -t capturer-builder-linux .

@@ -27,6 +27,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #endif
 
+#include "debug_helpers.h"
 #include "audio_tools.h"
 #include "magewell_device.h"
 
@@ -195,6 +196,8 @@ int64_t MagewellAudioThread::sizeToPos(int64_t size) const
 void MagewellAudioThread::run()
 {
 #ifdef LIB_MWCAPTURE
+
+    printProcessId("MagewellAudioThread");
 
     running=true;
 

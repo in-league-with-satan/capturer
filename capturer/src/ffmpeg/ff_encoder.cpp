@@ -63,6 +63,9 @@ struct OutputStream
     AVPacket *pkt=nullptr;
 
     uint64_t size_total=0;
+
+    uint64_t avg_send_frame_time=0;
+    uint8_t send_frame_time_warning=0;
 };
 
 struct FFMpegContext
@@ -632,6 +635,8 @@ static QString add_stream_video(OutputStream *output_stream, AVFormatContext *fo
             av_opt_set(output_stream->av_codec_context->priv_data, "preset", cfg.preset.toLatin1().constData(), 0);
         }
 
+        output_stream->av_codec_context->thread_count=4;
+
     } else if(cfg.video_encoder==FFEncoder::VideoEncoder::qsv_h264) {
         if(cfg.video_bitrate==0) {
             output_stream->av_codec_context->flags|=AV_CODEC_FLAG_QSCALE;
@@ -891,6 +896,9 @@ QString FFEncoder::write_video_frame(AVFormatContext *format_context, OutputStre
     int ret;
     QString err_string;
 
+    QElapsedTimer timer;
+    timer.restart();
+
     if(output_stream->frame_hw) {
         output_stream->frame_hw->pts=pts;
 
@@ -908,6 +916,16 @@ QString FFEncoder::write_video_frame(AVFormatContext *format_context, OutputStre
         qCritical() << "write_video_frame err:" << ffErrorString(ret);
         return QString("error encoding video frame: %1").arg(ffErrorString(ret));
     }
+
+
+    output_stream->avg_send_frame_time=(output_stream->avg_send_frame_time + timer.nsecsElapsed())*.5;
+
+
+    if(++output_stream->send_frame_time_warning==0 && output_stream->avg_send_frame_time>10000000) {
+        qCritical() << "avcodec_send_frame time overload" << output_stream->avg_send_frame_time*.0000001;
+        // return "avcodec_send_frame time overload";
+    }
+
 
     while(ret>=0) {
         ret=avcodec_receive_packet(output_stream->av_codec_context, output_stream->pkt);
@@ -969,18 +987,7 @@ FFEncoder::FFEncoder(int enc_num, FFEncStartSync *start_sync, QObject *parent) :
 {
     context=new FFMpegContext();
 
-    int thread_count=QThread::idealThreadCount()/2;
-    // thread_count=QThread::idealThreadCount();
-
-    if(thread_count<1)
-        thread_count=2;
-
-    if(thread_count>4)
-        thread_count=4;
-
-    format_converter_ff=new FFFormatConverterMt(thread_count);
-    // format_converter_ff->useMultithreading(false);
-    format_converter_ff->useMultithreading(true);
+    format_converter_ff=new FFFormatConverterMt(this);
 
     context->base_filename=nullptr;
     context->enc_num=enc_num;
@@ -1600,6 +1607,8 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
             cfg.nvenc.aq_mode=0;
     }
 
+    format_converter_ff->useMultithreading(cfg.format_converter_thread_size);
+
     if(!cfg.direct_stream_copy && cfg.input_type_flags&SourceInterface::TypeFlag::video && !format_converter_ff->setup(
                 PixelFormat::normalizeFormat(cfg.pixel_format_src).toAVPixelFormat(), cfg.frame_resolution_src, cfg.pixel_format_dst.toAVPixelFormat(), cfg.frame_resolution_dst,
                 cfg.sws_color_space_src, cfg.sws_color_space_dst, cfg.sws_color_range_src, cfg.sws_color_range_dst,
@@ -1745,6 +1754,9 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
     context->out_stream_audio.pts_start=AV_NOPTS_VALUE;
 
     context->out_stream_video.pts_stats=0;
+
+    context->out_stream_video.avg_send_frame_time=0;
+    context->out_stream_video.send_frame_time_warning=0xff;
 
     context->out_stream_audio.pts_next=0;
     context->out_stream_audio.size_total=0;
@@ -2081,6 +2093,8 @@ bool FFEncoder::stopCoder()
         avformat_free_context(context->av_format_context);
         context->av_format_context=nullptr;
     }
+
+    format_converter_ff->stop();
 
     emit stateChanged(false);
 
