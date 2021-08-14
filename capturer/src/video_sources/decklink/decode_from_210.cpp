@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2021 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -193,13 +193,13 @@ void Context::init()
 
 
     if(format==DecodeFrom210::Format::V210)
-        codec=avcodec_find_decoder(AV_CODEC_ID_V210);
+        codec=(AVCodec*)avcodec_find_decoder(AV_CODEC_ID_V210);
 
     else if(format==DecodeFrom210::Format::R210)
-        codec=avcodec_find_decoder(AV_CODEC_ID_R210);
+        codec=(AVCodec*)avcodec_find_decoder(AV_CODEC_ID_R210);
 
     else if(format==DecodeFrom210::Format::V410)
-        codec=avcodec_find_decoder(AV_CODEC_ID_V410);
+        codec=(AVCodec*)avcodec_find_decoder(AV_CODEC_ID_V410);
 
     else
         codec=nullptr;

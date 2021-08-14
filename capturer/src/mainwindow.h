@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2021 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -111,6 +111,8 @@ private slots:
     void deviceStop(uint8_t index);
 
     void startStopRecording();
+    void startStopStreaming();
+
     void updateEncList();
 
     void encoderBufferOverload();

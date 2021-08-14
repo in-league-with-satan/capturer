@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2021 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -261,15 +261,15 @@ void FFSnapshot::checkQueue()
         stream_video=format_context->streams[stream_video_index];
 
         if(stream_video->codecpar->codec_id==AV_CODEC_ID_H264) {
-            codec_video=avcodec_find_decoder_by_name("h264_cuvid");
+            codec_video=(AVCodec*)avcodec_find_decoder_by_name("h264_cuvid");
             hw_decoder=true;
 
         } else if(stream_video->codecpar->codec_id==AV_CODEC_ID_HEVC) {
-            codec_video=avcodec_find_decoder_by_name("hevc_cuvid");
+            codec_video=(AVCodec*)avcodec_find_decoder_by_name("hevc_cuvid");
             hw_decoder=true;
 
         } else {
-            codec_video=avcodec_find_decoder(stream_video->codecpar->codec_id);
+            codec_video=(AVCodec*)avcodec_find_decoder(stream_video->codecpar->codec_id);
         }
 
         if(!codec_video) {
@@ -278,7 +278,7 @@ void FFSnapshot::checkQueue()
 try_software_decoder:
 
             hw_decoder=false;
-            codec_video=avcodec_find_decoder(stream_video->codecpar->codec_id);
+            codec_video=(AVCodec*)avcodec_find_decoder(stream_video->codecpar->codec_id);
         }
 
         if(!codec_video) {

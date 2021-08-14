@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2021 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -251,11 +251,11 @@ void FFSourceWorker::deviceStart()
     if(!d->input_format) {
 #ifdef __linux__
 
-        d->input_format=av_find_input_format("video4linux2");
+        d->input_format=(AVInputFormat*)av_find_input_format("video4linux2");
 
 #else
 
-        d->input_format=av_find_input_format("dshow");
+        d->input_format=(AVInputFormat*)av_find_input_format("dshow");
 
 #endif
     }
@@ -287,7 +287,7 @@ void FFSourceWorker::deviceStart()
     }
 
 
-    d->format_context->video_codec=avcodec_find_decoder(d->format_context->video_codec_id);
+    d->format_context->video_codec=(AVCodec*)avcodec_find_decoder(d->format_context->video_codec_id);
 
 
     qDebug() << "dev name:" << video_device.name << video_device.dev;
@@ -327,7 +327,7 @@ void FFSourceWorker::deviceStart()
     }
 
 
-    d->codec=avcodec_find_decoder(d->stream->codecpar->codec_id);
+    d->codec=(AVCodec*)avcodec_find_decoder(d->stream->codecpar->codec_id);
 
     if(!d->codec) {
         qCritical() << "avcodec_find_decoder err";

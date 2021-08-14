@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2019-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2019-2021 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -374,6 +374,11 @@ void TermGui::run()
 
             case ' ':
                 mw->startStopRecording();
+                break;
+
+            case 'Z':
+            case 'z':
+                mw->startStopStreaming();
                 break;
 
             case 'B':
