@@ -6,7 +6,7 @@ linux {
 
     LIBS += -lavdevice -lavfilter -lpostproc -lavformat -lavcodec -lavutil -lswscale -lswresample
     LIBS += -ldl -lopus -lvorbis -lvorbisenc -logg -lx264
-    LIBS += -lva -lva-drm
+    LIBS += -lva -lva-drm -lva-x11
     # LIBS += -lmfx
 }
 
