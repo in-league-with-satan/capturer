@@ -9,7 +9,7 @@ RUN apt-get update && apt-get upgrade -y \
         intltool libc6-dev-i386 libgdk-pixbuf2.0-dev libltdl-dev libssl-dev \
         libxml-parser-perl lzip make openssl p7zip-full patch perl pkg-config python python-mako \
         ruby sed unzip wget xz-utils \
-    && git clone --depth 1 https://github.com/mxe/mxe.git && cd mxe && make -j`nproc` MXE_TARGETS='x86_64-w64-mingw32.static.posix' MXE_PLUGIN_DIRS='plugins/gcc10' qtbase qtmultimedia qtquickcontrols2 qtwinextras dlfcn-win32 \
+    && git clone https://github.com/mxe/mxe.git && cd mxe && git checkout 3e54b1da61770ecaff799e8e0605aa937716d672 && make -j`nproc` MXE_TARGETS='x86_64-w64-mingw32.static.posix' MXE_PLUGIN_DIRS='plugins/gcc10' qtbase qtmultimedia qtquickcontrols qtquickcontrols2 qtdeclarative qtgraphicaleffects qtimageformats qtsvg qtwinextras \
     && apt-get purge -y --allow-remove-essential autopoint bison bzip2 flex g++ g++-multilib gettext gperf intltool libc6-dev-i386 libgdk-pixbuf2.0-dev \
         libltdl-dev libssl-dev libtool-bin libxml-parser-perl lzip patch ruby unzip wget xz-utils \
     && apt-get autoremove -y && apt-get autoclean -y \
