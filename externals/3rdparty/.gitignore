@@ -1,0 +1,8 @@
+﻿# Ignore everything in this directory
+*
+# Except this files
+!ffmpeg
+!.gitignore
+!*.pri
+!*.sh
+!*.cmd

@@ -283,12 +283,14 @@ build_ff() {
   if [ ! -e ffmpeg ]; then
     git clone --depth 1 git://source.ffmpeg.org/ffmpeg || exit 1
     cd ffmpeg
+    git apply ../../p010.patch || exit 1
 
   else
     cd ffmpeg
     git reset --hard
     git clean -dfx
     git pull --ff-only | grep "$git_up_to_date" && build_required=0
+    git apply ../../p010.patch || exit 1
   fi
 
   if [ ! -e $fflibtest ]; then
@@ -339,6 +341,16 @@ build_ff() {
   fi
 }
 
+cp_file() {
+  find /mxe -type f -name $1 -exec cp "{}" $2 \;
+}
+
+cp_other_libs() {
+  cp_file libiconv.a $PATH_ROOT/lib
+  cp_file libsecur32.a $PATH_ROOT/lib
+  cp_file libssp.a $PATH_ROOT/lib
+}
+
 
 build_nasm
 build_ogg
@@ -348,5 +360,7 @@ build_x264
 build_mfx_dispatch
 build_nv_headers
 build_ff
+
+cp_other_libs
 
 exit 0

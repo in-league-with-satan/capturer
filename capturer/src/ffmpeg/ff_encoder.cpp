@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2021 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -132,10 +132,10 @@ static QString add_stream_audio(OutputStream *output_stream, AVFormatContext *fo
         if(cfg.audio_sample_size!=16)
             codec_id=AV_CODEC_ID_PCM_S32LE;
 
-        (*codec)=avcodec_find_encoder(codec_id);
+        (*codec)=(AVCodec*)avcodec_find_encoder(codec_id);
 
     } else {
-        (*codec)=avcodec_find_encoder_by_name(FFEncoder::AudioEncoder::toEncName(cfg.audio_encoder).toLatin1().data());
+        (*codec)=(AVCodec*)avcodec_find_encoder_by_name(FFEncoder::AudioEncoder::toEncName(cfg.audio_encoder).toLatin1().data());
     }
 
     if(!(*codec)) {
@@ -237,10 +237,10 @@ static QString add_stream_audio(OutputStream *output_stream, AVFormatContext *fo
 static QString add_stream_video_dsc(OutputStream *output_stream, AVFormatContext *format_context, AVCodec **codec, const FFEncoder::Config &cfg)
 {
     if(cfg.pixel_format_src==PixelFormat::mjpeg)
-        (*codec)=avcodec_find_encoder(AV_CODEC_ID_MJPEG);
+        (*codec)=(AVCodec*)avcodec_find_encoder(AV_CODEC_ID_MJPEG);
 
     else if(cfg.pixel_format_src==PixelFormat::h264)
-        (*codec)=avcodec_find_encoder(AV_CODEC_ID_H264);
+        (*codec)=(AVCodec*)avcodec_find_encoder(AV_CODEC_ID_H264);
 
     if(!(*codec)) {
         QString err("could not find encoder");
@@ -323,7 +323,7 @@ static QString add_stream_video_dsc(OutputStream *output_stream, AVFormatContext
 
 static QString add_stream_video(OutputStream *output_stream, AVFormatContext *format_context, AVCodec **codec, const FFEncoder::Config &cfg)
 {
-    (*codec)=avcodec_find_encoder_by_name(FFEncoder::VideoEncoder::toEncName(cfg.video_encoder).toLatin1().data());
+    (*codec)=(AVCodec*)avcodec_find_encoder_by_name(FFEncoder::VideoEncoder::toEncName(cfg.video_encoder).toLatin1().data());
 
     if(!(*codec)) {
         QString err("could not find encoder");
@@ -1650,7 +1650,7 @@ bool FFEncoder::setConfig(FFEncoder::Config cfg)
         goto fail;
     }
 
-    context->av_output_format=context->av_format_context->oformat;
+    context->av_output_format=(AVOutputFormat*)context->av_format_context->oformat;
 
     if(cfg.direct_stream_copy && cfg.input_type_flags&SourceInterface::TypeFlag::video) {
         last_error_string=add_stream_video_dsc(&context->out_stream_video, context->av_format_context, &context->av_codec_video, cfg);

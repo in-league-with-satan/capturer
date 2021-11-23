@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2021 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -66,7 +66,7 @@ FFMediaInfo::Info FFMediaInfo::getInfo(QString filename)
         if(stream->codecpar->codec_type==AVMEDIA_TYPE_AUDIO) {
             TrackInfo inf;
 
-            codec=avcodec_find_decoder(stream->codecpar->codec_id);
+            codec=(AVCodec*)avcodec_find_decoder(stream->codecpar->codec_id);
             codec_context=avcodec_alloc_context3(codec);
 
             err=avcodec_parameters_to_context(codec_context, stream->codecpar);
@@ -100,7 +100,7 @@ FFMediaInfo::Info FFMediaInfo::getInfo(QString filename)
         if(stream->codecpar->codec_type==AVMEDIA_TYPE_VIDEO) {
             TrackInfo inf;
 
-            codec=avcodec_find_decoder(stream->codecpar->codec_id);
+            codec=(AVCodec*)avcodec_find_decoder(stream->codecpar->codec_id);
             codec_context=avcodec_alloc_context3(codec);
 
               err=avcodec_parameters_to_context(codec_context, stream->codecpar);

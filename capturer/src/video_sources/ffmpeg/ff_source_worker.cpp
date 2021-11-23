@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2021 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -162,7 +162,7 @@ void FFSourceWorker::setConfig(QSize size, AVRational framerate, int64_t pixel_f
     cfg.pixel_format=pixel_format;
     cfg.high_depth_audio=high_depth_audio;
 
-    // qDebug() << size << framerate.den/framerate.num << pixel_format;
+    // qDebug() << size << framerate.den/framerate.num << PixelFormat::toString(pixel_format);
 }
 
 void FFSourceWorker::deviceStart()
@@ -251,11 +251,11 @@ void FFSourceWorker::deviceStart()
     if(!d->input_format) {
 #ifdef __linux__
 
-        d->input_format=av_find_input_format("video4linux2");
+        d->input_format=(AVInputFormat*)av_find_input_format("video4linux2");
 
 #else
 
-        d->input_format=av_find_input_format("dshow");
+        d->input_format=(AVInputFormat*)av_find_input_format("dshow");
 
 #endif
     }
@@ -287,7 +287,7 @@ void FFSourceWorker::deviceStart()
     }
 
 
-    d->format_context->video_codec=avcodec_find_decoder(d->format_context->video_codec_id);
+    d->format_context->video_codec=(AVCodec*)avcodec_find_decoder(d->format_context->video_codec_id);
 
 
     qDebug() << "dev name:" << video_device.name << video_device.dev;
@@ -327,7 +327,7 @@ void FFSourceWorker::deviceStart()
     }
 
 
-    d->codec=avcodec_find_decoder(d->stream->codecpar->codec_id);
+    d->codec=(AVCodec*)avcodec_find_decoder(d->stream->codecpar->codec_id);
 
     if(!d->codec) {
         qCritical() << "avcodec_find_decoder err";
@@ -355,8 +355,9 @@ void FFSourceWorker::deviceStart()
         goto fail;
     }
 
-    if(!d->frame)
+    if(!d->frame) {
         d->frame=av_frame_alloc();
+    }
 
     {
         PixelFormat pf;
@@ -479,8 +480,9 @@ bool FFSourceWorker::step()
 
             frame->setDataAudio(ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize()==16 ? 16 : 32);
 
-            foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
+            foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list) {
                 buf->append(frame);
+            }
         }
 
         return true;
@@ -503,8 +505,9 @@ bool FFSourceWorker::step()
                         qCritical() << "avcodec_receive_frame err:" << ffErrorString(ret);
                     }
 
-                    if(ret>=0)
+                    if(ret>=0) {
                         frame_finished=1;
+                    }
                 }
 
                 if(on_hold) {
@@ -518,10 +521,21 @@ bool FFSourceWorker::step()
                     PixelFormat tmp_fmt;
                     tmp_fmt.fromAVPixelFormat((AVPixelFormat)d->frame->format);
 
-                    if(tmp_fmt.isDirect()) {
+                    if(tmp_fmt.isDirect() || tmp_fmt==PixelFormat::p010) {
                         if(cfg.pixel_format==PixelFormat::yvu420p) {
                             FFSWAP(uint8_t*, d->frame->data[1], d->frame->data[2]);
                         }
+
+#ifndef __linux__
+                        if(cfg.pixel_format==PixelFormat::bgr24) {
+                            // flip the image up and down
+                            d->frame->data[0]+=d->frame->linesize[0]*(d->frame->height - 1);
+                            d->frame->linesize[0]=-d->frame->linesize[0];
+                            d->frame->data[1]+=d->frame->linesize[1]*(d->frame->height/2 - 1);
+                            d->frame->linesize[1]=-d->frame->linesize[1];
+                            d->frame->data[2]+=d->frame->linesize[2]*(d->frame->height/2 - 1);
+                        }
+#endif
 
                         QByteArray ba_frame;
 
@@ -598,8 +612,9 @@ bool FFSourceWorker::step()
 
                                 frame->setData(ba_frame_rgb, QSize(d->frame->width, d->frame->height), ba_audio, d->audio_input->format().channelCount(), d->audio_input->format().sampleSize());
 
-                            } else
+                            } else {
                                 frame->setData(ba_frame_rgb, QSize(d->frame->width, d->frame->height), QByteArray(), 0, 0);
+                            }
                         }
 
                         frame->video.pts=d->frame->pts - d->stream->start_time;
@@ -616,8 +631,9 @@ bool FFSourceWorker::step()
                             frame->video.pixel_format_pkt=cfg.pixel_format;
                         }
 
-                        foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list)
+                        foreach(FrameBuffer<Frame::ptr>::ptr buf, subscription_list) {
                             buf->append(frame);
+                        }
                     }
                 }
             }

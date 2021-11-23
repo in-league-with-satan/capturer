@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2021 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -29,6 +29,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 DEFINE_GUID(MEDIASUBTYPE_H264_alt, 0x34363248, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
 DEFINE_GUID(MEDIASUBTYPE_I420_alt, 0x30323449, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
+DEFINE_GUID(MEDIASUBTYPE_P010_alt, 0x30313050, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
 
 GUID toDshowPixelFormat(uint32_t pix_fmt)
 {
@@ -84,6 +85,9 @@ uint32_t fromDshowPixelFormat(const GUID &value)
 
     } else if(IsEqualGUID(value, MEDIASUBTYPE_UYVY)) {
         return PixelFormat::uyvy422;
+
+    } else if(IsEqualGUID(value, MEDIASUBTYPE_P010_alt)) {
+        return PixelFormat::p010;
 
     } else if(IsEqualGUID(value, MEDIASUBTYPE_NV12)) {
         return PixelFormat::nv12;

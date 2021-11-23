@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2021 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -194,15 +194,15 @@ void FFDecoderThread::_open()
     bool hw_decoder=false;
 
     if(context.stream_video->codecpar->codec_id==AV_CODEC_ID_H264) {
-        context.codec_video=avcodec_find_decoder_by_name("h264_cuvid");
+        context.codec_video=(AVCodec*)avcodec_find_decoder_by_name("h264_cuvid");
         hw_decoder=true;
 
     } else if(context.stream_video->codecpar->codec_id==AV_CODEC_ID_HEVC) {
-        context.codec_video=avcodec_find_decoder_by_name("hevc_cuvid");
+        context.codec_video=(AVCodec*)avcodec_find_decoder_by_name("hevc_cuvid");
         hw_decoder=true;
 
     } else {
-        context.codec_video=avcodec_find_decoder(context.stream_video->codecpar->codec_id);
+        context.codec_video=(AVCodec*)avcodec_find_decoder(context.stream_video->codecpar->codec_id);
     }
 
     if(!context.codec_video) {
@@ -211,7 +211,7 @@ void FFDecoderThread::_open()
 try_software_decoder:
 
         hw_decoder=false;
-        context.codec_video=avcodec_find_decoder(context.stream_video->codecpar->codec_id);
+        context.codec_video=(AVCodec*)avcodec_find_decoder(context.stream_video->codecpar->codec_id);
     }
 
     if(!context.codec_video) {
@@ -285,7 +285,7 @@ try_software_decoder:
     context.stream_audio=context.format_context->streams[stream_audio_pos];
 
 
-    context.codec_audio=avcodec_find_decoder(context.stream_audio->codecpar->codec_id);
+    context.codec_audio=(AVCodec*)avcodec_find_decoder(context.stream_audio->codecpar->codec_id);
 
     context.codec_context_audio=avcodec_alloc_context3(context.codec_audio);
 
@@ -540,7 +540,8 @@ void FFDecoderThread::_play()
 
                     //
 
-                    int64_t ts=av_frame_get_best_effort_timestamp(context.frame_video); // ????????!
+                    //int64_t ts=av_frame_get_best_effort_timestamp(context.frame_video); // ????????!
+                    int64_t ts=context.frame_video->best_effort_timestamp;
 
                     if(context.ba_audio.isEmpty()) {
                         if(ts!=AV_NOPTS_VALUE)

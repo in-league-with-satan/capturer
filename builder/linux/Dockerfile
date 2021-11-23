@@ -8,7 +8,7 @@ RUN apt update && apt install -y gcc g++ make cmake autoconf automake libtool gi
         libgles2-mesa-dev libwayland-dev libwayland-egl-backend-dev libncurses5-dev libncursesw5-dev libx11-dev libxcb1-dev \
         libxext-dev libxfixes-dev '^libxcb.*-dev' libx11-xcb-dev libglu1-mesa-dev libxrender-dev \
     && mkdir /qt && cd /qt \
-    && export qt_ver_f=`git ls-remote --tags https://github.com/qt/qt5 | awk '{print $2}' | grep -v '\^{}$' | grep -v '-' | sort -V | tail -1 | awk '{split($0, a, "/"); print a[3]}' | awk '{split($0, a, "v"); print a[2]}'` \
+    && export qt_ver_f=`git ls-remote --tags https://github.com/qt/qt5 | awk '{print $2}' | grep v5. | grep -v '\^{}$' | grep -v '-' | sort -V | tail -1 | awk '{split($0, a, "/"); print a[3]}' | awk '{split($0, a, "v"); print a[2]}'` \
     ; export qt_ver_s=`echo $qt_ver_f | awk '{split($0, a, "."); printf("%s.%s", a[1], a[2])}'` \
     ; wget http://download.qt.io/archive/qt/$qt_ver_s/$qt_ver_f/single/qt-everywhere-src-$qt_ver_f.tar.xz \
     && tar -xJf qt-everywhere-src-$qt_ver_f.tar.xz && rm qt-everywhere-src-$qt_ver_f.tar.xz \

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2021 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -23,7 +23,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "ff_tools.h"
 
-int ff_lock_callback(void **mutex, enum AVLockOp op);
 
 void av_log_callback(void*, int level, const char *fmt, va_list vl)
 {
@@ -153,7 +152,7 @@ bool checkEncoderVaapi(const QString &encoder_name, const AVPixelFormat &pixel_f
     bool result=false;
 
     AVCodec *codec=
-            avcodec_find_encoder_by_name(encoder_name.toLatin1().constData());
+            (AVCodec*)avcodec_find_encoder_by_name(encoder_name.toLatin1().constData());
 
 
     AVCodecContext *codec_context=nullptr;
@@ -242,7 +241,7 @@ bool checkEncoder(const QString &encoder_name, const AVPixelFormat &pixel_format
     bool result=false;
 
     AVCodec *codec=
-            avcodec_find_encoder_by_name(encoder_name.toLatin1().constData());
+            (AVCodec*)avcodec_find_encoder_by_name(encoder_name.toLatin1().constData());
 
     AVCodecContext *codec_context=nullptr;
 
@@ -291,33 +290,6 @@ bool isHighBitDepthBuild()
     }
 
     return result;
-}
-
-int ff_lock_callback(void **mutex, enum AVLockOp op)
-{
-    qDebug() << op;
-
-    static std::mutex m;
-
-    switch(op) {
-    case AV_LOCK_CREATE:
-        *mutex=&m;
-        break;
-
-    case AV_LOCK_OBTAIN:
-        ((std::mutex*)(*mutex))->lock();
-        break;
-
-    case AV_LOCK_RELEASE:
-        ((std::mutex*)(*mutex))->unlock();
-        break;
-
-    case AV_LOCK_DESTROY:
-        *mutex=0;
-        break;
-    }
-
-    return 0;
 }
 
 QString swsColorSpace::toString(int value)

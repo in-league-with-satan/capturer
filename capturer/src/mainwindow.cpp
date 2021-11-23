@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2020 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2021 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -142,7 +142,7 @@ MainWindow::MainWindow(QObject *parent)
 
         //
 
-        connect(encoder_streaming, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
+        // connect(encoder_streaming, SIGNAL(errorString(QString)), messenger, SIGNAL(errorString(QString)), Qt::QueuedConnection);
 
         if(term)
             connect(encoder_streaming, SIGNAL(stats(FFEncoder::Stats)), term, SLOT(updateStats(FFEncoder::Stats)), Qt::QueuedConnection);
@@ -2506,8 +2506,8 @@ void MainWindow::deviceStop(uint8_t index)
 
 bool MainWindow::recInProgress()
 {
-    if(encoder_streaming->isWorking())
-        return true;
+    // if(encoder_streaming->isWorking())
+    //     return true;
 
     for(int i=0; i<stream.size(); ++i) {
         if(stream[i].encoder->isWorking())
@@ -2522,8 +2522,6 @@ void MainWindow::startStopRecording()
     if(recInProgress()) {
         for(int i=0; i<stream.size(); ++i)
             stream[i].encoder->stopCoder();
-
-        encoder_streaming->stopCoder();
 
         irc_subtitles->stop();
 
@@ -2596,68 +2594,72 @@ void MainWindow::startStopRecording()
         enc_start_sync.add(i);
     }
 
+    irc_subtitles->start();
+}
+
+void MainWindow::startStopStreaming()
+{
     if(encoder_streaming->isWorking()) {
         qInfo() << "encoder_streaming->stopCoder";
         encoder_streaming->stopCoder();
         return;
     }
 
-    if(!settings_model->valueData(&settings->streaming.url_index).toString().isEmpty()) {
-        dev=stream[0].source_device;
+    if(settings_model->valueData(&settings->streaming.url_index).toString().isEmpty())
+        return;
 
-        if(!dev)
-            return;
+    SourceInterface *dev=stream[0].source_device;
 
-        if(!dev->gotSignal())
-            return;
+    if(!dev)
+        return;
 
-        FFEncoder::Config cfg;
+    if(!dev->gotSignal())
+        return;
 
-        cfg.format_converter_thread_size=settings->main.format_converter_thread_size;
+    FFEncoder::Config cfg;
 
-        AVRational framerate=dev->currentFramerate();
+    cfg.format_converter_thread_size=settings->main.format_converter_thread_size;
 
-        cfg.active_src_devices=active_src_devices;
+    AVRational framerate=dev->currentFramerate();
 
-        cfg.framerate=FFEncoder::calcFps(framerate.num, framerate.den, settings->streaming.rec.half_fps);
+    cfg.active_src_devices=1;
 
-        if(cfg.framerate==FFEncoder::Framerate::unknown)
-            cfg.framerate_force=framerate;
+    cfg.framerate=FFEncoder::calcFps(framerate.num, framerate.den, settings->streaming.rec.half_fps);
 
-        cfg.audio_encoder=(FFEncoder::AudioEncoder::T)settings_model->valueData(&settings->streaming.rec.audio_encoder).toInt();
-        cfg.audio_bitrate=settings_model->valueData(&settings->streaming.rec.audio_bitrate).toInt();
-        cfg.audio_downmix_to_stereo=settings->streaming.rec.audio_downmix_to_stereo;
-        cfg.audio_sample_size=dev->currentAudioSampleSize();
-        cfg.audio_channels_size=dev->currentAudioChannels();
-        cfg.frame_resolution_src=dev->currentFramesize();
-        cfg.pixel_format_dst=settings_model->valueData(&settings->streaming.rec.pixel_format_current).toInt();
-        cfg.preset=settings_model->valueData(&settings->streaming.rec.preset_current).toString();
-        cfg.video_encoder=(FFEncoder::VideoEncoder::T)settings_model->valueData(&settings->streaming.rec.video_encoder).toInt();
-        cfg.video_bitrate=settings_model->valueData(&settings->streaming.rec.video_bitrate).toInt();
-        cfg.crf=settings->streaming.rec.crf;
-        cfg.pixel_format_src=dev->currentPixelFormat();
-        cfg.direct_stream_copy=settings->streaming.rec.direct_stream_copy;
-        cfg.fill_dropped_frames=settings->streaming.rec.fill_dropped_frames;
-        cfg.downscale=settings->streaming.rec.downscale;
-        cfg.scale_filter=settings->streaming.rec.scale_filter;
-        cfg.color_primaries=settings_model->valueData(&settings->streaming.rec.color_primaries).toInt();
-        cfg.color_space=settings_model->valueData(&settings->streaming.rec.color_space).toInt();
-        cfg.color_transfer_characteristic=settings_model->valueData(&settings->streaming.rec.color_transfer_characteristic).toInt();
-        cfg.color_range=swsColorRange::toff(settings->streaming.rec.color_range);
-        cfg.sws_color_space_src=swsColorSpace::toff(settings->streaming.rec.sws_color_space_src);
-        cfg.sws_color_space_dst=swsColorSpace::toff(settings->streaming.rec.sws_color_space_dst);
-        cfg.sws_color_range_src=swsColorRange::toff(settings->streaming.rec.sws_color_range_src);
-        cfg.sws_color_range_dst=swsColorRange::toff(settings->streaming.rec.sws_color_range_dst);
-        cfg.nvenc=settings->streaming.rec.nvenc;
-        cfg.aspect_ratio_4_3=settings->streaming.rec.aspect_ratio_4_3;
-        cfg.input_type_flags=dev->typeFlags();
+    if(cfg.framerate==FFEncoder::Framerate::unknown)
+        cfg.framerate_force=framerate;
 
-        enc_streaming_url=settings_model->valueData(&settings->streaming.url_index).toString();
+    cfg.audio_encoder=(FFEncoder::AudioEncoder::T)settings_model->valueData(&settings->streaming.rec.audio_encoder).toInt();
+    cfg.audio_bitrate=settings_model->valueData(&settings->streaming.rec.audio_bitrate).toInt();
+    cfg.audio_downmix_to_stereo=settings->streaming.rec.audio_downmix_to_stereo;
+    cfg.audio_sample_size=dev->currentAudioSampleSize();
+    cfg.audio_channels_size=dev->currentAudioChannels();
+    cfg.frame_resolution_src=dev->currentFramesize();
+    cfg.pixel_format_dst=settings_model->valueData(&settings->streaming.rec.pixel_format_current).toInt();
+    cfg.preset=settings_model->valueData(&settings->streaming.rec.preset_current).toString();
+    cfg.video_encoder=(FFEncoder::VideoEncoder::T)settings_model->valueData(&settings->streaming.rec.video_encoder).toInt();
+    cfg.video_bitrate=settings_model->valueData(&settings->streaming.rec.video_bitrate).toInt();
+    cfg.crf=settings->streaming.rec.crf;
+    cfg.pixel_format_src=dev->currentPixelFormat();
+    cfg.direct_stream_copy=settings->streaming.rec.direct_stream_copy;
+    cfg.fill_dropped_frames=settings->streaming.rec.fill_dropped_frames;
+    cfg.downscale=settings->streaming.rec.downscale;
+    cfg.scale_filter=settings->streaming.rec.scale_filter;
+    cfg.color_primaries=settings_model->valueData(&settings->streaming.rec.color_primaries).toInt();
+    cfg.color_space=settings_model->valueData(&settings->streaming.rec.color_space).toInt();
+    cfg.color_transfer_characteristic=settings_model->valueData(&settings->streaming.rec.color_transfer_characteristic).toInt();
+    cfg.color_range=swsColorRange::toff(settings->streaming.rec.color_range);
+    cfg.sws_color_space_src=swsColorSpace::toff(settings->streaming.rec.sws_color_space_src);
+    cfg.sws_color_space_dst=swsColorSpace::toff(settings->streaming.rec.sws_color_space_dst);
+    cfg.sws_color_range_src=swsColorRange::toff(settings->streaming.rec.sws_color_range_src);
+    cfg.sws_color_range_dst=swsColorRange::toff(settings->streaming.rec.sws_color_range_dst);
+    cfg.nvenc=settings->streaming.rec.nvenc;
+    cfg.aspect_ratio_4_3=settings->streaming.rec.aspect_ratio_4_3;
+    cfg.input_type_flags=dev->typeFlags();
 
-        encoder_streaming->setConfig(cfg);
-    }
+    enc_streaming_url=settings_model->valueData(&settings->streaming.url_index).toString();
 
-    irc_subtitles->start();
+    encoder_streaming->setConfig(cfg);
 }
 
 void MainWindow::updateEncList()
