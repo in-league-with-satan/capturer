@@ -1,0 +1,25 @@
+diff --git a/libavcodec/raw.c b/libavcodec/raw.c
+index 079d5c5d..619771bc 100644
+--- a/libavcodec/raw.c
++++ b/libavcodec/raw.c
+@@ -72,6 +72,7 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
+     { AV_PIX_FMT_GRAY8,   MKTAG('G', 'R', 'E', 'Y') },
+     { AV_PIX_FMT_NV12,    MKTAG('N', 'V', '1', '2') },
+     { AV_PIX_FMT_NV21,    MKTAG('N', 'V', '2', '1') },
++    { AV_PIX_FMT_P010LE,  MKTAG('P', '0', '1', '0') },
+ 
+     /* nut */
+     { AV_PIX_FMT_RGB555LE, MKTAG('R', 'G', 'B', 15) },
+diff --git a/libavdevice/dshow.c b/libavdevice/dshow.c
+index 8d0a6fcc..b50e0624 100644
+--- a/libavdevice/dshow.c
++++ b/libavdevice/dshow.c
+@@ -50,6 +50,8 @@ static enum AVPixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
+             case 32:
+                 return AV_PIX_FMT_0RGB32;
+         }
++    case 0x30313050:
++        return AV_PIX_FMT_P010LE;
+     }
+     return avpriv_find_pix_fmt(avpriv_get_raw_pix_fmt_tags(), biCompression); // all others
+ }

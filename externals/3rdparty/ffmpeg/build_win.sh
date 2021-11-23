@@ -283,12 +283,14 @@ build_ff() {
   if [ ! -e ffmpeg ]; then
     git clone --depth 1 git://source.ffmpeg.org/ffmpeg || exit 1
     cd ffmpeg
+    git apply ../../p010.patch || exit 1
 
   else
     cd ffmpeg
     git reset --hard
     git clean -dfx
     git pull --ff-only | grep "$git_up_to_date" && build_required=0
+    git apply ../../p010.patch || exit 1
   fi
 
   if [ ! -e $fflibtest ]; then

@@ -1,6 +1,6 @@
 /******************************************************************************
 
-Copyright © 2018-2019 Andrey Cheprasov <ae.cheprasov@gmail.com>
+Copyright © 2018-2021 Andrey Cheprasov <ae.cheprasov@gmail.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -180,6 +180,16 @@ QList <FFDevice::Format> getDeviceCapabilities(const QString &dev_name)
                         if(!resolution[tmp_pix_fmt][res_key].framerate.contains(Framerate::toRational(1e7/vcaps->MinFrameInterval)))
                             resolution[tmp_pix_fmt][res_key].framerate
                                     << ToolsFFSource::framerateBuildSequence(1e7/vcaps->MaxFrameInterval, 1e7/vcaps->MinFrameInterval);
+
+                        if(tmp_pix_fmt==PixelFormat::rgb24) {
+                            tmp_pix_fmt=PixelFormat::bgr24;
+
+                            resolution[tmp_pix_fmt][res_key].size=QSize(vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy);
+
+                            if(!resolution[tmp_pix_fmt][res_key].framerate.contains(Framerate::toRational(1e7/vcaps->MinFrameInterval)))
+                                resolution[tmp_pix_fmt][res_key].framerate
+                                        << ToolsFFSource::framerateBuildSequence(1e7/vcaps->MaxFrameInterval, 1e7/vcaps->MinFrameInterval);
+                        }
 
                     } else {
                         qDebug() << "unknown pix fmt" << guidToStr(type->formattype) << guidToStr(type->subtype);
