@@ -1,11 +1,15 @@
 bin
+bin_linux
+bin_win
 debug
 release
+*.7z
 *.debug
 *.release
 *.Debug
 *.Release
 *Makefile*
+*.rc
 *.stash
 *.user
 *_plugin_import.cpp

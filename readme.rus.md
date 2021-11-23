@@ -23,8 +23,8 @@
 <br>скрипт проверялся в дистрибутивах Ubuntu 16.04, 17.10 и Fedora 25-26, но периодически что-нибудь отваливается, тогда приходится разбираться по ситуации
 
 ##### под венду
-- с сайта https://ffmpeg.zeranoe.com/builds загрузить shared и dev пакеты ffmpeg
-- dev раcпаковать в ./externals/3rdparty/ffmpeg
-- dll-ки из shared распаковать в ./bin
-<br><br>
+- с https://github.com/BtbN/FFmpeg-Builds/releases загрузить shared пакет ffmpeg (окончивается на "-win64-(l)gpl-shared.zip")
+- распаковать каталоги "include" и "lib" в ./externals/3rdparty/ffmpeg/win
+- dll-ки из каталога bin распаковать в ./bin
+- надеяться, что мне повезет сегодня
 - собрать
