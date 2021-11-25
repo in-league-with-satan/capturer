@@ -1,0 +1,74 @@
+name: application builder 
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  linux-build:
+    runs-on: ubuntu-latest
+    container: inleaguewithsatan/capturer-builder:static-linux-5.15.2
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: build project
+        run: |
+          ln -s $GITHUB_WORKSPACE /temp
+          cd $GITHUB_WORKSPACE/builder/linux
+          bash worker.sh
+
+      - name: setting versions variables
+        run: |
+          cd $GITHUB_WORKSPACE/externals/3rdparty/ffmpeg/linux/tmp/ffmpeg
+          ffmpeg_version=`git log -1 --format=%cd-%h --date=format:'%Y%m%d'`
+          cd $GITHUB_WORKSPACE/capturer
+          app_last_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          app_version=$app_last_tag.`git rev-list $app_last_tag.. --count`-`git log -1 --pretty=format:%h`
+          qt_version=`qmake --version | awk '{if ($1=="Using") print $4;}'`
+          echo "app_version=$app_version" >> $GITHUB_ENV
+          echo "qt_version=$qt_version" >> $GITHUB_ENV
+          echo "ffmpeg_version=$ffmpeg_version" >> $GITHUB_ENV
+
+      - name: upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: capturer-${{ env.app_version }}_x86_64-linux_qt-${{ env.qt_version }}_ffmpeg-${{ env.ffmpeg_version }}
+          path: ${{ github.workspace }}/bin_linux/*
+
+  windows-build:
+    runs-on: ubuntu-latest
+    container: inleaguewithsatan/capturer-builder:static-win-5.15.2
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: build project
+        run: |
+          ln -s $GITHUB_WORKSPACE /temp
+          cd $GITHUB_WORKSPACE/builder/win
+          bash worker.sh staticff
+
+      - name: setting versions variables
+        run: |
+          # mv $GITHUB_WORKSPACE/bin_win/license $GITHUB_WORKSPACE/bin_win/license.txt
+          cd $GITHUB_WORKSPACE/externals/3rdparty/ffmpeg/win/tmp/ffmpeg
+          ffmpeg_version=`git log -1 --format=%cd-%h --date=format:'%Y%m%d'`
+          cd $GITHUB_WORKSPACE/capturer
+          app_last_tag=$(git describe --tags `git rev-list --tags --max-count=1`)
+          app_version=$app_last_tag.`git rev-list $app_last_tag.. --count`-`git log -1 --pretty=format:%h`
+          qt_version=`qmake --version | awk '{if ($1=="Using") print $4;}'`
+          echo "app_version=$app_version" >> $GITHUB_ENV
+          echo "qt_version=$qt_version" >> $GITHUB_ENV
+          echo "ffmpeg_version=$ffmpeg_version" >> $GITHUB_ENV
+
+      - name: upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: capturer-${{ env.app_version }}_x86_64-win_qt-${{ env.qt_version }}_ffmpeg-${{ env.ffmpeg_version }}
+          path: ${{ github.workspace }}/bin_win/*
